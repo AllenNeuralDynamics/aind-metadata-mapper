@@ -17,6 +17,8 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
+    "aind-data-schema",
+    "aind-metadata-service[client]"
 ]
 
 [project.optional-dependencies]
