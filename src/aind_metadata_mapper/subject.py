@@ -7,7 +7,7 @@ from os import PathLike
 from pathlib import Path
 
 from aind_data_schema.subject import Subject
-from aind_metadata_service.client import AindMetadataServiceClient
+from aind_metadata_service.client import AindMetadataServiceClient, StatusCodes
 from requests import Response
 
 from aind_metadata_mapper.core import BaseEtl
@@ -53,25 +53,27 @@ class SubjectEtl(BaseEtl):
 
         """
         status_code = extracted_source.status_code
-        response_json = extracted_source.json()
-        # The response from the server is okay.
-        if status_code == 200:
-            contents = response_json["data"]
-        # Multiple items were found
-        elif status_code == 300:
-            logging.warning(f"Subject: {response_json['message']}")
-            contents = response_json["data"][0]
-        # The data retrieved is invalid
-        elif status_code == 406:
-            logging.warning(f"Subject: {response_json['message']}")
-            contents = response_json["data"]
-        # Connected to the service, but no data was found
-        elif status_code == 404:
-            raise Exception(
-                f"No data found for subject id: {self.subject_id}."
-            )
-        else:
-            raise Exception("An error occurred connecting to the server.")
+        match status_code:
+            case StatusCodes.VALID_DATA | StatusCodes.MULTI_STATUS:
+                contents = extracted_source.json()["data"]
+            case StatusCodes.MULTIPLE_RESPONSES:
+                logging.warning(
+                    f"Subject: {extracted_source.json()['message']}"
+                )
+                contents = extracted_source.json()["data"][0]
+            case StatusCodes.INVALID_DATA:
+                logging.warning(
+                    f"Subject: {extracted_source.json()['message']}"
+                )
+                contents = extracted_source.json()["data"]
+            case StatusCodes.NO_DATA_FOUND:
+                raise Exception(
+                    f"No data found for subject id: {self.subject_id}."
+                )
+            case StatusCodes.INTERNAL_SERVER_ERROR:
+                raise Exception("The server reported back an internal error.")
+            case _:
+                raise Exception("An error occurred connecting to the server.")
 
         subject = Subject.construct(**contents)
         return subject

@@ -37,7 +37,6 @@ class BaseEtl(ABC):
         Any
 
         """
-        pass
 
     @abstractmethod
     def _transform(self, extracted_source: Any) -> AindCoreModel:
@@ -53,7 +52,6 @@ class BaseEtl(ABC):
         AindCoreModel
 
         """
-        pass
 
     def _load(self, transformed_data: AindCoreModel) -> None:
         """
@@ -89,7 +87,7 @@ class BaseEtl(ABC):
                 logging.warning(
                     f"Validation errors were found. This may be due to "
                     f"mismatched versions or data not found in the "
-                    f"databases. \n{validation_error}"
+                    f"databases. Error: {validation_error}"
                 )
             else:
                 logging.debug("No validation errors detected.")

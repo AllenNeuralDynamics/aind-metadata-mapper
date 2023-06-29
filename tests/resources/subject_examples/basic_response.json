@@ -1,0 +1,25 @@
+{
+  "message":"Valid Model.",
+  "data": {
+    "describedBy":"https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/subject.py",
+    "schema_version":"0.3.0",
+    "species":"Mus musculus",
+    "subject_id":"632269",
+    "sex":"Female",
+    "date_of_birth":"2022-05-01",
+    "genotype":"Pvalb-IRES-Cre/wt;RCL-somBiPoles_mCerulean-WPRE/wt",
+    "mgi_allele_ids":null,
+    "background_strain":null,
+    "source":null,
+    "rrid":null,
+    "restrictions":null,
+    "breeding_group":"Pvalb-IRES-Cre;RCL-somBiPoles_mCerulean-WPRE(ND)",
+    "maternal_id":"615310",
+    "maternal_genotype":"Pvalb-IRES-Cre/wt",
+    "paternal_id":"623236",
+    "paternal_genotype":"RCL-somBiPoles_mCerulean-WPRE/wt",
+    "wellness_reports":null,
+    "housing":null,
+    "notes":null
+  }
+}
