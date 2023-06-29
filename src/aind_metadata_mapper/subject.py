@@ -52,7 +52,7 @@ class SubjectEtl(BaseEtl):
         Subject
 
         """
-        status_code = extracted_source.status_code
+        status_code = StatusCodes(extracted_source.status_code)
         match status_code:
             case StatusCodes.VALID_DATA | StatusCodes.MULTI_STATUS:
                 contents = extracted_source.json()["data"]

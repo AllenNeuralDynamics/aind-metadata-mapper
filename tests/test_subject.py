@@ -1,4 +1,4 @@
-"""Example test template."""
+"""Tests parsing of Subject information from aind-metadata-service."""
 
 import json
 import os
@@ -16,8 +16,8 @@ RESOURCES_DIR = Path(os.path.dirname(os.path.realpath(__file__))) / "resources"
 EXAMPLES_DIR = RESOURCES_DIR / "subject_examples"
 
 
-class SubjectTest(unittest.TestCase):
-    """Example Test Class"""
+class SubjectEtlTest(unittest.TestCase):
+    """Tests methods in SubjectEtl class."""
 
     @classmethod
     def setUpClass(cls):
@@ -96,7 +96,7 @@ class SubjectTest(unittest.TestCase):
         mock_write: MagicMock,
         mock_api_get: MagicMock,
     ):
-        """Example of how to test the truth of a statement."""
+        """Tests that a successful response is parsed correctly."""
 
         mock_api_get.return_value = self.successful_response
         self.subject_etl.run_job()
@@ -114,7 +114,7 @@ class SubjectTest(unittest.TestCase):
         mock_write: MagicMock,
         mock_api_get: MagicMock,
     ):
-        """Example of how to test the truth of a statement."""
+        """Tests parsing of multiple responses returned from the server."""
 
         mock_api_get.return_value = self.multi_response
         self.subject_etl.run_job()
@@ -137,7 +137,8 @@ class SubjectTest(unittest.TestCase):
         mock_write: MagicMock,
         mock_api_get: MagicMock,
     ):
-        """Example of how to test the truth of a statement."""
+        """Tests a response that is returned, but that the server flagged as
+        not being valid."""
 
         mock_api_get.return_value = self.invalid_response
         self.subject_etl.run_job()
@@ -158,7 +159,7 @@ class SubjectTest(unittest.TestCase):
         mock_write: MagicMock,
         mock_api_get: MagicMock,
     ):
-        """Example of how to test the truth of a statement."""
+        """Tests handling of an server error response."""
 
         mock_api_get.return_value = self.err_response
         with self.assertRaises(Exception) as ctx:
@@ -177,7 +178,7 @@ class SubjectTest(unittest.TestCase):
         mock_write: MagicMock,
         mock_api_get: MagicMock,
     ):
-        """Example of how to test the truth of a statement."""
+        """Tests a response when unable to connect to the server."""
 
         mock_api_get.return_value = self.conn_err_response
         with self.assertRaises(Exception) as ctx:
@@ -196,7 +197,8 @@ class SubjectTest(unittest.TestCase):
         mock_write: MagicMock,
         mock_api_get: MagicMock,
     ):
-        """Example of how to test the truth of a statement."""
+        """Tests the response where the server couldn't find the subject id
+        in the databases."""
 
         mock_api_get.return_value = self.no_data_response
         with self.assertRaises(Exception) as ctx:
@@ -217,7 +219,10 @@ class SubjectTest(unittest.TestCase):
         mock_write: MagicMock,
         mock_api_get: MagicMock,
     ):
-        """Example of how to test the truth of a statement."""
+        """Tests case where a valid model was found and matches current
+        aind-data-schema version."""
+        # Since the aind-data-schema is being updated, this is a bit of a hack
+        # to return a True to validate_model.
         mocked_response = self.invalid_response
         mocked_response.status_code = StatusCodes.VALID_DATA
         mock_api_get.return_value = mocked_response

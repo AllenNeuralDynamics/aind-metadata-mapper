@@ -35,6 +35,8 @@ class BaseEtl(ABC):
         Returns
         -------
         Any
+          It's not clear yet whether we'll be processing binary data, dicts,
+          API Responses, etc.
 
         """
 
