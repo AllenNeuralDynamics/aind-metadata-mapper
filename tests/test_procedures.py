@@ -80,16 +80,13 @@ class ProceduresEtlTest(unittest.TestCase):
                 "12345",
             ]
         )
-        cls.validation_warning_message = "Validation errors were found. This may be due to mismatched versions or data not found in the databases"
 
     @patch(
         "aind_metadata_service.client.AindMetadataServiceClient.get_procedures"
     )
     @patch("aind_data_schema.base.AindCoreModel.write_standard_file")
-    @patch("logging.warning")
     def test_successful_response(
         self,
-        mock_log_warn: MagicMock,
         mock_write: MagicMock,
         mock_api_get: MagicMock,
     ):
@@ -98,7 +95,6 @@ class ProceduresEtlTest(unittest.TestCase):
         mock_api_get.return_value = self.successful_response
         self.procedures_etl.run_job()
         mock_write.assert_called_once_with(output_directory=Path("tests"))
-        mock_log_warn.assert_called_once_with(self.validation_warning_message)
 
     @patch(
         "aind_metadata_service.client.AindMetadataServiceClient.get_procedures"
@@ -115,11 +111,8 @@ class ProceduresEtlTest(unittest.TestCase):
 
         mock_api_get.return_value = self.multi_response
         self.procedures_etl.run_job()
-        mock_log_warn.assert_has_calls(
-            [
-                call("Procedures: Multiple Items Found."),
-                call(self.validation_warning_message),
-            ]
+        mock_log_warn.assert_called_once_with(
+            "Procedures: Multiple Items Found."
         )
         mock_write.assert_called_once_with(output_directory=Path("tests"))
 

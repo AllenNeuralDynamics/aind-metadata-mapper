@@ -10,6 +10,7 @@
         "end_date": "2022-10-14",
         "experimenter_full_name": 30251,
         "iacuc_protocol": "2109",
+        "protocol_id": "134",
         "animal_weight_prior": null,
         "animal_weight_post": null,
         "weight_unit": "gram",

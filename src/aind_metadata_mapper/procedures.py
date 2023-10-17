@@ -14,7 +14,7 @@ from aind_metadata_mapper.core import BaseEtl
 
 
 class ProceduresEtl(BaseEtl):
-    """Class to retrieve procedures metadata and save it to a local json file."""
+    """Class to retrieve procedures metadata and save it to local json file."""
 
     def __init__(
         self, input_source: PathLike, output_directory: Path, subject_id: str
@@ -42,7 +42,7 @@ class ProceduresEtl(BaseEtl):
 
     def _transform(self, extracted_source: Response) -> Procedures:
         """
-        Transforms a response from aind-metadata-service into a Procedures model
+        Transforms a response from aind-metadata-service into Procedures model
         Parameters
         ----------
         extracted_source : Response
@@ -71,10 +71,8 @@ class ProceduresEtl(BaseEtl):
                 )
             case StatusCodes.INTERNAL_SERVER_ERROR:
                 raise Exception("The server reported back an internal error.")
-            case StatusCodes.CONNECTION_ERROR:
-                raise Exception("An error occurred connecting to the server.")
             case _:
-                raise Exception(f"An error {status_code} occurred.")
+                raise Exception("An error occurred connecting to the server.")
 
         procedures = Procedures.construct(**contents)
         return procedures
