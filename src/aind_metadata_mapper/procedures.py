@@ -72,7 +72,7 @@ class ProceduresEtl(BaseEtl):
             case StatusCodes.INTERNAL_SERVER_ERROR:
                 raise Exception("The server reported back an internal error.")
             case StatusCodes.CONNECTION_ERROR:
-                raise Exception("An error occurred connecting to the server")
+                raise Exception("An error occurred connecting to the server.")
             case _:
                 raise Exception(f"An error {status_code} occurred.")
 

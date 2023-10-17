@@ -124,7 +124,7 @@ class ProceduresEtlTest(unittest.TestCase):
         mock_write.assert_called_once_with(output_directory=Path("tests"))
 
     @patch(
-        "aind_metadata_service.client.AindMetadataServiceClient.get_subject"
+        "aind_metadata_service.client.AindMetadataServiceClient.get_procedures"
     )
     @patch("aind_data_schema.base.AindCoreModel.write_standard_file")
     @patch("logging.warning")
@@ -138,9 +138,9 @@ class ProceduresEtlTest(unittest.TestCase):
         not being valid."""
 
         mock_api_get.return_value = self.invalid_response
-        self.subject_etl.run_job()
+        self.procedures_etl.run_job()
         self.assertEqual(
-            call("Subject: Invalid Model."), mock_log_warn.mock_calls[0]
+            call("Procedures: Invalid Model."), mock_log_warn.mock_calls[0]
         )
         self.assertTrue(
             "Validation errors were found" in str(mock_log_warn.mock_calls[1])
@@ -148,7 +148,7 @@ class ProceduresEtlTest(unittest.TestCase):
         mock_write.assert_called_once_with(output_directory=Path("tests"))
 
     @patch(
-        "aind_metadata_service.client.AindMetadataServiceClient.get_subject"
+        "aind_metadata_service.client.AindMetadataServiceClient.get_procedures"
     )
     @patch("aind_data_schema.base.AindCoreModel.write_standard_file")
     def test_server_error_response(
@@ -160,14 +160,14 @@ class ProceduresEtlTest(unittest.TestCase):
 
         mock_api_get.return_value = self.err_response
         with self.assertRaises(Exception) as ctx:
-            self.subject_etl.run_job()
+            self.procedures_etl.run_job()
         self.assertEqual(
             "The server reported back an internal error.", str(ctx.exception)
         )
         mock_write.assert_not_called()
 
     @patch(
-        "aind_metadata_service.client.AindMetadataServiceClient.get_subject"
+        "aind_metadata_service.client.AindMetadataServiceClient.get_procedures"
     )
     @patch("aind_data_schema.base.AindCoreModel.write_standard_file")
     def test_connection_error_response(
@@ -179,14 +179,14 @@ class ProceduresEtlTest(unittest.TestCase):
 
         mock_api_get.return_value = self.conn_err_response
         with self.assertRaises(Exception) as ctx:
-            self.subject_etl.run_job()
+            self.procedures_etl.run_job()
         self.assertEqual(
             "An error occurred connecting to the server.", str(ctx.exception)
         )
         mock_write.assert_not_called()
 
     @patch(
-        "aind_metadata_service.client.AindMetadataServiceClient.get_subject"
+        "aind_metadata_service.client.AindMetadataServiceClient.get_procedures"
     )
     @patch("aind_data_schema.base.AindCoreModel.write_standard_file")
     def test_no_data_response(
@@ -199,14 +199,14 @@ class ProceduresEtlTest(unittest.TestCase):
 
         mock_api_get.return_value = self.no_data_response
         with self.assertRaises(Exception) as ctx:
-            self.subject_etl.run_job()
+            self.procedures_etl.run_job()
         self.assertEqual(
             "No data found for subject id: 12345.", str(ctx.exception)
         )
         mock_write.assert_not_called()
 
     @patch(
-        "aind_metadata_service.client.AindMetadataServiceClient.get_subject"
+        "aind_metadata_service.client.AindMetadataServiceClient.get_procedures"
     )
     @patch("aind_data_schema.base.AindCoreModel.write_standard_file")
     @patch("aind_metadata_mapper.core.validate_model")
@@ -224,7 +224,7 @@ class ProceduresEtlTest(unittest.TestCase):
         mocked_response.status_code = StatusCodes.VALID_DATA
         mock_api_get.return_value = mocked_response
         mock_validate.return_value = (None, None)
-        self.subject_etl.run_job()
+        self.procedures_etl.run_job()
         mock_write.assert_called_once_with(output_directory=Path("tests"))
 
 
