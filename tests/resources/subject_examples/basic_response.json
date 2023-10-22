@@ -2,7 +2,7 @@
   "message":"Valid Model.",
   "data": {
     "describedBy":"https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/subject.py",
-    "schema_version":"0.3.0",
+    "schema_version": "0.9.5",
     "species":"Mus musculus",
     "subject_id":"632269",
     "sex":"Female",

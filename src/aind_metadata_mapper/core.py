@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from aind_data_schema.base import AindCoreModel
+from typing import Union
 from pydantic import validate_model
 
 
@@ -15,7 +16,9 @@ class BaseEtl(ABC):
     """Base etl class. Defines interface for extracting, transforming, and
     loading input sources into a json file saved locally."""
 
-    def __init__(self, input_source: PathLike, output_directory: Path):
+    def __init__(
+        self, input_source: Union[PathLike, str], output_directory: Path
+    ):
         """
         Class constructor for Base etl class.
         Parameters

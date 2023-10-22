@@ -17,8 +17,9 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
-    "aind-data-schema==0.13.57",
-    "aind-metadata-service[client]"
+    "aind-data-schema==0.15.9",
+    "aind-metadata-service[client]",
+    "scanimage-tiff-reader==1.4.1.4"
 ]
 
 [project.optional-dependencies]

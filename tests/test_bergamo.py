@@ -1,0 +1,166 @@
+"""Tests parsing of session information from bergamo rig."""
+
+import os
+import unittest
+from pathlib import Path
+from datetime import datetime
+from unittest.mock import MagicMock, patch
+import gzip
+
+from aind_metadata_mapper.bergamo.session import BergamoEtl, RawImageInfo
+
+RESOURCES_DIR = (
+    Path(os.path.dirname(os.path.realpath(__file__))) / "resources" / "bergamo"
+)
+EXAMPLE_MD_PATH = RESOURCES_DIR / "example_metadata.txt.gz"
+EXAMPLE_DES_PATH = RESOURCES_DIR / "example_description0.txt"
+EXAMPLE_IMG_PATH = RESOURCES_DIR / "cropped_neuron50_00001.tif"
+
+
+class TestBergamoEtl(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        """Load record object before running tests."""
+        with gzip.open(EXAMPLE_MD_PATH, "rt") as f:
+            raw_md_contents = f.read()
+        with open(EXAMPLE_DES_PATH, "r") as f:
+            raw_des0_contents = f.read()
+        cls.example_metadata = raw_md_contents
+        cls.example_description0 = raw_des0_contents
+        cls.example_shape = [347, 512, 512]
+
+    @patch("aind_metadata_mapper.bergamo.session.ScanImageTiffReader")
+    def test_extract(self, mock_reader: MagicMock):
+        mock_context = mock_reader.return_value.__enter__.return_value
+        mock_context.metadata.return_value = self.example_metadata
+        mock_context.description.return_value = self.example_description0
+        mock_context.shape.return_value = self.example_shape
+        # Test extracting where input source is a directory
+        etl_job1 = BergamoEtl(
+            input_source=RESOURCES_DIR, output_directory=RESOURCES_DIR
+        )
+        raw_image_info1 = etl_job1._extract()
+        self.assertEqual(2310025, len(raw_image_info1.metadata))
+        self.assertEqual(2000, len(raw_image_info1.description0))
+        self.assertEqual([347, 512, 512], raw_image_info1.shape)
+
+        # Test extracting where input source is a file
+        etl_job2 = BergamoEtl(
+            input_source=EXAMPLE_IMG_PATH, output_directory=RESOURCES_DIR
+        )
+        raw_image_info2 = etl_job2._extract()
+        self.assertEqual(2310025, len(raw_image_info2.metadata))
+        self.assertEqual(2000, len(raw_image_info2.description0))
+        self.assertEqual([347, 512, 512], raw_image_info2.shape)
+
+        # Test extracting where input source is a str
+        etl_job3 = BergamoEtl(
+            input_source=str(EXAMPLE_IMG_PATH), output_directory=RESOURCES_DIR
+        )
+        raw_image_info3 = etl_job3._extract()
+        self.assertEqual(2310025, len(raw_image_info3.metadata))
+        self.assertEqual(2000, len(raw_image_info3.description0))
+        self.assertEqual([347, 512, 512], raw_image_info3.shape)
+
+        # Test error is raised if no tif file in dir
+        etl_job4 = BergamoEtl(
+            input_source=str(RESOURCES_DIR / ".."),
+            output_directory=RESOURCES_DIR,
+        )
+        with self.assertRaises(FileNotFoundError) as e:
+            etl_job4._extract()
+        self.assertEqual(
+            "Directory must contain tif or tiff file!", str(e.exception)
+        )
+
+    def test_flat_dict_to_nested(self):
+        original_input = {
+            "SI.LINE_FORMAT_VERSION": 1,
+            "SI.VERSION_UPDATE": 0,
+            "SI.acqState": "loop",
+            "SI.acqsPerLoop": "10000",
+            "SI.errorMsg": "",
+            "SI.extTrigEnable": "1",
+            "SI.fieldCurvatureRxs": "[]",
+            "SI.fieldCurvatureZs": "[]",
+            "SI.hBeams.enablePowerBox": "false",
+            "SI.hBeams.errorMsg": "",
+            "SI.hBeams.lengthConstants": "[200 Inf]",
+            "SI.hBeams.name": "SI Beams",
+        }
+
+        expected_output = {
+            "SI": {
+                "LINE_FORMAT_VERSION": 1,
+                "VERSION_UPDATE": 0,
+                "acqState": "loop",
+                "acqsPerLoop": "10000",
+                "errorMsg": "",
+                "extTrigEnable": "1",
+                "fieldCurvatureRxs": "[]",
+                "fieldCurvatureZs": "[]",
+                "hBeams": {
+                    "enablePowerBox": "false",
+                    "errorMsg": "",
+                    "lengthConstants": "[200 Inf]",
+                    "name": "SI Beams",
+                },
+            }
+        }
+
+        actual_output = BergamoEtl._flat_dict_to_nested(original_input)
+        self.assertEqual(expected_output, actual_output)
+
+    @patch("logging.error")
+    def test_parse_raw_image_info(self, mock_log: MagicMock):
+        raw_image_info = RawImageInfo(
+            metadata=self.example_metadata,
+            description0=self.example_description0,
+            shape=self.example_shape,
+        )
+
+        etl_job1 = BergamoEtl(
+            input_source=RESOURCES_DIR, output_directory=RESOURCES_DIR
+        )
+        actual_parsed_data = etl_job1._parse_raw_image_info(raw_image_info)
+        mock_log.assert_called_once_with(
+            "Multiple planes not handled in metadata collection. "
+            "HANDLE ME!!!: KeyError('userZs')"
+        )
+        self.assertEqual([347, 512, 512], actual_parsed_data.shape)
+        self.assertEqual(1, actual_parsed_data.num_planes)
+        self.assertEqual(
+            datetime(2023, 7, 24, 14, 14, 17, 854000),
+            actual_parsed_data.movie_start_time,
+        )
+        self.assertEqual("30.0119", actual_parsed_data.frame_rate)
+        self.assertEqual(
+            {"fs": "30.0119", "nplanes": 1, "nrois": 1, "mesoscan": 0},
+            actual_parsed_data.roi_data,
+        )
+        self.assertEqual(
+            "1", actual_parsed_data.description_first_frame["frameNumbers"]
+        )
+        self.assertEqual(
+            "false", actual_parsed_data.metadata["hBeams"]["enablePowerBox"]
+        )
+        self.assertEqual(
+            "1", actual_parsed_data.metadata["LINE_FORMAT_VERSION"]
+        )
+
+    @patch("logging.error")
+    def test_transform(self, mock_log: MagicMock):
+        raw_image_info = RawImageInfo(
+            metadata=self.example_metadata,
+            description0=self.example_description0,
+            shape=self.example_shape,
+        )
+
+        etl_job1 = BergamoEtl(
+            input_source=RESOURCES_DIR, output_directory=RESOURCES_DIR
+        )
+        actual_session = etl_job1._transform(raw_image_info)
+        mock_log.assert_called_once_with(
+            "Multiple planes not handled in metadata collection. "
+            "HANDLE ME!!!: KeyError('userZs')"
+        )
