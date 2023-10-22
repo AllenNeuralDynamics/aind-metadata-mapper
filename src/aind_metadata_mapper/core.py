@@ -77,11 +77,11 @@ class BaseEtl(ABC):
     @staticmethod
     def _run_validation_check(model_instance: AindCoreModel) -> None:
         """
-        Check the schema_version in response contents against the
-        schema_version in aind_data_schema.subject
+        Check the response contents against either
+        aind_data_schema.subject or aind_data_schema.procedures.
         Parameters
         ----------
-        model_instance : Subject
+        model_instance : AindCoreModel
           Contents from the service response.
         """
         try:
