@@ -1,0 +1,127 @@
+{
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/session.py",
+   "schema_version": "0.0.1",
+   "experimenter_full_name": [
+      "John Smith",
+      "Jane Smith"
+   ],
+   "session_start_time": "2023-10-10T14:00:00",
+   "session_end_time": "2023-10-10T17:00:00",
+   "session_type": "BCI",
+   "iacuc_protocol": "2115",
+   "rig_id": "Bergamo photostim.",
+   "calibrations": null,
+   "maintenance": null,
+   "subject_id": 12345,
+   "animal_weight_prior": null,
+   "animal_weight_post": null,
+   "weight_unit": "gram",
+   "data_streams": [
+      {
+         "stream_start_time": "2023-10-10T15:00:00",
+         "stream_end_time": "2023-10-10T16:00:00",
+         "stream_modalities": [
+            {
+               "name": "Planar optical physiology",
+               "abbreviation": "ophys"
+            }
+         ],
+         "daq_names": null,
+         "camera_names": [
+            "Side Camera"
+         ],
+         "light_sources": [
+            {
+               "device_type": "Laser",
+               "name": "Laser A",
+               "wavelength": 920,
+               "wavelength_unit": "nanometer",
+               "excitation_power": 15,
+               "excitation_power_unit": "percent"
+            }
+         ],
+         "ephys_modules": null,
+         "manipulator_modules": null,
+         "detectors": [
+            {
+               "name": "PMT A",
+               "exposure_time": 0.1,
+               "exposure_time_unit": "millisecond",
+               "trigger_type": "Internal"
+            }
+         ],
+         "fiber_photometry_assemblies": null,
+         "ophys_fovs": [
+            {
+               "index": 0,
+               "imaging_depth": 150,
+               "imaging_depth_unit": "micrometer",
+               "targeted_structure": "M1",
+               "fov_coordinate_ml": 1.5,
+               "fov_coordinate_ap": 1.5,
+               "fov_coordinate_unit": "micrometer",
+               "fov_reference": "Bregma",
+               "fov_width": 512,
+               "fov_height": 512,
+               "fov_size_unit": "pixel",
+               "magnification": "16x",
+               "fov_scale_factor": 1.2,
+               "fov_scale_factor_unit": "um/pixel",
+               "frame_rate": 30.0119,
+               "frame_rate_unit": "hertz"
+            }
+         ],
+         "stack_parameters": null,
+         "stimulus_device_names": null,
+         "notes": null
+      }
+   ],
+   "stimulus_epochs": [
+      {
+         "stimulus": {
+            "stimulus_type": "PhotoStimulation",
+            "stimulus_name": "PhotoStimulation",
+            "number_groups": 2,
+            "groups": [
+               {
+                  "group_index": 0,
+                  "number_of_neurons": 10,
+                  "stimulation_laser_power": 20,
+                  "stimulation_laser_power_unit": "milliwatt",
+                  "number_trials": 5,
+                  "number_spirals": 10,
+                  "spiral_duration": 0.01,
+                  "spiral_duration_unit": "second",
+                  "inter_spiral_interval": 0.001,
+                  "inter_spiral_interval_unit": "second",
+                  "other_parameters": null,
+                  "notes": null
+               },
+               {
+                  "group_index": 0,
+                  "number_of_neurons": 10,
+                  "stimulation_laser_power": 20,
+                  "stimulation_laser_power_unit": "milliwatt",
+                  "number_trials": 5,
+                  "number_spirals": 10,
+                  "spiral_duration": 0.01,
+                  "spiral_duration_unit": "second",
+                  "inter_spiral_interval": 0.001,
+                  "inter_spiral_interval_unit": "second",
+                  "other_parameters": null,
+                  "notes": null
+               }
+            ],
+            "inter_trial_interval": 10,
+            "inter_trial_interval_unit": "second",
+            "other_parameters": null,
+            "notes": null
+         },
+         "stimulus_start_time": "15:15:00",
+         "stimulus_end_time": "15:45:00"
+      }
+   ],
+   "reward_delivery": null,
+   "stick_microscopes": null,
+   "notes": null
+}

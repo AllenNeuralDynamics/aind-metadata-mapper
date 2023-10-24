@@ -1,13 +1,18 @@
 """Tests parsing of session information from bergamo rig."""
 
+import gzip
+import json
 import os
 import unittest
+from datetime import datetime, time
 from pathlib import Path
-from datetime import datetime
 from unittest.mock import MagicMock, patch
-import gzip
 
-from aind_metadata_mapper.bergamo.session import BergamoEtl, RawImageInfo
+from aind_metadata_mapper.bergamo.session import (
+    BergamoEtl,
+    RawImageInfo,
+    UserSettings,
+)
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__))) / "resources" / "bergamo"
@@ -15,29 +20,48 @@ RESOURCES_DIR = (
 EXAMPLE_MD_PATH = RESOURCES_DIR / "example_metadata.txt.gz"
 EXAMPLE_DES_PATH = RESOURCES_DIR / "example_description0.txt"
 EXAMPLE_IMG_PATH = RESOURCES_DIR / "cropped_neuron50_00001.tif"
+EXPECTED_SESSION = RESOURCES_DIR / "expected_session.json"
 
 
 class TestBergamoEtl(unittest.TestCase):
+    """Test methods in BergamoEtl class."""
+
     @classmethod
     def setUpClass(cls):
-        """Load record object before running tests."""
+        """Load record object and user settings before running tests."""
         with gzip.open(EXAMPLE_MD_PATH, "rt") as f:
             raw_md_contents = f.read()
         with open(EXAMPLE_DES_PATH, "r") as f:
             raw_des0_contents = f.read()
+        with open(EXPECTED_SESSION, "r") as f:
+            expected_session_contents = json.load(f)
         cls.example_metadata = raw_md_contents
         cls.example_description0 = raw_des0_contents
         cls.example_shape = [347, 512, 512]
+        cls.example_user_settings = UserSettings(
+            experimenter_full_name=["John Smith", "Jane Smith"],
+            subject_id="12345",
+            session_start_time=datetime(2023, 10, 10, 14, 0, 0),
+            session_end_time=datetime(2023, 10, 10, 17, 0, 0),
+            stream_start_time=datetime(2023, 10, 10, 15, 0, 0),
+            stream_end_time=datetime(2023, 10, 10, 16, 0, 0),
+            stimulus_start_time=time(15, 15, 0),
+            stimulus_end_time=time(15, 45, 0),
+        )
+        cls.expected_session = expected_session_contents
 
     @patch("aind_metadata_mapper.bergamo.session.ScanImageTiffReader")
     def test_extract(self, mock_reader: MagicMock):
+        """Tests that the raw image info is extracted correcetly."""
         mock_context = mock_reader.return_value.__enter__.return_value
         mock_context.metadata.return_value = self.example_metadata
         mock_context.description.return_value = self.example_description0
         mock_context.shape.return_value = self.example_shape
         # Test extracting where input source is a directory
         etl_job1 = BergamoEtl(
-            input_source=RESOURCES_DIR, output_directory=RESOURCES_DIR
+            input_source=RESOURCES_DIR,
+            output_directory=RESOURCES_DIR,
+            user_settings=self.example_user_settings,
         )
         raw_image_info1 = etl_job1._extract()
         self.assertEqual(2310025, len(raw_image_info1.metadata))
@@ -46,7 +70,9 @@ class TestBergamoEtl(unittest.TestCase):
 
         # Test extracting where input source is a file
         etl_job2 = BergamoEtl(
-            input_source=EXAMPLE_IMG_PATH, output_directory=RESOURCES_DIR
+            input_source=EXAMPLE_IMG_PATH,
+            output_directory=RESOURCES_DIR,
+            user_settings=self.example_user_settings,
         )
         raw_image_info2 = etl_job2._extract()
         self.assertEqual(2310025, len(raw_image_info2.metadata))
@@ -55,7 +81,9 @@ class TestBergamoEtl(unittest.TestCase):
 
         # Test extracting where input source is a str
         etl_job3 = BergamoEtl(
-            input_source=str(EXAMPLE_IMG_PATH), output_directory=RESOURCES_DIR
+            input_source=str(EXAMPLE_IMG_PATH),
+            output_directory=RESOURCES_DIR,
+            user_settings=self.example_user_settings,
         )
         raw_image_info3 = etl_job3._extract()
         self.assertEqual(2310025, len(raw_image_info3.metadata))
@@ -66,6 +94,7 @@ class TestBergamoEtl(unittest.TestCase):
         etl_job4 = BergamoEtl(
             input_source=str(RESOURCES_DIR / ".."),
             output_directory=RESOURCES_DIR,
+            user_settings=self.example_user_settings,
         )
         with self.assertRaises(FileNotFoundError) as e:
             etl_job4._extract()
@@ -74,6 +103,7 @@ class TestBergamoEtl(unittest.TestCase):
         )
 
     def test_flat_dict_to_nested(self):
+        """Test util method to convert dictionaries from flat to nested."""
         original_input = {
             "SI.LINE_FORMAT_VERSION": 1,
             "SI.VERSION_UPDATE": 0,
@@ -113,6 +143,7 @@ class TestBergamoEtl(unittest.TestCase):
 
     @patch("logging.error")
     def test_parse_raw_image_info(self, mock_log: MagicMock):
+        """Tests that raw image info is parsed correctly."""
         raw_image_info = RawImageInfo(
             metadata=self.example_metadata,
             description0=self.example_description0,
@@ -120,7 +151,9 @@ class TestBergamoEtl(unittest.TestCase):
         )
 
         etl_job1 = BergamoEtl(
-            input_source=RESOURCES_DIR, output_directory=RESOURCES_DIR
+            input_source=RESOURCES_DIR,
+            output_directory=RESOURCES_DIR,
+            user_settings=self.example_user_settings,
         )
         actual_parsed_data = etl_job1._parse_raw_image_info(raw_image_info)
         mock_log.assert_called_once_with(
@@ -150,6 +183,7 @@ class TestBergamoEtl(unittest.TestCase):
 
     @patch("logging.error")
     def test_transform(self, mock_log: MagicMock):
+        """Tests raw image info is parsed into a Session object correctly"""
         raw_image_info = RawImageInfo(
             metadata=self.example_metadata,
             description0=self.example_description0,
@@ -157,10 +191,19 @@ class TestBergamoEtl(unittest.TestCase):
         )
 
         etl_job1 = BergamoEtl(
-            input_source=RESOURCES_DIR, output_directory=RESOURCES_DIR
+            input_source=RESOURCES_DIR,
+            output_directory=RESOURCES_DIR,
+            user_settings=self.example_user_settings,
         )
         actual_session = etl_job1._transform(raw_image_info)
+        self.assertEqual(
+            self.expected_session, json.loads(actual_session.json())
+        )
         mock_log.assert_called_once_with(
             "Multiple planes not handled in metadata collection. "
             "HANDLE ME!!!: KeyError('userZs')"
         )
+
+
+if __name__ == "__main__":
+    unittest.main()

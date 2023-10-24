@@ -5,10 +5,9 @@ import logging
 from abc import ABC, abstractmethod
 from os import PathLike
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 
 from aind_data_schema.base import AindCoreModel
-from typing import Union
 from pydantic import validate_model
 
 
