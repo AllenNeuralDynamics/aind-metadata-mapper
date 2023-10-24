@@ -190,7 +190,7 @@ class BergamoEtl(BaseEtl):
 
         roi_metadata = metadata["json"]["RoiGroups"]["imagingRoiGroup"]["rois"]
 
-        if type(roi_metadata) == dict:
+        if isinstance(roi_metadata, dict):
             roi_metadata = [roi_metadata]
         num_rois = len(roi_metadata)
         roi = {}
