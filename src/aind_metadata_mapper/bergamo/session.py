@@ -34,7 +34,8 @@ from aind_metadata_mapper.core import BaseEtl
 
 
 class UserSettings(BaseSettings):
-    """Data that needs to be input by user. Can be pulled from env files"""
+    """Data that needs to be input by user. Can be pulled from env vars with
+    BERGAMO prefix or set explicitly."""
 
     experimenter_full_name: List[str]
     subject_id: str
