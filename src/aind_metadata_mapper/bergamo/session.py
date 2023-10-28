@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, time
 from os import PathLike
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 from aind_data_schema.session import (
@@ -26,14 +26,15 @@ from aind_data_schema.stimulus import (
     PhotoStimulationGroup,
     StimulusEpoch,
 )
+from aind_data_schema.utils.units import PowerUnit, SizeUnit
+from pydantic import BaseSettings, Extra
 from ScanImageTiffReader import ScanImageTiffReader
 
 from aind_metadata_mapper.core import BaseEtl
 
 
-@dataclass(frozen=True)
-class UserSettings:
-    """Data that need to be input by user or pulled from config file"""
+class UserSettings(BaseSettings):
+    """Data that needs to be input by user. Can be pulled from env files"""
 
     experimenter_full_name: List[str]
     subject_id: str
@@ -45,10 +46,40 @@ class UserSettings:
     stimulus_start_time: time
     stimulus_end_time: time
 
-    # Dat that might change but can have default values
+    # Data that might change but can have default values
+    session_type: str = "BCI"
     iacuc_protocol: str = "2115"
     rig_id: str = "Bergamo photostim."
     camera_names: Tuple[str] = ("Side Camera",)
+    laser_a_name: str = "Laser A"
+    laser_a_wavelength: int = 920
+    laser_a_wavelength_unit: SizeUnit = SizeUnit.NM
+    detector_a_name: str = "PMT A"
+    detector_a_exposure_time: float = 0.1
+    detector_a_trigger_type: str = "Internal"
+    fov_0_index: int = 0
+    fov_0_imaging_depth: int = 150
+    fov_0_targeted_structure: str = "M1"
+    fov_0_coordinate_ml: float = 1.5
+    fov_0_coordinate_ap: float = 1.5
+    fov_0_reference: str = "Bregma"
+    fov_0_magnification: str = "16x"
+    photo_stim_inter_trial_interval: int = 10
+    photo_stim_groups: List[Dict[str, int]] = [
+        {"group_index": 0, "number_trials": 5},
+        {"group_index": 0, "number_trials": 5},
+    ]
+
+    @property
+    def num_of_photo_stim_groups(self):
+        """Compute number of photo stimulation groups from list of groups"""
+        return len(self.photo_stim_groups)
+
+    class Config:
+        """Config to set env var prefix to BERGAMO"""
+
+        extra = Extra.forbid
+        env_prefix = "BERGAMO_"
 
 
 @dataclass(frozen=True)
@@ -364,37 +395,39 @@ class BergamoEtl(BaseEtl):
             camera_names=list(self.user_settings.camera_names),
             light_sources=[
                 Laser(
-                    name="Laser A",
-                    wavelength=920,
-                    wavelength_unit="nanometer",
+                    name=self.user_settings.laser_a_name,
+                    wavelength=self.user_settings.laser_a_wavelength,
+                    wavelength_unit=self.user_settings.laser_a_wavelength_unit,
                     excitation_power=int(
                         siHeader.metadata["hBeams"]["powers"][1:-1].split()[0]
                     ),
-                    excitation_power_unit="percent",
+                    excitation_power_unit=PowerUnit.PERCENT,
                 ),
             ],
             detectors=[
                 Detector(
-                    name="PMT A",
-                    exposure_time=0.1,
-                    trigger_type="Internal",
+                    name=self.user_settings.detector_a_name,
+                    exposure_time=self.user_settings.detector_a_exposure_time,
+                    trigger_type=self.user_settings.detector_a_trigger_type,
                 ),
             ],
             ophys_fovs=[
                 FieldOfView(
-                    index=0,
-                    imaging_depth=150,
-                    targeted_structure="M1",
-                    fov_coordinate_ml=1.5,
-                    fov_coordinate_ap=1.5,
-                    fov_reference="Bregma",
+                    index=self.user_settings.fov_0_index,
+                    imaging_depth=self.user_settings.fov_0_imaging_depth,
+                    targeted_structure=(
+                        self.user_settings.fov_0_targeted_structure
+                    ),
+                    fov_coordinate_ml=self.user_settings.fov_0_coordinate_ml,
+                    fov_coordinate_ap=self.user_settings.fov_0_coordinate_ap,
+                    fov_reference=self.user_settings.fov_0_reference,
                     fov_width=int(
                         siHeader.metadata["hRoiManager"]["pixelsPerLine"]
                     ),
                     fov_height=int(
                         siHeader.metadata["hRoiManager"]["linesPerFrame"]
                     ),
-                    magnification="16x",
+                    magnification=self.user_settings.fov_0_magnification,
                     fov_scale_factor=float(
                         siHeader.metadata["hRoiManager"]["scanZoomFactor"]
                     ),
@@ -409,7 +442,7 @@ class BergamoEtl(BaseEtl):
             session_start_time=self.user_settings.session_start_time,
             session_end_time=self.user_settings.session_end_time,
             subject_id=self.user_settings.subject_id,
-            session_type="BCI",
+            session_type=self.user_settings.session_type,
             iacuc_protocol=self.user_settings.iacuc_protocol,
             rig_id=self.user_settings.rig_id,
             data_streams=[data_stream],
@@ -417,10 +450,16 @@ class BergamoEtl(BaseEtl):
                 StimulusEpoch(
                     stimulus=PhotoStimulation(
                         stimulus_name="PhotoStimulation",
-                        number_groups=2,
+                        number_groups=(
+                            self.user_settings.num_of_photo_stim_groups
+                        ),
                         groups=[
                             PhotoStimulationGroup(
-                                group_index=0,
+                                group_index=(
+                                    self.user_settings.photo_stim_groups[0][
+                                        "group_index"
+                                    ]
+                                ),
                                 number_of_neurons=int(
                                     np.array(
                                         photostim_groups[0]["rois"][1][
@@ -433,7 +472,11 @@ class BergamoEtl(BaseEtl):
                                         "scanfields"
                                     ]["powers"]
                                 ),
-                                number_trials=5,
+                                number_trials=(
+                                    self.user_settings.photo_stim_groups[0][
+                                        "number_trials"
+                                    ]
+                                ),
                                 number_spirals=int(
                                     photostim_groups[0]["rois"][1][
                                         "scanfields"
@@ -447,7 +490,11 @@ class BergamoEtl(BaseEtl):
                                 ][2]["scanfields"]["duration"],
                             ),
                             PhotoStimulationGroup(
-                                group_index=0,
+                                group_index=(
+                                    self.user_settings.photo_stim_groups[1][
+                                        "group_index"
+                                    ]
+                                ),
                                 number_of_neurons=int(
                                     np.array(
                                         photostim_groups[0]["rois"][1][
@@ -460,7 +507,11 @@ class BergamoEtl(BaseEtl):
                                         "scanfields"
                                     ]["powers"]
                                 ),
-                                number_trials=5,
+                                number_trials=(
+                                    self.user_settings.photo_stim_groups[1][
+                                        "number_trials"
+                                    ]
+                                ),
                                 number_spirals=int(
                                     photostim_groups[0]["rois"][1][
                                         "scanfields"
@@ -474,7 +525,9 @@ class BergamoEtl(BaseEtl):
                                 ][2]["scanfields"]["duration"],
                             ),
                         ],
-                        inter_trial_interval=10,
+                        inter_trial_interval=(
+                            self.user_settings.photo_stim_inter_trial_interval
+                        ),
                     ),
                     stimulus_start_time=(
                         self.user_settings.stimulus_start_time
