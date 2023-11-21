@@ -1,0 +1,397 @@
+{
+    "additional_devices": null,
+    "calibrations": [],
+    "cameras": [
+        {
+            "camera": {
+                "chroma": "Monochrome",
+                "computer_name": "W10DT714046",
+                "data_interface": "Ethernet",
+                "device_type": "Camera",
+                "driver": null,
+                "driver_version": null,
+                "format_unit": null,
+                "frame_rate_unit": "hertz",
+                "manufacturer": "ALLIED",
+                "model": null,
+                "notes": null,
+                "recording_software": null,
+                "sensor_format": null,
+                "serial_number": "50-0536905703"
+            },
+            "camera_assembly_name": "Face side",
+            "camera_target": "Face side",
+            "filter": null,
+            "lens": {
+                "device_type": "Lens",
+                "focal_length": 8.5,
+                "focal_length_unit": "millimeter",
+                "lens_size_unit": "inch",
+                "manufacturer": "EDMUND_OPTICS",
+                "max_aperture": null,
+                "model": null,
+                "name": null,
+                "notes": "Serial # or model # is 86604.",
+                "optimized_wavelength_range": null,
+                "serial_number": null,
+                "size": null,
+                "wavelength_unit": "nanometer"
+            },
+            "position": null
+        },
+        {
+            "camera": {
+                "chroma": "Monochrome",
+                "computer_name": "W10DT714046",
+                "data_interface": "Ethernet",
+                "device_type": "Camera",
+                "driver": null,
+                "driver_version": null,
+                "format_unit": null,
+                "frame_rate_unit": "hertz",
+                "manufacturer": "ALLIED",
+                "model": null,
+                "notes": null,
+                "recording_software": null,
+                "sensor_format": null,
+                "serial_number": "50-0536876074"
+            },
+            "camera_assembly_name": "Behavior",
+            "camera_target": "Body",
+            "filter": null,
+            "lens": {
+                "device_type": "Lens",
+                "focal_length": 6.0,
+                "focal_length_unit": "millimeter",
+                "lens_size_unit": "inch",
+                "manufacturer": "NAVITAR",
+                "max_aperture": null,
+                "model": null,
+                "name": null,
+                "notes": null,
+                "optimized_wavelength_range": null,
+                "serial_number": null,
+                "size": null,
+                "wavelength_unit": "nanometer"
+            },
+            "position": null
+        },
+        {
+            "camera": {
+                "chroma": "Monochrome",
+                "computer_name": "W10DT714046",
+                "data_interface": "Ethernet",
+                "device_type": "Camera",
+                "driver": null,
+                "driver_version": null,
+                "format_unit": null,
+                "frame_rate_unit": "hertz",
+                "manufacturer": "ALLIED",
+                "model": null,
+                "notes": null,
+                "recording_software": null,
+                "sensor_format": null,
+                "serial_number": "50-0536905703"
+            },
+            "camera_assembly_name": "Eye",
+            "camera_target": "Eye",
+            "filter": null,
+            "lens": {
+                "device_type": "Lens",
+                "focal_length": 6.0,
+                "focal_length_unit": "millimeter",
+                "lens_size_unit": "inch",
+                "manufacturer": "INFINITY_PHOTO_OPTICAL",
+                "max_aperture": null,
+                "model": null,
+                "name": null,
+                "notes": null,
+                "optimized_wavelength_range": null,
+                "serial_number": null,
+                "size": null,
+                "wavelength_unit": "nanometer"
+            },
+            "position": null
+        }
+    ],
+    "ccf_coordinate_transform": null,
+    "daqs": [
+        {
+            "computer_name": "w10dtsm18307",
+            "data_interface": "USB",
+            "device_type": "DAQ Device",
+            "manufacturer": "NATIONAL_INSTRUMENTS",
+            "model": null,
+            "name": "Sync",
+            "notes": null,
+            "serial_number": null
+        }
+    ],
+    "detectors": null,
+    "digital_micromirror_devices": null,
+    "ephys_assemblies": [
+        {
+            "ephys_assembly_name": "A",
+            "manipulator": {
+                "device_type": "Manipulator",
+                "manufacturer": "NEW_SCALE_TECHNOLOGIES",
+                "model": null,
+                "name": null,
+                "notes": null,
+                "serial_number": null
+            },
+            "probes": [
+                {
+                    "device_type": "Ephys probe",
+                    "headstage": null,
+                    "lasers": null,
+                    "manufacturer": null,
+                    "model": null,
+                    "name": null,
+                    "notes": null,
+                    "probe_model": "Neuropixels 1.0",
+                    "serial_number": null
+                }
+            ]
+        },
+        {
+            "ephys_assembly_name": "B",
+            "manipulator": {
+                "device_type": "Manipulator",
+                "manufacturer": "NEW_SCALE_TECHNOLOGIES",
+                "model": null,
+                "name": null,
+                "notes": null,
+                "serial_number": null
+            },
+            "probes": [
+                {
+                    "device_type": "Ephys probe",
+                    "headstage": null,
+                    "lasers": null,
+                    "manufacturer": null,
+                    "model": null,
+                    "name": null,
+                    "notes": null,
+                    "probe_model": "Neuropixels 1.0",
+                    "serial_number": null
+                }
+            ]
+        },
+        {
+            "ephys_assembly_name": "C",
+            "manipulator": {
+                "device_type": "Manipulator",
+                "manufacturer": "NEW_SCALE_TECHNOLOGIES",
+                "model": null,
+                "name": null,
+                "notes": null,
+                "serial_number": null
+            },
+            "probes": [
+                {
+                    "device_type": "Ephys probe",
+                    "headstage": null,
+                    "lasers": null,
+                    "manufacturer": null,
+                    "model": null,
+                    "name": null,
+                    "notes": null,
+                    "probe_model": "Neuropixels 1.0",
+                    "serial_number": null
+                }
+            ]
+        },
+        {
+            "ephys_assembly_name": "D",
+            "manipulator": {
+                "device_type": "Manipulator",
+                "manufacturer": "NEW_SCALE_TECHNOLOGIES",
+                "model": null,
+                "name": null,
+                "notes": null,
+                "serial_number": null
+            },
+            "probes": [
+                {
+                    "device_type": "Ephys probe",
+                    "headstage": null,
+                    "lasers": null,
+                    "manufacturer": null,
+                    "model": null,
+                    "name": null,
+                    "notes": null,
+                    "probe_model": "Neuropixels 1.0",
+                    "serial_number": null
+                }
+            ]
+        },
+        {
+            "ephys_assembly_name": "E",
+            "manipulator": {
+                "device_type": "Manipulator",
+                "manufacturer": "NEW_SCALE_TECHNOLOGIES",
+                "model": null,
+                "name": null,
+                "notes": null,
+                "serial_number": null
+            },
+            "probes": [
+                {
+                    "device_type": "Ephys probe",
+                    "headstage": null,
+                    "lasers": null,
+                    "manufacturer": null,
+                    "model": null,
+                    "name": null,
+                    "notes": null,
+                    "probe_model": "Neuropixels 1.0",
+                    "serial_number": null
+                }
+            ]
+        },
+        {
+            "ephys_assembly_name": "F",
+            "manipulator": {
+                "device_type": "Manipulator",
+                "manufacturer": "NEW_SCALE_TECHNOLOGIES",
+                "model": null,
+                "name": null,
+                "notes": null,
+                "serial_number": null
+            },
+            "probes": [
+                {
+                    "device_type": "Ephys probe",
+                    "headstage": null,
+                    "lasers": null,
+                    "manufacturer": null,
+                    "model": null,
+                    "name": null,
+                    "notes": null,
+                    "probe_model": "Neuropixels 1.0",
+                    "serial_number": null
+                }
+            ]
+        }
+    ],
+    "fiber_assemblies": null,
+    "filters": null,
+    "laser_assemblies": [
+        {
+            "laser_assembly_name": "Laser assembly",
+            "lasers": [
+                {
+                    "coupling": null,
+                    "coupling_efficiency": null,
+                    "coupling_efficiency_unit": "percent",
+                    "device_type": "Laser",
+                    "item_number": null,
+                    "manufacturer": "VORTRAN",
+                    "maximum_power": null,
+                    "model": null,
+                    "name": null,
+                    "notes": null,
+                    "power_unit": "milliwatt",
+                    "serial_number": null,
+                    "wavelength": 488,
+                    "wavelength_unit": "nanometer"
+                },
+                {
+                    "coupling": null,
+                    "coupling_efficiency": null,
+                    "coupling_efficiency_unit": "percent",
+                    "device_type": "Laser",
+                    "item_number": null,
+                    "manufacturer": "VORTRAN",
+                    "maximum_power": null,
+                    "model": null,
+                    "name": null,
+                    "notes": null,
+                    "power_unit": "milliwatt",
+                    "serial_number": null,
+                    "wavelength": 633,
+                    "wavelength_unit": "nanometer"
+                }
+            ],
+            "manipulator": {
+                "device_type": "Manipulator",
+                "manufacturer": "NEW_SCALE_TECHNOLOGIES",
+                "model": null,
+                "name": null,
+                "notes": null,
+                "serial_number": null
+            }
+        }
+    ],
+    "lenses": null,
+    "light_sources": [
+        {
+            "manufacturer": "Other",
+            "notes": "The wavelength value for this LED is unknown and is a placeholder.",
+            "wavelength": 1
+        },
+        {
+            "manufacturer": "Other",
+            "notes": "The wavelength value for this LED is unknown and is a placeholder.",
+            "wavelength": 800
+        }
+    ],
+    "modalities": [
+        "behavior-videos",
+        "trained-behavior",
+        "ecephys"
+    ],
+    "modification_date": "2023-11-13",
+    "mouse_platform": {
+        "date_surface_replaced": null,
+        "decoder": null,
+        "device_type": "Disc",
+        "encoder": null,
+        "encoder_firmware": null,
+        "manufacturer": null,
+        "model": null,
+        "name": null,
+        "notes": null,
+        "output": null,
+        "radius": 16.5,
+        "radius_unit": "millimeter",
+        "serial_number": null,
+        "surface_material": null
+    },
+    "notes": null,
+    "objectives": null,
+    "patch_cords": null,
+    "pockels_cells": null,
+    "polygonal_scanners": null,
+    "rig_id": "NP.2",
+    "stick_microscopes": [],
+    "stimulus_devices": [
+        {
+            "brightness": 0,
+            "contrast": 0,
+            "device_type": "Monitor",
+            "height": 1200,
+            "manufacturer": "ASUS",
+            "model": null,
+            "name": null,
+            "notes": null,
+            "position": null,
+            "refresh_rate": 60,
+            "serial_number": null,
+            "size_unit": "pixel",
+            "viewing_distance": 10.0,
+            "viewing_distance_unit": "centimeter",
+            "width": 1920
+        },
+        {
+            "device_type": "Speaker",
+            "manufacturer": "ISL",
+            "model": null,
+            "name": null,
+            "notes": null,
+            "position": null,
+            "serial_number": null
+        }
+    ]
+}
