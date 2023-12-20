@@ -82,7 +82,6 @@ class SchemaWriter:
         # maps stimulus_name from command
         command = command_match.group(1)
         stimulus_name = getattr(StimulusName, command, "")
-        print("stimulus", stimulus_name)
 
         # create opto stim instance
         opto_stim = OptoStimulation(

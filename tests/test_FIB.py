@@ -87,17 +87,13 @@ class TestSchemaWriter(unittest.TestCase):
 
             with open(ophys_session_path, "r") as f:
                 actual_session_contents = json.load(f)
-            print(
-                actual_session_contents["stimulus_epochs"][0]["stimulus"][
-                    "stimulus_name"
-                ]
-            )
             self.assertEqual(
                 actual_session_contents["stimulus_epochs"][0]["stimulus"][
                     "stimulus_name"
                 ],
                 stimulus_name,
             )
+            os.remove(ophys_session_path)
 
     def test_map_to_ophys_rig(self):
         """Tests that the teensy response maps correctly to ophys rig."""
@@ -110,17 +106,13 @@ class TestSchemaWriter(unittest.TestCase):
             reference_path=RESOURCES_DIR,
         )
 
-        # ophys_rig_path = (
-        #     self.example_experiment_data["save_dir"]
-        #     + f"/{self.example_experiment_data['labtracks_id']}_"
-        #     + start_date.strftime("%Y-%m-%d_%H-%M-%S")
-        #     + "_ophys_rig.json"
-        # )
-
-        # with open(ophys_rig_path, "r") as f:
-        #     actual_rig_contents = json.load(f)
-        #
-        # self.assertEqual(actual_rig_contents, self.expected_rig)
+        ophys_rig_path = (
+            self.example_experiment_data["save_dir"]
+            + f"/{self.example_experiment_data['labtracks_id']}_"
+            + start_date.strftime("%Y-%m-%d_%H-%M-%S")
+            + "_ophys_rig.json"
+        )
+        os.remove(ophys_rig_path)
 
 
 if __name__ == "__main__":

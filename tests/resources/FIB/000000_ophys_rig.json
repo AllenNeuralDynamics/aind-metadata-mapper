@@ -443,7 +443,7 @@
          "model": null,
          "path_to_cad": null,
          "notes": null,
-         "type": "Tunable lens"
+         "type": "Other"
       },
       {
          "device_type": "AdditionalImagingDevice",
@@ -458,7 +458,7 @@
          "model": null,
          "path_to_cad": null,
          "notes": null,
-         "type": "Tunable lens"
+         "type": "Other"
       }
    ],
    "calibration_date": null,
