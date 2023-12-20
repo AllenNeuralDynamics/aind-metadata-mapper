@@ -3,17 +3,8 @@
 import datetime
 import json
 import re
-import sys
 from enum import Enum
 from pathlib import Path
-
-if sys.version_info < (3, 11):
-
-    class StrEnum(str, Enum):
-        pass
-
-else:
-    from enum import StrEnum
 
 from aind_data_schema.core.instrument import Instrument
 from aind_data_schema.core.session import Session
@@ -23,11 +14,21 @@ from aind_data_schema.models.stimulus import (
     StimulusEpoch,
 )
 
+
+class StrEnum(str, Enum):
+    """Base class for creating enumerated constants that are
+    also subclasses of str"""
+
+    pass
+
+
 SRC_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = SRC_DIR.parent
 
 
 class StimulusName(StrEnum):
+    """maps stimulus_name based on command"""
+
     o = "OptoStim10Hz"
     p = "OptoStim20Hz"
     q = "OptoStim5Hz"

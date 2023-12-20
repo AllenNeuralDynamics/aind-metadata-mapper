@@ -13,7 +13,6 @@ RESOURCES_DIR = (
 )
 EXAMPLE_MD_PATH = RESOURCES_DIR / "example_from_teensy.txt"
 EXPECTED_SESSION = RESOURCES_DIR / "000000_ophys_session.json"
-# EXPECTED_RIG = RESOURCES_DIR / "000000_ophys_rig.json"
 
 
 class TestSchemaWriter(unittest.TestCase):
@@ -52,12 +51,9 @@ class TestSchemaWriter(unittest.TestCase):
             raw_md_contents = f.read()
         with open(EXPECTED_SESSION, "r") as f:
             expected_session_contents = json.load(f)
-        # with open(EXPECTED_RIG, "r") as f:
-        #     expected_rig_contents = json.load(f)
 
         cls.expected_session = expected_session_contents
         cls.example_metadata = raw_md_contents
-        # cls.expected_rig = expected_rig_contents
 
     def test_map_response_to_ophys_session(self):
         """Tests that the teensy response maps correctly to ophys session."""
