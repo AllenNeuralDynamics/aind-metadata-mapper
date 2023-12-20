@@ -1,18 +1,22 @@
 """Module to write valid OptoStim and Subject schemas"""
 
-import shutil
-from aind_data_schema.models.stimulus import OptoStimulation, PulseShape, StimulusEpoch
-from aind_data_schema.models.devices import LightEmittingDiode
-from aind_data_schema.core.session import Session
-from typing import Optional
-import re
 import datetime
+import re
+import shutil
 from pathlib import Path
+from typing import Optional
+import json
 
+from aind_data_schema.core.session import Session
+from aind_data_schema.models.devices import LightEmittingDiode, SizeUnit, Manufacturer
+from aind_data_schema.models.stimulus import (
+    OptoStimulation,
+    PulseShape,
+    StimulusEpoch,
+)
+from aind_data_schema.core.instrument import Instrument
 SRC_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = SRC_DIR.parent
-RIGS_DIR = PROJECT_DIR / 'resources' / 'rigs'
-
 
 class SchemaWriter:
     """This class contains the methods to write OphysScreening data"""
@@ -20,6 +24,7 @@ class SchemaWriter:
     @staticmethod
     def _map_stimulus_name(command: str) -> Optional[str]:
         """maps stimulus_name based on command"""
+
         if command == "o":
             stimulus_name = "OptoStim10Hz"
         elif command == "p":
@@ -30,18 +35,23 @@ class SchemaWriter:
             stimulus_name = None
         return stimulus_name
 
-    def map_response_to_ophys_session(self, string_to_parse: str, experiment_data: dict, start_datetime: datetime):
+    def map_response_to_ophys_session(
+        self,
+        string_to_parse: str,
+        experiment_data: dict,
+        start_datetime: datetime,
+    ):
         """Parses params from teensy string and creates ophys session model"""
         # Process data from dictionary keys
-        labtracks_id = experiment_data['labtracks_id']
-        iacuc_protocol = experiment_data['iacuc']
-        rig_id = experiment_data['rig_id']
-        experimenter_full_name = experiment_data['experimenter_name']
-        output_path = experiment_data['save_dir']
-        light_source_list = experiment_data['light_source']
-        excitation_power_list = experiment_data['light_excitation_power']
-        session_type = experiment_data['session_type']
-        notes = experiment_data['notes']
+        labtracks_id = experiment_data["labtracks_id"]
+        iacuc_protocol = experiment_data["iacuc"]
+        rig_id = experiment_data["rig_id"]
+        experimenter_full_name = experiment_data["experimenter_name"]
+        output_path = experiment_data["save_dir"]
+        light_source_list = experiment_data["light_source"]
+        excitation_power_list = experiment_data["light_excitation_power"]
+        session_type = experiment_data["session_type"]
+        notes = experiment_data["notes"]
 
         # Define regular expressions to extract the values
         command_regex = r"Received command (\w)"
@@ -82,62 +92,85 @@ class SchemaWriter:
             pulse_width=pulse_width,
             pulse_train_duration=opto_duration,
             pulse_train_interval=opto_interval,
-            baseline_duration=opto_base
+            baseline_duration=opto_base,
+            fixed_pulse_train_interval=True     #TODO: Check this is right
         )
 
         # create stimulus presentation instance
-        experiment_duration = opto_base + opto_duration + (opto_interval*trial_num)
-        end_datetime = start_datetime + datetime.timedelta(seconds=experiment_duration)
-        stimulus_presentation = StimulusEpoch(
+        experiment_duration = (
+            opto_base + opto_duration + (opto_interval * trial_num)
+        )
+        end_datetime = start_datetime + datetime.timedelta(
+            seconds=experiment_duration
+        )
+        stimulus_epochs = StimulusEpoch(
             stimulus=opto_stim,
-            start_time=start_datetime.time(),
-            end_time=end_datetime.time()
-
+            stimulus_start_time=start_datetime,
+            stimulus_end_time=end_datetime,
         )
 
         # create light source instance
-        light_source=[]
+        light_source = []
         for ls in light_source_list:
             for ep in excitation_power_list:
                 diode = LightEmittingDiode(
                     name=ls,
-                    excitation_power=ep,
+                    wavelength = ls[0:ls.find('nm')],
+                    wavelength_unit=SizeUnit.NM,
+                    manufacturer = Manufacturer.OTHER   #TODO: Find out what manufacturer and add unit to list
                 )
                 light_source.append(diode)
 
         # and finally, create ophys session
         ophys_session = Session(
-            stimulus_presentations=[stimulus_presentation],
+            stimulus_epochs=[stimulus_epochs],
             subject_id=labtracks_id,
             iacuc_protocol=iacuc_protocol,
             session_start_time=start_datetime,
             session_end_time=end_datetime,
             rig_id=rig_id,
             experimenter_full_name=experimenter_full_name,
-            light_sources=light_source,
             session_type=session_type,
             notes=notes,
+            data_streams = []
         )
 
         # write to ophys session json
-        ophys_session_path = str(output_path + f"/{labtracks_id}_" + start_datetime.strftime('%Y-%m-%d_%H-%M-%S') + "_ophys_session.json")
+        ophys_session_path = str(
+            output_path
+            + f"/{labtracks_id}_"
+            + start_datetime.strftime("%Y-%m-%d_%H-%M-%S")
+            + "_ophys_session.json"
+        )
 
         with open(ophys_session_path, "w") as f:
-            f.write(ophys_session.json(indent=3))
+            f.write(ophys_session.model_dump_json(indent=3))
             print(f"Saved session file to {ophys_session_path}")
 
     @staticmethod
-    def map_to_ophys_rig(experiment_data: dict, start_datetime: datetime):
+    def map_to_ophys_rig(experiment_data: dict, start_datetime: datetime, reference_path:Path):
         """Exports ophys rig based on rig id"""
-        rig_id = experiment_data['rig_id']
-        output_path = experiment_data['save_dir']
-        labtracks_id = experiment_data['labtracks_id']
+
+        rig_id = experiment_data["rig_id"]
+        output_path = experiment_data["save_dir"]
+        labtracks_id = experiment_data["labtracks_id"]
         file_pattern = f"*{rig_id}*"
-        matching_files = RIGS_DIR.glob(file_pattern)
+        matching_files = list(reference_path.glob(file_pattern))
         print("Log matching files: ", matching_files)
 
         # saves copy of ophys rig, renames with labtracks id
-        for file_path in matching_files:
-            ophys_rig_path = output_path + f"/{labtracks_id}_" + start_datetime.strftime('%Y-%m-%d_%H-%M-%S') + "_ophys_rig.json"
-            shutil.copy(str(file_path), ophys_rig_path)
+        for file_path in list(matching_files):
+            print('in matching files')
+            ophys_rig_path = (
+                output_path
+                + f"/{labtracks_id}_"
+                + start_datetime.strftime("%Y-%m-%d_%H-%M-%S")
+                + "_ophys_rig.json"
+            )
+            with open(file_path, "r") as f:
+                instrument_json = f.read()
+            inst = Instrument(**json.loads(instrument_json))
+            with open(ophys_rig_path, "w") as f:
+                f.write(inst.model_dump_json(indent=3))
             print(f"Saved rig file to {ophys_rig_path}")
+
