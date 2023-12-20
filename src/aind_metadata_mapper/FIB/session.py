@@ -1,22 +1,27 @@
 """Module to write valid OptoStim and Subject schemas"""
 
 import datetime
+import json
 import re
-import shutil
 from pathlib import Path
 from typing import Optional
-import json
 
+from aind_data_schema.core.instrument import Instrument
 from aind_data_schema.core.session import Session
-from aind_data_schema.models.devices import LightEmittingDiode, SizeUnit, Manufacturer
+from aind_data_schema.models.devices import (
+    LightEmittingDiode,
+    Manufacturer,
+    SizeUnit,
+)
 from aind_data_schema.models.stimulus import (
     OptoStimulation,
     PulseShape,
     StimulusEpoch,
 )
-from aind_data_schema.core.instrument import Instrument
+
 SRC_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = SRC_DIR.parent
+
 
 class SchemaWriter:
     """This class contains the methods to write OphysScreening data"""
@@ -93,7 +98,7 @@ class SchemaWriter:
             pulse_train_duration=opto_duration,
             pulse_train_interval=opto_interval,
             baseline_duration=opto_base,
-            fixed_pulse_train_interval=True     #TODO: Check this is right
+            fixed_pulse_train_interval=True,  # TODO: Check this is right
         )
 
         # create stimulus presentation instance
@@ -115,9 +120,10 @@ class SchemaWriter:
             for ep in excitation_power_list:
                 diode = LightEmittingDiode(
                     name=ls,
-                    wavelength = ls[0:ls.find('nm')],
+                    wavelength=ls[0: ls.find("nm")],
                     wavelength_unit=SizeUnit.NM,
-                    manufacturer = Manufacturer.OTHER   #TODO: Find out what manufacturer and add unit to list
+                    manufacturer=Manufacturer.OTHER,
+                    # TODO: Find out what manufacturer and add unit to list
                 )
                 light_source.append(diode)
 
@@ -132,7 +138,7 @@ class SchemaWriter:
             experimenter_full_name=experimenter_full_name,
             session_type=session_type,
             notes=notes,
-            data_streams = []
+            data_streams=[],
         )
 
         # write to ophys session json
@@ -148,7 +154,9 @@ class SchemaWriter:
             print(f"Saved session file to {ophys_session_path}")
 
     @staticmethod
-    def map_to_ophys_rig(experiment_data: dict, start_datetime: datetime, reference_path:Path):
+    def map_to_ophys_rig(
+        experiment_data: dict, start_datetime: datetime, reference_path: Path
+    ):
         """Exports ophys rig based on rig id"""
 
         rig_id = experiment_data["rig_id"]
@@ -160,7 +168,7 @@ class SchemaWriter:
 
         # saves copy of ophys rig, renames with labtracks id
         for file_path in list(matching_files):
-            print('in matching files')
+            print("in matching files")
             ophys_rig_path = (
                 output_path
                 + f"/{labtracks_id}_"
@@ -173,4 +181,3 @@ class SchemaWriter:
             with open(ophys_rig_path, "w") as f:
                 f.write(inst.model_dump_json(indent=3))
             print(f"Saved rig file to {ophys_rig_path}")
-
