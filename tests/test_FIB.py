@@ -59,38 +59,49 @@ class TestSchemaWriter(unittest.TestCase):
         cls.example_metadata = raw_md_contents
         # cls.expected_rig = expected_rig_contents
 
-    def test_map_stimulus_name(self):
-        """Tests that the stimulus name is mapped correctly."""
-
-        original_input = ["o", "p", "q", "l"]
-        expected_output = ["OptoStim10Hz", "OptoStim20Hz", "OptoStim5Hz", None]
-
-        for command, stimulus_name in zip(original_input, expected_output):
-            actual_output = SchemaWriter._map_stimulus_name(command)
-            self.assertEqual(stimulus_name, actual_output)
-
     def test_map_response_to_ophys_session(self):
         """Tests that the teensy response maps correctly to ophys session."""
 
         start_date = datetime.now()
-        schema_writer_1 = SchemaWriter()
-        schema_writer_1.map_response_to_ophys_session(
-            string_to_parse=self.example_metadata,
-            experiment_data=self.example_experiment_data,
-            start_datetime=start_date,
-        )
 
-        # ophys_session_path = str(
-        #     self.example_experiment_data["save_dir"]
-        #     + f"/{self.example_experiment_data['labtracks_id']}_"
-        #     + start_date.strftime("%Y-%m-%d_%H-%M-%S")
-        #     + "_ophys_session.json"
-        # )
+        original_input = ["o", "p", "q", "l"]
+        expected_output = ["OptoStim10Hz", "OptoStim20Hz", "OptoStim5Hz", ""]
 
-        # with open(ophys_session_path, "r") as f:
-        #     actual_session_contents = json.load(f)
-        #
-        # self.assertEqual(actual_session_contents, self.expected_session)
+        for command, stimulus_name in zip(original_input, expected_output):
+            command_index = self.example_metadata.index(
+                "Received command "
+            ) + len("Received command ")
+            new_metadata = (
+                self.example_metadata[:command_index]
+                + command
+                + self.example_metadata[command_index + 1:]
+            )
+            SchemaWriter.map_response_to_ophys_session(
+                string_to_parse=new_metadata,
+                experiment_data=self.example_experiment_data,
+                start_datetime=start_date,
+            )
+
+            ophys_session_path = str(
+                self.example_experiment_data["save_dir"]
+                + f"/{self.example_experiment_data['labtracks_id']}_"
+                + start_date.strftime("%Y-%m-%d_%H-%M-%S")
+                + "_ophys_session.json"
+            )
+
+            with open(ophys_session_path, "r") as f:
+                actual_session_contents = json.load(f)
+            print(
+                actual_session_contents["stimulus_epochs"][0]["stimulus"][
+                    "stimulus_name"
+                ]
+            )
+            self.assertEqual(
+                actual_session_contents["stimulus_epochs"][0]["stimulus"][
+                    "stimulus_name"
+                ],
+                stimulus_name,
+            )
 
     def test_map_to_ophys_rig(self):
         """Tests that the teensy response maps correctly to ophys rig."""

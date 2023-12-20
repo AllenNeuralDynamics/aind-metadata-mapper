@@ -1,0 +1,49 @@
+{
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/session.py",
+   "schema_version": "0.1.0",
+   "experimenter_full_name": [
+      "Lucas Kinsey",
+      "Kenta Hagihara"
+   ],
+   "session_start_time": "2023-12-20T08:08:30.933424",
+   "session_end_time": "2023-12-20T08:09:18.933424",
+   "session_type": "Foraging_Photometry",
+   "iacuc_protocol": "2115",
+   "rig_id": "ophys_rig",
+   "calibrations": [],
+   "maintenance": [],
+   "subject_id": "000000",
+   "animal_weight_prior": null,
+   "animal_weight_post": null,
+   "weight_unit": "gram",
+   "data_streams": [],
+   "stimulus_epochs": [
+      {
+         "stimulus": {
+            "stimulus_type": "OptoStimulation",
+            "stimulus_name": "OptoStim5Hz",
+            "pulse_shape": "Square",
+            "pulse_frequency": 10,
+            "pulse_frequency_unit": "hertz",
+            "number_pulse_trains": 2,
+            "pulse_width": 5000,
+            "pulse_width_unit": "millisecond",
+            "pulse_train_duration": "2.0",
+            "pulse_train_duration_unit": "second",
+            "fixed_pulse_train_interval": true,
+            "pulse_train_interval": "18.0",
+            "pulse_train_interval_unit": "second",
+            "baseline_duration": "10.0",
+            "baseline_duration_unit": "second",
+            "other_parameters": {},
+            "notes": null
+         },
+         "stimulus_start_time": "2023-12-20T08:08:30.933424",
+         "stimulus_end_time": "2023-12-20T08:09:18.933424"
+      }
+   ],
+   "reward_delivery": null,
+   "reward_consumed_total": null,
+   "reward_consumed_unit": "microliter",
+   "notes": "brabrabrabra...."
+}

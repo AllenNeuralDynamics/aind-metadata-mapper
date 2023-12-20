@@ -3,16 +3,20 @@
 import datetime
 import json
 import re
+import sys
+from enum import Enum
 from pathlib import Path
-from typing import Optional
+
+if sys.version_info < (3, 11):
+
+    class StrEnum(str, Enum):
+        pass
+
+else:
+    from enum import StrEnum
 
 from aind_data_schema.core.instrument import Instrument
 from aind_data_schema.core.session import Session
-from aind_data_schema.models.devices import (
-    LightEmittingDiode,
-    Manufacturer,
-    SizeUnit,
-)
 from aind_data_schema.models.stimulus import (
     OptoStimulation,
     PulseShape,
@@ -23,25 +27,17 @@ SRC_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = SRC_DIR.parent
 
 
+class StimulusName(StrEnum):
+    o = "OptoStim10Hz"
+    p = "OptoStim20Hz"
+    q = "OptoStim5Hz"
+
+
 class SchemaWriter:
     """This class contains the methods to write OphysScreening data"""
 
     @staticmethod
-    def _map_stimulus_name(command: str) -> Optional[str]:
-        """maps stimulus_name based on command"""
-
-        if command == "o":
-            stimulus_name = "OptoStim10Hz"
-        elif command == "p":
-            stimulus_name = "OptoStim20Hz"
-        elif command == "q":
-            stimulus_name = "OptoStim5Hz"
-        else:
-            stimulus_name = None
-        return stimulus_name
-
     def map_response_to_ophys_session(
-        self,
         string_to_parse: str,
         experiment_data: dict,
         start_datetime: datetime,
@@ -53,8 +49,6 @@ class SchemaWriter:
         rig_id = experiment_data["rig_id"]
         experimenter_full_name = experiment_data["experimenter_name"]
         output_path = experiment_data["save_dir"]
-        light_source_list = experiment_data["light_source"]
-        excitation_power_list = experiment_data["light_excitation_power"]
         session_type = experiment_data["session_type"]
         notes = experiment_data["notes"]
 
@@ -86,7 +80,8 @@ class SchemaWriter:
 
         # maps stimulus_name from command
         command = command_match.group(1)
-        stimulus_name = self._map_stimulus_name(command)
+        stimulus_name = getattr(StimulusName, command, "")
+        print("stimulus", stimulus_name)
 
         # create opto stim instance
         opto_stim = OptoStimulation(
@@ -113,19 +108,6 @@ class SchemaWriter:
             stimulus_start_time=start_datetime,
             stimulus_end_time=end_datetime,
         )
-
-        # create light source instance
-        light_source = []
-        for ls in light_source_list:
-            for ep in excitation_power_list:
-                diode = LightEmittingDiode(
-                    name=ls,
-                    wavelength=ls[0: ls.find("nm")],
-                    wavelength_unit=SizeUnit.NM,
-                    manufacturer=Manufacturer.OTHER,
-                    # TODO: Find out what manufacturer and add unit to list
-                )
-                light_source.append(diode)
 
         # and finally, create ophys session
         ophys_session = Session(
@@ -166,9 +148,9 @@ class SchemaWriter:
         matching_files = list(reference_path.glob(file_pattern))
         print("Log matching files: ", matching_files)
 
-        # saves copy of ophys rig, renames with labtracks id
+        # creates new instrument json based on local version and
+        # renames with labtracks id
         for file_path in list(matching_files):
-            print("in matching files")
             ophys_rig_path = (
                 output_path
                 + f"/{labtracks_id}_"
