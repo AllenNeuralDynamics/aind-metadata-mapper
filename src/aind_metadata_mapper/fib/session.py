@@ -187,6 +187,7 @@ class FIBEtl(BaseEtl):
         return ophys_session
 
     def _extract(self) -> ParsedInformation:
+        """Extract metadata from fib session."""
         return ParsedInformation(
             teensy_str=self.teensy_str,
             experiment_data=self.experiment_data,
