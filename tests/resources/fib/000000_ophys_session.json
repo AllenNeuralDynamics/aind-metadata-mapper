@@ -1,44 +1,108 @@
 {
-   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/ophys/ophys_session.py",
-   "schema_version": "0.2.3",
-   "experimenter_full_name": "[enter name]",
-   "session_start_time": "2023-06-21T15:10:23.147770",
-   "session_end_time": "2023-06-21T15:11:11.147770",
-   "subject_id": "000000",
-   "session_type": "SensorScreening_OptoStim",
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/session.py",
+   "schema_version": "0.1.0",
+   "experimenter_full_name": [
+      "john doe"
+   ],
+   "session_start_time": "1999-10-04T00:00:00",
+   "session_end_time": "1999-10-04T00:00:48",
+   "session_type": "Foraging_Photometry",
    "iacuc_protocol": "2115",
-   "rig_id": "428_FIP1_2",
-   "light_sources": [
+   "rig_id": "ophys_rig",
+   "calibrations": [],
+   "maintenance": [],
+   "subject_id": "000000",
+   "animal_weight_prior": null,
+   "animal_weight_post": null,
+   "weight_unit": "gram",
+   "data_streams": [
       {
-         "name": "Prizmatix_620nm",
-         "excitation_power": 9,
-         "excitation_power_unit": "milliwatt"
+         "stream_start_time": "1999-10-04T00:00:00",
+         "stream_end_time": "1999-10-04T00:00:48",
+         "daq_names": [],
+         "camera_names": [],
+         "light_sources": [
+            {
+               "device_type": "LightEmittingDiode",
+               "name": "470nm LED",
+               "excitation_power": "0.02",
+               "excitation_power_unit": "milliwatt"
+            },
+            {
+               "device_type": "LightEmittingDiode",
+               "name": "415nm LED",
+               "excitation_power": "0.02",
+               "excitation_power_unit": "milliwatt"
+            },
+            {
+               "device_type": "LightEmittingDiode",
+               "name": "565nm LED",
+               "excitation_power": "0.02",
+               "excitation_power_unit": "milliwatt"
+            }
+         ],
+         "ephys_modules": [],
+         "stick_microscopes": [],
+         "manipulator_modules": [],
+         "detectors": [
+            {
+               "name": "Hamamatsu Camera",
+               "exposure_time": "10",
+               "exposure_time_unit": "millisecond",
+               "trigger_type": "Internal"
+            }
+         ],
+         "fiber_connections": [
+            {
+               "patch_cord_name": "Patch Cord A",
+               "patch_cord_output_power": "40",
+               "output_power_unit": "microwatt",
+               "fiber_name": "Fiber A"
+            }
+         ],
+         "fiber_modules": [],
+         "ophys_fovs": [],
+         "slap_fovs": null,
+         "stack_parameters": null,
+         "stimulus_device_names": [],
+         "mouse_platform_name": "Disc",
+         "active_mouse_platform": false,
+         "stream_modalities": [
+            {
+               "name": "Fiber photometry",
+               "abbreviation": "fib"
+            }
+         ],
+         "notes": null
       }
    ],
-   "detectors": null,
-   "cameras": null,
-   "stimulus_presentations": [
+   "stimulus_epochs": [
       {
          "stimulus": {
+            "stimulus_type": "OptoStimulation",
             "stimulus_name": "OptoStim10Hz",
             "pulse_shape": "Square",
             "pulse_frequency": 10,
-            "pulse_frequency_unit": "Hertz",
+            "pulse_frequency_unit": "hertz",
             "number_pulse_trains": 2,
             "pulse_width": 5000,
             "pulse_width_unit": "millisecond",
-            "pulse_train_duration": 2.0,
+            "pulse_train_duration": "2.0",
             "pulse_train_duration_unit": "second",
-            "pulse_train_interval": 18.0,
+            "fixed_pulse_train_interval": true,
+            "pulse_train_interval": "18.0",
             "pulse_train_interval_unit": "second",
-            "baseline_duration": 10.0,
+            "baseline_duration": "10.0",
             "baseline_duration_unit": "second",
-            "other_parameters": null,
+            "other_parameters": {},
             "notes": null
          },
-         "start_time": "15:10:23.147770",
-         "end_time": "15:11:11.147770"
+         "stimulus_start_time": "1999-10-04T00:00:00",
+         "stimulus_end_time": "1999-10-04T00:00:48"
       }
    ],
-   "notes": null
+   "reward_delivery": null,
+   "reward_consumed_total": null,
+   "reward_consumed_unit": "microliter",
+   "notes": "brabrabrabra...."
 }

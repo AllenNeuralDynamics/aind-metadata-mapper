@@ -74,7 +74,17 @@ class FIBEtl(BaseEtl):
         self.start_datetime = start_datetime
 
     def _transform(self, extracted_source: ParsedInformation) -> Session:
-        """Parses params from teensy string and creates ophys session model"""
+        """
+        Parses params from teensy string and creates ophys session model
+        Parameters
+        ----------
+        extracted_source : ParsedInformation
+
+        Returns
+        -------
+        Session
+
+        """
         # Process data from dictionary keys
 
         experiment_data = extracted_source.experiment_data

@@ -6,6 +6,8 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 
+from aind_data_schema.core.session import Session
+
 from aind_metadata_mapper.fib.session import FIBEtl
 
 RESOURCES_DIR = (
@@ -73,7 +75,7 @@ class TestSchemaWriter(unittest.TestCase):
         with open(EXAMPLE_MD_PATH, "r") as f:
             raw_md_contents = f.read()
         with open(EXPECTED_SESSION, "r") as f:
-            expected_session_contents = json.load(f)
+            expected_session_contents = Session(**json.load(f))
 
         cls.expected_session = expected_session_contents
         cls.example_metadata = raw_md_contents
@@ -88,7 +90,12 @@ class TestSchemaWriter(unittest.TestCase):
             experiment_data=self.example_experiment_data,
             start_datetime=datetime(1999, 10, 4),
         )
-        etl_job1._extract()
+        parsed_info = etl_job1._extract()
+        self.assertEqual(self.example_metadata, parsed_info.teensy_str)
+        self.assertEqual(
+            self.example_experiment_data, parsed_info.experiment_data
+        )
+        self.assertEqual(datetime(1999, 10, 4), parsed_info.start_datetime)
 
     def test_transform(self):
         """Tests that the teensy response maps correctly to ophys session."""
@@ -100,7 +107,8 @@ class TestSchemaWriter(unittest.TestCase):
             start_datetime=datetime(1999, 10, 4),
         )
         parsed_info = etl_job1._extract()
-        etl_job1._transform(parsed_info)
+        actual_session = etl_job1._transform(parsed_info)
+        self.assertEqual(self.expected_session, actual_session)
 
 
 if __name__ == "__main__":
