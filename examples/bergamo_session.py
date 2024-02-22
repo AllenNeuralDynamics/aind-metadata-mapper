@@ -4,14 +4,16 @@ from pathlib import Path
 
 from aind_metadata_mapper.bergamo.session import (
     BergamoEtl,
+    JobSettings,
     RawImageInfo,
-    UserSettings,
 )
 
 # Check the UserSettings class for list of defaults that may need to override
 # This example just sets the required fields.
 
-user_settings = UserSettings(
+user_settings = JobSettings(
+    input_source=Path("/directory/of/tiff/files/"),
+    output_directory=Path("/location/to/save/to/"),
     experimenter_full_name=["John Smith"],
     subject_id="12345",
     session_start_time=datetime(2020, 10, 10, 12, 5, 00),
@@ -25,9 +27,7 @@ user_settings = UserSettings(
 )
 
 etl_job = BergamoEtl(
-    input_source=Path("/directory/of/tiff/files/"),
-    output_directory=Path("/location/to/save/to/"),
-    user_settings=user_settings,
+    job_settings=user_settings,
 )
 
 # To crawl through the tiff directory and parse the headers, simply run:
@@ -74,3 +74,14 @@ session = etl_job._transform(raw_image_info)
 
 # Write the session json file to the output directory
 etl_job._load(session)
+
+# We can also instantiate the class using a json string. This will make it
+# easier to run via an rest api
+
+job_settings_json = user_settings.model_dump_json()
+
+etl_job = BergamoEtl(
+    job_settings=job_settings_json,
+)
+
+etl_job.run_job()
