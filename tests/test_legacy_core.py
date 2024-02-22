@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 from unittest import TestCase
+from unittest import main as unittest_main
 from unittest.mock import MagicMock, patch
 
 from aind_data_schema.core.subject import BreedingInfo, Housing, Sex, Subject
@@ -84,3 +85,7 @@ class TestBaseEtl(TestCase):
             "No validation errors detected."
         )
         mock_write.assert_called_once_with(output_directory=Path("out"))
+
+
+if __name__ == "__main__":
+    unittest_main()
