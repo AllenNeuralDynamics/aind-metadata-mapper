@@ -388,7 +388,8 @@ class ScanImageFieldOfView(FieldOfView):
 
 
 class MesoscopeEtl(BaseEtl):
-    """Class to manage transforming mesoscope platform json and metadata into a session object. Modeled after BergamoEtl class"""
+    """Class to manage transforming mesoscope platform json and metadata into a session object. 
+    Modeled after BergamoEtl class"""
 
     def __init__(
         self,
@@ -405,7 +406,8 @@ class MesoscopeEtl(BaseEtl):
 
     def _extract(self) -> dict:
         """extract data from the platform json file and tiff file (in the future).
-        If input source is a file, will extract the data from the file. I input source is a directory, will extract the data from the directory.
+        If input source is a file, will extract the data from the file. 
+        The input source is a directory, will extract the data from the directory.
 
         Returns
         -------
