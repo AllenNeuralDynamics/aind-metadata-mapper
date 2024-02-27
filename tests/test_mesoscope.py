@@ -9,7 +9,6 @@ from PIL import Image
 from aind_metadata_mapper.mesoscope.session import (
     MesoscopeEtl,
     UserSettings,
-    ScanImageMetadata
 )
 
 RESOURCES_DIR = Path(os.path.dirname(os.path.realpath(__file__))) / "resources" / "mesoscope"
