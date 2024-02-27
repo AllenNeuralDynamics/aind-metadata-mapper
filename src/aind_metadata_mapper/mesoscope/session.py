@@ -561,9 +561,6 @@ class MesoscopeEtl(BaseEtl):
             data_streams=data_streams,
         )
 
-    def run_job(self):
-        pass
-
     @classmethod
     def from_args(cls, args: list):
         """
