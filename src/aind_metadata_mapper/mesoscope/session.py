@@ -414,6 +414,7 @@ class UserSettings(BaseSettings):
     fov_coordinate_ap: float = 1.5
     fov_reference: str = "Bregma"
     experimenter_full_name: List[str] = Field(..., title="Full name of the experimenter")
+    mouse_platform_name: str = "some mouse platform"
 
 
 class MesoscopeEtl(BaseEtl):
@@ -510,7 +511,7 @@ class MesoscopeEtl(BaseEtl):
                 stream_start_time=self.user_settings.session_start_time,
                 stream_end_time=self.user_settings.session_end_time,
                 ophys_fovs=fovs,
-                mouse_platform_name="some mouse platform",
+                mouse_platform_name=self.user_settings.mouse_platform_name,
                 active_mouse_platform=True,
                 stream_modalities=[Modality.POPHYS],
             )
@@ -529,7 +530,7 @@ class MesoscopeEtl(BaseEtl):
                         camera_names=[camera_name],
                         stream_start_time=start_time,
                         stream_end_time=end_time,
-                        mouse_platform_name="some mouse platform",
+                        mouse_platform_name=self.user_settings.mouse_platform_name,
                         active_mouse_platform=True,
                         stream_modalities=[Modality.BEHAVIOR_VIDEOS],
                     )
@@ -544,7 +545,7 @@ class MesoscopeEtl(BaseEtl):
                 camera_names=["Vasculature"],
                 stream_start_time=vasculature_dt,
                 stream_end_time=vasculature_dt,
-                mouse_platform_name="some mouse platform",
+                mouse_platform_name=self.user_settings.mouse_platform_name,
                 active_mouse_platform=True,
                 stream_modalities=[Modality.CONFOCAL],  # TODO: ask Saskia about this
             )
