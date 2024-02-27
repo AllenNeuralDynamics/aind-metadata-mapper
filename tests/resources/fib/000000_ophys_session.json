@@ -1,6 +1,6 @@
 {
    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/session.py",
-   "schema_version": "0.1.0",
+   "schema_version": "0.1.4",
    "experimenter_full_name": [
       "john doe"
    ],
@@ -79,7 +79,7 @@
    "stimulus_epochs": [
       {
          "stimulus": {
-            "stimulus_type": "OptoStimulation",
+            "stimulus_type": "Opto Stimulation",
             "stimulus_name": "OptoStim10Hz",
             "pulse_shape": "Square",
             "pulse_frequency": 10,

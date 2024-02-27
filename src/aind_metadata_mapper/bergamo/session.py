@@ -8,9 +8,8 @@ import re
 import sys
 from dataclasses import dataclass
 from datetime import datetime
-from os import PathLike
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from aind_data_schema.core.session import (
@@ -27,15 +26,27 @@ from aind_data_schema.models.stimulus import (
     StimulusEpoch,
 )
 from aind_data_schema.models.units import PowerUnit, SizeUnit
+from pydantic import Field
 from pydantic_settings import BaseSettings
 from ScanImageTiffReader import ScanImageTiffReader
 
-from aind_metadata_mapper.core import BaseEtl
+from aind_metadata_mapper.core import GenericEtl, JobResponse
 
 
-class UserSettings(BaseSettings):
+class JobSettings(BaseSettings):
     """Data that needs to be input by user. Can be pulled from env vars with
     BERGAMO prefix or set explicitly."""
+
+    input_source: Path = Field(
+        ..., description="Directory of files that need to be parsed."
+    )
+    output_directory: Optional[Path] = Field(
+        default=None,
+        description=(
+            "Directory where to save the json file to. If None, then json"
+            " contents will be returned in the Response message."
+        ),
+    )
 
     experimenter_full_name: List[str]
     subject_id: str
@@ -109,28 +120,25 @@ class ParsedMetadata:
     movie_start_time: datetime
 
 
-class BergamoEtl(BaseEtl):
+class BergamoEtl(GenericEtl[JobSettings]):
     """Class to manage transforming bergamo data files into a Session object"""
 
     def __init__(
         self,
-        input_source: Union[str, PathLike],
-        output_directory: Path,
-        user_settings: UserSettings,
+        job_settings: Union[JobSettings, str],
     ):
         """
         Class constructor for Base etl class.
         Parameters
         ----------
-        input_source : Union[str, PathLike]
-          Can be a string or a Path
-        output_directory : Path
-          The directory where to save the json files.
-        user_settings: UserSettings
+        job_settings: Union[JobSettings, str]
           Variables for a particular session
         """
-        super().__init__(input_source, output_directory)
-        self.user_settings = user_settings
+        if isinstance(job_settings, str):
+            job_settings_model = JobSettings.model_validate_json(job_settings)
+        else:
+            job_settings_model = job_settings
+        super().__init__(job_settings=job_settings_model)
 
     @staticmethod
     def _flat_dict_to_nested(flat: dict, key_delim: str = ".") -> dict:
@@ -353,10 +361,10 @@ class BergamoEtl(BaseEtl):
         """Extract metadata from bergamo session. If input source is a file,
         will extract data from file. If input source is a directory, will
         attempt to find a file."""
-        if isinstance(self.input_source, str):
-            input_source = Path(self.input_source)
+        if isinstance(self.job_settings.input_source, str):
+            input_source = Path(self.job_settings.input_source)
         else:
-            input_source = self.input_source
+            input_source = self.job_settings.input_source
 
         if os.path.isfile(input_source):
             file_with_metadata = input_source
@@ -393,17 +401,17 @@ class BergamoEtl(BaseEtl):
         ]
 
         data_stream = Stream(
-            mouse_platform_name=self.user_settings.mouse_platform_name,
-            active_mouse_platform=self.user_settings.active_mouse_platform,
-            stream_start_time=self.user_settings.stream_start_time,
-            stream_end_time=self.user_settings.stream_end_time,
+            mouse_platform_name=self.job_settings.mouse_platform_name,
+            active_mouse_platform=self.job_settings.active_mouse_platform,
+            stream_start_time=self.job_settings.stream_start_time,
+            stream_end_time=self.job_settings.stream_end_time,
             stream_modalities=[Modality.POPHYS],
-            camera_names=list(self.user_settings.camera_names),
+            camera_names=list(self.job_settings.camera_names),
             light_sources=[
                 LaserConfig(
-                    name=self.user_settings.laser_a_name,
-                    wavelength=self.user_settings.laser_a_wavelength,
-                    wavelength_unit=self.user_settings.laser_a_wavelength_unit,
+                    name=self.job_settings.laser_a_name,
+                    wavelength=self.job_settings.laser_a_wavelength,
+                    wavelength_unit=self.job_settings.laser_a_wavelength_unit,
                     excitation_power=int(
                         siHeader.metadata["hBeams"]["powers"][1:-1].split()[0]
                     ),
@@ -412,28 +420,28 @@ class BergamoEtl(BaseEtl):
             ],
             detectors=[
                 DetectorConfig(
-                    name=self.user_settings.detector_a_name,
-                    exposure_time=self.user_settings.detector_a_exposure_time,
-                    trigger_type=self.user_settings.detector_a_trigger_type,
+                    name=self.job_settings.detector_a_name,
+                    exposure_time=self.job_settings.detector_a_exposure_time,
+                    trigger_type=self.job_settings.detector_a_trigger_type,
                 ),
             ],
             ophys_fovs=[
                 FieldOfView(
-                    index=self.user_settings.fov_0_index,
-                    imaging_depth=self.user_settings.fov_0_imaging_depth,
+                    index=self.job_settings.fov_0_index,
+                    imaging_depth=self.job_settings.fov_0_imaging_depth,
                     targeted_structure=(
-                        self.user_settings.fov_0_targeted_structure
+                        self.job_settings.fov_0_targeted_structure
                     ),
-                    fov_coordinate_ml=self.user_settings.fov_0_coordinate_ml,
-                    fov_coordinate_ap=self.user_settings.fov_0_coordinate_ap,
-                    fov_reference=self.user_settings.fov_0_reference,
+                    fov_coordinate_ml=self.job_settings.fov_0_coordinate_ml,
+                    fov_coordinate_ap=self.job_settings.fov_0_coordinate_ap,
+                    fov_reference=self.job_settings.fov_0_reference,
                     fov_width=int(
                         siHeader.metadata["hRoiManager"]["pixelsPerLine"]
                     ),
                     fov_height=int(
                         siHeader.metadata["hRoiManager"]["linesPerFrame"]
                     ),
-                    magnification=self.user_settings.fov_0_magnification,
+                    magnification=self.job_settings.fov_0_magnification,
                     fov_scale_factor=float(
                         siHeader.metadata["hRoiManager"]["scanZoomFactor"]
                     ),
@@ -444,25 +452,25 @@ class BergamoEtl(BaseEtl):
             ],
         )
         return Session(
-            experimenter_full_name=self.user_settings.experimenter_full_name,
-            session_start_time=self.user_settings.session_start_time,
-            session_end_time=self.user_settings.session_end_time,
-            subject_id=self.user_settings.subject_id,
-            session_type=self.user_settings.session_type,
-            iacuc_protocol=self.user_settings.iacuc_protocol,
-            rig_id=self.user_settings.rig_id,
+            experimenter_full_name=self.job_settings.experimenter_full_name,
+            session_start_time=self.job_settings.session_start_time,
+            session_end_time=self.job_settings.session_end_time,
+            subject_id=self.job_settings.subject_id,
+            session_type=self.job_settings.session_type,
+            iacuc_protocol=self.job_settings.iacuc_protocol,
+            rig_id=self.job_settings.rig_id,
             data_streams=[data_stream],
             stimulus_epochs=[
                 StimulusEpoch(
                     stimulus=PhotoStimulation(
                         stimulus_name="PhotoStimulation",
                         number_groups=(
-                            self.user_settings.num_of_photo_stim_groups
+                            self.job_settings.num_of_photo_stim_groups
                         ),
                         groups=[
                             PhotoStimulationGroup(
                                 group_index=(
-                                    self.user_settings.photo_stim_groups[0][
+                                    self.job_settings.photo_stim_groups[0][
                                         "group_index"
                                     ]
                                 ),
@@ -479,7 +487,7 @@ class BergamoEtl(BaseEtl):
                                     ]["powers"]
                                 ),
                                 number_trials=(
-                                    self.user_settings.photo_stim_groups[0][
+                                    self.job_settings.photo_stim_groups[0][
                                         "number_trials"
                                     ]
                                 ),
@@ -497,7 +505,7 @@ class BergamoEtl(BaseEtl):
                             ),
                             PhotoStimulationGroup(
                                 group_index=(
-                                    self.user_settings.photo_stim_groups[1][
+                                    self.job_settings.photo_stim_groups[1][
                                         "group_index"
                                     ]
                                 ),
@@ -514,7 +522,7 @@ class BergamoEtl(BaseEtl):
                                     ]["powers"]
                                 ),
                                 number_trials=(
-                                    self.user_settings.photo_stim_groups[1][
+                                    self.job_settings.photo_stim_groups[1][
                                         "number_trials"
                                     ]
                                 ),
@@ -532,17 +540,27 @@ class BergamoEtl(BaseEtl):
                             ),
                         ],
                         inter_trial_interval=(
-                            self.user_settings.photo_stim_inter_trial_interval
+                            self.job_settings.photo_stim_inter_trial_interval
                         ),
                     ),
                     stimulus_start_time=(
-                        self.user_settings.stimulus_start_time
+                        self.job_settings.stimulus_start_time
                     ),
-                    stimulus_end_time=self.user_settings.stimulus_end_time,
+                    stimulus_end_time=self.job_settings.stimulus_end_time,
                 )
             ],
         )
 
+    def run_job(self) -> JobResponse:
+        """Run the etl job and return a JobResponse."""
+        extracted = self._extract()
+        transformed = self._transform(extracted_source=extracted)
+        job_response = self._load(
+            transformed, self.job_settings.output_directory
+        )
+        return job_response
+
+    # TODO: The following can probably be abstracted
     @classmethod
     def from_args(cls, args: list):
         """
@@ -555,33 +573,18 @@ class BergamoEtl(BaseEtl):
 
         parser = argparse.ArgumentParser()
         parser.add_argument(
-            "-i",
-            "--input-source",
-            required=False,
-            type=str,
-            help="Directory where tif files are located",
-        )
-        parser.add_argument(
-            "-o",
-            "--output-directory",
-            required=False,
-            default=".",
-            type=str,
-            help=(
-                "Directory to save json file to. Defaults to current working "
-                "directory."
-            ),
-        )
-        parser.add_argument(
-            "-u",
-            "--user-settings",
+            "-j",
+            "--job-settings",
             required=True,
-            type=json.loads,
+            type=str,
             help=(
                 r"""
                 Custom settings defined by the user defined as a json
-                 string. For example: -u
-                 '{"experimenter_full_name":["John Smith","Jane Smith"],
+                 string. For example: -j
+                 '{
+                 "input_source":"/directory/to/read/from",
+                 "output_directory":"/directory/to/write/to",
+                 "experimenter_full_name":["John Smith","Jane Smith"],
                  "subject_id":"12345",
                  "session_start_time":"2023-10-10T10:10:10",
                  "session_end_time":"2023-10-10T18:10:10",
@@ -593,11 +596,11 @@ class BergamoEtl(BaseEtl):
             ),
         )
         job_args = parser.parse_args(args)
-        user_settings_from_args = UserSettings(**job_args.user_settings)
+        job_settings_from_args = JobSettings.model_validate_json(
+            job_args.job_settings
+        )
         return cls(
-            input_source=Path(job_args.input_source),
-            output_directory=Path(job_args.output_directory),
-            user_settings=user_settings_from_args,
+            job_settings=job_settings_from_args,
         )
 
 
