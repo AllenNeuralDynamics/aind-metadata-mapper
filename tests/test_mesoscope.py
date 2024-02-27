@@ -57,7 +57,7 @@ class TestMesoscope(unittest.TestCase):
         extract = etl._extract()
         self.assertEqual(extract, expected_extract)
 
-    @patch("aind_metadata_mapper.mesoscope.session.ScanImageMetadata")
+    @patch("aind_metadata_mapper.mesoscope.session.MesoscopeEtl._read_metadata")
     @patch("PIL.Image.open")
     def test_transform(self, mock_open, mock_scanimage) -> None:
         """Tests that the platform json is extracted and transfromed into a session object correctly"""
@@ -70,11 +70,12 @@ class TestMesoscope(unittest.TestCase):
         mock_open.return_value = mock_image
 
         # mock scanimage metadata
-        mock_meta = mock_scanimage.return_value
-        mock_meta.lines_per_frame = self.example_scanimage_meta["lines_per_frame"]
-        mock_meta.pixels_per_line= self.example_scanimage_meta["pixels_per_line"]
-        mock_meta.fov_scale_factor = self.example_scanimage_meta["fov_scale_factor"]
-
+        mock_meta = [{}]
+        mock_meta[0]["SI.hRoiManager.linesPerFrame"] = self.example_scanimage_meta["lines_per_frame"]
+        mock_meta[0]["SI.hRoiManager.pixelsPerLine"]= self.example_scanimage_meta["pixels_per_line"]
+        mock_meta[0]["SI.hRoiManager.scanZoomFactor"] = self.example_scanimage_meta["fov_scale_factor"]
+        mock_scanimage.return_value = mock_meta
+        
         extract = etl._extract()
         transformed_session = etl._transform(extract)
         self.assertEqual(json.loads(transformed_session.model_dump_json()), self.example_session)
