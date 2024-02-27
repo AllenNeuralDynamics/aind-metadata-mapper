@@ -17,12 +17,10 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
-    "aind-data-schema==0.19.0",
-    "aind-metadata-service[client]",
+    "aind-data-schema==0.26.5",
     "scanimage-tiff-reader==1.4.1.4",
-    "pydantic-settings",
     "tifffile==2024.2.12"
-]
+    "pydantic-settings>=2.0",
 
 [project.optional-dependencies]
 dev = [
