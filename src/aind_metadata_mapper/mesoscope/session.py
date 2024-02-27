@@ -575,14 +575,14 @@ class MesoscopeEtl(BaseEtl):
         parser.add_argument(
             "-i",
             "--input-source",
-            required=False,
+            required=True,
             type=str,
             help="Directory where acquisition files are located",
         )
         parser.add_argument(
-            "-i",
+            "-b",
             "--behavior-source",
-            required=False,
+            required=True,
             type=str,
             help="Directory where behavior files are located",
         )
