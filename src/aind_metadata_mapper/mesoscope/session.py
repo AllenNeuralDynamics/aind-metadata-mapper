@@ -461,19 +461,19 @@ class MesoscopeEtl(BaseEtl):
         else:
             raise ValueError("Behavior source must be a directory")
         if input_source.is_dir():
-            input_source = next(input_source.glob("*platform.json", ""))
+            input_source = next(input_source.glob("*platform.json"), "")
             if not input_source.exists():
                 raise ValueError("No platform json file found in directory")
         with open(input_source, "r") as f:
             session_metadata["platform"] = json.load(f)
         return session_metadata
 
-    def _transform(self, session_data: dict) -> dict:
+    def _transform(self, extracted_source: dict) -> dict:
         """Transform the platform data into a session object
 
         Parameters
         ----------
-        session_data : dict
+        extracted_source : dict
             Extracted data from the camera jsons and platform json.
         user_settins: UserSettings
             The user settings for the session
@@ -482,8 +482,8 @@ class MesoscopeEtl(BaseEtl):
         Session
             The session object
         """
-        imaging_plane_groups = session_data["platform"]["imaging_plane_groups"]
-        timeseries = next(self.input_source.glob("*timeseries*.tif"), "")
+        imaging_plane_groups = extracted_source["platform"]["imaging_plane_groups"]
+        timeseries = next(self.input_source.glob("*timeseries*.tiff"), "")
         meta = ScanImageMetadata(timeseries)
         fovs = []
         data_streams = []
@@ -516,13 +516,13 @@ class MesoscopeEtl(BaseEtl):
                 stream_modalities=[Modality.POPHYS],
             )
         )
-        for camera in session_data.keys():
+        for camera in extracted_source.keys():
             if camera != "platform":
                 start_time = datetime.strptime(
-                    session_data[camera]["RecordingReport"]["TimeStart"], "%Y-%m-%dT%H:%M:%SZ"
+                    extracted_source[camera]["RecordingReport"]["TimeStart"], "%Y-%m-%dT%H:%M:%SZ"
                 )
                 end_time = datetime.strptime(
-                    session_data[camera]["RecordingReport"]["TimeEnd"], "%Y-%m-%dT%H:%M:%SZ"
+                    extracted_source[camera]["RecordingReport"]["TimeEnd"], "%Y-%m-%dT%H:%M:%SZ"
                 )
                 camera_name = camera.split("_")[1]
                 data_streams.append(
@@ -557,7 +557,7 @@ class MesoscopeEtl(BaseEtl):
             iacuc_protocol=self.user_settings.iacuc_protocol,
             session_start_time=self.user_settings.session_start_time,
             session_end_time=self.user_settings.session_end_time,
-            rig_id=session_data["platform"]["rig_id"],
+            rig_id=extracted_source["platform"]["rig_id"],
             data_streams=data_streams,
         )
 
