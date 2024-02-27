@@ -553,7 +553,6 @@ class MesoscopeEtl(BaseEtl):
             experimenter_full_name=self.user_settings.experimenter_full_name,
             session_type="Mesoscope",
             subject_id=self.user_settings.subject_id,
-            # project=self.user_settings.project,
             iacuc_protocol=self.user_settings.iacuc_protocol,
             session_start_time=self.user_settings.session_start_time,
             session_end_time=self.user_settings.session_end_time,
