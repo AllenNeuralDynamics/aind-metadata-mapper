@@ -161,6 +161,39 @@ class ScanImageMetadata(object):
             self._n_rois = len(self.defined_rois)
         return self._n_rois
 
+    @property
+    def fov_width(self) -> int:
+        """FOV width from the pixelsPerLine key
+
+        Returns
+        -------
+        fov_width: int
+            The width of the field of view in pixels
+        """
+        return self._metadata[0]["SI.hRoiManager.pixelsPerLine"]
+
+    @property
+    def fov_height(self) -> int:
+        """FOV height from the linesPerFrame key
+
+        Returns
+        -------
+        fov_height: int
+            The height of the field of view in pixels
+        """
+        return self._metadata[0]["SI.hRoiManager.linesPerFrame"]
+
+    @property
+    def fov_scale_factor(self) -> float:
+        """The scale factor of the field of view
+
+        Returns
+        -------
+        fov_scale_factor: float
+            The scale factor of the field of view
+        """
+        return self._metadata[0]["SI.hRoiManager.scanZoomFactor"]
+
     def zs_for_roi(self, i_roi: int) -> List[int]:
         """
         Return a list of the z-values at which the specified
@@ -373,22 +406,18 @@ class UserSettings(BaseSettings):
     # TODO: for now this will need to be directly input by the user. In the future, the worfklow sequencing engine should be able to put this in a json or we can extract it from SLIMS
     session_start_time: datetime
     session_end_time: datetime
-    mouse_id: str
+    subject_id: str
     project: str
     iacuc_protocol: str = "2115"
-
-
-class ScanImageFieldOfView(FieldOfView):
-    scanfield_z: int = Field(
-        ..., description=" z stage position of the fastz actuator for a given targeted depth"
-    )
-    scanfield_z_units: str = Field(SizeUnit.UM, description="Units for the scanfield z position")
-    power: float = Field(..., description="Power ration of the laser")
-    power_units: str = Field(PowerUnit.PERCENT, description="Power ratio")
+    magnification: str = "16x"
+    fov_coordinate_ml: float = 1.5
+    fov_coordinate_ap: float = 1.5
+    fov_reference: str = "Bregma"
+    experimenter_full_name: List[str] = Field(..., title="Full name of the experimenter")
 
 
 class MesoscopeEtl(BaseEtl):
-    """Class to manage transforming mesoscope platform json and metadata into a session object. 
+    """Class to manage transforming mesoscope platform json and metadata into a session object.
     Modeled after BergamoEtl class"""
 
     def __init__(
@@ -406,7 +435,7 @@ class MesoscopeEtl(BaseEtl):
 
     def _extract(self) -> dict:
         """extract data from the platform json file and tiff file (in the future).
-        If input source is a file, will extract the data from the file. 
+        If input source is a file, will extract the data from the file.
         The input source is a directory, will extract the data from the directory.
 
         Returns
@@ -453,26 +482,39 @@ class MesoscopeEtl(BaseEtl):
             The session object
         """
         imaging_plane_groups = session_data["platform"]["imaging_plane_groups"]
+        timeseries = next(self.input_source.glob("*timeseries*.tif"), "")
+        meta = ScanImageMetadata(timeseries)
         fovs = []
+        data_streams = []
         for group in imaging_plane_groups:
             for plane in group["imaging_planes"]:
-                fov = ScanImageFieldOfView(
+                fov = FieldOfView(
                     index=int(group["local_z_stack_tif"].split(".")[0][-1]),
-                    fov_coordinate_ml=1.5,  # TODO: need to get this value from users
-                    fov_coordinate_ap=1.5,  # TODO: need to get this value from users
-                    fov_reference="Bregma",  # TODO: need to get this value from users
-                    magnification="16x",  # TODO: need to get this value from users
-                    fov_scale_factor=1.2,  # TODO: need to get this value from users
+                    fov_coordinate_ml=self.user_settings.fov_coordinate_ml,
+                    fov_coordinate_ap=self.user_settings.fov_coordinate_ap,
+                    fov_reference=self.user_settings.fov_reference,
+                    magnification=self.user_settings.magnification,
+                    fov_scale_factor=meta.fov_scale_factor,
                     imaging_depth=plane["targeted_depth"],
                     targeted_structure=structure_lookup_dict[plane["targeted_structure_id"]],
-                    fov_width=512,  # TODO: need to get this from the tiff file
-                    fov_height=512,  # TODO: need to get this from the tiff file
+                    fov_width=meta.fov_width,
+                    fov_height=meta.fov_height,
                     frame_rate=group["acquisition_framerate_Hz"],
                     scanfield_z=plane["scanimage_scanfield_z"],
                     power=plane["scanimage_power"],
                 )
                 fovs.append(fov)
-        data_streams = []
+        data_streams.append(
+            Stream(
+                camera_names=["Mesoscope"],
+                stream_start_time=self.user_settings.session_start_time,
+                stream_end_time=self.user_settings.session_end_time,
+                ophys_fovs=fovs,
+                mouse_platform_name="some mouse platform",
+                active_mouse_platform=True,
+                stream_modalities=[Modality.POPHYS],
+            )
+        )
         for camera in session_data.keys():
             if camera != "platform":
                 start_time = datetime.strptime(
@@ -508,15 +550,14 @@ class MesoscopeEtl(BaseEtl):
             )
         )
         return Session(
-            experimenter_full_name=["John Smith", "Jane Smith"],
-            session_type="mesoscope",
-            subject_id=self.user_settings.mouse_id,
-            project=self.user_settings.project,
+            experimenter_full_name=self.user_settings.experimenter_full_name,
+            session_type="Mesoscope",
+            subject_id=self.user_settings.subject_id,
+            # project=self.user_settings.project,
             iacuc_protocol=self.user_settings.iacuc_protocol,
             session_start_time=self.user_settings.session_start_time,
             session_end_time=self.user_settings.session_end_time,
             rig_id=session_data["platform"]["rig_id"],
-            fovs=fovs,
             data_streams=data_streams,
         )
 
