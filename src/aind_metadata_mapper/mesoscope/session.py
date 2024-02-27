@@ -502,6 +502,7 @@ class MesoscopeEtl(BaseEtl):
                     fov_height=meta.fov_height,
                     frame_rate=group["acquisition_framerate_Hz"],
                     scanfield_z=plane["scanimage_scanfield_z"],
+                    scanfield_z_units=SizeUnit.UM,
                     power=plane["scanimage_power"],
                 )
                 fovs.append(fov)
