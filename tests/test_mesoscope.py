@@ -8,7 +8,7 @@ from PIL import Image
 
 from aind_metadata_mapper.mesoscope.session import (
     MesoscopeEtl,
-    UserSettings,
+    JobSettings,
 )
 
 RESOURCES_DIR = Path(os.path.dirname(os.path.realpath(__file__))) / "resources" / "mesoscope"
@@ -30,7 +30,10 @@ class TestMesoscope(unittest.TestCase):
             "pixels_per_line": 512,
             "fov_scale_factor": 1.0
         }
-        cls.example_user_settings = UserSettings(
+        cls.example_job_settings = JobSettings(
+            input_source=EXAMPLE_PLATFORM,
+            behavior_source=RESOURCES_DIR,
+            output_directory=RESOURCES_DIR,
             subject_id="12345",
             session_start_time=datetime(2024, 2, 22, 15, 30, 0),
             session_end_time=datetime(2024, 2, 22, 17, 30, 0),
@@ -40,20 +43,14 @@ class TestMesoscope(unittest.TestCase):
             fov_coordinate_ap=1.5,
             fov_coordinate_ml=1.5,
             fov_reference="Bregma",
-            iacuc_protocol="12345"
+            iacuc_protocol="12345",
+            mouse_platform_name = "disc"
         )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        os.remove("session.json")
 
     def test_extract(self) -> None:
         """Tests that the raw image info is extracted correcetly."""
         etl = MesoscopeEtl(
-            input_source=EXAMPLE_PLATFORM,
-            behavior_source=RESOURCES_DIR,
-            output_directory=RESOURCES_DIR,
-            user_settings=self.example_user_settings,
+            job_settings=self.example_job_settings,
         )
         with open(EXAMPLE_EXTRACT, "r") as f:
             expected_extract = json.load(f)
@@ -65,10 +62,7 @@ class TestMesoscope(unittest.TestCase):
     def test_transform(self, mock_open, mock_scanimage) -> None:
         """Tests that the platform json is extracted and transfromed into a session object correctly"""
         etl = MesoscopeEtl(
-            input_source=EXAMPLE_PLATFORM,
-            behavior_source=RESOURCES_DIR,
-            output_directory=RESOURCES_DIR,
-            user_settings=self.example_user_settings,
+            job_settings=self.example_job_settings,
         )
         # mock vasculature image
         mock_image = Image.new("RGB", (100, 100))
@@ -83,10 +77,7 @@ class TestMesoscope(unittest.TestCase):
 
         extract = etl._extract()
         transformed_session = etl._transform(extract)
-        transformed_session.write_standard_file()
-        with open("session.json") as j:
-            transformed_session = json.load(j)
-        self.assertEqual(transformed_session, self.example_session)
+        self.assertEqual(json.loads(transformed_session.model_dump_json()), self.example_session)
 
 
 if __name__ == "__main__":

@@ -13,7 +13,7 @@ import numpy as np
 from PIL import Image
 from PIL.TiffTags import TAGS
 
-from aind_metadata_mapper.core import BaseEtl
+from aind_metadata_mapper.core import GenericEtl
 from aind_data_schema.models.units import PowerUnit, SizeUnit
 from aind_data_schema.models.modalities import Modality
 from aind_data_schema.core.session import (
@@ -21,29 +21,6 @@ from aind_data_schema.core.session import (
     Stream,
     Session,
 )
-
-
-structure_lookup_dict = {
-    385: "VISp",
-    394: "VISam",
-    402: "VISal",
-    409: "VISl",
-    417: "VISrl",
-    533: "VISpm",
-    312782574: "VISli",
-}
-
-video_files = ["Eye", "Face", "Behavior"]
-
-
-def _read_metadata(tiff_path: Path):
-    """
-    Calls tifffile.read_scanimage_metadata on the specified
-    path and returns teh result. This method was factored
-    out so that it could be easily mocked in unit tests.
-    """
-    return tifffile.read_scanimage_metadata(open(tiff_path, "rb"))
-
 
 class ScanImageMetadata(object):
     """
@@ -60,8 +37,17 @@ class ScanImageMetadata(object):
         self._file_path = tiff_path
         if not tiff_path.is_file():
             raise ValueError(f"{tiff_path.resolve().absolute()} " "is not a file")
-        self._metadata = _read_metadata(tiff_path)
+        self._metadata = self._read_metadata(tiff_path)
 
+    def _read_metadata(self, tiff_path: Path):
+        """
+        Calls tifffile.read_scanimage_metadata on the specified
+        path and returns teh result. This method was factored
+        out so that it could be easily mocked in unit tests.
+        """
+        with open(tiff_path, "rb") as tiff:
+            return tifffile.read_scanimage_metadata(tiff)
+   
     @property
     def file_path(self) -> Path:
         return self._file_path
@@ -400,10 +386,13 @@ class ScanImageMetadata(object):
         return (pix_x, pix_y)
 
 
-class UserSettings(BaseSettings):
+class JobSettings(BaseSettings):
     """Data to be entered by the user. Modeled after BergamoEtl class"""
 
     # TODO: for now this will need to be directly input by the user. In the future, the worfklow sequencing engine should be able to put this in a json or we can extract it from SLIMS
+    input_source: Union[Path, str]
+    behavior_source: Union[Path, str]
+    output_directory: Path
     session_start_time: datetime
     session_end_time: datetime
     subject_id: str
@@ -414,25 +403,31 @@ class UserSettings(BaseSettings):
     fov_coordinate_ap: float = 1.5
     fov_reference: str = "Bregma"
     experimenter_full_name: List[str] = Field(..., title="Full name of the experimenter")
-    mouse_platform_name: str = "some mouse platform"
+    mouse_platform_name: str = "disc"
 
 
-class MesoscopeEtl(BaseEtl):
+class MesoscopeEtl(GenericEtl[JobSettings]):
     """Class to manage transforming mesoscope platform json and metadata into a session object.
     Modeled after BergamoEtl class"""
 
     def __init__(
         self,
-        input_source: Union[Path, str],
-        behavior_source: Union[Path, str],
-        output_directory: Path,
-        user_settings: UserSettings,
+        job_settings: JobSettings,
     ):
-        super().__init__(input_source, output_directory)
-        self.input_source = input_source
-        self.behavior_source = behavior_source
-        self.output_directory = output_directory
-        self.user_settings = user_settings
+        if isinstance(job_settings, str):
+            job_settings_model = JobSettings.model_validate_json(job_settings)
+        else:
+            job_settings_model = job_settings
+        super().__init__(job_settings=job_settings_model)
+        self.structure_lookup_dict = {
+            385: "VISp",
+            394: "VISam",
+            402: "VISal",
+            409: "VISl",
+            417: "VISrl",
+            533: "VISpm",
+            312782574: "VISli",
+        }
 
     def _extract(self) -> dict:
         """extract data from the platform json file and tiff file (in the future).
@@ -444,14 +439,14 @@ class MesoscopeEtl(BaseEtl):
         dict
             The extracted data from the platform json file.
         """
-        if isinstance(self.input_source, str):
-            input_source = Path(self.input_source)
+        if isinstance(self.job_settings.input_source, str):
+            input_source = Path(self.job_settings.input_source)
         else:
-            input_source = self.input_source
-        if isinstance(self.behavior_source, str):
-            behavior_source = Path(self.behavior_source)
+            input_source = self.job_settings.input_source
+        if isinstance(self.job_settings.behavior_source, str):
+            behavior_source = Path(self.job_settings.behavior_source)
         else:
-            behavior_source = self.behavior_source
+            behavior_source = self.job_settings.behavior_source
         session_metadata = {}
         if behavior_source.is_dir():
             for ftype in behavior_source.glob("*json"):
@@ -475,7 +470,7 @@ class MesoscopeEtl(BaseEtl):
         ----------
         extracted_source : dict
             Extracted data from the camera jsons and platform json.
-        user_settins: UserSettings
+        user_settins: JobSettings
             The user settings for the session
         Returns
         -------
@@ -483,7 +478,7 @@ class MesoscopeEtl(BaseEtl):
             The session object
         """
         imaging_plane_groups = extracted_source["platform"]["imaging_plane_groups"]
-        timeseries = next(self.input_source.glob("*timeseries*.tiff"), "")
+        timeseries = next(self.job_settings.input_source.glob("*timeseries*.tiff"), "")
         meta = ScanImageMetadata(timeseries)
         fovs = []
         data_streams = []
@@ -491,13 +486,13 @@ class MesoscopeEtl(BaseEtl):
             for plane in group["imaging_planes"]:
                 fov = FieldOfView(
                     index=int(group["local_z_stack_tif"].split(".")[0][-1]),
-                    fov_coordinate_ml=self.user_settings.fov_coordinate_ml,
-                    fov_coordinate_ap=self.user_settings.fov_coordinate_ap,
-                    fov_reference=self.user_settings.fov_reference,
-                    magnification=self.user_settings.magnification,
+                    fov_coordinate_ml=self.job_settings.fov_coordinate_ml,
+                    fov_coordinate_ap=self.job_settings.fov_coordinate_ap,
+                    fov_reference=self.job_settings.fov_reference,
+                    magnification=self.job_settings.magnification,
                     fov_scale_factor=meta.fov_scale_factor,
                     imaging_depth=plane["targeted_depth"],
-                    targeted_structure=structure_lookup_dict[plane["targeted_structure_id"]],
+                    targeted_structure=self.structure_lookup_dict[plane["targeted_structure_id"]],
                     fov_width=meta.fov_width,
                     fov_height=meta.fov_height,
                     frame_rate=group["acquisition_framerate_Hz"],
@@ -509,10 +504,10 @@ class MesoscopeEtl(BaseEtl):
         data_streams.append(
             Stream(
                 camera_names=["Mesoscope"],
-                stream_start_time=self.user_settings.session_start_time,
-                stream_end_time=self.user_settings.session_end_time,
+                stream_start_time=self.job_settings.session_start_time,
+                stream_end_time=self.job_settings.session_end_time,
                 ophys_fovs=fovs,
-                mouse_platform_name=self.user_settings.mouse_platform_name,
+                mouse_platform_name=self.job_settings.mouse_platform_name,
                 active_mouse_platform=True,
                 stream_modalities=[Modality.POPHYS],
             )
@@ -531,12 +526,12 @@ class MesoscopeEtl(BaseEtl):
                         camera_names=[camera_name],
                         stream_start_time=start_time,
                         stream_end_time=end_time,
-                        mouse_platform_name=self.user_settings.mouse_platform_name,
+                        mouse_platform_name=self.job_settings.mouse_platform_name,
                         active_mouse_platform=True,
                         stream_modalities=[Modality.BEHAVIOR_VIDEOS],
                     )
                 )
-        vasculature_fp = next(self.input_source.glob("*vasculature*.tif"), "")
+        vasculature_fp = next(self.job_settings.input_source.glob("*vasculature*.tif"), "")
         # Pull datetime from vasculature. Derived from https://stackoverflow.com/questions/46477712/reading-tiff-image-metadata-in-python
         with Image.open(vasculature_fp) as img:
             vasculature_dt = [img.tag[key] for key in img.tag.keys() if "DateTime" in TAGS[key]][0]
@@ -546,22 +541,35 @@ class MesoscopeEtl(BaseEtl):
                 camera_names=["Vasculature"],
                 stream_start_time=vasculature_dt,
                 stream_end_time=vasculature_dt,
-                mouse_platform_name=self.user_settings.mouse_platform_name,
+                mouse_platform_name=self.job_settings.mouse_platform_name,
                 active_mouse_platform=True,
                 stream_modalities=[Modality.CONFOCAL],  # TODO: ask Saskia about this
             )
         )
         return Session(
-            experimenter_full_name=self.user_settings.experimenter_full_name,
+            experimenter_full_name=self.job_settings.experimenter_full_name,
             session_type="Mesoscope",
-            subject_id=self.user_settings.subject_id,
-            iacuc_protocol=self.user_settings.iacuc_protocol,
-            session_start_time=self.user_settings.session_start_time,
-            session_end_time=self.user_settings.session_end_time,
+            subject_id=self.job_settings.subject_id,
+            iacuc_protocol=self.job_settings.iacuc_protocol,
+            session_start_time=self.job_settings.session_start_time,
+            session_end_time=self.job_settings.session_end_time,
             rig_id=extracted_source["platform"]["rig_id"],
             data_streams=data_streams,
         )
 
+    def run_job(self) -> None:
+        """
+        Run the etl job
+        Returns
+        -------
+        None
+        """
+        extracted = self._extract()
+        transformed = self._transform(extracted_source=extracted)
+        transformed.write_standard_file(
+            output_directory=self.output_directory
+        )
+        
     @classmethod
     def from_args(cls, args: list):
         """
@@ -613,12 +621,12 @@ class MesoscopeEtl(BaseEtl):
             ),
         )
         job_args = parser.parse_args(args)
-        user_settings_from_args = UserSettings(**job_args.user_settings)
+        job_settings_from_args = JobSettings(**job_args.job_settings)
         return cls(
             input_source=Path(job_args.input_source),
             output_directory=Path(job_args.output_directory),
             behavior_source=Path(job_args.behavior_source),
-            user_settings=user_settings_from_args,
+            job_settings=job_settings_from_args,
         )
 
 
