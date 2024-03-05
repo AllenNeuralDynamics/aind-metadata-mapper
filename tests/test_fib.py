@@ -102,7 +102,8 @@ class TestSchemaWriter(unittest.TestCase):
 
         etl_job1 = FIBEtl(job_settings=self.example_job_settings)
         job = etl_job1.run_job()
-        self.assertEqual(self.expected_session, Session(**json.loads(job.data)))
+        self.assertEqual(self.expected_session,
+                         Session(**json.loads(job.data)))
 
 
 if __name__ == "__main__":
