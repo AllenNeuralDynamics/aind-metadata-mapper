@@ -4,6 +4,7 @@ import datetime
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union
 
 from aind_data_schema.core.session import (
     DetectorConfig,
@@ -18,20 +19,47 @@ from aind_data_schema.models.stimulus import (
     PulseShape,
     StimulusEpoch,
 )
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
-from aind_metadata_mapper.core import BaseEtl
+from aind_metadata_mapper.core import GenericEtl, JobResponse
+
+
+class JobSettings(BaseSettings):
+    """Data that needs to be input by user."""
+
+    output_directory: Optional[Path] = Field(
+        default=None,
+        description=(
+            "Directory where to save the json file to. If None, then json"
+            " contents will be returned in the Response message."
+        ),
+    )
+
+    string_to_parse: str
+    experimenter_full_name: List[str]
+    session_start_time: datetime
+    notes: str
+    labtracks_id: str
+    iacuc_protocol: str
+    light_source_list: List[dict]
+    detector_list: List[dict]
+    fiber_connections_list: List[dict]
+
+    rig_id: str = "ophys_rig"
+    session_type: str = "Foraging_Photometry"
+    mouse_platform_name: str = "Disc"
+    active_mouse_platform: bool = False
 
 
 @dataclass(frozen=True)
-class ParsedInformation:
+class ParsedMetadata:
     """RawImageInfo gets parsed into this data"""
 
     teensy_str: str
-    experiment_data: dict
-    start_datetime: datetime
 
 
-class FIBEtl(BaseEtl):
+class FIBEtl(GenericEtl[JobSettings]):
     """This class contains the methods to write OphysScreening data"""
 
     _dictionary_mapping = {
@@ -51,29 +79,22 @@ class FIBEtl(BaseEtl):
 
     def __init__(
         self,
-        output_directory: Path,
-        teensy_str: str,
-        experiment_data: dict,
-        start_datetime: datetime,
-        input_source: str = "",
+        job_settings: Union[JobSettings, str],
     ):
         """
         Class constructor for Base etl class.
         Parameters
         ----------
-        input_source : Union[str, PathLike]
-          Can be a string or a Path
-        output_directory : Path
-          The directory where to save the json files.
-        user_settings: UserSettings
+        job_settings: Union[JobSettings, str]
           Variables for a particular session
         """
-        super().__init__(input_source, output_directory)
-        self.teensy_str = teensy_str
-        self.experiment_data = experiment_data
-        self.start_datetime = start_datetime
+        if isinstance(job_settings, str):
+            job_settings_model = JobSettings.model_validate_json(job_settings)
+        else:
+            job_settings_model = job_settings
+        super().__init__(job_settings=job_settings_model)
 
-    def _transform(self, extracted_source: ParsedInformation) -> Session:
+    def _transform(self, extracted_source: ParsedMetadata) -> Session:
         """
         Parses params from teensy string and creates ophys session model
         Parameters
@@ -87,21 +108,20 @@ class FIBEtl(BaseEtl):
         """
         # Process data from dictionary keys
 
-        experiment_data = extracted_source.experiment_data
         string_to_parse = extracted_source.teensy_str
-        start_datetime = extracted_source.start_datetime
 
-        labtracks_id = experiment_data["labtracks_id"]
-        iacuc_protocol = experiment_data["iacuc"]
-        rig_id = experiment_data["rig_id"]
-        experimenter_full_name = experiment_data["experimenter_name"]
-        mouse_platform_name = experiment_data["mouse_platform_name"]
-        active_mouse_platform = experiment_data["active_mouse_platform"]
-        light_source_list = experiment_data["light_source"]
-        detector_list = experiment_data["detectors"]
-        fiber_connections_list = experiment_data["fiber_connections"]
-        session_type = experiment_data["session_type"]
-        notes = experiment_data["notes"]
+        session_start_time = self.job_settings.session_start_time
+        labtracks_id = self.job_settings.labtracks_id
+        iacuc_protocol = self.job_settings.iacuc_protocol
+        rig_id = self.job_settings.rig_id
+        experimenter_full_name = self.job_settings.experimenter_full_name
+        mouse_platform_name = self.job_settings.mouse_platform_name
+        active_mouse_platform = self.job_settings.active_mouse_platform
+        light_source_list = self.job_settings.light_source_list
+        detector_list = self.job_settings.detector_list
+        fiber_connections_list = self.job_settings.fiber_connections_list
+        session_type = self.job_settings.session_type
+        notes = self.job_settings.notes
 
         # Use regular expressions to extract the values
         frequency_match = re.search(self.frequency_regex, string_to_parse)
@@ -141,12 +161,12 @@ class FIBEtl(BaseEtl):
         experiment_duration = (
             opto_base + opto_duration + (opto_interval * trial_num)
         )
-        end_datetime = start_datetime + datetime.timedelta(
+        end_datetime = session_start_time + datetime.timedelta(
             seconds=experiment_duration
         )
         stimulus_epochs = StimulusEpoch(
             stimulus=opto_stim,
-            stimulus_start_time=start_datetime,
+            stimulus_start_time=session_start_time,
             stimulus_end_time=end_datetime,
         )
 
@@ -167,10 +187,9 @@ class FIBEtl(BaseEtl):
         for fc in fiber_connections_list:
             cord = FiberConnectionConfig(**fc)
             fiber_connections.append(cord)
-
         data_stream = [
             Stream(
-                stream_start_time=start_datetime,
+                stream_start_time=session_start_time,
                 stream_end_time=end_datetime,
                 light_sources=light_source,
                 stream_modalities=[Modality.FIB],
@@ -180,13 +199,12 @@ class FIBEtl(BaseEtl):
                 fiber_connections=fiber_connections,
             )
         ]
-
         # and finally, create ophys session
         ophys_session = Session(
             stimulus_epochs=[stimulus_epochs],
             subject_id=labtracks_id,
             iacuc_protocol=iacuc_protocol,
-            session_start_time=start_datetime,
+            session_start_time=session_start_time,
             session_end_time=end_datetime,
             rig_id=rig_id,
             experimenter_full_name=experimenter_full_name,
@@ -197,10 +215,20 @@ class FIBEtl(BaseEtl):
 
         return ophys_session
 
-    def _extract(self) -> ParsedInformation:
+    def _extract(self) -> ParsedMetadata:
         """Extract metadata from fib session."""
-        return ParsedInformation(
-            teensy_str=self.teensy_str,
-            experiment_data=self.experiment_data,
-            start_datetime=self.start_datetime,
+
+        tensy_str = self.job_settings.string_to_parse
+
+        return ParsedMetadata(
+            teensy_str=tensy_str,
         )
+
+    def run_job(self) -> JobResponse:
+        """Run the etl job and return a JobResponse."""
+        extracted = self._extract()
+        transformed = self._transform(extracted_source=extracted)
+        job_response = self._load(
+            transformed, self.job_settings.output_directory
+        )
+        return job_response

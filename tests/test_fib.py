@@ -8,7 +8,7 @@ from pathlib import Path
 
 from aind_data_schema.core.session import Session
 
-from aind_metadata_mapper.fib.session import FIBEtl
+from aind_metadata_mapper.fib.session import FIBEtl, JobSettings
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__))) / "resources" / "fib"
@@ -24,20 +24,19 @@ class TestSchemaWriter(unittest.TestCase):
     def setUpClass(cls):
         """Load record object and user settings before running tests."""
 
-        cls.example_experiment_data = {
-            "labtracks_id": "000000",
-            "experimenter_name": [
-                "john doe",
-            ],
-            "notes": "brabrabrabra....",  #
-            "experimental_mode": "c",
-            "save_dir": "",
-            "iacuc": "2115",
-            "rig_id": "ophys_rig",
-            "COMPort": "COM3",
-            "mouse_platform_name": "Disc",
-            "active_mouse_platform": False,
-            "light_source": [
+        with open(EXAMPLE_MD_PATH, "r") as f:
+            raw_md_contents = f.read()
+        with open(EXPECTED_SESSION, "r") as f:
+            expected_session_contents = Session(**json.load(f))
+
+        cls.example_job_settings = JobSettings(
+            string_to_parse=raw_md_contents,
+            experimenter_full_name=["Don Key"],
+            session_start_time=datetime(1999, 10, 4),
+            notes="brabrabrabra....",
+            labtracks_id="000000",
+            iacuc_protocol="2115",
+            light_source_list=[
                 {
                     "name": "470nm LED",
                     "excitation_power": 0.020,
@@ -53,15 +52,15 @@ class TestSchemaWriter(unittest.TestCase):
                     "excitation_power": 0.020,  # Set 0 for unused StimLED
                     "excitation_power_unit": "milliwatt",
                 },
-            ],  # default light source
-            "detectors": [
+            ],
+            detector_list=[
                 {
                     "name": "Hamamatsu Camera",
                     "exposure_time": 10,
                     "trigger_type": "Internal",
                 }
             ],
-            "fiber_connections": [
+            fiber_connections_list=[
                 {
                     "patch_cord_name": "Patch Cord A",
                     "patch_cord_output_power": 40,
@@ -69,43 +68,31 @@ class TestSchemaWriter(unittest.TestCase):
                     "fiber_name": "Fiber A",
                 }
             ],
-            "session_type": "Foraging_Photometry",
-        }
-
-        with open(EXAMPLE_MD_PATH, "r") as f:
-            raw_md_contents = f.read()
-        with open(EXPECTED_SESSION, "r") as f:
-            expected_session_contents = Session(**json.load(f))
+            rig_id="ophys_rig",
+            session_type="Foraging_Photometry",
+            mouse_platform_name="Disc",
+            active_mouse_platform=False,
+        )
 
         cls.expected_session = expected_session_contents
-        cls.example_metadata = raw_md_contents
 
     def test_extract(self):
         """Tests that the teensy response and experiment
         data is extracted correctly"""
 
-        etl_job1 = FIBEtl(
-            output_directory=RESOURCES_DIR,
-            teensy_str=self.example_metadata,
-            experiment_data=self.example_experiment_data,
-            start_datetime=datetime(1999, 10, 4),
-        )
+        etl_job1 = FIBEtl(job_settings=self.example_job_settings)
         parsed_info = etl_job1._extract()
-        self.assertEqual(self.example_metadata, parsed_info.teensy_str)
         self.assertEqual(
-            self.example_experiment_data, parsed_info.experiment_data
+            self.example_job_settings.string_to_parse, parsed_info.teensy_str
         )
-        self.assertEqual(datetime(1999, 10, 4), parsed_info.start_datetime)
+        self.assertEqual(
+            datetime(1999, 10, 4), self.example_job_settings.session_start_time
+        )
 
     def test_transform(self):
         """Tests that the teensy response maps correctly to ophys session."""
 
-        etl_job1 = FIBEtl(
-            output_directory=RESOURCES_DIR,
-            teensy_str=self.example_metadata,
-            experiment_data=self.example_experiment_data,
-            start_datetime=datetime(1999, 10, 4),
-        )
+        etl_job1 = FIBEtl(job_settings=self.example_job_settings)
         parsed_info = etl_job1._extract()
         actual_session = etl_job1._transform(parsed_info)
         self.assertEqual(self.expected_session, actual_session)
