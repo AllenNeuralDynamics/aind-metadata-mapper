@@ -1,32 +1,29 @@
-"""Mesocope ETL derived from Bergamo session module"""
-from typing import List, Tuple, Union
-import json
-from pathlib import Path
-from datetime import datetime
+"""Mesoscope ETL"""
 import argparse
+import json
 import sys
-from pydantic import Field
-from pydantic_settings import BaseSettings
+from datetime import datetime
+from pathlib import Path
+from typing import List, Union
+
 import tifffile
-import copy
-import numpy as np
+from aind_data_schema.core.session import FieldOfView, Session, Stream
+from aind_data_schema.models.modalities import Modality
+from aind_data_schema.models.units import SizeUnit
 from PIL import Image
 from PIL.TiffTags import TAGS
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 from aind_metadata_mapper.core import GenericEtl
-from aind_data_schema.models.units import PowerUnit, SizeUnit
-from aind_data_schema.models.modalities import Modality
-from aind_data_schema.core.session import (
-    FieldOfView,
-    Stream,
-    Session,
-)
 
 
 class JobSettings(BaseSettings):
-    """Data to be entered by the user. Modeled after BergamoEtl class"""
+    """Data to be entered by the user."""
 
-    # TODO: for now this will need to be directly input by the user. In the future, the worfklow sequencing engine should be able to put this in a json or we can extract it from SLIMS
+    # TODO: for now this will need to be directly input by the user.
+    #  In the future, the workflow sequencing engine should be able to put
+    #  this in a json or we can extract it from SLIMS
     input_source: Union[Path, str]
     behavior_source: Union[Path, str]
     output_directory: Path
@@ -39,32 +36,36 @@ class JobSettings(BaseSettings):
     fov_coordinate_ml: float = 1.5
     fov_coordinate_ap: float = 1.5
     fov_reference: str = "Bregma"
-    experimenter_full_name: List[str] = Field(..., title="Full name of the experimenter")
+    experimenter_full_name: List[str] = Field(
+        ..., title="Full name of the experimenter"
+    )
     mouse_platform_name: str = "disc"
 
 
 class MesoscopeEtl(GenericEtl[JobSettings]):
-    """Class to manage transforming mesoscope platform json and metadata into a session object.
-    Modeled after BergamoEtl class"""
+    """Class to manage transforming mesoscope platform json and metadata into
+    a Session model."""
+
+    _STRUCTURE_LOOKUP_DICT = {
+        385: "VISp",
+        394: "VISam",
+        402: "VISal",
+        409: "VISl",
+        417: "VISrl",
+        533: "VISpm",
+        312782574: "VISli",
+    }
 
     def __init__(
         self,
-        job_settings: JobSettings,
+        job_settings: Union[JobSettings, str],
     ):
+        """Class constructor for Mesoscope etl job"""
         if isinstance(job_settings, str):
             job_settings_model = JobSettings.model_validate_json(job_settings)
         else:
             job_settings_model = job_settings
         super().__init__(job_settings=job_settings_model)
-        self.structure_lookup_dict = {
-            385: "VISp",
-            394: "VISam",
-            402: "VISal",
-            409: "VISl",
-            417: "VISrl",
-            533: "VISpm",
-            312782574: "VISli",
-        }
 
     def _read_metadata(self, tiff_path: Path):
         """
@@ -73,14 +74,18 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         out so that it could be easily mocked in unit tests.
         """
         if not tiff_path.is_file():
-            raise ValueError(f"{tiff_path.resolve().absolute()} " "is not a file")
+            raise ValueError(
+                f"{tiff_path.resolve().absolute()} " "is not a file"
+            )
         with open(tiff_path, "rb") as tiff:
             return tifffile.read_scanimage_metadata(tiff)
 
     def _extract(self) -> dict:
-        """extract data from the platform json file and tiff file (in the future).
+        """extract data from the platform json file and tiff file (in the
+        future).
         If input source is a file, will extract the data from the file.
-        The input source is a directory, will extract the data from the directory.
+        The input source is a directory, will extract the data from the
+        directory.
 
         Returns
         -------
@@ -88,7 +93,9 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
             The extracted data from the platform json file.
         """
         if isinstance(self.job_settings.input_source, str):
-            input_source = self.job_settings.input_source = Path(self.job_settings.input_source)
+            input_source = self.job_settings.input_source = Path(
+                self.job_settings.input_source
+            )
         else:
             input_source = self.job_settings.input_source
         if isinstance(self.job_settings.behavior_source, str):
@@ -100,7 +107,11 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         session_metadata = {}
         if behavior_source.is_dir():
             for ftype in behavior_source.glob("*json"):
-                if "Behavior" in ftype.stem or "Eye" in ftype.stem or "Face" in ftype.stem:
+                if (
+                    "Behavior" in ftype.stem
+                    or "Eye" in ftype.stem
+                    or "Face" in ftype.stem
+                ):
                     with open(ftype, "r") as f:
                         session_metadata[ftype.stem] = json.load(f)
         else:
@@ -113,22 +124,24 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
             session_metadata["platform"] = json.load(f)
         return session_metadata
 
-    def _transform(self, extracted_source: dict) -> dict:
+    def _transform(self, extracted_source: dict) -> Session:
         """Transform the platform data into a session object
 
         Parameters
         ----------
         extracted_source : dict
             Extracted data from the camera jsons and platform json.
-        user_settins: JobSettings
-            The user settings for the session
         Returns
         -------
         Session
             The session object
         """
-        imaging_plane_groups = extracted_source["platform"]["imaging_plane_groups"]
-        timeseries = next(self.job_settings.input_source.glob("*timeseries*.tiff"), "")
+        imaging_plane_groups = extracted_source["platform"][
+            "imaging_plane_groups"
+        ]
+        timeseries = next(
+            self.job_settings.input_source.glob("*timeseries*.tiff"), ""
+        )
         meta = self._read_metadata(timeseries)
         fovs = []
         data_streams = []
@@ -142,13 +155,15 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
                     magnification=self.job_settings.magnification,
                     fov_scale_factor=meta[0]["SI.hRoiManager.scanZoomFactor"],
                     imaging_depth=plane["targeted_depth"],
-                    targeted_structure=self.structure_lookup_dict[plane["targeted_structure_id"]],
+                    targeted_structure=self._STRUCTURE_LOOKUP_DICT[
+                        plane["targeted_structure_id"]
+                    ],
                     fov_width=meta[0]["SI.hRoiManager.pixelsPerLine"],
                     fov_height=meta[0]["SI.hRoiManager.linesPerFrame"],
                     frame_rate=group["acquisition_framerate_Hz"],
-                    scanfield_z=plane["scanimage_scanfield_z"],
-                    scanfield_z_unit=SizeUnit.UM,
-                    power=plane["scanimage_power"],
+                    # scanfield_z=plane["scanimage_scanfield_z"],
+                    # scanfield_z_unit=SizeUnit.UM,
+                    # power=plane["scanimage_power"],
                 )
                 fovs.append(fov)
         data_streams.append(
@@ -165,10 +180,12 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         for camera in extracted_source.keys():
             if camera != "platform":
                 start_time = datetime.strptime(
-                    extracted_source[camera]["RecordingReport"]["TimeStart"], "%Y-%m-%dT%H:%M:%SZ"
+                    extracted_source[camera]["RecordingReport"]["TimeStart"],
+                    "%Y-%m-%dT%H:%M:%SZ",
                 )
                 end_time = datetime.strptime(
-                    extracted_source[camera]["RecordingReport"]["TimeEnd"], "%Y-%m-%dT%H:%M:%SZ"
+                    extracted_source[camera]["RecordingReport"]["TimeEnd"],
+                    "%Y-%m-%dT%H:%M:%SZ",
                 )
                 camera_name = camera.split("_")[1]
                 data_streams.append(
@@ -176,16 +193,29 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
                         camera_names=[camera_name],
                         stream_start_time=start_time,
                         stream_end_time=end_time,
-                        mouse_platform_name=self.job_settings.mouse_platform_name,
+                        mouse_platform_name=(
+                            self.job_settings.mouse_platform_name
+                        ),
                         active_mouse_platform=True,
                         stream_modalities=[Modality.BEHAVIOR_VIDEOS],
                     )
                 )
-        vasculature_fp = next(self.job_settings.input_source.glob("*vasculature*.tif"), "")
-        # Pull datetime from vasculature. Derived from https://stackoverflow.com/questions/46477712/reading-tiff-image-metadata-in-python
+        vasculature_fp = next(
+            self.job_settings.input_source.glob("*vasculature*.tif"), ""
+        )
+        # Pull datetime from vasculature.
+        # Derived from
+        # https://stackoverflow.com/questions/46477712/
+        #   reading-tiff-image-metadata-in-python
         with Image.open(vasculature_fp) as img:
-            vasculature_dt = [img.tag[key] for key in img.tag.keys() if "DateTime" in TAGS[key]][0]
-        vasculature_dt = datetime.strptime(vasculature_dt[0], "%Y:%m:%d %H:%M:%S")
+            vasculature_dt = [
+                img.tag[key]
+                for key in img.tag.keys()
+                if "DateTime" in TAGS[key]
+            ][0]
+        vasculature_dt = datetime.strptime(
+            vasculature_dt[0], "%Y:%m:%d %H:%M:%S"
+        )
         data_streams.append(
             Stream(
                 camera_names=["Vasculature"],
@@ -193,7 +223,9 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
                 stream_end_time=vasculature_dt,
                 mouse_platform_name=self.job_settings.mouse_platform_name,
                 active_mouse_platform=True,
-                stream_modalities=[Modality.CONFOCAL],  # TODO: ask Saskia about this
+                stream_modalities=[
+                    Modality.CONFOCAL
+                ],  # TODO: ask Saskia about this
             )
         )
         return Session(
@@ -216,7 +248,9 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         """
         extracted = self._extract()
         transformed = self._transform(extracted_source=extracted)
-        transformed.write_standard_file(output_directory=self.job_settings.output_directory)
+        transformed.write_standard_file(
+            output_directory=self.job_settings.output_directory
+        )
 
     @classmethod
     def from_args(cls, args: list):
