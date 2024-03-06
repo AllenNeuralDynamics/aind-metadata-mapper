@@ -20,7 +20,8 @@ dependencies = [
     "aind-data-schema==0.26.5",
     "scanimage-tiff-reader==1.4.1.4",
     "tifffile==2024.2.12",
-    "pydantic-settings>=2.0"
+    "pydantic-settings>=2.0",
+    "pillow"
 ]
 
 [project.optional-dependencies]

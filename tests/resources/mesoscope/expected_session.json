@@ -1,6 +1,6 @@
 {
    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/session.py",
-   "schema_version": "0.1.8",
+   "schema_version": "0.1.4",
    "protocol_id": [],
    "experimenter_full_name": [
       "John Doe"
@@ -49,12 +49,7 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null,
-               "power": "42",
-               "power_unit": "milliwatt",
-               "scanfield_z": 230,
-               "scanfield_z_unit": "micrometer",
-               "notes": null
+               "coupled_fov_index": null
             },
             {
                "index": 0,
@@ -73,12 +68,7 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null,
-               "power": "42",
-               "power_unit": "milliwatt",
-               "scanfield_z": 257,
-               "scanfield_z_unit": "micrometer",
-               "notes": null
+               "coupled_fov_index": null
             },
             {
                "index": 1,
@@ -97,12 +87,7 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null,
-               "power": "28",
-               "power_unit": "milliwatt",
-               "scanfield_z": 176,
-               "scanfield_z_unit": "micrometer",
-               "notes": null
+               "coupled_fov_index": null
             },
             {
                "index": 1,
@@ -121,12 +106,7 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null,
-               "power": "28",
-               "power_unit": "milliwatt",
-               "scanfield_z": 307,
-               "scanfield_z_unit": "micrometer",
-               "notes": null
+               "coupled_fov_index": null
             },
             {
                "index": 2,
@@ -145,12 +125,7 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null,
-               "power": "12",
-               "power_unit": "milliwatt",
-               "scanfield_z": 112,
-               "scanfield_z_unit": "micrometer",
-               "notes": null
+               "coupled_fov_index": null
             },
             {
                "index": 2,
@@ -169,12 +144,7 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null,
-               "power": "12",
-               "power_unit": "milliwatt",
-               "scanfield_z": 351,
-               "scanfield_z_unit": "micrometer",
-               "notes": null
+               "coupled_fov_index": null
             },
             {
                "index": 3,
@@ -193,12 +163,7 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null,
-               "power": "5",
-               "power_unit": "milliwatt",
-               "scanfield_z": 70,
-               "scanfield_z_unit": "micrometer",
-               "notes": null
+               "coupled_fov_index": null
             },
             {
                "index": 3,
@@ -217,12 +182,7 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null,
-               "power": "5",
-               "power_unit": "milliwatt",
-               "scanfield_z": 389,
-               "scanfield_z_unit": "micrometer",
-               "notes": null
+               "coupled_fov_index": null
             }
          ],
          "slap_fovs": null,
