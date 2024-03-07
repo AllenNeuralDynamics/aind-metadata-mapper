@@ -1,0 +1,248 @@
+{
+  "schema_version": 3,
+  "schema_type": "Mesoscope",
+  "rig_id": "MESO.1",
+  "stimulus_pkl": "1330132892.pkl",
+  "wfltk_version": "5.6.1+ga1476fd.b46657",
+  "wfl_version": "3.4.0.dev0+gf8b81af.b144149",
+  "foraging_id": "25af27a7-ea6d-4e50-9333-02adf58210d0",
+  "sync_file": "1330132892_20240212T091433.h5",
+  "timeseries_tif": "1330132892_timeseries.tiff",
+  "timeseries_roi_file": "1330132892_timeseries.roi",
+  "depths_tif": "1330132892_averaged_depth.tiff",
+  "surface_tif": "1330132892_averaged_surface.tiff",
+  "surface_roi_file": "1330132892_surface.roi",
+  "eye_tracking_video": "1330132892_Eye_20240212T091443.mp4",
+  "behavior_video": "1330132892_Behavior_20240212T091443.mp4",
+  "face_tracking": "1330132892_Face_20240212T091444.mp4",
+  "eye_cam_json": "1330132892_Eye_20240212T091443.json",
+  "beh_cam_json": "1330132892_Behavior_20240212T091443.json",
+  "face_tracking_json": "1330132892_Face_20240212T091444.json",
+  "stimulus_name": "OPHYS_6_images_B",
+  "registration": {
+    "reticle_image": {
+      "stage_x": -2370.0,
+      "stage_y": -8238.0,
+      "stage_z": 20268.0,
+      "pixel_size_um": 0.4962,
+      "acquired_at": "2024-02-12T09:03:41.352003",
+      "rotation": 22.318,
+      "stage_image_rotation": 31.55,
+      "x_offset": 0,
+      "y_offset": 0,
+      "filename": "1330132892_reticle.tif"
+    },
+    "surface_vasculature": {
+      "stage_x": -2370.0,
+      "stage_y": -8238.0,
+      "stage_z": 20268.0,
+      "pixel_size_um": 0.4962,
+      "acquired_at": "2024-02-12T11:02:22.412532",
+      "rotation": 22.318,
+      "stage_image_rotation": null,
+      "x_offset": 0,
+      "y_offset": 0,
+      "filename": "1330132892_vasculature.tif"
+    }
+  },
+  "imaging_plane_groups": [
+    {
+      "column_z_stack": "1330132892_cortical_z_stack0.tiff",
+      "local_z_stack_tif": "1330132892_local_z_stack0.tiff",
+      "acquisition_framerate_Hz": 9.48,
+      "imaging_planes": [
+        {
+          "targeted_x": -2015.51,
+          "targeted_y": -275.56,
+          "targeted_depth": 190,
+          "targeted_structure_id": 385,
+          "scanimage_roi_index": 0,
+          "scanimage_scanfield_z": 230,
+          "scanimage_power": 42,
+          "registration": {
+            "stage_x": 0.0,
+            "stage_y": 0.0,
+            "stage_z": 0.0,
+            "pixel_size_um": 0.78,
+            "acquired_at": "2024-02-12T10:30:56.315159",
+            "rotation": -108.1414,
+            "stage_image_rotation": null,
+            "x_offset": 0,
+            "y_offset": 0,
+            "filename": "1330132892_timeseries.tiff"
+          }
+        },
+        {
+          "targeted_x": -2015.51,
+          "targeted_y": -275.6,
+          "targeted_depth": 232,
+          "targeted_structure_id": 385,
+          "scanimage_roi_index": 0,
+          "scanimage_scanfield_z": 257,
+          "scanimage_power": 42,
+          "registration": {
+            "stage_x": 0.0,
+            "stage_y": 0.0,
+            "stage_z": 0.0,
+            "pixel_size_um": 0.78,
+            "acquired_at": "2024-02-12T10:30:56.315159",
+            "rotation": -108.1414,
+            "stage_image_rotation": null,
+            "x_offset": 0,
+            "y_offset": 0,
+            "filename": "1330132892_timeseries.tiff"
+          }
+        }
+      ]
+    },
+    {
+      "column_z_stack": "1330132892_cortical_z_stack0.tiff",
+      "local_z_stack_tif": "1330132892_local_z_stack1.tiff",
+      "acquisition_framerate_Hz": 9.48,
+      "imaging_planes": [
+        {
+          "targeted_x": -2015.51,
+          "targeted_y": -275.56,
+          "targeted_depth": 136,
+          "targeted_structure_id": 385,
+          "scanimage_roi_index": 0,
+          "scanimage_scanfield_z": 176,
+          "scanimage_power": 28,
+          "registration": {
+            "stage_x": 0.0,
+            "stage_y": 0.0,
+            "stage_z": 0.0,
+            "pixel_size_um": 0.78,
+            "acquired_at": "2024-02-12T10:30:56.315159",
+            "rotation": -108.1414,
+            "stage_image_rotation": null,
+            "x_offset": 0,
+            "y_offset": 0,
+            "filename": "1330132892_timeseries.tiff"
+          }
+        },
+        {
+          "targeted_x": -2015.51,
+          "targeted_y": -275.6,
+          "targeted_depth": 282,
+          "targeted_structure_id": 385,
+          "scanimage_roi_index": 0,
+          "scanimage_scanfield_z": 307,
+          "scanimage_power": 28,
+          "registration": {
+            "stage_x": 0.0,
+            "stage_y": 0.0,
+            "stage_z": 0.0,
+            "pixel_size_um": 0.78,
+            "acquired_at": "2024-02-12T10:30:56.315159",
+            "rotation": -108.1414,
+            "stage_image_rotation": null,
+            "x_offset": 0,
+            "y_offset": 0,
+            "filename": "1330132892_timeseries.tiff"
+          }
+        }
+      ]
+    },
+    {
+      "column_z_stack": "1330132892_cortical_z_stack0.tiff",
+      "local_z_stack_tif": "1330132892_local_z_stack2.tiff",
+      "acquisition_framerate_Hz": 9.48,
+      "imaging_planes": [
+        {
+          "targeted_x": -2015.51,
+          "targeted_y": -275.56,
+          "targeted_depth": 72,
+          "targeted_structure_id": 385,
+          "scanimage_roi_index": 0,
+          "scanimage_scanfield_z": 112,
+          "scanimage_power": 12,
+          "registration": {
+            "stage_x": 0.0,
+            "stage_y": 0.0,
+            "stage_z": 0.0,
+            "pixel_size_um": 0.78,
+            "acquired_at": "2024-02-12T10:30:56.315159",
+            "rotation": -108.1414,
+            "stage_image_rotation": null,
+            "x_offset": 0,
+            "y_offset": 0,
+            "filename": "1330132892_timeseries.tiff"
+          }
+        },
+        {
+          "targeted_x": -2015.51,
+          "targeted_y": -275.6,
+          "targeted_depth": 326,
+          "targeted_structure_id": 385,
+          "scanimage_roi_index": 0,
+          "scanimage_scanfield_z": 351,
+          "scanimage_power": 12,
+          "registration": {
+            "stage_x": 0.0,
+            "stage_y": 0.0,
+            "stage_z": 0.0,
+            "pixel_size_um": 0.78,
+            "acquired_at": "2024-02-12T10:30:56.315159",
+            "rotation": -108.1414,
+            "stage_image_rotation": null,
+            "x_offset": 0,
+            "y_offset": 0,
+            "filename": "1330132892_timeseries.tiff"
+          }
+        }
+      ]
+    },
+    {
+      "column_z_stack": "1330132892_cortical_z_stack0.tiff",
+      "local_z_stack_tif": "1330132892_local_z_stack3.tiff",
+      "acquisition_framerate_Hz": 9.48,
+      "imaging_planes": [
+        {
+          "targeted_x": -2015.51,
+          "targeted_y": -275.56,
+          "targeted_depth": 30,
+          "targeted_structure_id": 385,
+          "scanimage_roi_index": 0,
+          "scanimage_scanfield_z": 70,
+          "scanimage_power": 5,
+          "registration": {
+            "stage_x": 0.0,
+            "stage_y": 0.0,
+            "stage_z": 0.0,
+            "pixel_size_um": 0.78,
+            "acquired_at": "2024-02-12T10:30:56.315159",
+            "rotation": -108.1414,
+            "stage_image_rotation": null,
+            "x_offset": 0,
+            "y_offset": 0,
+            "filename": "1330132892_timeseries.tiff"
+          }
+        },
+        {
+          "targeted_x": -2015.51,
+          "targeted_y": -275.6,
+          "targeted_depth": 364,
+          "targeted_structure_id": 385,
+          "scanimage_roi_index": 0,
+          "scanimage_scanfield_z": 389,
+          "scanimage_power": 5,
+          "registration": {
+            "stage_x": 0.0,
+            "stage_y": 0.0,
+            "stage_z": 0.0,
+            "pixel_size_um": 0.78,
+            "acquired_at": "2024-02-12T10:30:56.315159",
+            "rotation": -108.1414,
+            "stage_image_rotation": null,
+            "x_offset": 0,
+            "y_offset": 0,
+            "filename": "1330132892_timeseries.tiff"
+          }
+        }
+      ]
+    }
+  ],
+  "fullfield_2p_image": "1330132892_fullfield.tiff",
+  "fullfield_2p_roi_file": "1330132892_fullfield.roi"
+}

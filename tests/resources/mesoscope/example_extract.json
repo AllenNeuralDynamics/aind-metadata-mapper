@@ -1,0 +1,369 @@
+{
+  "0123456789_Behavior_20240212T091443": {
+    "RecordingReport": {
+      "Recording Report Version": "1.0",
+      "Acquisition DateTime": "02/12/24 10:30:54",
+      "MVR Version": "1.1.7",
+      "CameraIndex": "Camera 1",
+      "CameraLabel": "Behavior",
+      "CameraID": "DEV_000F315BA634",
+      "FPS": 60.0024,
+      "CameraGain": 4,
+      "CustomInitialExposureTime": 1,
+      "CustomInitialNumberOfFrames": 10,
+      "ExposureTime": 3,
+      "ImageDimensions": "658x492",
+      "BinningFactors": "1x1",
+      "MovieID": "36cda02c-c9ca-11ee-be7f-0cc47ada6b38",
+      "VideoOutputFileName": "C:\\ProgramData\\AIBS_MPE\\mvr\\data\\.\\1330132892_Behavior_20240212T091443.mp4",
+      "Codec": "h264_nvenc",
+      "FrameID imprint enabled": "false",
+      "ApproximateFileSize": "1114824.386 KB",
+      "h264": {
+        "CRF": "17",
+        "Preset": "medium",
+        "HardwareAcceleration": "cuvid"
+      },
+      "FFMPEGInputPixelFormat": "gray",
+      "FFMPEGOutputPixelFormat": "yuv420p",
+      "TimeStart": "2024-02-12T09:14:43Z",
+      "TimeEnd": "2024-02-12T10:30:54Z",
+      "MaxNumberOfQueuedFrames": 1,
+      "NumberOfQueuedFramesIntervals": 0,
+      "Duration": "01:16:11",
+      "FramesRecorded": 274282,
+      "FramesLostCount": 3,
+      "CameraInputCount": 188,
+      "LostFrames": [
+        "13-15"
+      ],
+      "CameraInput": [
+        "1,0,307,1,310,0,418,1,421,0,527,1,530,0,7851,1,7854,0,7918,1,7921,0,9793,1,9797,0,9799,1,9802,0,9805,1,9808,0,9811,1,9816,0,9822,1,9826,0,9828,1,9831,0,9834,1,9837,0,9842,1,9847,0,9857,1,9860,0,9869,1,9872,0,9887,1,9890,0,9897,1,9901,0,9910,1,9913,0,9917,1,9920,0,9924,1,9927,0,9941,1,9946,0,9966,1,9969,0,9976,1,9982,0,9996,1,9999,0,10040,1,10047,0,10061,1,10064,0,10066,1,10069,0,10071,1,10075,0,10089,1,10118,0,10127,1,10130,0,10256,1,10261,0,10543,1,10547,0,11973,1,11976,0,41266,1,41270,0,47882,1,47885,0,49542,1,49545,0,54467,1,54470,0,62325,1,62328,0,67914,1,67921,0,67933,1,67937,0,67961,1,67964,0,70133,1,70138,0,70617,1,70620,0,70629,1,70632,0,70645,1,70648,0,70664,1,70667,0,70704,1,70708,0,70722,1,70725,0,70737,1,70746,0,70749,1,70752,0,70781,1,70793,0,70796,1,70799,0,70803,1,70806,0,70814,1,70817,0,70826,1,70829,0,70846,1,70849,0,70858,1,70861,0,70891,1,70906,0,70913,1,70916,0,70953,1,70956,0,70976,1,70981,0,71008,1,71012,0,71017,1,71021,0,71063,1,71075,0,71080,1,71083,0,71088,1,71091,0,71099,1,71102,0,71107,1,71113,0,71127,1,71134,0,71155,1,71158,0,71179,1,71182,0,71185,1,71188,0,71206,1,71210,0,71238,1,71242,0,71256,1,71297,0,71365,1,71368,0,71669,1,71672,0,71682,1,71685,0,72009,1,72013,0,72259,1,72262,0,72304,1,72307,0,73741,1,73744,0,89114,1,89117,0,94960,1,94964,0,95280,1,95283,0,136099,1,136102,0,140000,1,140003,0,148102,1,148105,0,148110,1,148114,0,150543,1,150546,0,156850,1,156853,0,156856,1,156859,0,156871,1,156876,0,156887,1,156890,0,156898,1,156901,0,156927,1,156930,0,157012,1,157015,0,157028,1,157036,0,157045,1,157048,0,157069,1,157072,0,157088,1,157091,0,157100,1,157104,0,157171,1,157178,0,157220,1,157226,0,157245,1,157249,0,157264,1,157268,0,157287,1,157334,0,157694,1,157697,0,179746,1,179754,0,227123,1,227140,0,227189,1,227193,0,227197,1,227200,0,227289,1,227293,0,227295,1,227304,0,227308,1,227311,0,227324,1,227331,0,227370,1,227373,0,227375,1,227378,0,227392,1,227396,0,227402,1,227407,0,227417,1,227420,0,227426,1,227444,0,227498,1,227501,0,227503,1,227507,0,227509,1,227512,0,227516,1,227519,0,227522,1,227526,0,227530,1,227534,0,227538,1,227545,0,227549,1,227556,0,227559,1,227562,0,227565,1,227568,0,227580,1,227586,0,227594,1,227599,0,227602,1,227605,0,227613,1,227625,0,227650,1,227671,0,227689,1,227693,0,227772,1,227778,0,227975,1,227978,0,227992,1,227996,0,228035,1,228049,0,228067,1,228108,0,228134,1,228137,0,228457,1,228462,0,228465,1,228468,0,228475,1,228479,0,228537,1,228548,0,228551,1,228559,0,228561,1,228599,0,228604,1,228607,0,228806,1,228836,0,228864,1,228870,0,228872,1,228877,0,228887,1,228890,0,228941,1,228966,0,228993,1,229001,0,229143,1,229155,0,229184,1,229187,0,266489,1,266492,0,266854,1,266858,0,266963,1,266967,0,266974,1,266977,0,266986,1,266989,0,267000,1,267003,0,267045,1,267048,0,267063,1,267066,0,267077,1,267089,0,267092,1,267095,0,267131,1,267137,0,267198,1,267261,0,267265,1,267312,0,267314,1,267318,0,267323,1,267326,0,267344,1,267348,0,267361,1,267367,0,267390,1,267394,0,267397,1,267400,0,267434,1,267449,0,267463,1,267469,0,267489,1,267524,0,267549,1,267552,0,267960,1,267971,0,267995,1,268008,0,268044,1,268059,0,268730,1,268751,0,270191,1,270194,0,270200,1,270208,0"
+      ]
+    }
+  },
+  "0123456789_Face_20240212T091444": {
+    "RecordingReport": {
+      "Recording Report Version": "1.0",
+      "Acquisition DateTime": "02/12/24 10:30:55",
+      "MVR Version": "1.1.7",
+      "CameraIndex": "Camera 3",
+      "CameraLabel": "Face",
+      "CameraID": "DEV_000F315CE96D",
+      "FPS": 60.0024,
+      "CameraGain": 13,
+      "CustomInitialExposureTime": 3,
+      "CustomInitialNumberOfFrames": 10,
+      "ExposureTime": 3,
+      "ImageDimensions": "658x492",
+      "BinningFactors": "1x1",
+      "MovieID": "3753ef88-c9ca-11ee-b2d0-0cc47ada6b38",
+      "VideoOutputFileName": "C:\\ProgramData\\AIBS_MPE\\mvr\\data\\.\\1330132892_Face_20240212T091444.mp4",
+      "Codec": "h264_nvenc",
+      "FrameID imprint enabled": "false",
+      "ApproximateFileSize": "1116281.291 KB",
+      "h264": {
+        "CRF": "17",
+        "Preset": "medium",
+        "HardwareAcceleration": "cuvid"
+      },
+      "FFMPEGInputPixelFormat": "gray",
+      "FFMPEGOutputPixelFormat": "yuv420p",
+      "TimeStart": "2024-02-12T09:14:44Z",
+      "TimeEnd": "2024-02-12T10:30:55Z",
+      "MaxNumberOfQueuedFrames": 1,
+      "NumberOfQueuedFramesIntervals": 0,
+      "Duration": "01:16:10",
+      "FramesRecorded": 274236,
+      "FramesLostCount": 0,
+      "CameraInputCount": 0,
+      "LostFrames": [],
+      "CameraInput": [
+        "1,0"
+      ]
+    }
+  },
+  "0123456789_Eye_20240212T091443": {
+    "RecordingReport" : {
+      "Recording Report Version":"1.0",
+      "Acquisition DateTime":"02/12/24 10:30:55",
+      "MVR Version":"1.1.7",
+      "CameraIndex":"Camera 2",
+      "CameraLabel":"Eye",
+      "CameraID":"DEV_000F315BBBED",
+      "FPS":60.0024,
+      "CameraGain":22,
+      "CustomInitialExposureTime":2,
+      "CustomInitialNumberOfFrames":10,
+      "ExposureTime":16,
+      "ImageDimensions":"658x492",
+      "BinningFactors":"1x1",
+      "MovieID":"371944e6-c9ca-11ee-95bd-0cc47ada6b38","VideoOutputFileName":"C:\\ProgramData\\AIBS_MPE\\mvr\\data\\.\\1330132892_Eye_20240212T091443.mp4",
+      "Codec":"h264_nvenc",
+      "FrameID imprint enabled":"false",
+      "ApproximateFileSize":"1116106.021 KB",
+      "h264" : {
+        "CRF":"17",
+        "Preset":"medium",
+        "HardwareAcceleration":"cuvid"},
+        "FFMPEGInputPixelFormat":"gray",
+        "FFMPEGOutputPixelFormat":"yuv420p",
+        "TimeStart":"2024-02-12T09:14:44Z",
+        "TimeEnd":"2024-02-12T10:30:55Z",
+        "MaxNumberOfQueuedFrames":1,
+        "NumberOfQueuedFramesIntervals":0,
+        "Duration":"01:16:10",
+        "FramesRecorded":274257,
+        "FramesLostCount":0,
+        "CameraInputCount":0,
+        "LostFrames":[],
+        "CameraInput":["1,0"]}},
+  "platform": {
+    "schema_version": 3,
+    "schema_type": "Mesoscope",
+    "rig_id": "MESO.1",
+    "stimulus_pkl": "1330132892.pkl",
+    "wfltk_version": "5.6.1+ga1476fd.b46657",
+    "wfl_version": "3.4.0.dev0+gf8b81af.b144149",
+    "foraging_id": "25af27a7-ea6d-4e50-9333-02adf58210d0",
+    "sync_file": "1330132892_20240212T091433.h5",
+    "timeseries_tif": "1330132892_timeseries.tiff",
+    "timeseries_roi_file": "1330132892_timeseries.roi",
+    "depths_tif": "1330132892_averaged_depth.tiff",
+    "surface_tif": "1330132892_averaged_surface.tiff",
+    "surface_roi_file": "1330132892_surface.roi",
+    "eye_tracking_video": "1330132892_Eye_20240212T091443.mp4",
+    "behavior_video": "1330132892_Behavior_20240212T091443.mp4",
+    "face_tracking": "1330132892_Face_20240212T091444.mp4",
+    "eye_cam_json": "1330132892_Eye_20240212T091443.json",
+    "beh_cam_json": "1330132892_Behavior_20240212T091443.json",
+    "face_tracking_json": "1330132892_Face_20240212T091444.json",
+    "stimulus_name": "OPHYS_6_images_B",
+    "registration": {
+      "reticle_image": {
+        "stage_x": -2370.0,
+        "stage_y": -8238.0,
+        "stage_z": 20268.0,
+        "pixel_size_um": 0.4962,
+        "acquired_at": "2024-02-12T09:03:41.352003",
+        "rotation": 22.318,
+        "stage_image_rotation": 31.55,
+        "x_offset": 0,
+        "y_offset": 0,
+        "filename": "1330132892_reticle.tif"
+      },
+      "surface_vasculature": {
+        "stage_x": -2370.0,
+        "stage_y": -8238.0,
+        "stage_z": 20268.0,
+        "pixel_size_um": 0.4962,
+        "acquired_at": "2024-02-12T11:02:22.412532",
+        "rotation": 22.318,
+        "stage_image_rotation": null,
+        "x_offset": 0,
+        "y_offset": 0,
+        "filename": "1330132892_vasculature.tif"
+      }
+    },
+    "imaging_plane_groups": [
+      {
+        "column_z_stack": "1330132892_cortical_z_stack0.tiff",
+        "local_z_stack_tif": "1330132892_local_z_stack0.tiff",
+        "acquisition_framerate_Hz": 9.48,
+        "imaging_planes": [
+          {
+            "targeted_x": -2015.51,
+            "targeted_y": -275.56,
+            "targeted_depth": 190,
+            "targeted_structure_id": 385,
+            "scanimage_roi_index": 0,
+            "scanimage_scanfield_z": 230,
+            "scanimage_power": 42,
+            "registration": {
+              "stage_x": 0.0,
+              "stage_y": 0.0,
+              "stage_z": 0.0,
+              "pixel_size_um": 0.78,
+              "acquired_at": "2024-02-12T10:30:56.315159",
+              "rotation": -108.1414,
+              "stage_image_rotation": null,
+              "x_offset": 0,
+              "y_offset": 0,
+              "filename": "1330132892_timeseries.tiff"
+            }
+          },
+          {
+            "targeted_x": -2015.51,
+            "targeted_y": -275.6,
+            "targeted_depth": 232,
+            "targeted_structure_id": 385,
+            "scanimage_roi_index": 0,
+            "scanimage_scanfield_z": 257,
+            "scanimage_power": 42,
+            "registration": {
+              "stage_x": 0.0,
+              "stage_y": 0.0,
+              "stage_z": 0.0,
+              "pixel_size_um": 0.78,
+              "acquired_at": "2024-02-12T10:30:56.315159",
+              "rotation": -108.1414,
+              "stage_image_rotation": null,
+              "x_offset": 0,
+              "y_offset": 0,
+              "filename": "1330132892_timeseries.tiff"
+            }
+          }
+        ]
+      },
+      {
+        "column_z_stack": "1330132892_cortical_z_stack0.tiff",
+        "local_z_stack_tif": "1330132892_local_z_stack1.tiff",
+        "acquisition_framerate_Hz": 9.48,
+        "imaging_planes": [
+          {
+            "targeted_x": -2015.51,
+            "targeted_y": -275.56,
+            "targeted_depth": 136,
+            "targeted_structure_id": 385,
+            "scanimage_roi_index": 0,
+            "scanimage_scanfield_z": 176,
+            "scanimage_power": 28,
+            "registration": {
+              "stage_x": 0.0,
+              "stage_y": 0.0,
+              "stage_z": 0.0,
+              "pixel_size_um": 0.78,
+              "acquired_at": "2024-02-12T10:30:56.315159",
+              "rotation": -108.1414,
+              "stage_image_rotation": null,
+              "x_offset": 0,
+              "y_offset": 0,
+              "filename": "1330132892_timeseries.tiff"
+            }
+          },
+          {
+            "targeted_x": -2015.51,
+            "targeted_y": -275.6,
+            "targeted_depth": 282,
+            "targeted_structure_id": 385,
+            "scanimage_roi_index": 0,
+            "scanimage_scanfield_z": 307,
+            "scanimage_power": 28,
+            "registration": {
+              "stage_x": 0.0,
+              "stage_y": 0.0,
+              "stage_z": 0.0,
+              "pixel_size_um": 0.78,
+              "acquired_at": "2024-02-12T10:30:56.315159",
+              "rotation": -108.1414,
+              "stage_image_rotation": null,
+              "x_offset": 0,
+              "y_offset": 0,
+              "filename": "1330132892_timeseries.tiff"
+            }
+          }
+        ]
+      },
+      {
+        "column_z_stack": "1330132892_cortical_z_stack0.tiff",
+        "local_z_stack_tif": "1330132892_local_z_stack2.tiff",
+        "acquisition_framerate_Hz": 9.48,
+        "imaging_planes": [
+          {
+            "targeted_x": -2015.51,
+            "targeted_y": -275.56,
+            "targeted_depth": 72,
+            "targeted_structure_id": 385,
+            "scanimage_roi_index": 0,
+            "scanimage_scanfield_z": 112,
+            "scanimage_power": 12,
+            "registration": {
+              "stage_x": 0.0,
+              "stage_y": 0.0,
+              "stage_z": 0.0,
+              "pixel_size_um": 0.78,
+              "acquired_at": "2024-02-12T10:30:56.315159",
+              "rotation": -108.1414,
+              "stage_image_rotation": null,
+              "x_offset": 0,
+              "y_offset": 0,
+              "filename": "1330132892_timeseries.tiff"
+            }
+          },
+          {
+            "targeted_x": -2015.51,
+            "targeted_y": -275.6,
+            "targeted_depth": 326,
+            "targeted_structure_id": 385,
+            "scanimage_roi_index": 0,
+            "scanimage_scanfield_z": 351,
+            "scanimage_power": 12,
+            "registration": {
+              "stage_x": 0.0,
+              "stage_y": 0.0,
+              "stage_z": 0.0,
+              "pixel_size_um": 0.78,
+              "acquired_at": "2024-02-12T10:30:56.315159",
+              "rotation": -108.1414,
+              "stage_image_rotation": null,
+              "x_offset": 0,
+              "y_offset": 0,
+              "filename": "1330132892_timeseries.tiff"
+            }
+          }
+        ]
+      },
+      {
+        "column_z_stack": "1330132892_cortical_z_stack0.tiff",
+        "local_z_stack_tif": "1330132892_local_z_stack3.tiff",
+        "acquisition_framerate_Hz": 9.48,
+        "imaging_planes": [
+          {
+            "targeted_x": -2015.51,
+            "targeted_y": -275.56,
+            "targeted_depth": 30,
+            "targeted_structure_id": 385,
+            "scanimage_roi_index": 0,
+            "scanimage_scanfield_z": 70,
+            "scanimage_power": 5,
+            "registration": {
+              "stage_x": 0.0,
+              "stage_y": 0.0,
+              "stage_z": 0.0,
+              "pixel_size_um": 0.78,
+              "acquired_at": "2024-02-12T10:30:56.315159",
+              "rotation": -108.1414,
+              "stage_image_rotation": null,
+              "x_offset": 0,
+              "y_offset": 0,
+              "filename": "1330132892_timeseries.tiff"
+            }
+          },
+          {
+            "targeted_x": -2015.51,
+            "targeted_y": -275.6,
+            "targeted_depth": 364,
+            "targeted_structure_id": 385,
+            "scanimage_roi_index": 0,
+            "scanimage_scanfield_z": 389,
+            "scanimage_power": 5,
+            "registration": {
+              "stage_x": 0.0,
+              "stage_y": 0.0,
+              "stage_z": 0.0,
+              "pixel_size_um": 0.78,
+              "acquired_at": "2024-02-12T10:30:56.315159",
+              "rotation": -108.1414,
+              "stage_image_rotation": null,
+              "x_offset": 0,
+              "y_offset": 0,
+              "filename": "1330132892_timeseries.tiff"
+            }
+          }
+        ]
+      }
+    ],
+    "fullfield_2p_image": "1330132892_fullfield.tiff",
+    "fullfield_2p_roi_file": "1330132892_fullfield.roi"
+  }
+}
