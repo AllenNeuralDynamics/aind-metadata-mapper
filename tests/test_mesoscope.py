@@ -5,8 +5,9 @@ import os
 import unittest
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+from aind_data_schema.core.session import Session
 from PIL import Image
 
 from aind_metadata_mapper.mesoscope.session import JobSettings, MesoscopeEtl
@@ -55,8 +56,56 @@ class TestMesoscope(unittest.TestCase):
             mouse_platform_name="disc",
         )
 
+    def test_constructor_from_string(self) -> None:
+        """Tests that the settings can be constructed from a json string"""
+        job_settings_str = self.example_job_settings.model_dump_json()
+        etl0 = MesoscopeEtl(
+            job_settings=job_settings_str,
+        )
+        etl1 = MesoscopeEtl(
+            job_settings=self.example_job_settings,
+        )
+        self.assertEqual(etl1.job_settings, etl0.job_settings)
+
+    @patch("pathlib.Path.is_file")
+    def test_read_metadata_value_error(self, mock_is_file: MagicMock) -> None:
+        """Tests that _read_metadata raises a ValueError"""
+        mock_is_file.return_value = False
+        etl1 = MesoscopeEtl(
+            job_settings=self.example_job_settings,
+        )
+        tiff_path = Path("non_existent_file_path")
+        with self.assertRaises(ValueError) as e:
+            etl1._read_metadata(tiff_path)
+        self.assertEqual(
+            f"{tiff_path.resolve().absolute()} is not a file",
+            e.exception.args[0],
+        )
+
+    @patch("pathlib.Path.is_file")
+    @patch("builtins.open")
+    @patch("tifffile.FileHandle")
+    @patch("tifffile.read_scanimage_metadata")
+    def test_read_metadata(
+        self,
+        mock_read_scan: MagicMock,
+        mock_file_handle: MagicMock,
+        mock_open: MagicMock,
+        mock_is_file: MagicMock,
+    ) -> None:
+        """Tests that _read_metadata calls readers"""
+        mock_is_file.return_value = True
+        etl1 = MesoscopeEtl(
+            job_settings=self.example_job_settings,
+        )
+        tiff_path = Path("file_path")
+        etl1._read_metadata(tiff_path)
+        mock_open.assert_called()
+        mock_file_handle.assert_called()
+        mock_read_scan.assert_called()
+
     def test_extract(self) -> None:
-        """Tests that the raw image info is extracted correcetly."""
+        """Tests that the raw image info is extracted correctly."""
         etl = MesoscopeEtl(
             job_settings=self.example_job_settings,
         )
@@ -64,6 +113,43 @@ class TestMesoscope(unittest.TestCase):
             expected_extract = json.load(f)
         extract = etl._extract()
         self.assertEqual(extract, expected_extract)
+
+    @patch("pathlib.Path.is_dir")
+    def test_extract_no_behavior_dir(self, mock_is_dir: MagicMock) -> None:
+        """Tests that _extract raises a ValueError"""
+        mock_is_dir.return_value = False
+        etl1 = MesoscopeEtl(
+            job_settings=self.example_job_settings,
+        )
+        with self.assertRaises(ValueError) as e:
+            etl1._extract()
+        self.assertEqual(
+            "Behavior source must be a directory",
+            e.exception.args[0],
+        )
+
+    @patch("pathlib.Path.is_dir")
+    @patch("pathlib.Path.exists")
+    @patch("pathlib.Path.glob")
+    def test_extract_no_input_source(
+        self,
+        mock_path_glob: MagicMock,
+        mock_path_exists: MagicMock,
+        mock_is_dir: MagicMock,
+    ) -> None:
+        """Tests that _extract raises a ValueError"""
+        mock_is_dir.return_value = True
+        mock_path_exists.return_value = False
+        mock_path_glob.return_value = iter([Path("/somedir/a")])
+        etl1 = MesoscopeEtl(
+            job_settings=self.example_job_settings,
+        )
+        with self.assertRaises(ValueError) as e:
+            etl1._extract()
+        self.assertEqual(
+            "No platform json file found in directory",
+            e.exception.args[0],
+        )
 
     @patch(
         "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._read_metadata"
@@ -98,8 +184,26 @@ class TestMesoscope(unittest.TestCase):
 
         self.assertEqual(
             self.example_session,
-            json.loads(transformed_session.model_dump_json())
+            json.loads(transformed_session.model_dump_json()),
         )
+
+    @patch("aind_metadata_mapper.mesoscope.session.MesoscopeEtl._extract")
+    @patch("aind_metadata_mapper.mesoscope.session.MesoscopeEtl._transform")
+    @patch("aind_data_schema.base.AindCoreModel.write_standard_file")
+    def test_run_job(
+        self,
+        mock_write: MagicMock,
+        mock_transform: MagicMock,
+        mock_extract: MagicMock,
+    ) -> None:
+        """Tests the run_job method"""
+        mock_transform.return_value = Session.model_construct()
+        etl = MesoscopeEtl(
+            job_settings=self.example_job_settings,
+        )
+        etl.run_job()
+        mock_extract.assert_called_once()
+        mock_write.assert_called_once_with(output_directory=RESOURCES_DIR)
 
 
 if __name__ == "__main__":

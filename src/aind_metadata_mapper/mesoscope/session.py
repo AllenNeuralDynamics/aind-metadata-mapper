@@ -9,7 +9,6 @@ from typing import List, Union
 import tifffile
 from aind_data_schema.core.session import FieldOfView, Session, Stream
 from aind_data_schema.models.modalities import Modality
-from aind_data_schema.models.units import SizeUnit
 from PIL import Image
 from PIL.TiffTags import TAGS
 from pydantic import Field
@@ -24,8 +23,8 @@ class JobSettings(BaseSettings):
     # TODO: for now this will need to be directly input by the user.
     #  In the future, the workflow sequencing engine should be able to put
     #  this in a json or we can extract it from SLIMS
-    input_source: Union[Path, str]
-    behavior_source: Union[Path, str]
+    input_source: Path
+    behavior_source: Path
     output_directory: Path
     session_start_time: datetime
     session_end_time: datetime
@@ -78,7 +77,9 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
                 f"{tiff_path.resolve().absolute()} " "is not a file"
             )
         with open(tiff_path, "rb") as tiff:
-            return tifffile.read_scanimage_metadata(tiff)
+            file_handle = tifffile.FileHandle(tiff)
+            file_contents = tifffile.read_scanimage_metadata(file_handle)
+        return file_contents
 
     def _extract(self) -> dict:
         """extract data from the platform json file and tiff file (in the
@@ -92,18 +93,10 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         dict
             The extracted data from the platform json file.
         """
-        if isinstance(self.job_settings.input_source, str):
-            input_source = self.job_settings.input_source = Path(
-                self.job_settings.input_source
-            )
-        else:
-            input_source = self.job_settings.input_source
-        if isinstance(self.job_settings.behavior_source, str):
-            behavior_source = self.job_settings.behavior_source = Path(
-                self.job_settings.behavior_source
-            )
-        else:
-            behavior_source = self.job_settings.behavior_source
+        # The pydantic models will validate that the user inputs a Path.
+        # We can add validators there if we want to coerce strings to Paths.
+        input_source = self.job_settings.input_source
+        behavior_source = self.job_settings.behavior_source
         session_metadata = {}
         if behavior_source.is_dir():
             for ftype in behavior_source.glob("*json"):
@@ -118,7 +111,9 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
             raise ValueError("Behavior source must be a directory")
         if input_source.is_dir():
             input_source = next(input_source.glob("*platform.json"), "")
-            if not input_source.exists():
+            if (
+                isinstance(input_source, str) and input_source == ""
+            ) or not input_source.exists():
                 raise ValueError("No platform json file found in directory")
         with open(input_source, "r") as f:
             session_metadata["platform"] = json.load(f)
