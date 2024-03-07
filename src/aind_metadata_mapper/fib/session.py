@@ -1,8 +1,8 @@
 """Module to write valid OptoStim and Subject schemas"""
 
-import datetime
 import re
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -161,7 +161,7 @@ class FIBEtl(GenericEtl[JobSettings]):
         experiment_duration = (
             opto_base + opto_duration + (opto_interval * trial_num)
         )
-        end_datetime = session_start_time + datetime.timedelta(
+        end_datetime = session_start_time + timedelta(
             seconds=experiment_duration
         )
         stimulus_epochs = StimulusEpoch(
