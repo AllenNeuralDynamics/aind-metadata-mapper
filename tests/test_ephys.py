@@ -41,6 +41,8 @@ class TestSchemaWriter(unittest.TestCase):
             "rig_id": "323_EPHYS2-RF_2024-01-18_01",
             "animal_weight_prior": None,
             "animal_weight_post": None,
+            "mouse_platform_name": "Running Wheel",
+            "active_mouse_platform": False,
             "calibrations": [],
             "maintenance": [],
             "camera_names": [],
@@ -123,8 +125,6 @@ class TestSchemaWriter(unittest.TestCase):
                             }
                         ],
                     },
-                    "mouse_platform_name": "Running Wheel",
-                    "active_mouse_platform": False,
                     "notes": "699889_2024-01-18_12-12-04",
                 },
                 {
@@ -168,8 +168,6 @@ class TestSchemaWriter(unittest.TestCase):
                             }
                         ],
                     },
-                    "mouse_platform_name": "Running Wheel",
-                    "active_mouse_platform": False,
                     "notes": "699889_2024-01-18_12-24-55; Surface Finding",
                 },
             ],

@@ -89,6 +89,8 @@ class EphysEtl(BaseEtl):
         ]
         ephys_session["maintenance"] = experiment_data["maintenance"]
         ephys_session["calibrations"] = experiment_data["calibrations"]
+        ephys_session["mouse_platform_name"] = "Running Wheel"
+        ephys_session["active_mouse_platform"] = False
 
         # Constant throughout data streams
         stick_microscopes = experiment_data["stick_microscopes"]
@@ -106,12 +108,6 @@ class EphysEtl(BaseEtl):
             session_stream["stream_end_time"] = datetime.strptime(
                 stage[-1][0], "%Y/%m/%d %H:%M:%S.%f"
             )
-            session_stream["mouse_platform_name"] = data_stream[
-                "mouse_platform_name"
-            ]
-            session_stream["active_mouse_platform"] = data_stream[
-                "active_mouse_platform"
-            ]
             session_stream["stream_modalities"] = [Modality.ECEPHYS]
             session_stream["stick_microscopes"] = stick_microscopes
             session_stream["camera_names"] = camera_names
