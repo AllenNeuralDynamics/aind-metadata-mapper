@@ -6,6 +6,7 @@ import os
 import unittest
 from pathlib import Path
 from xml.dom import minidom
+import zoneinfo
 
 from aind_data_schema.core.session import Session
 
@@ -29,6 +30,8 @@ EXPECTED_SESSION = RESOURCES_DIR / "ephys_session.json"
 class TestSchemaWriter(unittest.TestCase):
     """Test methods in SchemaWriter class."""
 
+    maxDiff = None  # show full diff without truncation
+
     @classmethod
     def setUpClass(cls):
         """Load record object and user settings before running tests."""
@@ -41,8 +44,6 @@ class TestSchemaWriter(unittest.TestCase):
             "rig_id": "323_EPHYS2-RF_2024-01-18_01",
             "animal_weight_prior": None,
             "animal_weight_post": None,
-            "mouse_platform_name": "Running Wheel",
-            "active_mouse_platform": False,
             "calibrations": [],
             "maintenance": [],
             "camera_names": [],
@@ -125,6 +126,8 @@ class TestSchemaWriter(unittest.TestCase):
                             }
                         ],
                     },
+                    "mouse_platform_name": "Running Wheel",
+                    "active_mouse_platform": False,
                     "notes": "699889_2024-01-18_12-12-04",
                 },
                 {
@@ -168,6 +171,8 @@ class TestSchemaWriter(unittest.TestCase):
                             }
                         ],
                     },
+                    "mouse_platform_name": "Running Wheel",
+                    "active_mouse_platform": False,
                     "notes": "699889_2024-01-18_12-24-55; Surface Finding",
                 },
             ],
@@ -216,7 +221,19 @@ class TestSchemaWriter(unittest.TestCase):
         )
         parsed_info = etl_job1._extract()
         actual_session = etl_job1._transform(parsed_info)
-        self.assertEqual(self.expected_session, actual_session)
+        actual_session.session_start_time = actual_session.session_start_time \
+            .replace(tzinfo=zoneinfo.ZoneInfo("UTC"))
+        actual_session.session_end_time = actual_session.session_end_time \
+            .replace(tzinfo=zoneinfo.ZoneInfo("UTC"))
+        for stream in actual_session.data_streams:
+            stream.stream_start_time = stream.stream_start_time.replace(
+                tzinfo=zoneinfo.ZoneInfo("UTC"))
+            stream.stream_end_time = stream.stream_end_time.replace(
+                tzinfo=zoneinfo.ZoneInfo("UTC"))
+        self.assertEqual(
+            self.expected_session.model_dump(),
+            actual_session.model_dump(),
+        )
 
 
 if __name__ == "__main__":
