@@ -1,12 +1,12 @@
 {
    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/session.py",
-   "schema_version": "0.1.4",
+   "schema_version": "0.2.1",
    "protocol_id": [],
    "experimenter_full_name": [
       "John Doe"
    ],
-   "session_start_time": "2024-02-22T15:30:00",
-   "session_end_time": "2024-02-22T17:30:00",
+   "session_start_time": "2024-02-22T15:30:00Z",
+   "session_end_time": "2024-02-22T17:30:00Z",
    "session_type": "Mesoscope",
    "iacuc_protocol": "12345",
    "rig_id": "MESO.1",
@@ -18,8 +18,8 @@
    "weight_unit": "gram",
    "data_streams": [
       {
-         "stream_start_time": "2024-02-22T15:30:00",
-         "stream_end_time": "2024-02-22T17:30:00",
+         "stream_start_time": "2024-02-22T15:30:00Z",
+         "stream_end_time": "2024-02-22T17:30:00Z",
          "daq_names": [],
          "camera_names": [
             "Mesoscope"
@@ -49,7 +49,13 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null
+               "coupled_fov_index": null,
+               "power": null,
+               "power_unit": "percent",
+               "scanfield_z": null,
+               "scanfield_z_unit": "micrometer",
+               "scanimage_roi_index": null,
+               "notes": null
             },
             {
                "index": 0,
@@ -68,7 +74,13 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null
+               "coupled_fov_index": null,
+               "power": null,
+               "power_unit": "percent",
+               "scanfield_z": null,
+               "scanfield_z_unit": "micrometer",
+               "scanimage_roi_index": null,
+               "notes": null
             },
             {
                "index": 1,
@@ -87,7 +99,13 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null
+               "coupled_fov_index": null,
+               "power": null,
+               "power_unit": "percent",
+               "scanfield_z": null,
+               "scanfield_z_unit": "micrometer",
+               "scanimage_roi_index": null,
+               "notes": null
             },
             {
                "index": 1,
@@ -106,7 +124,13 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null
+               "coupled_fov_index": null,
+               "power": null,
+               "power_unit": "percent",
+               "scanfield_z": null,
+               "scanfield_z_unit": "micrometer",
+               "scanimage_roi_index": null,
+               "notes": null
             },
             {
                "index": 2,
@@ -125,7 +149,13 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null
+               "coupled_fov_index": null,
+               "power": null,
+               "power_unit": "percent",
+               "scanfield_z": null,
+               "scanfield_z_unit": "micrometer",
+               "scanimage_roi_index": null,
+               "notes": null
             },
             {
                "index": 2,
@@ -144,7 +174,13 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null
+               "coupled_fov_index": null,
+               "power": null,
+               "power_unit": "percent",
+               "scanfield_z": null,
+               "scanfield_z_unit": "micrometer",
+               "scanimage_roi_index": null,
+               "notes": null
             },
             {
                "index": 3,
@@ -163,7 +199,13 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null
+               "coupled_fov_index": null,
+               "power": null,
+               "power_unit": "percent",
+               "scanfield_z": null,
+               "scanfield_z_unit": "micrometer",
+               "scanimage_roi_index": null,
+               "notes": null
             },
             {
                "index": 3,
@@ -182,14 +224,17 @@
                "fov_scale_factor_unit": "um/pixel",
                "frame_rate": "9.48",
                "frame_rate_unit": "hertz",
-               "coupled_fov_index": null
+               "coupled_fov_index": null,
+               "power": null,
+               "power_unit": "percent",
+               "scanfield_z": null,
+               "scanfield_z_unit": "micrometer",
+               "scanimage_roi_index": null,
+               "notes": null
             }
          ],
          "slap_fovs": null,
          "stack_parameters": null,
-         "stimulus_device_names": [],
-         "mouse_platform_name": "disc",
-         "active_mouse_platform": true,
          "stream_modalities": [
             {
                "name": "Planar optical physiology",
@@ -199,8 +244,8 @@
          "notes": null
       },
       {
-         "stream_start_time": "2024-02-12T09:14:43",
-         "stream_end_time": "2024-02-12T10:30:54",
+         "stream_start_time": "2024-02-12T09:14:43Z",
+         "stream_end_time": "2024-02-12T10:30:54Z",
          "daq_names": [],
          "camera_names": [
             "Behavior"
@@ -215,9 +260,6 @@
          "ophys_fovs": [],
          "slap_fovs": null,
          "stack_parameters": null,
-         "stimulus_device_names": [],
-         "mouse_platform_name": "disc",
-         "active_mouse_platform": true,
          "stream_modalities": [
             {
                "name": "Behavior videos",
@@ -227,8 +269,8 @@
          "notes": null
       },
       {
-         "stream_start_time": "2024-02-12T09:14:44",
-         "stream_end_time": "2024-02-12T10:30:55",
+         "stream_start_time": "2024-02-12T09:14:44Z",
+         "stream_end_time": "2024-02-12T10:30:55Z",
          "daq_names": [],
          "camera_names": [
             "Eye"
@@ -243,9 +285,6 @@
          "ophys_fovs": [],
          "slap_fovs": null,
          "stack_parameters": null,
-         "stimulus_device_names": [],
-         "mouse_platform_name": "disc",
-         "active_mouse_platform": true,
          "stream_modalities": [
             {
                "name": "Behavior videos",
@@ -255,8 +294,8 @@
          "notes": null
       },
       {
-         "stream_start_time": "2024-02-12T09:14:44",
-         "stream_end_time": "2024-02-12T10:30:55",
+         "stream_start_time": "2024-02-12T09:14:44Z",
+         "stream_end_time": "2024-02-12T10:30:55Z",
          "daq_names": [],
          "camera_names": [
             "Face"
@@ -271,9 +310,6 @@
          "ophys_fovs": [],
          "slap_fovs": null,
          "stack_parameters": null,
-         "stimulus_device_names": [],
-         "mouse_platform_name": "disc",
-         "active_mouse_platform": true,
          "stream_modalities": [
             {
                "name": "Behavior videos",
@@ -283,8 +319,8 @@
          "notes": null
       },
       {
-         "stream_start_time": "2024-02-12T11:02:22",
-         "stream_end_time": "2024-02-12T11:02:22",
+         "stream_start_time": "2024-02-12T11:02:22Z",
+         "stream_end_time": "2024-02-12T11:02:22Z",
          "daq_names": [],
          "camera_names": [
             "Vasculature"
@@ -299,9 +335,6 @@
          "ophys_fovs": [],
          "slap_fovs": null,
          "stack_parameters": null,
-         "stimulus_device_names": [],
-         "mouse_platform_name": "disc",
-         "active_mouse_platform": true,
          "stream_modalities": [
             {
                "name": "Confocal microscopy",
@@ -312,6 +345,8 @@
       }
    ],
    "stimulus_epochs": [],
+   "mouse_platform_name": "disc",
+   "active_mouse_platform": true,
    "reward_delivery": null,
    "reward_consumed_total": null,
    "reward_consumed_unit": "microliter",

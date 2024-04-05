@@ -6,6 +6,7 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+import zoneinfo
 
 from aind_data_schema.core.session import Session
 from PIL import Image
@@ -27,6 +28,8 @@ EXAMPLE_IMAGE = RESOURCES_DIR / "test.tiff"
 class TestMesoscope(unittest.TestCase):
     """Tests methods in MesoscopeEtl class"""
 
+    maxDiff = None  # show full diff without truncation
+
     @classmethod
     def setUpClass(cls) -> None:
         """Set up the test suite"""
@@ -44,8 +47,12 @@ class TestMesoscope(unittest.TestCase):
             behavior_source=RESOURCES_DIR,
             output_directory=RESOURCES_DIR,
             subject_id="12345",
-            session_start_time=datetime(2024, 2, 22, 15, 30, 0),
-            session_end_time=datetime(2024, 2, 22, 17, 30, 0),
+            session_start_time=datetime(
+                2024, 2, 22, 15, 30, 0,
+                tzinfo=zoneinfo.ZoneInfo("UTC")),
+            session_end_time=datetime(
+                2024, 2, 22, 17, 30, 0,
+                tzinfo=zoneinfo.ZoneInfo("UTC")),
             project="some_project",
             experimenter_full_name=["John Doe"],
             magnification="16x",
@@ -158,6 +165,7 @@ class TestMesoscope(unittest.TestCase):
     def test_transform(self, mock_open, mock_scanimage) -> None:
         """Tests that the platform json is extracted and transfromed into a
         session object correctly"""
+
         etl = MesoscopeEtl(
             job_settings=self.example_job_settings,
         )
@@ -168,20 +176,24 @@ class TestMesoscope(unittest.TestCase):
 
         # mock scanimage metadata
         mock_meta = [{}]
-        mock_meta[0][
-            "SI.hRoiManager.linesPerFrame"
-        ] = self.example_scanimage_meta["lines_per_frame"]
-        mock_meta[0][
-            "SI.hRoiManager.pixelsPerLine"
-        ] = self.example_scanimage_meta["pixels_per_line"]
-        mock_meta[0][
-            "SI.hRoiManager.scanZoomFactor"
-        ] = self.example_scanimage_meta["fov_scale_factor"]
+        mock_meta[0]["SI.hRoiManager.linesPerFrame"] = (
+            self.example_scanimage_meta["lines_per_frame"]
+        )
+        mock_meta[0]["SI.hRoiManager.pixelsPerLine"] = (
+            self.example_scanimage_meta["pixels_per_line"]
+        )
+        mock_meta[0]["SI.hRoiManager.scanZoomFactor"] = (
+            self.example_scanimage_meta["fov_scale_factor"]
+        )
         mock_scanimage.return_value = mock_meta
 
         extract = etl._extract()
         transformed_session = etl._transform(extract)
-
+        for stream in transformed_session.data_streams:
+            stream.stream_start_time = stream.stream_start_time.replace(
+                tzinfo=zoneinfo.ZoneInfo("UTC"))
+            stream.stream_end_time = stream.stream_end_time.replace(
+                tzinfo=zoneinfo.ZoneInfo("UTC"))
         self.assertEqual(
             self.example_session,
             json.loads(transformed_session.model_dump_json()),
