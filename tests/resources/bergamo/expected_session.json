@@ -1,13 +1,13 @@
 {
    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/session.py",
-   "schema_version": "0.1.4",
+   "schema_version": "0.2.1",
    "protocol_id": [],
    "experimenter_full_name": [
-      "John Smith",
-      "Jane Smith"
+       "John Smith",
+       "Jane Smith"
    ],
-   "session_start_time": "2023-10-10T14:00:00",
-   "session_end_time": "2023-10-10T17:00:00",
+   "session_start_time": "2023-10-10T14:00:00Z",
+   "session_end_time": "2023-10-10T17:00:00Z",
    "session_type": "BCI",
    "iacuc_protocol": "2115",
    "rig_id": "Bergamo photostim.",
@@ -18,116 +18,140 @@
    "animal_weight_post": null,
    "weight_unit": "gram",
    "data_streams": [
-      {
-         "stream_start_time": "2023-10-10T15:00:00",
-         "stream_end_time": "2023-10-10T16:00:00",
-         "daq_names": [],
-         "camera_names": [
-            "Side Camera"
-         ],
-         "light_sources": [
-            {
-               "device_type": "Laser",
-               "name": "Laser A",
-               "wavelength": 920,
-               "wavelength_unit": "nanometer",
-               "excitation_power": "15",
-               "excitation_power_unit": "percent"
-            }
-         ],
-         "ephys_modules": [],
-         "stick_microscopes": [],
-         "manipulator_modules": [],
-         "detectors": [
-            {
-               "name": "PMT A",
-               "exposure_time": "0.1",
-               "exposure_time_unit": "millisecond",
-               "trigger_type": "Internal"
-            }
-         ],
-         "fiber_connections": [],
-         "fiber_modules": [],
-         "ophys_fovs": [
-            {
-               "index": 0,
-               "imaging_depth": 150,
-               "imaging_depth_unit": "micrometer",
-               "targeted_structure": "M1",
-               "fov_coordinate_ml": "1.5",
-               "fov_coordinate_ap": "1.5",
-               "fov_coordinate_unit": "micrometer",
-               "fov_reference": "Bregma",
-               "fov_width": 512,
-               "fov_height": 512,
-               "fov_size_unit": "pixel",
-               "magnification": "16x",
-               "fov_scale_factor": "1.2",
-               "fov_scale_factor_unit": "um/pixel",
-               "frame_rate": "30.0119",
-               "frame_rate_unit": "hertz",
-               "coupled_fov_index": null
-            }
-         ],
-         "slap_fovs": null,
-         "stack_parameters": null,
-         "stimulus_device_names": [],
-         "mouse_platform_name": "some_mouse_platform_name",
-         "active_mouse_platform": true,
-         "stream_modalities": [
-            {
-               "name": "Planar optical physiology",
-               "abbreviation": "ophys"
-            }
-         ],
-         "notes": null
-      }
+       {
+           "stream_start_time": "2023-10-10T15:00:00Z",
+           "stream_end_time": "2023-10-10T16:00:00Z",
+           "daq_names": [],
+           "camera_names": [
+               "Side Camera"
+           ],
+           "light_sources": [
+               {
+                   "device_type": "Laser",
+                   "name": "Laser A",
+                   "wavelength": 920,
+                   "wavelength_unit": "nanometer",
+                   "excitation_power": "15",
+                   "excitation_power_unit": "percent"
+               }
+           ],
+           "ephys_modules": [],
+           "stick_microscopes": [],
+           "manipulator_modules": [],
+           "detectors": [
+               {
+                   "name": "PMT A",
+                   "exposure_time": "0.1",
+                   "exposure_time_unit": "millisecond",
+                   "trigger_type": "Internal"
+               }
+           ],
+           "fiber_connections": [],
+           "fiber_modules": [],
+           "ophys_fovs": [
+               {
+                   "index": 0,
+                   "imaging_depth": 150,
+                   "imaging_depth_unit": "micrometer",
+                   "targeted_structure": "M1",
+                   "fov_coordinate_ml": "1.5",
+                   "fov_coordinate_ap": "1.5",
+                   "fov_coordinate_unit": "micrometer",
+                   "fov_reference": "Bregma",
+                   "fov_width": 512,
+                   "fov_height": 512,
+                   "fov_size_unit": "pixel",
+                   "magnification": "16x",
+                   "fov_scale_factor": "1.2",
+                   "fov_scale_factor_unit": "um/pixel",
+                   "frame_rate": "30.0119",
+                   "frame_rate_unit": "hertz",
+                   "coupled_fov_index": null,
+                   "power": null,
+                   "power_unit": "percent",
+                   "scanfield_z": null,
+                   "scanfield_z_unit": "micrometer",
+                   "scanimage_roi_index": null,
+                   "notes": null
+               }
+           ],
+           "slap_fovs": null,
+           "stack_parameters": null,
+           "stream_modalities": [
+               {
+                   "name": "Planar optical physiology",
+                   "abbreviation": "ophys"
+               }
+           ],
+           "notes": null
+       }
    ],
    "stimulus_epochs": [
-      {
-         "stimulus": {
-            "stimulus_type": "Photo Stimulation",
-            "stimulus_name": "PhotoStimulation",
-            "number_groups": 2,
-            "groups": [
+       {
+           "stimulus_start_time": "2023-10-10T15:15:00Z",
+           "stimulus_end_time": "2023-10-10T15:45:00Z",
+           "stimulus_name": "PhotoStimulation",
+           "session_number": null,
+           "software": [],
+           "script": null,
+           "stimulus_modalities": [
+               "Optogenetics"
+           ],
+           "stimulus_parameters": [
                {
-                  "group_index": 0,
-                  "number_of_neurons": 10,
-                  "stimulation_laser_power": "20",
-                  "stimulation_laser_power_unit": "milliwatt",
-                  "number_trials": 5,
-                  "number_spirals": 10,
-                  "spiral_duration": "0.01",
-                  "spiral_duration_unit": "second",
-                  "inter_spiral_interval": "0.001",
-                  "inter_spiral_interval_unit": "second",
-                  "other_parameters": {},
-                  "notes": null
-               },
-               {
-                  "group_index": 0,
-                  "number_of_neurons": 10,
-                  "stimulation_laser_power": "20",
-                  "stimulation_laser_power_unit": "milliwatt",
-                  "number_trials": 5,
-                  "number_spirals": 10,
-                  "spiral_duration": "0.01",
-                  "spiral_duration_unit": "second",
-                  "inter_spiral_interval": "0.001",
-                  "inter_spiral_interval_unit": "second",
-                  "other_parameters": {},
-                  "notes": null
+                   "stimulus_type": "Photo Stimulation",
+                   "stimulus_name": "PhotoStimulation",
+                   "number_groups": 2,
+                   "groups": [
+                       {
+                           "group_index": 0,
+                           "number_of_neurons": 10,
+                           "stimulation_laser_power": "20",
+                           "stimulation_laser_power_unit": "milliwatt",
+                           "number_trials": 5,
+                           "number_spirals": 10,
+                           "spiral_duration": "0.01",
+                           "spiral_duration_unit": "second",
+                           "inter_spiral_interval": "0.001",
+                           "inter_spiral_interval_unit": "second",
+                           "other_parameters": {},
+                           "notes": null
+                       },
+                       {
+                           "group_index": 0,
+                           "number_of_neurons": 10,
+                           "stimulation_laser_power": "20",
+                           "stimulation_laser_power_unit": "milliwatt",
+                           "number_trials": 5,
+                           "number_spirals": 10,
+                           "spiral_duration": "0.01",
+                           "spiral_duration_unit": "second",
+                           "inter_spiral_interval": "0.001",
+                           "inter_spiral_interval_unit": "second",
+                           "other_parameters": {},
+                           "notes": null
+                       }
+                   ],
+                   "inter_trial_interval": "10",
+                   "inter_trial_interval_unit": "second",
+                   "other_parameters": {},
+                   "notes": null
                }
-            ],
-            "inter_trial_interval": "10",
-            "inter_trial_interval_unit": "second",
-            "other_parameters": {},
-            "notes": null
-         },
-         "stimulus_start_time": "2023-10-10T15:15:00",
-         "stimulus_end_time": "2023-10-10T15:45:00"
-      }
+           ],
+           "stimulus_device_names": [],
+           "speaker_config": null,
+           "light_source_config": null,
+           "output_parameters": {},
+           "reward_consumed_during_epoch": null,
+           "reward_consumed_unit": "microliter",
+           "trials_total": null,
+           "trials_finished": null,
+           "trials_rewarded": null,
+           "notes": null
+       }
    ],
+   "mouse_platform_name": "some_mouse_platform_name",
+   "active_mouse_platform": true,
    "reward_delivery": null,
    "reward_consumed_total": null,
    "reward_consumed_unit": "microliter",
