@@ -4,9 +4,9 @@ import csv
 import json
 import os
 import unittest
+import zoneinfo
 from pathlib import Path
 from xml.dom import minidom
-import zoneinfo
 
 from aind_data_schema.core.session import Session
 
@@ -221,15 +221,23 @@ class TestSchemaWriter(unittest.TestCase):
         )
         parsed_info = etl_job1._extract()
         actual_session = etl_job1._transform(parsed_info)
-        actual_session.session_start_time = actual_session.session_start_time \
-            .replace(tzinfo=zoneinfo.ZoneInfo("UTC"))
-        actual_session.session_end_time = actual_session.session_end_time \
-            .replace(tzinfo=zoneinfo.ZoneInfo("UTC"))
+        actual_session.session_start_time = (
+            actual_session.session_start_time.replace(
+                tzinfo=zoneinfo.ZoneInfo("UTC")
+            )
+        )
+        actual_session.session_end_time = (
+            actual_session.session_end_time.replace(
+                tzinfo=zoneinfo.ZoneInfo("UTC")
+            )
+        )
         for stream in actual_session.data_streams:
             stream.stream_start_time = stream.stream_start_time.replace(
-                tzinfo=zoneinfo.ZoneInfo("UTC"))
+                tzinfo=zoneinfo.ZoneInfo("UTC")
+            )
             stream.stream_end_time = stream.stream_end_time.replace(
-                tzinfo=zoneinfo.ZoneInfo("UTC"))
+                tzinfo=zoneinfo.ZoneInfo("UTC")
+            )
         self.assertEqual(
             self.expected_session.model_dump(),
             actual_session.model_dump(),

@@ -3,10 +3,10 @@
 import json
 import os
 import unittest
+import zoneinfo
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-import zoneinfo
 
 from aind_data_schema.core.session import Session
 from PIL import Image
@@ -48,11 +48,11 @@ class TestMesoscope(unittest.TestCase):
             output_directory=RESOURCES_DIR,
             subject_id="12345",
             session_start_time=datetime(
-                2024, 2, 22, 15, 30, 0,
-                tzinfo=zoneinfo.ZoneInfo("UTC")),
+                2024, 2, 22, 15, 30, 0, tzinfo=zoneinfo.ZoneInfo("UTC")
+            ),
             session_end_time=datetime(
-                2024, 2, 22, 17, 30, 0,
-                tzinfo=zoneinfo.ZoneInfo("UTC")),
+                2024, 2, 22, 17, 30, 0, tzinfo=zoneinfo.ZoneInfo("UTC")
+            ),
             project="some_project",
             experimenter_full_name=["John Doe"],
             magnification="16x",
@@ -176,24 +176,26 @@ class TestMesoscope(unittest.TestCase):
 
         # mock scanimage metadata
         mock_meta = [{}]
-        mock_meta[0]["SI.hRoiManager.linesPerFrame"] = (
-            self.example_scanimage_meta["lines_per_frame"]
-        )
-        mock_meta[0]["SI.hRoiManager.pixelsPerLine"] = (
-            self.example_scanimage_meta["pixels_per_line"]
-        )
-        mock_meta[0]["SI.hRoiManager.scanZoomFactor"] = (
-            self.example_scanimage_meta["fov_scale_factor"]
-        )
+        mock_meta[0][
+            "SI.hRoiManager.linesPerFrame"
+        ] = self.example_scanimage_meta["lines_per_frame"]
+        mock_meta[0][
+            "SI.hRoiManager.pixelsPerLine"
+        ] = self.example_scanimage_meta["pixels_per_line"]
+        mock_meta[0][
+            "SI.hRoiManager.scanZoomFactor"
+        ] = self.example_scanimage_meta["fov_scale_factor"]
         mock_scanimage.return_value = mock_meta
 
         extract = etl._extract()
         transformed_session = etl._transform(extract)
         for stream in transformed_session.data_streams:
             stream.stream_start_time = stream.stream_start_time.replace(
-                tzinfo=zoneinfo.ZoneInfo("UTC"))
+                tzinfo=zoneinfo.ZoneInfo("UTC")
+            )
             stream.stream_end_time = stream.stream_end_time.replace(
-                tzinfo=zoneinfo.ZoneInfo("UTC"))
+                tzinfo=zoneinfo.ZoneInfo("UTC")
+            )
         self.assertEqual(
             self.example_session,
             json.loads(transformed_session.model_dump_json()),

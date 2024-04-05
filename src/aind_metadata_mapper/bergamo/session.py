@@ -451,6 +451,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
             ],
         )
         stimulus_name = "PhotoStimulation"
+        photostim_interval = self.job_settings.photo_stim_inter_trial_interval
         return Session(
             experimenter_full_name=self.job_settings.experimenter_full_name,
             session_start_time=self.job_settings.session_start_time,
@@ -544,10 +545,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                                     ][2]["scanfields"]["duration"],
                                 ),
                             ],
-                            inter_trial_interval=(
-                                self.job_settings.
-                                photo_stim_inter_trial_interval
-                            ),
+                            inter_trial_interval=(photostim_interval),
                         )
                     ],
                     stimulus_start_time=(
