@@ -18,13 +18,14 @@ from aind_data_schema.core.session import (
     LaserConfig,
     Modality,
     Session,
+    StimulusEpoch,
+    StimulusModality,
     Stream,
 )
 from aind_data_schema.models.stimulus import (
     PhotoStimulation,
     PhotoStimulationGroup,
 )
-from aind_data_schema.core.session import StimulusEpoch
 from aind_data_schema.models.units import PowerUnit, SizeUnit
 from pydantic import Field
 from pydantic_settings import BaseSettings
@@ -449,6 +450,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 ),
             ],
         )
+        stimulus_name = "PhotoStimulation"
         return Session(
             experimenter_full_name=self.job_settings.experimenter_full_name,
             session_start_time=self.job_settings.session_start_time,
@@ -457,17 +459,105 @@ class BergamoEtl(GenericEtl[JobSettings]):
             session_type=self.job_settings.session_type,
             iacuc_protocol=self.job_settings.iacuc_protocol,
             rig_id=self.job_settings.rig_id,
-            mouse_platform_name=self.job_settings.mouse_platform_name,
-            active_mouse_platform=self.job_settings.active_mouse_platform,
             data_streams=[data_stream],
             stimulus_epochs=[
                 StimulusEpoch(
-                    stimulus_start_time=datetime(),
-                    stimulus_end_time=datetime(),
-                    stimulus_name="",
-                    stimulus_modalities=List[StimulusModality.]
+                    stimulus_name=stimulus_name,
+                    stimulus_modalities=[
+                        StimulusModality.OPTOGENETICS,
+                    ],
+                    stimulus_parameters=[
+                        PhotoStimulation(
+                            stimulus_name="PhotoStimulation",
+                            number_groups=(
+                                self.job_settings.num_of_photo_stim_groups
+                            ),
+                            groups=[
+                                PhotoStimulationGroup(
+                                    group_index=(
+                                        self.job_settings.photo_stim_groups[0][
+                                            "group_index"
+                                        ]
+                                    ),
+                                    number_of_neurons=int(
+                                        np.array(
+                                            photostim_groups[0]["rois"][1][
+                                                "scanfields"
+                                            ]["slmPattern"]
+                                        ).shape[0]
+                                    ),
+                                    stimulation_laser_power=int(
+                                        photostim_groups[0]["rois"][1][
+                                            "scanfields"
+                                        ]["powers"]
+                                    ),
+                                    number_trials=(
+                                        self.job_settings.photo_stim_groups[0][
+                                            "number_trials"
+                                        ]
+                                    ),
+                                    number_spirals=int(
+                                        photostim_groups[0]["rois"][1][
+                                            "scanfields"
+                                        ]["repetitions"]
+                                    ),
+                                    spiral_duration=photostim_groups[0][
+                                        "rois"
+                                    ][1]["scanfields"]["duration"],
+                                    inter_spiral_interval=photostim_groups[0][
+                                        "rois"
+                                    ][2]["scanfields"]["duration"],
+                                ),
+                                PhotoStimulationGroup(
+                                    group_index=(
+                                        self.job_settings.photo_stim_groups[1][
+                                            "group_index"
+                                        ]
+                                    ),
+                                    number_of_neurons=int(
+                                        np.array(
+                                            photostim_groups[0]["rois"][1][
+                                                "scanfields"
+                                            ]["slmPattern"]
+                                        ).shape[0]
+                                    ),
+                                    stimulation_laser_power=int(
+                                        photostim_groups[0]["rois"][1][
+                                            "scanfields"
+                                        ]["powers"]
+                                    ),
+                                    number_trials=(
+                                        self.job_settings.photo_stim_groups[1][
+                                            "number_trials"
+                                        ]
+                                    ),
+                                    number_spirals=int(
+                                        photostim_groups[0]["rois"][1][
+                                            "scanfields"
+                                        ]["repetitions"]
+                                    ),
+                                    spiral_duration=photostim_groups[0][
+                                        "rois"
+                                    ][1]["scanfields"]["duration"],
+                                    inter_spiral_interval=photostim_groups[0][
+                                        "rois"
+                                    ][2]["scanfields"]["duration"],
+                                ),
+                            ],
+                            inter_trial_interval=(
+                                self.job_settings.
+                                photo_stim_inter_trial_interval
+                            ),
+                        )
+                    ],
+                    stimulus_start_time=(
+                        self.job_settings.stimulus_start_time
+                    ),
+                    stimulus_end_time=self.job_settings.stimulus_end_time,
                 )
-            ]
+            ],
+            mouse_platform_name=self.job_settings.mouse_platform_name,
+            active_mouse_platform=self.job_settings.active_mouse_platform,
         )
 
     def run_job(self) -> JobResponse:
