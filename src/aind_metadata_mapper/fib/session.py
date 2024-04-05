@@ -12,13 +12,11 @@ from aind_data_schema.core.session import (
     LightEmittingDiodeConfig,
     Session,
     StimulusEpoch,
-    Stream, StimulusModality,
+    StimulusModality,
+    Stream,
 )
 from aind_data_schema.models.modalities import Modality
-from aind_data_schema.models.stimulus import (
-    OptoStimulation,
-    PulseShape,
-)
+from aind_data_schema.models.stimulus import OptoStimulation, PulseShape
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
@@ -148,10 +146,18 @@ class FIBEtl(GenericEtl[JobSettings]):
         opto_stim = OptoStimulation(
             stimulus_name=stimulus_name,
             pulse_shape=PulseShape.SQUARE,
-            pulse_frequency=[frequency],
-            number_pulse_trains=[trial_num],
-            pulse_width=[pulse_width],
-            pulse_train_duration=[opto_duration],
+            pulse_frequency=[
+                frequency,
+            ],
+            number_pulse_trains=[
+                trial_num,
+            ],
+            pulse_width=[
+                pulse_width,
+            ],
+            pulse_train_duration=[
+                opto_duration,
+            ],
             pulse_train_interval=opto_interval,
             baseline_duration=opto_base,
             fixed_pulse_train_interval=True,  # TODO: Check this is right
@@ -166,10 +172,12 @@ class FIBEtl(GenericEtl[JobSettings]):
         )
         stimulus_epochs = StimulusEpoch(
             stimulus_name=stimulus_name,
+            stimulus_modalities=[StimulusModality.OPTOGENETICS],
+            stimulus_parameters=[
+                opto_stim,
+            ],
             stimulus_start_time=session_start_time,
             stimulus_end_time=end_datetime,
-            stimulus_modalities=[StimulusModality.NONE],
-            stimulus_parameters=[opto_stim]
         )
 
         # create light source instance
@@ -195,8 +203,6 @@ class FIBEtl(GenericEtl[JobSettings]):
                 stream_end_time=end_datetime,
                 light_sources=light_source,
                 stream_modalities=[Modality.FIB],
-                mouse_platform_name=mouse_platform_name,
-                active_mouse_platform=active_mouse_platform,
                 detectors=detectors,
                 fiber_connections=fiber_connections,
             )
@@ -213,6 +219,8 @@ class FIBEtl(GenericEtl[JobSettings]):
             session_type=session_type,
             notes=notes,
             data_streams=data_stream,
+            mouse_platform_name=mouse_platform_name,
+            active_mouse_platform=active_mouse_platform,
         )
 
         return ophys_session

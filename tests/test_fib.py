@@ -1,5 +1,6 @@
 """Tests parsing of session information from fib rig."""
 
+import zoneinfo
 import json
 import os
 import unittest
@@ -26,13 +27,14 @@ class TestSchemaWriter(unittest.TestCase):
 
         with open(EXAMPLE_MD_PATH, "r") as f:
             raw_md_contents = f.read()
-        # with open(EXPECTED_SESSION, "r") as f:
-        #     expected_session_contents = Session(**json.load(f))
+        with open(EXPECTED_SESSION, "r") as f:
+            expected_session_contents = Session(**json.load(f))
 
         cls.example_job_settings = JobSettings(
             string_to_parse=raw_md_contents,
             experimenter_full_name=["Don Key"],
-            session_start_time=datetime(1999, 10, 4),
+            session_start_time=datetime(
+                1999, 10, 4, tzinfo=zoneinfo.ZoneInfo("UTC")),
             notes="brabrabrabra....",
             labtracks_id="000000",
             iacuc_protocol="2115",
@@ -74,7 +76,7 @@ class TestSchemaWriter(unittest.TestCase):
             active_mouse_platform=False,
         )
 
-        # cls.expected_session = expected_session_contents
+        cls.expected_session = expected_session_contents
 
     def test_constructor_from_string(self) -> None:
         """Tests that the settings can be constructed from a json string"""
@@ -97,7 +99,9 @@ class TestSchemaWriter(unittest.TestCase):
             self.example_job_settings.string_to_parse, parsed_info.teensy_str
         )
         self.assertEqual(
-            datetime(1999, 10, 4), self.example_job_settings.session_start_time
+            datetime(
+                1999, 10, 4, tzinfo=zoneinfo.ZoneInfo("UTC")),
+            self.example_job_settings.session_start_time
         )
 
     def test_transform(self):
@@ -106,8 +110,7 @@ class TestSchemaWriter(unittest.TestCase):
         etl_job1 = FIBEtl(job_settings=self.example_job_settings)
         parsed_info = etl_job1._extract()
         actual_session = etl_job1._transform(parsed_info)
-        print(actual_session)
-        # self.assertEqual(self.expected_session, actual_session)
+        self.assertEqual(self.expected_session, actual_session)
 
     def test_run_job(self):
         """Tests that the teensy response maps correctly to ophys session."""
@@ -120,4 +123,5 @@ class TestSchemaWriter(unittest.TestCase):
 
 
 if __name__ == "__main__":
+
     unittest.main()
