@@ -27,8 +27,8 @@ EXAMPLE_OPENEPHYS_LOGS = [
 EXPECTED_SESSION = RESOURCES_DIR / "ephys_session.json"
 
 
-class TestSchemaWriter(unittest.TestCase):
-    """Test methods in SchemaWriter class."""
+class TestEphysSession(unittest.TestCase):
+    """Test methods in ephys session module."""
 
     maxDiff = None  # show full diff without truncation
 
