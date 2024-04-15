@@ -1,5 +1,6 @@
 """Tests legacy BaseEtl class methods. We can remove this once the other jobs
  are ported over."""
+
 from datetime import datetime
 from pathlib import Path
 from typing import Any

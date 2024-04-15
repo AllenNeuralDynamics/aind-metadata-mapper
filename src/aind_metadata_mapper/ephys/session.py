@@ -101,7 +101,7 @@ class EphysEtl(BaseEtl):
         ):
             session_stream = {}
             session_stream["stream_start_time"] = datetime.strptime(
-                stage[0][0], "%Y/%m/%d %H:%M:%S.%f"
+               stage[0][0], "%Y/%m/%d %H:%M:%S.%f"
             )
             session_stream["stream_end_time"] = datetime.strptime(
                 stage[-1][0], "%Y/%m/%d %H:%M:%S.%f"

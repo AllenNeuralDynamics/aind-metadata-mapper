@@ -1,4 +1,5 @@
 """Example of how to use the bergamo session module"""
+
 from datetime import datetime
 from pathlib import Path
 

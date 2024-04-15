@@ -1,0 +1,70 @@
+Version: 27
+analog_channels: '[]'
+analog_dtype: 0
+analog_labels: '[]'
+analog_on: false
+analog_sample_rate: 0
+base_dir: c:/ProgramData/AIBS_MPE/sync
+buffer_size: 50000
+comm_interface: true
+counter_bits: 32
+counter_input_on: false
+counter_input_terminal: ctr0
+counter_output_terminal: ctr2
+crosstalk_monitor:
+  25: 3
+  27: 3
+darwin_install_paths:
+  install: /var/log/aibs_mpe
+  local_config: config
+  local_log_config: logs
+delete_on_copy: false
+device: Dev1
+event_bits: 32
+freq: 100000.0
+labels: '[]'
+line_label_revision: 3
+line_labels:
+  0: barcode_ephys
+  2: vsync_stim
+  4: stim_photodiode
+  5: stim_running
+  8: beh_frame_received
+  9: eye_frame_received
+  10: face_frame_received
+  17: stim_running_opto
+  18: stim_trial_opto
+  21: beh_cam_frame_readout
+  22: face_cam_frame_readout
+  25: eye_cam_frame_readout
+  27: beh_cam_exposing
+  28: face_cam_exposing
+  29: eye_cam_exposing
+  31: lick_sensor
+lines: line0:31
+linux_install_paths:
+  install: ~/.config/AIBS_MPE
+  local_config: config
+  local_log_config: logs
+  python: /opt/mcpython3
+max_record_time_m: 365
+output_dir: c:/ProgramData/AIBS_MPE/sync/data
+output_filename: output.sync
+save_raw: false
+services:
+  issue_url: http://mpe-redirects/MPETracking
+  log_server: aibspi.corp.alleninstitute.org:9000
+  python_index: http://aibspi:3141/aibs/dev
+  zookeeper: aibspi:2181
+shared:
+  water_calibration:
+    NP.2-Stim:
+      datetime: 08/02/2023 14:25:17
+      intercept: 0.0009
+      slope: 21.6887
+timestamp: true
+windows_install_paths:
+  install: C:/ProgramData/AIBS_MPE
+  local_config: config
+  local_log_config: logs
+  python: C:/mcpython3

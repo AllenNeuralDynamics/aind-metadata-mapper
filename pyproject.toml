@@ -32,7 +32,8 @@ dev = [
     'interrogate',
     'isort',
     'Sphinx',
-    'furo'
+    'furo',
+    "pyyaml>=6.0.0",
 ]
 
 [tool.setuptools.packages.find]
