@@ -1,10 +1,10 @@
 """ETL for the Open Ephys config."""
 
 import logging
+from datetime import date
 from pathlib import Path
 from typing import List, Optional, Tuple
 from xml.etree import ElementTree
-from datetime import date
 
 from aind_data_schema.core.rig import Rig  # type: ignore
 from pydantic import BaseModel
@@ -160,6 +160,7 @@ class OpenEphysRigEtl(NeuropixelsRigEtl):
                     break
 
         self.update_modification_date(
-            extracted_source.current, self.modification_date)
+            extracted_source.current, self.modification_date
+        )
 
         return super()._transform(extracted_source.current)

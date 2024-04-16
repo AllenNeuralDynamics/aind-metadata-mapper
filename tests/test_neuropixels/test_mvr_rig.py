@@ -50,7 +50,8 @@ class TestMvrRigEtl(unittest.TestCase):
         )
         etl.run_job()
         mock_write_standard_file.assert_called_once_with(
-            output_directory=self.output_dir)
+            output_directory=self.output_dir
+        )
 
     @patch("aind_data_schema.base.AindCoreModel.write_standard_file")
     def test_run_job_bad_mapping(self, mock_write_standard_file: MagicMock):
@@ -67,7 +68,8 @@ class TestMvrRigEtl(unittest.TestCase):
         )
         etl.run_job()
         mock_write_standard_file.assert_called_once_with(
-            output_directory=self.output_dir)
+            output_directory=self.output_dir
+        )
 
     def setUp(self):
         """Sets up test resources."""

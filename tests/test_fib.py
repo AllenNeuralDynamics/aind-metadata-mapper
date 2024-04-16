@@ -1,9 +1,9 @@
 """Tests parsing of session information from fib rig."""
 
-import zoneinfo
 import json
 import os
 import unittest
+import zoneinfo
 from datetime import datetime
 from pathlib import Path
 
@@ -123,5 +123,4 @@ class TestSchemaWriter(unittest.TestCase):
 
 
 if __name__ == "__main__":
-
     unittest.main()

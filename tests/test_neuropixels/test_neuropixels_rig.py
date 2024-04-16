@@ -2,11 +2,11 @@
 
 import os
 import unittest
-from pathlib import Path
 from datetime import date
+from pathlib import Path
 
 from aind_metadata_mapper.neuropixels.neuropixels_rig import (  # type: ignore
-    NeuropixelsRigEtl
+    NeuropixelsRigEtl,
 )
 
 RESOURCES_DIR = (

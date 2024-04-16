@@ -1,0 +1,27 @@
+{
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/processing.py",
+   "schema_version": "0.4.5",
+   "processing_pipeline": {
+      "data_processes": [
+         {
+            "name": "Compression",
+            "software_version": "0.0.15",
+            "start_date_time": "2020-10-10T10:10:10Z",
+            "end_date_time": "2020-10-10T11:10:10Z",
+            "input_location": "/source/ephys",
+            "output_location": "/tmp/stage",
+            "code_url": "https://github.com/AllenNeuralDynamics/aind-data-transformation",
+            "code_version": null,
+            "parameters": {},
+            "outputs": {},
+            "notes": null
+         }
+      ],
+      "processor_full_name": "Anna Apple",
+      "pipeline_version": null,
+      "pipeline_url": null,
+      "note": null
+   },
+   "analyses": [],
+   "notes": null
+}

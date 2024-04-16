@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from aind_metadata_mapper.neuropixels.open_ephys_rig import (  # type: ignore
-    OpenEphysRigEtl
+    OpenEphysRigEtl,
 )
 from tests.test_neuropixels import utils as test_utils
 
@@ -100,7 +100,8 @@ class TestOpenEphysRigEtl(unittest.TestCase):
         )
         etl.run_job()
         mock_write_standard_file.assert_called_once_with(
-            output_directory=self.output_dir)
+            output_directory=self.output_dir
+        )
 
     def setUp(self):
         """Sets up test resources."""

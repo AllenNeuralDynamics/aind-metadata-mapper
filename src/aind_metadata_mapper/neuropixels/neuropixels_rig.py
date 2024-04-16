@@ -1,9 +1,9 @@
 """Base ETL class for neuropixels rigs."""
 
 import logging
+from datetime import date
 from pathlib import Path
 from typing import Optional
-from datetime import date
 
 from aind_data_schema.core.rig import Rig  # type: ignore
 from pydantic import BaseModel
@@ -55,9 +55,9 @@ class NeuropixelsRigEtl(BaseEtl):
 
     @classmethod
     def update_modification_date(
-            cls,
-            extracted_source: Rig,
-            modification_date: Optional[date] = None,
+        cls,
+        extracted_source: Rig,
+        modification_date: Optional[date] = None,
     ) -> Rig:
         """Updates modification date and rig id."""
         room_id, rig_name, _ = extracted_source.rig_id.split("_")

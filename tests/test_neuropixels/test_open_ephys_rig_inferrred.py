@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 from aind_metadata_mapper.neuropixels import open_ephys_rig  # type: ignore
 from aind_metadata_mapper.neuropixels.open_ephys_rig import (  # type: ignore
-    OpenEphysRigEtl
+    OpenEphysRigEtl,
 )
 from tests.test_neuropixels import utils as test_utils
 
@@ -103,12 +103,12 @@ class TestOpenEphysRigEtlInferred(unittest.TestCase):
         )
         etl.run_job()
         mock_write_standard_file.assert_called_once_with(
-            output_directory=self.output_dir)
+            output_directory=self.output_dir
+        )
 
     @patch("aind_data_schema.base.AindCoreModel.write_standard_file")
     def test_etl_mismatched_probe_count(
-        self,
-        mock_write_standard_file: MagicMock
+        self, mock_write_standard_file: MagicMock
     ):
         """Test ETL workflow with mismatched probe count."""
         etl = open_ephys_rig.OpenEphysRigEtl(
@@ -148,7 +148,8 @@ class TestOpenEphysRigEtlInferred(unittest.TestCase):
         )
         etl.run_job()
         mock_write_standard_file.assert_called_once_with(
-            output_directory=self.output_dir)
+            output_directory=self.output_dir
+        )
 
     def setUp(self):
         """Sets up test resources."""

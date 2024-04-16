@@ -1,0 +1,65 @@
+{
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/procedures.py",
+   "schema_version": "0.11.5",
+   "subject_id": "632269",
+   "subject_procedures": [
+      {
+         "procedure_type": "Surgery",
+         "start_date": "2022-10-14",
+         "experimenter_full_name": "30251",
+         "iacuc_protocol": "2109",
+         "animal_weight_prior": null,
+         "animal_weight_post": null,
+         "weight_unit": "gram",
+         "anaesthesia": null,
+         "workstation_id": null,
+         "procedures": [
+            {
+               "procedure_type": "Perfusion",
+               "output_specimen_ids": [
+                  "632269"
+               ]
+            }
+         ],
+         "notes": null
+      },
+      {
+         "procedure_type": "Surgery",
+         "start_date": "2022-08-16",
+         "experimenter_full_name": "NSB-5018",
+         "iacuc_protocol": "2109",
+         "animal_weight_prior": null,
+         "animal_weight_post": null,
+         "weight_unit": "gram",
+         "anaesthesia": {
+            "type": "isoflurane",
+            "duration_unit": "minute",
+            "level": "1.5"
+         },
+         "workstation_id": "SWS 3",
+         "procedures": [
+            {
+               "procedure_type": "Craniotomy",
+               "craniotomy_type": "Whole hemisphere craniotomy",
+               "craniotomy_hemisphere": null,
+               "craniotomy_coordinates_ml": null,
+               "craniotomy_coordinates_ap": null,
+               "craniotomy_coordinates_unit": "millimeter",
+               "craniotomy_coordinates_reference": null,
+               "bregma_to_lambda_distance": null,
+               "bregma_to_lambda_unit": "millimeter",
+               "craniotomy_size": null,
+               "craniotomy_size_unit": "millimeter",
+               "implant_part_number": null,
+               "dura_removed": null,
+               "protective_material": null,
+               "recovery_time": null,
+               "recovery_time_unit": "minute"
+            }
+         ],
+         "notes": null
+      }
+   ],
+   "specimen_procedures": [],
+   "notes": null
+}
