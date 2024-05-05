@@ -164,7 +164,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             metadata_service_domain="http://acme.test",
-            data_description_settings=RawDataDescriptionSettings(
+            raw_data_description_settings=RawDataDescriptionSettings(
                 project_name="Ephys Platform",
                 name="ecephys_632269_2023-10-10_10-10-10",
                 modality=[Modality.ECEPHYS, Modality.BEHAVIOR_VIDEOS],
@@ -200,7 +200,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             metadata_service_domain="http://acme.test",
-            data_description_settings=RawDataDescriptionSettings(
+            raw_data_description_settings=RawDataDescriptionSettings(
                 project_name="Ephys Platform",
                 name="ecephys_632269_2023-10-10_10-10-10",
                 modality=[Modality.ECEPHYS, Modality.BEHAVIOR_VIDEOS],
@@ -233,7 +233,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             metadata_service_domain="http://acme.test",
-            data_description_settings=RawDataDescriptionSettings(
+            raw_data_description_settings=RawDataDescriptionSettings(
                 project_name="foo",
                 name="ecephys_632269_2023-10-10_10-10-10",
                 modality=[Modality.ECEPHYS, Modality.BEHAVIOR_VIDEOS],
@@ -410,7 +410,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             procedures_settings=ProceduresSettings(
                 subject_id="632269",
             ),
-            data_description_settings=RawDataDescriptionSettings(
+            raw_data_description_settings=RawDataDescriptionSettings(
                 project_name="Ephys Platform",
                 name="ecephys_632269_2023-10-10_10-10-10",
                 modality=[Modality.ECEPHYS, Modality.BEHAVIOR_VIDEOS],

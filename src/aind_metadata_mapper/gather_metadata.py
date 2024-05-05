@@ -77,7 +77,7 @@ class JobSettings(BaseSettings):
 
     metadata_service_domain: Optional[str] = None
     subject_settings: Optional[SubjectSettings] = None
-    data_description_settings: Optional[RawDataDescriptionSettings] = None
+    raw_data_description_settings: Optional[RawDataDescriptionSettings] = None
     procedures_settings: Optional[ProceduresSettings] = None
     processing_settings: Optional[ProcessingSettings] = None
     metadata_settings: Optional[MetadataSettings] = None
@@ -157,22 +157,24 @@ class GatherMetadataJob:
 
         # Returns a dict with platform, subject_id, and acq_datetime
         basic_settings = RawDataDescription.parse_name(
-            name=self.settings.data_description_settings.name
+            name=self.settings.raw_data_description_settings.name
         )
         funding_source, investigator_list = get_funding_info(
             self.settings.metadata_service_domain,
-            self.settings.data_description_settings.metadata_service_path,
-            self.settings.data_description_settings.project_name,
+            self.settings.raw_data_description_settings.metadata_service_path,
+            self.settings.raw_data_description_settings.project_name,
         )
 
         try:
             return json.loads(
                 RawDataDescription(
-                    name=self.settings.data_description_settings.name,
+                    name=self.settings.raw_data_description_settings.name,
                     institution=(
-                        self.settings.data_description_settings.institution
+                        self.settings.raw_data_description_settings.institution
                     ),
-                    modality=self.settings.data_description_settings.modality,
+                    modality=(
+                        self.settings.raw_data_description_settings.modality
+                    ),
                     funding_source=funding_source,
                     investigators=investigator_list,
                     **basic_settings,
@@ -181,11 +183,13 @@ class GatherMetadataJob:
         except ValidationError:
             return json.loads(
                 RawDataDescription.model_construct(
-                    name=self.settings.data_description_settings.name,
+                    name=self.settings.raw_data_description_settings.name,
                     institution=(
-                        self.settings.data_description_settings.institution
+                        self.settings.raw_data_description_settings.institution
                     ),
-                    modality=self.settings.data_description_settings.modality,
+                    modality=(
+                        self.settings.raw_data_description_settings.modality
+                    ),
                     funding_source=funding_source,
                     investigators=investigator_list,
                     **basic_settings,
@@ -301,7 +305,7 @@ class GatherMetadataJob:
             self._write_json_file(
                 filename=Procedures.default_filename(), contents=contents
             )
-        if self.settings.data_description_settings is not None:
+        if self.settings.raw_data_description_settings is not None:
             contents = self.get_raw_data_description()
             self._write_json_file(
                 filename=DataDescription.default_filename(), contents=contents
