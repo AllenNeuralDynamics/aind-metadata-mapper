@@ -4,14 +4,13 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import List, Optional, Tuple, Type
+from typing import List, Optional, Type
 
 import requests
 from aind_data_schema.base import AindCoreModel
 from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema.core.data_description import (
     DataDescription,
-    Funding,
     RawDataDescription,
 )
 from aind_data_schema.core.instrument import Instrument
@@ -32,24 +31,24 @@ class SubjectSettings(BaseSettings):
     """Fields needed to retrieve subject metadata"""
 
     subject_id: str
-    metadata_service_url: str
+    metadata_service_path: str = "subject"
 
 
 class ProceduresSettings(BaseSettings):
     """Fields needed to retrieve procedures metadata"""
 
     subject_id: str
-    metadata_service_url: str
+    metadata_service_path: str = "procedures"
 
 
-class DataDescriptionSettings(BaseSettings):
+class RawDataDescriptionSettings(BaseSettings):
     """Fields needed to retrieve data description metadata"""
 
     name: str
-    investigators: List[PIDName]
+    project_name: str
     modality: List[Modality.ONE_OF]
-    funding_source: Optional[Tuple] = (Funding(funder=Organization.AI),)
     institution: Optional[Organization.ONE_OF] = Organization.AIND
+    metadata_service_path: str = "funding"
 
 
 class ProcessingSettings(BaseSettings):
@@ -76,8 +75,9 @@ class MetadataSettings(BaseSettings):
 class JobSettings(BaseSettings):
     """Fields needed to gather all metadata"""
 
+    metadata_service_domain: Optional[str] = None
     subject_settings: Optional[SubjectSettings] = None
-    data_description_settings: Optional[DataDescriptionSettings] = None
+    data_description_settings: Optional[RawDataDescriptionSettings] = None
     procedures_settings: Optional[ProceduresSettings] = None
     processing_settings: Optional[ProcessingSettings] = None
     metadata_settings: Optional[MetadataSettings] = None
@@ -99,8 +99,9 @@ class GatherMetadataJob:
     def get_subject(self) -> dict:
         """Get subject metadata"""
         response = requests.get(
-            self.settings.subject_settings.metadata_service_url
-            + f"/subject/{self.settings.subject_settings.subject_id}"
+            self.settings.metadata_service_domain
+            + f"/{self.settings.subject_settings.metadata_service_path}/"
+            + f"{self.settings.subject_settings.subject_id}"
         )
 
         if response.status_code < 300 or response.status_code == 406:
@@ -114,8 +115,9 @@ class GatherMetadataJob:
     def get_procedures(self) -> dict:
         """Get procedures metadata"""
         response = requests.get(
-            self.settings.procedures_settings.metadata_service_url
-            + f"/procedures/{self.settings.procedures_settings.subject_id}"
+            self.settings.metadata_service_domain
+            + f"/{self.settings.procedures_settings.metadata_service_path}/"
+            + f"{self.settings.procedures_settings.subject_id}"
         )
 
         if response.status_code < 300 or response.status_code == 406:
@@ -128,8 +130,39 @@ class GatherMetadataJob:
 
     def get_raw_data_description(self) -> dict:
         """Get raw data description metadata"""
+
+        def get_funding_info(domain: str, url_path: str, project_name: str):
+            """Utility method to retrieve funding info from metadata service"""
+            response = requests.get("/".join([domain, url_path, project_name]))
+            if response.status_code == 200:
+                funding_info = [response.json().get("data")]
+            elif response.status_code == 300:
+                funding_info = response.json().get("data")
+            else:
+                funding_info = []
+            investigators = set()
+            for f in funding_info:
+                project_fundees = f.get("fundee", "").split(",")
+                pid_names = [
+                    PIDName(name=p.strip()).model_dump_json()
+                    for p in project_fundees
+                ]
+                if project_fundees is not [""]:
+                    investigators.update(pid_names)
+            investigators = [
+                PIDName.model_validate_json(i) for i in investigators
+            ]
+            investigators.sort(key=lambda x: x.name)
+            return funding_info, investigators
+
+        # Returns a dict with platform, subject_id, and acq_datetime
         basic_settings = RawDataDescription.parse_name(
             name=self.settings.data_description_settings.name
+        )
+        funding_source, investigator_list = get_funding_info(
+            self.settings.metadata_service_domain,
+            self.settings.data_description_settings.metadata_service_path,
+            self.settings.data_description_settings.project_name,
         )
 
         try:
@@ -140,12 +173,8 @@ class GatherMetadataJob:
                         self.settings.data_description_settings.institution
                     ),
                     modality=self.settings.data_description_settings.modality,
-                    funding_source=(
-                        self.settings.data_description_settings.funding_source
-                    ),
-                    investigators=(
-                        self.settings.data_description_settings.investigators
-                    ),
+                    funding_source=funding_source,
+                    investigators=investigator_list,
                     **basic_settings,
                 ).model_dump_json()
             )
@@ -157,12 +186,8 @@ class GatherMetadataJob:
                         self.settings.data_description_settings.institution
                     ),
                     modality=self.settings.data_description_settings.modality,
-                    funding_source=(
-                        self.settings.data_description_settings.funding_source
-                    ),
-                    investigators=(
-                        self.settings.data_description_settings.investigators
-                    ),
+                    funding_source=funding_source,
+                    investigators=investigator_list,
                     **basic_settings,
                 ).model_dump_json()
             )

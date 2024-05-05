@@ -1,0 +1,16 @@
+{
+  "message": "Valid Model.",
+  "data": {
+    "funder": {
+      "name": "Allen Institute",
+      "abbreviation": "AI",
+      "registry": {
+        "name": "Research Organization Registry",
+        "abbreviation": "ROR"
+      },
+      "registry_identifier": "03cpe7c52"
+    },
+    "grant_number": null,
+    "fundee": "Anna Apple, John Smith"
+  }
+}
