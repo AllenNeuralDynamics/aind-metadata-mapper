@@ -9,21 +9,18 @@ Questions, feature requests and bug reports are all welcome as [discussions or i
 **NOTE:** If your package requires upgrading **aind-data-schema**, create a separate ticket and a dedicated engineer will handle the upgrade.
 
 ## Installation and Development
-To develop the software, clone the repository and create a new branch for your changes. Branch naming conventions are explained [here](
-). 
+To develop the software, *clone* the repository and create a new branch for your changes.
+Please do not fork this repository unless you are an external developer. 
 
 ```bash
 git clone git@github.com:AllenNeuralDynamics/aind-metadata-mapper.git
 git checkout -b my-new-feature-branch
-```
-
+``` 
 Then in bash, run
 ```bash
 pip install -e .[dev]
 ```
-to set up your environment. Once these steps are complete, you can get developing🚀. Data is organized by acquisition machine, so if you're adding a new machine, create a new directory. Otherwise, put your code in its corresponding directory. 
-
-
+to set up your environment. Once these steps are complete, you can get developing🚀. Data is organized by acquisition machine, so if you're adding a new machine, create a new directory. Otherwise, put your code in its corresponding directory.
 ### Testing
 
 Testing is required to open a PR in this repository to ensure robustness and reliability of our codebase. 
