@@ -7,8 +7,8 @@ from typing import Dict, List, Tuple
 from aind_data_schema.components.devices import Software  # type: ignore
 from aind_data_schema.core.rig import Rig  # type: ignore
 
-from aind_metadata_mapper.neuropixels import utils
-from aind_metadata_mapper.neuropixels.neuropixels_rig import (
+from aind_metadata_mapper.dynamic_routing import utils
+from aind_metadata_mapper.dynamic_routing.neuropixels_rig import (
     NeuropixelsRigContext,
     NeuropixelsRigEtl,
 )

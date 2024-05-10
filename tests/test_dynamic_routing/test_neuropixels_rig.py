@@ -5,7 +5,7 @@ import unittest
 from datetime import date
 from pathlib import Path
 
-from aind_metadata_mapper.neuropixels.neuropixels_rig import (  # type: ignore
+from aind_metadata_mapper.dynamic_routing.neuropixels_rig import (
     NeuropixelsRigEtl,
 )
 
