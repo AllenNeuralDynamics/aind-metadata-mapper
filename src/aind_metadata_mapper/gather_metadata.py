@@ -20,9 +20,9 @@ from aind_data_schema.core.processing import PipelineProcess, Processing
 from aind_data_schema.core.rig import Rig
 from aind_data_schema.core.session import Session
 from aind_data_schema.core.subject import Subject
-from aind_data_schema.models.modalities import Modality
-from aind_data_schema.models.organizations import Organization
-from aind_data_schema.models.pid_names import PIDName
+from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.organizations import Organization
+from aind_data_schema_models.pid_names import PIDName
 from pydantic import ValidationError
 from pydantic_settings import BaseSettings
 

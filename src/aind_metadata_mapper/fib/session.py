@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional, Union
 
+from aind_data_schema.components.stimulus import OptoStimulation, PulseShape
 from aind_data_schema.core.session import (
     DetectorConfig,
     FiberConnectionConfig,
@@ -15,8 +16,7 @@ from aind_data_schema.core.session import (
     StimulusModality,
     Stream,
 )
-from aind_data_schema.models.modalities import Modality
-from aind_data_schema.models.stimulus import OptoStimulation, PulseShape
+from aind_data_schema_models.modalities import Modality
 from pydantic import Field
 from pydantic_settings import BaseSettings
 

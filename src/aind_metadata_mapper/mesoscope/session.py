@@ -9,7 +9,7 @@ from typing import List, Union
 
 import tifffile
 from aind_data_schema.core.session import FieldOfView, Session, Stream
-from aind_data_schema.models.modalities import Modality
+from aind_data_schema_models.modalities import Modality
 from PIL import Image
 from PIL.TiffTags import TAGS
 from pydantic import Field

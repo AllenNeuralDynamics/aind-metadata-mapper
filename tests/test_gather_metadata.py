@@ -8,8 +8,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
 from aind_data_schema.core.processing import DataProcess, PipelineProcess
-from aind_data_schema.models.modalities import Modality
-from aind_data_schema.models.process_names import ProcessName
+from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.process_names import ProcessName
 from requests import Response
 
 from aind_metadata_mapper.gather_metadata import (
@@ -311,15 +311,20 @@ class TestGatherMetadataJob(unittest.TestCase):
         # Issues with incomplete Procedures model raises warnings
         expected_warnings = (
             "Pydantic serializer warnings:\n"
-            "  Expected `Union[Surgery, TrainingProtocol, WaterRestriction,"
-            " definition-ref]` but got `dict` -"
-            " serialized value may not be as expected\n"
-            "  Expected `Union[Surgery, TrainingProtocol, WaterRestriction,"
-            " definition-ref]` but got `dict` -"
-            " serialized value may not be as expected"
+            "  Expected `date` but got `str`"
+            " - serialized value may not be as expected\n"
+            "  Expected `Union[CallithrixJacchus, HomoSapiens, MacacaMulatta, "
+            "MusMusculus, RattusNorvegicus]` but got `dict`"
+            " - serialized value may not be as expected\n"
+            "  Expected `BreedingInfo` but got `dict`"
+            " - serialized value may not be as expected\n"
+            "  Expected `Union[AllenInstitute, ColumbiaUniversity,"
+            " HuazhongUniversityOfScienceAndTechnology, JacksonLaboratory,"
+            " NewYorkUniversity, Other]` but got `dict`"
+            " - serialized value may not be as expected"
         )
-        self.assertEqual(expected_warnings, str(w.warning))
 
+        self.assertEqual(expected_warnings, str(w.warning))
         self.assertEqual(
             "s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
             main_metadata.location,

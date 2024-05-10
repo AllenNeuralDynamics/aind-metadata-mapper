@@ -12,6 +12,10 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
+from aind_data_schema.components.stimulus import (
+    PhotoStimulation,
+    PhotoStimulationGroup,
+)
 from aind_data_schema.core.session import (
     DetectorConfig,
     FieldOfView,
@@ -22,11 +26,7 @@ from aind_data_schema.core.session import (
     StimulusModality,
     Stream,
 )
-from aind_data_schema.models.stimulus import (
-    PhotoStimulation,
-    PhotoStimulationGroup,
-)
-from aind_data_schema.models.units import PowerUnit, SizeUnit
+from aind_data_schema_models.units import PowerUnit, SizeUnit
 from pydantic import Field
 from pydantic_settings import BaseSettings
 from ScanImageTiffReader import ScanImageTiffReader

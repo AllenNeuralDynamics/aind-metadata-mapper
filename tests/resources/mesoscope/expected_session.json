@@ -1,6 +1,6 @@
 {
    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/session.py",
-   "schema_version": "0.2.1",
+   "schema_version": "0.2.6",
    "protocol_id": [],
    "experimenter_full_name": [
       "John Doe"
@@ -16,6 +16,7 @@
    "animal_weight_prior": null,
    "animal_weight_post": null,
    "weight_unit": "gram",
+   "anaesthesia": null,
    "data_streams": [
       {
          "stream_start_time": "2024-02-22T15:30:00Z",
@@ -52,6 +53,7 @@
                "coupled_fov_index": null,
                "power": null,
                "power_unit": "percent",
+               "power_ratio": null,
                "scanfield_z": null,
                "scanfield_z_unit": "micrometer",
                "scanimage_roi_index": null,
@@ -77,6 +79,7 @@
                "coupled_fov_index": null,
                "power": null,
                "power_unit": "percent",
+               "power_ratio": null,
                "scanfield_z": null,
                "scanfield_z_unit": "micrometer",
                "scanimage_roi_index": null,
@@ -102,6 +105,7 @@
                "coupled_fov_index": null,
                "power": null,
                "power_unit": "percent",
+               "power_ratio": null,
                "scanfield_z": null,
                "scanfield_z_unit": "micrometer",
                "scanimage_roi_index": null,
@@ -127,6 +131,7 @@
                "coupled_fov_index": null,
                "power": null,
                "power_unit": "percent",
+               "power_ratio": null,
                "scanfield_z": null,
                "scanfield_z_unit": "micrometer",
                "scanimage_roi_index": null,
@@ -152,6 +157,7 @@
                "coupled_fov_index": null,
                "power": null,
                "power_unit": "percent",
+               "power_ratio": null,
                "scanfield_z": null,
                "scanfield_z_unit": "micrometer",
                "scanimage_roi_index": null,
@@ -177,6 +183,7 @@
                "coupled_fov_index": null,
                "power": null,
                "power_unit": "percent",
+               "power_ratio": null,
                "scanfield_z": null,
                "scanfield_z_unit": "micrometer",
                "scanimage_roi_index": null,
@@ -202,6 +209,7 @@
                "coupled_fov_index": null,
                "power": null,
                "power_unit": "percent",
+               "power_ratio": null,
                "scanfield_z": null,
                "scanfield_z_unit": "micrometer",
                "scanimage_roi_index": null,
@@ -227,6 +235,7 @@
                "coupled_fov_index": null,
                "power": null,
                "power_unit": "percent",
+               "power_ratio": null,
                "scanfield_z": null,
                "scanfield_z_unit": "micrometer",
                "scanimage_roi_index": null,
@@ -235,12 +244,14 @@
          ],
          "slap_fovs": null,
          "stack_parameters": null,
+         "mri_scans": [],
          "stream_modalities": [
             {
                "name": "Planar optical physiology",
                "abbreviation": "ophys"
             }
          ],
+         "software": [],
          "notes": null
       },
       {
@@ -260,12 +271,14 @@
          "ophys_fovs": [],
          "slap_fovs": null,
          "stack_parameters": null,
+         "mri_scans": [],
          "stream_modalities": [
             {
                "name": "Behavior videos",
                "abbreviation": "behavior-videos"
             }
          ],
+         "software": [],
          "notes": null
       },
       {
@@ -285,12 +298,14 @@
          "ophys_fovs": [],
          "slap_fovs": null,
          "stack_parameters": null,
+         "mri_scans": [],
          "stream_modalities": [
             {
                "name": "Behavior videos",
                "abbreviation": "behavior-videos"
             }
          ],
+         "software": [],
          "notes": null
       },
       {
@@ -310,12 +325,14 @@
          "ophys_fovs": [],
          "slap_fovs": null,
          "stack_parameters": null,
+         "mri_scans": [],
          "stream_modalities": [
             {
                "name": "Behavior videos",
                "abbreviation": "behavior-videos"
             }
          ],
+         "software": [],
          "notes": null
       },
       {
@@ -335,12 +352,14 @@
          "ophys_fovs": [],
          "slap_fovs": null,
          "stack_parameters": null,
+         "mri_scans": [],
          "stream_modalities": [
             {
                "name": "Confocal microscopy",
                "abbreviation": "confocal"
             }
          ],
+         "software": [],
          "notes": null
       }
    ],
