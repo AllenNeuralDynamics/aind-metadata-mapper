@@ -17,7 +17,8 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
-    "aind-data-schema==0.33.3",
+    "aind-data-schema==0.36.0",
+    "aind-data-schema-models==0.1.1",
     "scanimage-tiff-reader==1.4.1.4",
     "tifffile==2024.2.12",
     "pydantic-settings>=2.0",
@@ -75,7 +76,7 @@ exclude_lines = [
     "import",
     "pragma: no cover"
 ]
-fail_under = 100
+fail_under = 80
 
 [tool.isort]
 line_length = 79

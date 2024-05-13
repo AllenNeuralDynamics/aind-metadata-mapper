@@ -9,8 +9,8 @@ from unittest import main as unittest_main
 from unittest.mock import MagicMock, patch
 
 from aind_data_schema.core.subject import BreedingInfo, Housing, Sex, Subject
-from aind_data_schema.models.organizations import Organization
-from aind_data_schema.models.species import Species
+from aind_data_schema_models.organizations import Organization
+from aind_data_schema_models.species import Species
 
 from aind_metadata_mapper.core import BaseEtl
 

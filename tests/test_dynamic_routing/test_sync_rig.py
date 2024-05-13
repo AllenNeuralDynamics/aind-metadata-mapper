@@ -5,10 +5,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from aind_metadata_mapper.neuropixels.sync_rig import (  # type: ignore
+from aind_metadata_mapper.dynamic_routing.sync_rig import (  # type: ignore
     SyncRigEtl,
 )
-from tests.test_neuropixels import utils as test_utils
+from tests.test_dynamic_routing import utils as test_utils
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
@@ -27,6 +27,7 @@ class TestSyncRigEtl(unittest.TestCase):
             self.input_source,
             self.output_dir,
             RESOURCES_DIR / "sync.yml",
+            modification_date=self.expected.modification_date,
         )
         extracted = etl._extract()
         transformed = etl._transform(extracted)

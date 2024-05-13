@@ -28,6 +28,7 @@ class NeuropixelsRigEtl(BaseEtl):
         self,
         input_source: Path,
         output_directory: Path,
+        modification_date: Optional[date] = None,
     ):
         """Class constructor for Neuropixels rig etl class.
 
@@ -40,17 +41,28 @@ class NeuropixelsRigEtl(BaseEtl):
         """
         self.input_source: Path = input_source
         self.output_directory = output_directory
+        self.modification_date = modification_date
 
     def _extract(self) -> Rig:
         """Extracts rig-related information from config files."""
-        return Rig.model_validate_json(
+        extracted = Rig.model_validate_json(
             self.input_source.read_text(),
         )
+        self.initial_model = extracted.model_copy(deep=True)
+        return extracted
 
     def _transform(self, extracted_source: Rig) -> Rig:
         """Transforms extracted rig context into aind-data-schema rig.Rig
         instance.
         """
+        if self.initial_model != extracted_source:
+            logger.debug("Rig model changed. Updating modification date.")
+            self.update_modification_date(
+                extracted_source, self.modification_date
+            )
+        else:
+            logger.debug("Rig model unchanged. Keeping modification date.")
+
         return extracted_source
 
     @classmethod
