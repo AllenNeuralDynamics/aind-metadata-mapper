@@ -28,7 +28,7 @@ Testing is required to open a PR in this repository to ensure robustness and rel
   - For every package in the src directory, there should be a corresponding test package.
   - For every module in a package, there should be a corresponding unit test module.
   - For every method in a module, there should be a corresponding unit test.
-- **Test Coverage:** Aim for comprehensive test coverage to validate all critical paths and edge cases within the module.
+- **Test Coverage:** Aim for comprehensive test coverage to validate all critical paths and edge cases within the module. To open a PR, you will need at least 80% coverage. 
   - Please test your changes using the **coverage** library, which will run the tests and log a coverage report:
     ```bash
     coverage run -m unittest discover && coverage report
@@ -37,6 +37,6 @@ Testing is required to open a PR in this repository to ensure robustness and rel
     ```bash
     coverage html
     ```
-    and find the report in the htmlcov/index.html
+    and find the report in the htmlcov/index.html.
 
 There are several libraries used to run linters and check documentation. We've included these in the development package. You can run them as described [here](https://github.com/AllenNeuralDynamics/aind-metadata-mapper/blob/main/README.md#linters-and-testing). 
