@@ -1,7 +1,7 @@
 # Contributor Guidelines
 This repository is designed to map information from different acquisition machines to aind-data-schema models, and is therefore shared amongst multiple teams.  
 
-This document will go through best practices for contributing to this project.
+This document will go through best practices for contributing to this project
 
 ## Issues and Feature Requests
 Questions, feature requests and bug reports are all welcome as [discussions or issues](https://github.com/AllenNeuralDynamics/aind-metadata-mapper/issues). Please use the provided [templates](https://github.com/AllenNeuralDynamics/aind-metadata-mapper/issues/new/choose) to ensure we have enough information to work with.
