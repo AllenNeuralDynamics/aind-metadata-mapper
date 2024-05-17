@@ -1,1 +1,1 @@
-"ExaSPIM package"
+"""ExaSPIM package"""

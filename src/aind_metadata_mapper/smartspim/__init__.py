@@ -1,1 +1,1 @@
-"SmartSPIM package"
+"""SmartSPIM package"""
