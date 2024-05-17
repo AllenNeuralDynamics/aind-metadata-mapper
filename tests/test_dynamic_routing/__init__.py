@@ -1,1 +1,1 @@
-"""Tests for the neuropixels rig etls."""
+"""Tests for the dynamic_routing rig etls."""

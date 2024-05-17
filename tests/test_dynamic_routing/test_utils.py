@@ -1,4 +1,4 @@
-"""Utilities for neuropixels etl tests."""
+"""Utilities for dynamic_routing etl tests."""
 import os
 from pathlib import Path
 from typing import Tuple
@@ -9,7 +9,7 @@ RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
     / ".."
     / "resources"
-    / "neuropixels"
+    / "dynamic_routing"
 )
 
 FORWARD_CAMERA_ASSEMBLY_NAME = "Forward"
@@ -23,7 +23,7 @@ SIDE_CAMERA_NAME = f"{SIDE_CAMERA_ASSEMBLY_NAME} camera"
 def setup_neuropixels_etl_resources(
     expected_json: Path,
 ) -> Tuple[Path, Path, Rig]:
-    """Sets test resources neuropixels etl.
+    """Sets test resources dynamic_routing etl.
 
     Parameters
     ----------

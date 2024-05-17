@@ -1,4 +1,4 @@
-"""Module to write valid ephys schemas"""
+"""Module to write valid open_ephys schemas"""
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -20,7 +20,7 @@ class ParsedInformation:
 
 
 class EphysEtl(BaseEtl):
-    """This class contains the methods to write ephys session"""
+    """This class contains the methods to write open_ephys session"""
 
     def __init__(
         self,
@@ -39,9 +39,9 @@ class EphysEtl(BaseEtl):
         output_directory : Path
           The directory where to save the json files.
         stage_logs : List
-          stage logs of all ephys data streams in a session
+          stage logs of all open_ephys data streams in a session
         openephys_logs : List
-          openephys logs of all ephys data streams in a session
+          openephys logs of all open_ephys data streams in a session
         """
         super().__init__(input_source, output_directory)
         self.stage_logs = stage_logs
@@ -51,7 +51,7 @@ class EphysEtl(BaseEtl):
     def _transform(self, extracted_source: ParsedInformation) -> Session:
         """
         Parses params from stage_log and openephys_log and
-        creates partial ephys session model
+        creates partial open_ephys session model
         Parameters
         ----------
         extracted_source : ParsedInformation
@@ -143,7 +143,7 @@ class EphysEtl(BaseEtl):
         return Session(**ephys_session)
 
     def _extract(self) -> ParsedInformation:
-        """Extract metadata from ephys session."""
+        """Extract metadata from open_ephys session."""
         return ParsedInformation(
             stage_logs=self.stage_logs,
             openephys_logs=self.openephys_logs,

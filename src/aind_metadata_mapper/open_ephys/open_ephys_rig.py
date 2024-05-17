@@ -103,7 +103,7 @@ class OpenEphysRigEtl(NeuropixelsRigEtl):
         ]
         if not all(name in rig_probe_names for name in extracted_probe_names):
             logger.warning(
-                "Mismatched probe names in open ephys settings. Attempting to "
+                "Mismatched probe names in open open_ephys settings. Attempting to "
                 "infer probe names. extracted: %s, rig: %s"
                 % (extracted_probe_names, rig_probe_names)
             )

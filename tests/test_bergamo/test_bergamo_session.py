@@ -16,8 +16,12 @@ from aind_metadata_mapper.bergamo.session import (
 )
 
 RESOURCES_DIR = (
-    Path(os.path.dirname(os.path.realpath(__file__))) / "resources" / "bergamo"
+    Path(os.path.dirname(os.path.realpath(__file__)))
+    / ".."
+    / "resources"
+    / "bergamo"
 )
+
 EXAMPLE_MD_PATH = RESOURCES_DIR / "example_metadata.txt.gz"
 EXAMPLE_DES_PATH = RESOURCES_DIR / "example_description0.txt"
 EXAMPLE_IMG_PATH = RESOURCES_DIR / "cropped_neuron50_00001.tif"

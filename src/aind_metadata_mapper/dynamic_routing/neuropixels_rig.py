@@ -1,4 +1,4 @@
-"""Base ETL class for neuropixels rigs."""
+"""Base ETL class for dynamic_routing rigs."""
 
 import logging
 from datetime import date
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class NeuropixelsRigContext(BaseModel):
-    """Base context for neuropixels rig etl."""
+    """Base context for dynamic_routing rig etl."""
 
     current: Rig
 

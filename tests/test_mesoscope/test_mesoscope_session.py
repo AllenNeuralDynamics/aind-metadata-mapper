@@ -15,6 +15,7 @@ from aind_metadata_mapper.mesoscope.session import JobSettings, MesoscopeEtl
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
+    / ".."
     / "resources"
     / "mesoscope"
 )
