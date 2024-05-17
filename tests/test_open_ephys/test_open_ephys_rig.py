@@ -6,14 +6,11 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from aind_data_schema.core.rig import Rig  # type: ignore
-from aind_metadata_mapper.open_ephys.open_ephys_rig import (
-    OpenEphysRigEtl,
-)
+
+from aind_metadata_mapper.open_ephys.open_ephys_rig import OpenEphysRigEtl
 
 RESOURCES_DIR = (
-    Path(os.path.dirname(os.path.realpath(__file__)))
-    / ".."
-    / "resources"
+    Path(os.path.dirname(os.path.realpath(__file__))) / ".." / "resources"
 )
 OPEN_EPHYS_RESOURCES_DIR = RESOURCES_DIR / "open_ephys"
 BASE_RIG_PATH = RESOURCES_DIR / "dynamic_routing" / "base_rig.json"
@@ -31,7 +28,9 @@ class TestOpenEphysRigEtl(unittest.TestCase):
 
     def test_transform(self):
         """Tests etl transform."""
-        expected = self.load_rig(OPEN_EPHYS_RESOURCES_DIR / "open-ephys_rig.json")
+        expected = self.load_rig(
+            OPEN_EPHYS_RESOURCES_DIR / "open-ephys_rig.json"
+        )
         etl = OpenEphysRigEtl(
             BASE_RIG_PATH,
             OUTPUT_DIR,
@@ -113,7 +112,9 @@ class TestOpenEphysRigEtl(unittest.TestCase):
 
     def test_transform_no_update(self):
         """Tests etl transform when probe serial numbers dont change."""
-        initial_rig_model_path = OPEN_EPHYS_RESOURCES_DIR / "open-ephys_rig.json"
+        initial_rig_model_path = (
+            OPEN_EPHYS_RESOURCES_DIR / "open-ephys_rig.json"
+        )
         etl = OpenEphysRigEtl(
             initial_rig_model_path,
             OUTPUT_DIR,

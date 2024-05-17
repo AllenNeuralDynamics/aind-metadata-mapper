@@ -1,4 +1,4 @@
-"""Tests for the dynamic_routing open open_ephys rig ETL with inferred probe mapping."""
+"""Tests for the dynamic_routing neuropixel rig ETL inferred probe mapping."""
 
 import os
 import unittest
