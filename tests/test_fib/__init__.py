@@ -1,0 +1,1 @@
+"""Tests fib package"""
