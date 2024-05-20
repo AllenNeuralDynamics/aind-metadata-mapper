@@ -1,4 +1,5 @@
 """Utilities for neuropixels etl tests."""
+
 import os
 from pathlib import Path
 from typing import Tuple

@@ -1,4 +1,5 @@
 """Tests parsing of session information from bergamo rig."""
+
 import gzip
 import json
 import os

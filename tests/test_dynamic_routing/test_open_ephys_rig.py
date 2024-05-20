@@ -6,9 +6,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from aind_data_schema.core.rig import Rig  # type: ignore
-from aind_metadata_mapper.dynamic_routing.open_ephys_rig import (
-    OpenEphysRigEtl,
-)
+
+from aind_metadata_mapper.dynamic_routing.open_ephys_rig import OpenEphysRigEtl
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
