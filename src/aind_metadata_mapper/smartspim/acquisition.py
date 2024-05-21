@@ -272,10 +272,10 @@ class SmartspimETL(GenericEtl):
 
 
 def main():
-    """Main function to test"""
+    """Main function to give insight how to use this"""
 
     subject_id = "695464"
-    BASE_PATH = "/allen/aind/scratch/svc_aind_upload/test_data_sets/smartspim"
+    BASE_PATH = "YOUR/BASE/PATH"
     dataset_path = f"{BASE_PATH}/SmartSPIM_695464_2023-10-18_20-30-30"
     output_directory = f"{BASE_PATH}/test_outputs"
 
