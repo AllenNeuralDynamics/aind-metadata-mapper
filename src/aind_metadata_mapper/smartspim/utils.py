@@ -7,9 +7,9 @@ import os
 from datetime import date, datetime, time
 from typing import List
 
-from aind_data_schema.imaging import tile
-from aind_data_schema.models.coordinates import AnatomicalDirection
-from aind_data_schema.models.units import PowerUnit, SizeUnit
+from aind_data_schema.components import tile
+from aind_data_schema.components.coordinates import AnatomicalDirection
+from aind_data_schema_models.units import PowerUnit, SizeUnit
 
 
 def read_json_as_dict(filepath: str) -> dict:
@@ -210,7 +210,7 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
                 "\nLaser power is in percentage of total, it needs calibration"
             ),
             coordinate_transformations=[tile_transform, scale],
-            file_name=f"Ex_{exaltation_wave}_Em_{emission_wave}/{tile_info_x}/{tile_info_x}_{tile_info_y}/",
+            file_name=f"Ex_{exaltation_wave}_Em_{emission_wave}/{tile_info_x}/{tile_info_x}_{tile_info_y}/",  # noqa: E501
         )
 
         tile_acquisitions.append(tile_acquisition)
