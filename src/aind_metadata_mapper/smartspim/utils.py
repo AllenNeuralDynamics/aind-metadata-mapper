@@ -33,14 +33,14 @@ def read_json_as_dict(filepath: str) -> dict:
                 dictionary = json.load(json_file)
 
         except UnicodeDecodeError:
-            print("Error reading json with utf-8, trying different approach")
+            # print("Error reading json with utf-8, trying different approach")
             # This might lose data, verify with Jeff the json encoding
             with open(filepath, "rb") as json_file:
                 data = json_file.read()
                 data_str = data.decode("utf-8", errors="ignore")
                 dictionary = json.loads(data_str)
 
-            print(f"Reading {filepath} forced: {dictionary}")
+            # print(f"Reading {filepath} forced: {dictionary}")
 
     return dictionary
 
