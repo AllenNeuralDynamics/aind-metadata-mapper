@@ -268,7 +268,6 @@ class SmartspimETL(GenericEtl):
         job_response = self._load(
             acquisition_model, self.job_settings.output_directory
         )
-        print(job_response)
         return job_response
 
 
