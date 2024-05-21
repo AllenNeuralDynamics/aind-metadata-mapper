@@ -9,27 +9,16 @@ from typing import Dict
 from aind_data_schema.components.coordinates import ImageAxis
 from aind_data_schema.core import acquisition
 from pydantic_settings import BaseSettings
-from utils import (
+
+from aind_metadata_mapper.core import GenericEtl, JobResponse
+
+from .utils import (
     get_anatomical_direction,
     get_excitation_emission_waves,
     get_session_end,
     make_acq_tiles,
     read_json_as_dict,
 )
-
-from aind_metadata_mapper.core import GenericEtl, JobResponse
-
-# from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-# from aind_metadata_mapper.gather_metadata import (
-#     JobSettings as MetadataJobSettings,
-# )
-# from aind_metadata_mapper.gather_metadata import (
-#     MetadataSettings,
-#     ProceduresSettings,
-#     ProcessingSettings,
-#     RawDataDescriptionSettings,
-#     SubjectSettings,
-# )
 
 
 class JobSettings(BaseSettings):
@@ -69,7 +58,7 @@ class SmartspimETL(GenericEtl):
         else:
             job_settings_model = job_settings
 
-        self.regex_date = r"(20[0-9]{2})-([0-9]{2})-([0-9]{2})_([0-9]{2})-([0-9]{2})-([0-9]{2})"
+        self.regex_date = r"(20[0-9]{2})-([0-9]{2})-([0-9]{2})_([0-9]{2})-([0-9]{2})-([0-9]{2})"  # noqa: E501
         self.regex_mouse_id = r"([0-9]{6})"
 
         super().__init__(job_settings=job_settings_model)
@@ -204,27 +193,29 @@ class SmartspimETL(GenericEtl):
         chamber_immersion = processing_manifest.get("chamber_immersion")
         sample_immersion = processing_manifest.get("sample_immersion")
 
-        chamber_immersion_medium = chamber_immersion.get("medium")
-        sample_immersion_medium = sample_immersion.get("medium")
+        chm_medium = chamber_immersion.get("medium")
+        spl_medium = sample_immersion.get("medium")
 
         if chamber_immersion is None or sample_immersion is None:
             raise ValueError("Please, provide the immersion mediums.")
 
         # Parsing the mediums the operator gives
-        notes = f"Chamber immersion: {chamber_immersion_medium} - Sample immersion: {sample_immersion_medium}"
+        notes = (
+            f"Chamber immersion: {chm_medium} - Sample immersion: {spl_medium}"
+        )
         notes += f" - Operator notes: {processing_manifest.get('notes')}"
 
-        if "cargille" in chamber_immersion_medium.lower():
-            chamber_immersion_medium = "oil"
+        if "cargille" in chm_medium.lower():
+            chm_medium = "oil"
 
         else:
-            chamber_immersion_medium = "other"
+            chm_medium = "other"
 
-        if "cargille" in sample_immersion_medium.lower():
-            sample_immersion_medium = "oil"
+        if "cargille" in spl_medium.lower():
+            spl_medium = "oil"
 
         else:
-            sample_immersion_medium = "other"
+            spl_medium = "other"
 
         acquisition_model = acquisition.Acquisition(
             experimenter_full_name=processing_manifest.get(
@@ -241,11 +232,11 @@ class SmartspimETL(GenericEtl):
             ),
             axes=axes,
             chamber_immersion=acquisition.Immersion(
-                medium=chamber_immersion_medium,
+                medium=chm_medium,
                 refractive_index=chamber_immersion.get("refractive_index"),
             ),
             sample_immersion=acquisition.Immersion(
-                medium=sample_immersion_medium,
+                medium=spl_medium,
                 refractive_index=sample_immersion.get("refractive_index"),
             ),
             local_storage_directory=processing_manifest.get(
@@ -285,8 +276,9 @@ def main():
     """Main function to test"""
 
     subject_id = "695464"
-    dataset_path = "/allen/aind/scratch/svc_aind_upload/test_data_sets/smartspim/SmartSPIM_695464_2023-10-18_20-30-30"
-    output_directory = "/allen/aind/scratch/svc_aind_upload/test_data_sets/smartspim/test_outputs"
+    BASE_PATH = "/allen/aind/scratch/svc_aind_upload/test_data_sets/smartspim"
+    dataset_path = f"{BASE_PATH}/SmartSPIM_695464_2023-10-18_20-30-30"
+    output_directory = f"{BASE_PATH}/test_outputs"
 
     job_setts = JobSettings(
         subject_id=subject_id,
@@ -299,48 +291,6 @@ def main():
 
     smartspim_job = SmartspimETL(job_settings=job_setts)
     smartspim_job.run_job()
-
-    # mdata_job_settings = MetadataJobSettings(
-    #     metadata_service_domain="http://aind-metadata-service-dev",
-    #     subject_settings=SubjectSettings(subject_id=subject_id),
-    #     procedures_settings=ProceduresSettings(
-    #         subject_id=subject_id,
-    #     ),
-    #     raw_data_description_settings=RawDataDescriptionSettings(
-    #         name="SmartSPIM_695464_2023-10-18_20-30-30",
-    #         project_name="pj_name",
-    #         modality=[Modality.SPIM],
-    #         institution=Organization.AIND,
-    #     ),
-    #     processing_settings=ProcessingSettings(
-    #         pipeline_process=PipelineProcess(
-    #             data_processes=[
-    #                 DataProcess(
-    #                     name=ProcessName.IMAGE_IMPORTING,
-    #                     software_version="test_sfw",
-    #                     start_date_time=datetime.now(),
-    #                     end_date_time=datetime.now(),
-    #                     input_location="",
-    #                     output_location="",
-    #                     code_url="code url",
-    #                     code_version="code version",
-    #                     parameters={},
-    #                     outputs={},
-    #                     notes="",
-    #                 )
-    #             ],
-    #             processor_full_name="Camilo Laiton",
-    #             pipeline_version="1.6",
-    #             pipeline_url="url",
-    #             note="notes",
-    #         )
-    #     ),
-    #     metadata_settings=MetadataSettings(name="name", location="location"),
-    #     directory_to_write_to=output_directory,
-    # )
-
-    # metadata_gathering = GatherMetadataJob(settings=mdata_job_settings)
-    # metadata_gathering.run_job()
 
 
 if __name__ == "__main__":
