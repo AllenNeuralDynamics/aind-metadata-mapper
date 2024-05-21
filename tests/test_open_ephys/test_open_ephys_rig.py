@@ -10,15 +10,15 @@ from aind_data_schema.core.rig import Rig  # type: ignore
 from aind_metadata_mapper.open_ephys.open_ephys_rig import OpenEphysRigEtl
 
 RESOURCES_DIR = (
-    Path(os.path.dirname(os.path.realpath(__file__)))
-    / ".."
-    / "resources"
+    Path(os.path.dirname(os.path.realpath(__file__))) / ".." / "resources"
 )
 
 
 OPEN_EPHYS_RESOURCES_DIR = RESOURCES_DIR / "open_ephys"
 BASE_RIG_PATH = RESOURCES_DIR / "dynamic_routing" / "base_rig.json"
-BASE_RIG_MISSING_PROBE_PATH = RESOURCES_DIR / "dynamic_routing" / "base-missing-probe_rig.json"
+BASE_RIG_MISSING_PROBE_PATH = (
+    RESOURCES_DIR / "dynamic_routing" / "base-missing-probe_rig.json"
+)
 OUTPUT_DIR = Path(".")  # File writes will be mocked
 
 
