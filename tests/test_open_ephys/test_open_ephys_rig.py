@@ -10,10 +10,15 @@ from aind_data_schema.core.rig import Rig  # type: ignore
 from aind_metadata_mapper.open_ephys.open_ephys_rig import OpenEphysRigEtl
 
 RESOURCES_DIR = (
-    Path(os.path.dirname(os.path.realpath(__file__))) / ".." / "resources"
+    Path(os.path.dirname(os.path.realpath(__file__)))
+    / ".."
+    / "resources"
 )
+
+
 OPEN_EPHYS_RESOURCES_DIR = RESOURCES_DIR / "open_ephys"
 BASE_RIG_PATH = RESOURCES_DIR / "dynamic_routing" / "base_rig.json"
+BASE_RIG_MISSING_PROBE_PATH = RESOURCES_DIR / "dynamic_routing" / "base-missing-probe_rig.json"
 OUTPUT_DIR = Path(".")  # File writes will be mocked
 
 
@@ -35,7 +40,7 @@ class TestOpenEphysRigEtl(unittest.TestCase):
             BASE_RIG_PATH,
             OUTPUT_DIR,
             open_ephys_settings_sources=[
-                RESOURCES_DIR / "settings.xml",
+                OPEN_EPHYS_RESOURCES_DIR / "settings.xml",
             ],
             probe_manipulator_serial_numbers=[
                 (
@@ -76,7 +81,7 @@ class TestOpenEphysRigEtl(unittest.TestCase):
             BASE_RIG_PATH,
             OUTPUT_DIR,
             open_ephys_settings_sources=[
-                RESOURCES_DIR / "settings.xml",
+                OPEN_EPHYS_RESOURCES_DIR / "settings.xml",
             ],
             probe_manipulator_serial_numbers=[
                 (
@@ -119,7 +124,7 @@ class TestOpenEphysRigEtl(unittest.TestCase):
             initial_rig_model_path,
             OUTPUT_DIR,
             open_ephys_settings_sources=[
-                RESOURCES_DIR / "settings.xml",
+                OPEN_EPHYS_RESOURCES_DIR / "settings.xml",
             ],
         )
         extracted = etl._extract()
@@ -152,8 +157,8 @@ class TestOpenEphysRigEtl(unittest.TestCase):
             BASE_RIG_PATH,
             OUTPUT_DIR,
             open_ephys_settings_sources=[
-                RESOURCES_DIR / "settings.mislabeled-probes-0.xml",
-                RESOURCES_DIR / "settings.mislabeled-probes-1.xml",
+                OPEN_EPHYS_RESOURCES_DIR / "settings.mislabeled-probes-0.xml",
+                OPEN_EPHYS_RESOURCES_DIR / "settings.mislabeled-probes-1.xml",
             ],
             probe_manipulator_serial_numbers=[
                 (
@@ -193,11 +198,11 @@ class TestOpenEphysRigEtl(unittest.TestCase):
     ):
         """Test ETL workflow with mismatched probe count."""
         etl = OpenEphysRigEtl(
-            RESOURCES_DIR / "base-missing-probe_rig.json",
+            BASE_RIG_MISSING_PROBE_PATH,
             OUTPUT_DIR,
             open_ephys_settings_sources=[
-                RESOURCES_DIR / "settings.mislabeled-probes-0.xml",
-                RESOURCES_DIR / "settings.mislabeled-probes-1.xml",
+                OPEN_EPHYS_RESOURCES_DIR / "settings.mislabeled-probes-0.xml",
+                OPEN_EPHYS_RESOURCES_DIR / "settings.mislabeled-probes-1.xml",
             ],
             probe_manipulator_serial_numbers=[
                 (
