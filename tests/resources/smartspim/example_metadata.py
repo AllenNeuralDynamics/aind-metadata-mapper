@@ -776,7 +776,7 @@ example_processing_manifest = {
         },
     },
     "prelim_acquisition": {
-        "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/y",
+        "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/y",  # noqa: E501
         "schema_version": "0.5.2",
         "experimenter_full_name": ["Norepi Nephrine"],
         "specimen_id": "000000",

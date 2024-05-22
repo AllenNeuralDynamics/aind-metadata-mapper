@@ -32,12 +32,12 @@ class TestSmartspimUtils(unittest.TestCase):
         self.test_asi_file_path_morning = Path(
             os.path.abspath(__file__)
         ).parent.joinpath(
-            "resources/smartspim/example_ASI_logging_morning.txt"
+            "resources/smartspim/example_ASI_logging_morning.txt"  # noqa: E501
         )
         self.test_asi_file_path_afternoon = Path(
             os.path.abspath(__file__)
         ).parent.joinpath(
-            "resources/smartspim/example_ASI_logging_afternoon.txt"
+            "resources/smartspim/example_ASI_logging_afternoon.txt"  # noqa: E501
         )
 
         with open(self.test_local_json_path, "w") as json_file:
@@ -81,7 +81,10 @@ class TestSmartspimUtils(unittest.TestCase):
             self.assertEqual(schema_an_dir, curr_an_dir)
 
     def test_make_acq_tiles_res_none(self):
-        """Tests making tiles based on the data schema and microscope metadata"""
+        """
+        Tests making tiles based on the data
+        schema and microscope metadata
+        """
         modified_example_metadata_info = copy.deepcopy(example_metadata_info)
         del modified_example_metadata_info["session_config"]["z_step_um"]
 

@@ -32,7 +32,7 @@ class TestSmartspimETL(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.example_job_settings_success = JobSettings(
             subject_id="000000",
-            raw_dataset_path="/test/data/path/SmartSPIM_000000_2024-10-10_10-10-10",
+            raw_dataset_path="/SmartSPIM_000000_2024-10-10_10-10-10",
             output_directory=self.temp_dir,
             asi_filename="derivatives/ASI_logging.txt",
             mdata_filename_json="derivatives/metadata.json",
@@ -44,7 +44,7 @@ class TestSmartspimETL(unittest.TestCase):
 
         self.example_job_settings_fail_mouseid = JobSettings(
             subject_id="00000",
-            raw_dataset_path="/test/data/path/SmartSPIM_00000_2024-10-10_10-10-10",
+            raw_dataset_path="/SmartSPIM_00000_2024-10-10_10-10-10",
             output_directory=self.temp_dir,
             asi_filename="derivatives/ASI_logging.txt",
             mdata_filename_json="derivatives/metadata.json",
