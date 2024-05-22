@@ -1,10 +1,7 @@
 """ SmartSPIM utility tests """
 
 import copy
-import json
 import os
-import shutil
-import tempfile
 import unittest
 from datetime import datetime
 from pathlib import Path
@@ -13,10 +10,9 @@ from aind_data_schema.components.coordinates import AnatomicalDirection
 
 from aind_metadata_mapper.smartspim import utils
 
-from .resources.smartspim.example_metadata import (
+from ..resources.smartspim.example_metadata import (
     example_filter_mapping,
     example_metadata_info,
-    example_processing_manifest,
 )
 
 
@@ -25,36 +21,24 @@ class TestSmartspimUtils(unittest.TestCase):
 
     def setUp(self):
         """Setting up temporary folder directory"""
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_local_json_path = (
-            f"{self.temp_dir}/test_processing_manifest.json"
+        current_path = Path(os.path.abspath(__file__)).parent
+        self.test_local_json_path = current_path.joinpath(
+            "resources/smartspim/local_json.json"
         )
-        self.test_asi_file_path_morning = Path(
-            os.path.abspath(__file__)
-        ).parent.joinpath(
+
+        self.test_asi_file_path_morning = current_path.joinpath(
             "resources/smartspim/example_ASI_logging_morning.txt"  # noqa: E501
         )
-        self.test_asi_file_path_afternoon = Path(
-            os.path.abspath(__file__)
-        ).parent.joinpath(
+        self.test_asi_file_path_afternoon = current_path.joinpath(
             "resources/smartspim/example_ASI_logging_afternoon.txt"  # noqa: E501
         )
-
-        with open(self.test_local_json_path, "w") as json_file:
-            json.dump(example_processing_manifest, json_file)
-
-    def tearDown(self):
-        """Tearing down temporary folder directory"""
-        if os.path.exists(self.temp_dir):
-            shutil.rmtree(self.temp_dir)
 
     def test_read_json_as_dict(self):
         """
         Tests succesful reading of a dictionary
         """
-        expected_result = copy.deepcopy(example_processing_manifest)
+        expected_result = {"some_key": "some_value"}
         result = utils.read_json_as_dict(self.test_local_json_path)
-
         self.assertEqual(expected_result, result)
 
     def test_read_json_as_dict_fails(self):
@@ -120,3 +104,7 @@ class TestSmartspimUtils(unittest.TestCase):
         self.assertEqual(
             expected_excitation_emission_channels, excitation_emission_channels
         )
+
+
+if __name__ == "__main__":
+    unittest.main()

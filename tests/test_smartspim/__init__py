@@ -1,0 +1,1 @@
+"""Tests smartspim package"""

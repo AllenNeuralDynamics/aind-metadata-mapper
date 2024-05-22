@@ -3,9 +3,6 @@ Tests the SmartSPIM acquisition metadata creation
 """
 
 import copy
-import os
-import shutil
-import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -16,7 +13,7 @@ from aind_metadata_mapper.smartspim.acquisition import (
     SmartspimETL,
 )
 
-from .resources.smartspim.example_metadata import (
+from ..resources.smartspim.example_metadata import (
     example_filter_mapping,
     example_metadata_info,
     example_processing_manifest,
@@ -29,11 +26,10 @@ class TestSmartspimETL(unittest.TestCase):
 
     def setUp(self):
         """Setting up temporary folder directory"""
-        self.temp_dir = tempfile.mkdtemp()
         self.example_job_settings_success = JobSettings(
             subject_id="000000",
             raw_dataset_path="/SmartSPIM_000000_2024-10-10_10-10-10",
-            output_directory=self.temp_dir,
+            output_directory="/output_folder",
             asi_filename="derivatives/ASI_logging.txt",
             mdata_filename_json="derivatives/metadata.json",
             processing_manifest_path="derivatives/processing_manifest.json",
@@ -45,7 +41,7 @@ class TestSmartspimETL(unittest.TestCase):
         self.example_job_settings_fail_mouseid = JobSettings(
             subject_id="00000",
             raw_dataset_path="/SmartSPIM_00000_2024-10-10_10-10-10",
-            output_directory=self.temp_dir,
+            output_directory="/output_folder",
             asi_filename="derivatives/ASI_logging.txt",
             mdata_filename_json="derivatives/metadata.json",
             processing_manifest_path="derivatives/processing_manifest.json",
@@ -53,11 +49,6 @@ class TestSmartspimETL(unittest.TestCase):
         self.example_smartspim_etl_fail_mouseid = SmartspimETL(
             job_settings=self.example_job_settings_fail_mouseid
         )
-
-    def tearDown(self):
-        """Tearing down temporary folder directory"""
-        if os.path.exists(self.temp_dir):
-            shutil.rmtree(self.temp_dir)
 
     def test_class_constructor(self):
         """Tests that the class can be constructed from a json string"""
@@ -256,7 +247,10 @@ class TestSmartspimETL(unittest.TestCase):
         self.assertEqual(acquisition.Acquisition, type(result))
 
     @patch("aind_metadata_mapper.smartspim.acquisition.SmartspimETL._extract")
-    def test_run_job(self, mock_extract: MagicMock):
+    @patch("aind_data_schema.base.AindCoreModel.write_standard_file")
+    def test_run_job(
+        self, mock_file_write: MagicMock, mock_extract: MagicMock
+    ):
         """Tests the run job method that creates the acquisition"""
         mock_extract.return_value = {
             "session_config": example_metadata_info["session_config"],
@@ -268,5 +262,10 @@ class TestSmartspimETL(unittest.TestCase):
         }
 
         response = self.example_smartspim_etl_success.run_job()
+        mock_file_write.assert_called_once()
 
         self.assertEqual(200, response.status_code)
+
+
+if __name__ == "__main__":
+    unittest.main()
