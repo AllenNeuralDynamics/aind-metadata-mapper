@@ -193,11 +193,11 @@ class SmartspimETL(GenericEtl):
         chamber_immersion = processing_manifest.get("chamber_immersion")
         sample_immersion = processing_manifest.get("sample_immersion")
 
-        chm_medium = chamber_immersion.get("medium")
-        spl_medium = sample_immersion.get("medium")
-
         if chamber_immersion is None or sample_immersion is None:
             raise ValueError("Please, provide the immersion mediums.")
+
+        chm_medium = chamber_immersion.get("medium")
+        spl_medium = sample_immersion.get("medium")
 
         # Parsing the mediums the operator gives
         notes = (
@@ -269,28 +269,3 @@ class SmartspimETL(GenericEtl):
             acquisition_model, self.job_settings.output_directory
         )
         return job_response
-
-
-def main():
-    """Main function to give insight how to use this"""
-
-    subject_id = "695464"
-    BASE_PATH = "YOUR/BASE/PATH"
-    dataset_path = f"{BASE_PATH}/SmartSPIM_695464_2023-10-18_20-30-30"
-    output_directory = f"{BASE_PATH}/test_outputs"
-
-    job_setts = JobSettings(
-        subject_id=subject_id,
-        raw_dataset_path=dataset_path,
-        output_directory=output_directory,
-        asi_filename="derivatives/ASI_logging.txt",
-        mdata_filename_json="derivatives/metadata.json",
-        processing_manifest_path="derivatives/processing_manifest.json",
-    )
-
-    smartspim_job = SmartspimETL(job_settings=job_setts)
-    smartspim_job.run_job()
-
-
-if __name__ == "__main__":
-    main()
