@@ -23,14 +23,14 @@ class TestSmartspimUtils(unittest.TestCase):
         """Setting up temporary folder directory"""
         current_path = Path(os.path.abspath(__file__)).parent
         self.test_local_json_path = current_path.joinpath(
-            "resources/smartspim/local_json.json"
+            "../resources/smartspim/local_json.json"
         )
 
         self.test_asi_file_path_morning = current_path.joinpath(
-            "resources/smartspim/example_ASI_logging_morning.txt"  # noqa: E501
+            "../resources/smartspim/example_ASI_logging_morning.txt"  # noqa: E501
         )
         self.test_asi_file_path_afternoon = current_path.joinpath(
-            "resources/smartspim/example_ASI_logging_afternoon.txt"  # noqa: E501
+            "../resources/smartspim/example_ASI_logging_afternoon.txt"  # noqa: E501
         )
 
     def test_read_json_as_dict(self):
