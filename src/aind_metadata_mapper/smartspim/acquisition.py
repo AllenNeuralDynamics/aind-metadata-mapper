@@ -58,7 +58,10 @@ class SmartspimETL(GenericEtl):
         else:
             job_settings_model = job_settings
 
-        self.regex_date = r"(20[0-9]{2})-([0-9]{2})-([0-9]{2})_([0-9]{2})-([0-9]{2})-([0-9]{2})"  # noqa: E501
+        self.regex_date = (
+            r"(20[0-9]{2})-([0-9]{2})-([0-9]{2})_([0-9]{2})-"
+            r"([0-9]{2})-([0-9]{2})"
+        )
         self.regex_mouse_id = r"([0-9]{6})"
 
         super().__init__(job_settings=job_settings_model)
