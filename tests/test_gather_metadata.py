@@ -260,7 +260,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             end_date_time=datetime(
                 2020, 10, 10, 11, 10, 10, tzinfo=timezone.utc
             ),
-            input_location="/source/ephys",
+            input_location="/source/open_ephys",
             output_location="/tmp/stage",
             code_url=(
                 "https://github.com/AllenNeuralDynamics/"
@@ -393,7 +393,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             end_date_time=datetime(
                 2020, 10, 10, 11, 10, 10, tzinfo=timezone.utc
             ),
-            input_location="/source/ephys",
+            input_location="/source/open_ephys",
             output_location="/tmp/stage",
             code_url=(
                 "https://github.com/AllenNeuralDynamics/"

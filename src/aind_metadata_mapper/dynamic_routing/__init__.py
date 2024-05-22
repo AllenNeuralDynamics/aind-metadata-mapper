@@ -1,4 +1,4 @@
-"""Maps neuropixels related metadata."""
+"""Maps dynamic_routing related metadata."""
 
 
 class NeuropixelsRigException(Exception):

@@ -1,4 +1,4 @@
-"""Tests parsing of session information from fib rig."""
+"""Tests parsing of session information from fip rig."""
 
 import json
 import os
@@ -9,11 +9,15 @@ from pathlib import Path
 
 from aind_data_schema.core.session import Session
 
-from aind_metadata_mapper.fib.session import FIBEtl, JobSettings
+from aind_metadata_mapper.fip.session import FIBEtl, JobSettings
 
 RESOURCES_DIR = (
-    Path(os.path.dirname(os.path.realpath(__file__))) / "resources" / "fib"
+    Path(os.path.dirname(os.path.realpath(__file__)))
+    / ".."
+    / "resources"
+    / "fip"
 )
+
 EXAMPLE_MD_PATH = RESOURCES_DIR / "example_from_teensy.txt"
 EXPECTED_SESSION = RESOURCES_DIR / "000000_ophys_session.json"
 

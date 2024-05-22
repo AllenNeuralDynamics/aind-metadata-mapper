@@ -1,4 +1,4 @@
-"""Tests for the neuropixels open ephys rig ETL."""
+"""Tests for the dynamic_routing open open_ephys rig ETL."""
 
 import os
 import unittest
@@ -7,20 +7,23 @@ from unittest.mock import MagicMock, patch
 
 from aind_data_schema.core.rig import Rig  # type: ignore
 
-from aind_metadata_mapper.dynamic_routing.open_ephys_rig import OpenEphysRigEtl
+from aind_metadata_mapper.open_ephys.rig import OpenEphysRigEtl
 
 RESOURCES_DIR = (
-    Path(os.path.dirname(os.path.realpath(__file__)))
-    / ".."
-    / "resources"
-    / "neuropixels"
+    Path(os.path.dirname(os.path.realpath(__file__))) / ".." / "resources"
 )
-BASE_RIG_PATH = RESOURCES_DIR / "base_rig.json"
+
+
+OPEN_EPHYS_RESOURCES_DIR = RESOURCES_DIR / "open_ephys"
+BASE_RIG_PATH = RESOURCES_DIR / "dynamic_routing" / "base_rig.json"
+BASE_RIG_MISSING_PROBE_PATH = (
+    RESOURCES_DIR / "dynamic_routing" / "base-missing-probe_rig.json"
+)
 OUTPUT_DIR = Path(".")  # File writes will be mocked
 
 
 class TestOpenEphysRigEtl(unittest.TestCase):
-    """Tests dxdiag utilities in for the neuropixels project."""
+    """Tests dxdiag utilities in for the dynamic_routing project."""
 
     def load_rig(self, model_path: Path):
         """Convenience function to load a rig model."""
@@ -30,12 +33,14 @@ class TestOpenEphysRigEtl(unittest.TestCase):
 
     def test_transform(self):
         """Tests etl transform."""
-        expected = self.load_rig(RESOURCES_DIR / "open-ephys_rig.json")
+        expected = self.load_rig(
+            OPEN_EPHYS_RESOURCES_DIR / "open-ephys_rig.json"
+        )
         etl = OpenEphysRigEtl(
             BASE_RIG_PATH,
             OUTPUT_DIR,
             open_ephys_settings_sources=[
-                RESOURCES_DIR / "settings.xml",
+                OPEN_EPHYS_RESOURCES_DIR / "settings.xml",
             ],
             probe_manipulator_serial_numbers=[
                 (
@@ -76,7 +81,7 @@ class TestOpenEphysRigEtl(unittest.TestCase):
             BASE_RIG_PATH,
             OUTPUT_DIR,
             open_ephys_settings_sources=[
-                RESOURCES_DIR / "settings.xml",
+                OPEN_EPHYS_RESOURCES_DIR / "settings.xml",
             ],
             probe_manipulator_serial_numbers=[
                 (
@@ -112,12 +117,14 @@ class TestOpenEphysRigEtl(unittest.TestCase):
 
     def test_transform_no_update(self):
         """Tests etl transform when probe serial numbers dont change."""
-        initial_rig_model_path = RESOURCES_DIR / "open-ephys_rig.json"
+        initial_rig_model_path = (
+            OPEN_EPHYS_RESOURCES_DIR / "open-ephys_rig.json"
+        )
         etl = OpenEphysRigEtl(
             initial_rig_model_path,
             OUTPUT_DIR,
             open_ephys_settings_sources=[
-                RESOURCES_DIR / "settings.xml",
+                OPEN_EPHYS_RESOURCES_DIR / "settings.xml",
             ],
         )
         extracted = etl._extract()
@@ -150,8 +157,8 @@ class TestOpenEphysRigEtl(unittest.TestCase):
             BASE_RIG_PATH,
             OUTPUT_DIR,
             open_ephys_settings_sources=[
-                RESOURCES_DIR / "settings.mislabeled-probes-0.xml",
-                RESOURCES_DIR / "settings.mislabeled-probes-1.xml",
+                OPEN_EPHYS_RESOURCES_DIR / "settings.mislabeled-probes-0.xml",
+                OPEN_EPHYS_RESOURCES_DIR / "settings.mislabeled-probes-1.xml",
             ],
             probe_manipulator_serial_numbers=[
                 (
@@ -191,11 +198,11 @@ class TestOpenEphysRigEtl(unittest.TestCase):
     ):
         """Test ETL workflow with mismatched probe count."""
         etl = OpenEphysRigEtl(
-            RESOURCES_DIR / "base-missing-probe_rig.json",
+            BASE_RIG_MISSING_PROBE_PATH,
             OUTPUT_DIR,
             open_ephys_settings_sources=[
-                RESOURCES_DIR / "settings.mislabeled-probes-0.xml",
-                RESOURCES_DIR / "settings.mislabeled-probes-1.xml",
+                OPEN_EPHYS_RESOURCES_DIR / "settings.mislabeled-probes-0.xml",
+                OPEN_EPHYS_RESOURCES_DIR / "settings.mislabeled-probes-1.xml",
             ],
             probe_manipulator_serial_numbers=[
                 (

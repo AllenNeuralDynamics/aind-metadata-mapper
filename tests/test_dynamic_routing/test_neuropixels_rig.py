@@ -1,4 +1,4 @@
-"""Tests for the neuropixels open ephys rig ETL with inferred probe mapping."""
+"""Tests for the dynamic_routing neuropixel rig ETL inferred probe mapping."""
 
 import os
 import unittest
@@ -13,12 +13,12 @@ RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
     / ".."
     / "resources"
-    / "neuropixels"
+    / "dynamic_routing"
 )
 
 
 class TestNeuropixelsRig(unittest.TestCase):
-    """Tests dxdiag utilities in for the neuropixels project."""
+    """Tests dxdiag utilities in for the dynamic_routing project."""
 
     def test_update_modification_date(self):
         """Test ETL workflow with inferred probe mapping."""

@@ -226,7 +226,7 @@ class FIBEtl(GenericEtl[JobSettings]):
         return ophys_session
 
     def _extract(self) -> ParsedMetadata:
-        """Extract metadata from fib session."""
+        """Extract metadata from fip session."""
 
         tensy_str = self.job_settings.string_to_parse
 

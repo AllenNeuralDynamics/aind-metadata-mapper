@@ -8,18 +8,18 @@ from unittest.mock import MagicMock, patch
 from aind_metadata_mapper.dynamic_routing.sync_rig import (  # type: ignore
     SyncRigEtl,
 )
-from tests.test_dynamic_routing import utils as test_utils
+from tests.test_dynamic_routing import test_utils as test_utils
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
     / ".."
     / "resources"
-    / "neuropixels"
+    / "dynamic_routing"
 )
 
 
 class TestSyncRigEtl(unittest.TestCase):
-    """Tests dxdiag utilities in for the neuropixels project."""
+    """Tests dxdiag utilities in for the dynamic_routing project."""
 
     def test_transform(self):
         """Test etl transform."""

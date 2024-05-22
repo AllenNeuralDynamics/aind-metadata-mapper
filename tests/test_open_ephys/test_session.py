@@ -1,4 +1,4 @@
-"""Tests parsing of session information from ephys rig."""
+"""Tests parsing of session information from open_ephys rig."""
 
 import csv
 import json
@@ -10,11 +10,15 @@ from xml.dom import minidom
 
 from aind_data_schema.core.session import Session
 
-from aind_metadata_mapper.ephys.session import EphysEtl
+from aind_metadata_mapper.open_ephys.session import EphysEtl
 
 RESOURCES_DIR = (
-    Path(os.path.dirname(os.path.realpath(__file__))) / "resources" / "ephys"
+    Path(os.path.dirname(os.path.realpath(__file__)))
+    / ".."
+    / "resources"
+    / "open_ephys"
 )
+
 EXAMPLE_STAGE_LOGS = [
     RESOURCES_DIR / "newscale_main.csv",
     RESOURCES_DIR / "newscale_surface_finding.csv",
@@ -28,7 +32,7 @@ EXPECTED_SESSION = RESOURCES_DIR / "ephys_session.json"
 
 
 class TestEphysSession(unittest.TestCase):
-    """Test methods in ephys session module."""
+    """Test methods in open_ephys session module."""
 
     maxDiff = None  # show full diff without truncation
 
