@@ -7,7 +7,6 @@ import os
 import shutil
 import tempfile
 import unittest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from aind_data_schema.core import acquisition
@@ -187,6 +186,74 @@ class TestSmartspimETL(unittest.TestCase):
             self.example_smartspim_etl_success._transform(
                 metadata_dict=test_extracted_fail_immersion
             )
+
+    @patch("aind_metadata_mapper.smartspim.acquisition.SmartspimETL._extract")
+    def test_transform_other_chamber_medium(
+        self, mock_extracted_other_immersion: MagicMock
+    ):
+        """Tests when the immersion is not provided"""
+        example_processing_manifest_immersion = copy.deepcopy(
+            example_processing_manifest
+        )
+        example_processing_manifest_immersion["prelim_acquisition"][
+            "chamber_immersion"
+        ]["medium"] = "unknown"
+
+        mock_extracted_other_immersion.return_value = {
+            "session_config": example_metadata_info["session_config"],
+            "wavelength_config": example_metadata_info["wavelength_config"],
+            "tile_config": example_metadata_info["tile_config"],
+            "session_end_time": example_session_end_time,
+            "filter_mapping": example_filter_mapping,
+            "processing_manifest": example_processing_manifest_immersion,
+        }
+
+        test_extracted_other_immersion = (
+            self.example_smartspim_etl_success._extract()
+        )
+
+        test_extracted_other_immersion = (
+            self.example_smartspim_etl_success._extract()
+        )
+
+        result = self.example_smartspim_etl_success._transform(
+            metadata_dict=test_extracted_other_immersion
+        )
+        self.assertEqual(acquisition.Acquisition, type(result))
+
+    @patch("aind_metadata_mapper.smartspim.acquisition.SmartspimETL._extract")
+    def test_transform_other_sample_medium(
+        self, mock_extracted_other_immersion: MagicMock
+    ):
+        """Tests when the sample immersion is not provided"""
+        example_processing_manifest_immersion = copy.deepcopy(
+            example_processing_manifest
+        )
+        example_processing_manifest_immersion["prelim_acquisition"][
+            "sample_immersion"
+        ]["medium"] = "Cargille"
+
+        mock_extracted_other_immersion.return_value = {
+            "session_config": example_metadata_info["session_config"],
+            "wavelength_config": example_metadata_info["wavelength_config"],
+            "tile_config": example_metadata_info["tile_config"],
+            "session_end_time": example_session_end_time,
+            "filter_mapping": example_filter_mapping,
+            "processing_manifest": example_processing_manifest_immersion,
+        }
+
+        test_extracted_other_immersion = (
+            self.example_smartspim_etl_success._extract()
+        )
+
+        test_extracted_other_immersion = (
+            self.example_smartspim_etl_success._extract()
+        )
+
+        result = self.example_smartspim_etl_success._transform(
+            metadata_dict=test_extracted_other_immersion
+        )
+        self.assertEqual(acquisition.Acquisition, type(result))
 
     @patch("aind_metadata_mapper.smartspim.acquisition.SmartspimETL._extract")
     def test_run_job(self, mock_extract: MagicMock):

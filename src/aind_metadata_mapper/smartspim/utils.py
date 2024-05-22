@@ -158,8 +158,6 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
         if z_res is None:
             raise KeyError("Failed to get the Z step in microns")
 
-        z_res = float(z_res)
-
     x_res = float(x_res)
     y_res = float(y_res)
     z_res = float(z_res)
