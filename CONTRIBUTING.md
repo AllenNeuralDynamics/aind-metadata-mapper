@@ -28,6 +28,7 @@ Testing is required to open a PR in this repository to ensure robustness and rel
   - For every package in the src directory, there should be a corresponding test package.
   - For every module in a package, there should be a corresponding unit test module.
   - For every method in a module, there should be a corresponding unit test.
+- **Mocking Writes**: Your unit tests should not write anything out. You can use the `unittest.mock` library to intercept file operations and test your method without actually creating a file.
 - **Test Coverage:** Aim for comprehensive test coverage to validate all critical paths and edge cases within the module. To open a PR, you will need at least 80% coverage. 
   - Please test your changes using the **coverage** library, which will run the tests and log a coverage report:
     ```bash
