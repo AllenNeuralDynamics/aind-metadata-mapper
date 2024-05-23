@@ -143,7 +143,7 @@ class SmartspimETL(GenericEtl):
     def _transform(self, metadata_dict: Dict) -> acquisition.Acquisition:
         """
         Transforms the raw metadata from the acquisition
-        to create the acquition.json defined on the
+        to create the acquisition.json defined on the
         aind-data-schema package.
 
         Parameters

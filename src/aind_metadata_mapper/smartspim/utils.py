@@ -5,7 +5,7 @@ Utility functions for SmartSPIM
 import json
 import os
 from datetime import date, datetime, time
-from typing import List
+from typing import List, Optional
 
 from aind_data_schema.components import tile
 from aind_data_schema.components.coordinates import AnatomicalDirection
@@ -124,7 +124,7 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
             filter_names=[""],  # We don't have filter names at the moment
             detector_name="",  # We don't have detector names at the moment
             additional_device_names=[],
-            # Excitation wavelenghts
+            # Excitation wavelengths
             excitation_wavelength=int(wavelength),
             excitation_wavelength_unit=SizeUnit.NM,
             # Excitation power
@@ -216,7 +216,7 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
     return tile_acquisitions
 
 
-def digest_asi_line(line: str) -> datetime:
+def digest_asi_line(line: str) -> Optional[datetime]:
     """
     Scrape a datetime from a non-empty line, otherwise return None
 
@@ -248,12 +248,10 @@ def digest_asi_line(line: str) -> datetime:
     ymdhms = ymd + hms
 
     dtime = datetime(*ymdhms)
-    ymd = date(*ymd)
-    hms = time(*hms)
     return dtime
 
 
-def get_session_end(asi_file) -> datetime:
+def get_session_end(asi_file: os.PathLike) -> datetime:
     """
     Work backward from the last line until there is a timestamp
 

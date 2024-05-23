@@ -203,10 +203,6 @@ class TestSmartspimETL(unittest.TestCase):
             self.example_smartspim_etl_success._extract()
         )
 
-        test_extracted_other_immersion = (
-            self.example_smartspim_etl_success._extract()
-        )
-
         result = self.example_smartspim_etl_success._transform(
             metadata_dict=test_extracted_other_immersion
         )
@@ -232,10 +228,6 @@ class TestSmartspimETL(unittest.TestCase):
             "filter_mapping": example_filter_mapping,
             "processing_manifest": example_processing_manifest_immersion,
         }
-
-        test_extracted_other_immersion = (
-            self.example_smartspim_etl_success._extract()
-        )
 
         test_extracted_other_immersion = (
             self.example_smartspim_etl_success._extract()
