@@ -4,7 +4,7 @@ Utility functions for SmartSPIM
 
 import json
 import os
-from datetime import date, datetime, time
+from datetime import datetime
 from typing import List, Optional
 
 from aind_data_schema.components import tile
@@ -171,7 +171,6 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
     )
 
     for tile_key, tile_info in metadata_dict["tile_config"].items():
-
         tile_info_x = tile_info.get("x")
         tile_info_y = tile_info.get("y")
         tile_info_z = tile_info.get("z")
