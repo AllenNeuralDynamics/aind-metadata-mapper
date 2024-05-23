@@ -207,7 +207,8 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
                 "\nLaser power is in percentage of total, it needs calibration"
             ),
             coordinate_transformations=[tile_transform, scale],
-            file_name=f"Ex_{exaltation_wave}_Em_{emission_wave}/{tile_info_x}/{tile_info_x}_{tile_info_y}/",  # noqa: E501
+            file_name=f"Ex_{exaltation_wave}_Em_{emission_wave}/"
+            f"{tile_info_x}/{tile_info_x}_{tile_info_y}/",
         )
 
         tile_acquisitions.append(tile_acquisition)

@@ -27,15 +27,15 @@ class TestSmartspimUtils(unittest.TestCase):
         )
 
         self.test_asi_file_path_morning = current_path.joinpath(
-            "../resources/smartspim/example_ASI_logging_morning.txt"  # noqa: E501
+            "../resources/smartspim/" "example_ASI_logging_morning.txt"
         )
         self.test_asi_file_path_afternoon = current_path.joinpath(
-            "../resources/smartspim/example_ASI_logging_afternoon.txt"  # noqa: E501
+            "../resources/smartspim/" "example_ASI_logging_afternoon.txt"
         )
 
     def test_read_json_as_dict(self):
         """
-        Tests succesful reading of a dictionary
+        Tests successful reading of a dictionary
         """
         expected_result = {"some_key": "some_value"}
         result = utils.read_json_as_dict(self.test_local_json_path)
