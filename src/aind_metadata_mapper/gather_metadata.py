@@ -70,6 +70,7 @@ class MetadataSettings(BaseSettings):
     processing_filepath: Optional[Path] = None
     acquisition_filepath: Optional[Path] = None
     instrument_filepath: Optional[Path] = None
+    metadata_directory_path: Optional[Path] = None
 
 
 class JobSettings(BaseSettings):
@@ -236,6 +237,18 @@ class GatherMetadataJob:
             else:
                 return None
 
+        if self.settings.metadata_settings.metadata_directory_path:
+            core_schema_file_names = [
+                s.default_filename()
+                for s in SchemaWriter.get_schemas()
+                if s.default_filename() != Metadata.default_filename()
+            ]
+            for file_name in core_schema_file_names:
+                for core_model in AindCoreModel.__subclasses__():
+                    path = self.settings.metadata_settings.metadata_directory_path / file_name
+                    model = load_model(path, core_model)
+
+        # load models from different files
         subject = load_model(
             self.settings.metadata_settings.subject_filepath, Subject
         )
