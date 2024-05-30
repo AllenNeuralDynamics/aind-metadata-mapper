@@ -15,6 +15,18 @@ from typing import Dict, List, Optional, Tuple, Union
 from zoneinfo import ZoneInfo
 
 import numpy as np
+from aind_data_schema.components.coordinates import (
+    Axis,
+    AxisName,
+    RelativePosition,
+    Rotation3dTransform,
+    Translation3dTransform,
+)
+from aind_data_schema.components.devices import Software
+from aind_data_schema.components.stimulus import (
+    PhotoStimulation,
+    PhotoStimulationGroup,
+)
 from aind_data_schema.core.session import (
     FieldOfView,
     LaserConfig,
@@ -29,18 +41,6 @@ from aind_data_schema.core.session import (
     StimulusEpoch,
     StimulusModality,
     Stream,
-)
-from aind_data_schema.components.coordinates import (
-    Axis,
-    AxisName,
-    RelativePosition,
-    Rotation3dTransform,
-    Translation3dTransform,
-)
-from aind_data_schema.components.devices import Software
-from aind_data_schema.components.stimulus import (
-    PhotoStimulation,
-    PhotoStimulationGroup,
 )
 from aind_data_schema_models.units import PowerUnit
 from pydantic import Field
@@ -78,24 +78,23 @@ class JobSettings(BaseSettings):
     session_type: str = "BCI"
     iacuc_protocol: str = "2109"
     # should match rig json:
-    rig_id: str = "442 Bergamo 2p photostim"  
+    rig_id: str = "442 Bergamo 2p photostim"
     behavior_camera_names: List[str] = [
         "Side Face Camera",
         "Bottom Face Camera",
-    ]  
-    ch1_filter_names: List[str]= ['Green emission filter','Emission dichroic']
-    ch1_detector_name: str = 'Green PMT'
-    ch1_daq_name: str = 'PXI'
-    ch2_filter_names: List[str] = ['Red emission filter','Emission dichroic']
-    ch2_detector_name: str = 'Red PMT'
-    ch2_daq_name: str = 'PXI'
-    imaging_laser_name: str = (
-        "Chameleon Laser"  # should match rig json
-    )
+    ]
+    ch1_filter_names: List[str] = [
+        "Green emission filter",
+        "Emission dichroic",
+    ]
+    ch1_detector_name: str = "Green PMT"
+    ch1_daq_name: str = "PXI"
+    ch2_filter_names: List[str] = ["Red emission filter", "Emission dichroic"]
+    ch2_detector_name: str = "Red PMT"
+    ch2_daq_name: str = "PXI"
+    imaging_laser_name: str = "Chameleon Laser"  # should match rig json
 
-    photostim_laser_name: str = (
-        "Monaco Laser"  # should match rig json
-    )
+    photostim_laser_name: str = "Monaco Laser"  # should match rig json
     photostim_laser_wavelength: int = 1040
     fov_coordinate_ml: Decimal = Decimal("1.5")
     fov_coordinate_ap: float = Decimal("1.5")
@@ -107,11 +106,11 @@ class JobSettings(BaseSettings):
         0,
     ]  # in mm from face of the mouse
     behavior_task_name: str = "single neuron BCI conditioning"
-    hit_rate_trials_0_10: float = np.nan
-    hit_rate_trials_20_40: float = np.nan
-    total_hits: float = np.nan
-    average_hit_rate: float = np.nan
-    trial_num: float = np.nan
+    hit_rate_trials_0_10: Optional[float] = None
+    hit_rate_trials_20_40: Optional[float] = None
+    total_hits: Optional[float] = None
+    average_hit_rate: Optional[float] = None
+    trial_num: Optional[float] = None
     # ZoneInfo object doesn't serialize well, so we can define it as a str
     timezone: str = "US/Pacific"
 
@@ -379,26 +378,27 @@ class BergamoEtl(GenericEtl[JobSettings]):
         first_tiff_metadata_header = parsed_metadata[
             list(parsed_metadata.keys())[0]
         ][0].reader_metadata_header
+        # FROM RIG JSON: filter_names, detector_name, daq_name
         channel_dict = {
             1: {
                 "channel_name": "Ch1",
                 "light_source_name": self.job_settings.imaging_laser_name,
-                "filter_names": self.job_settings.ch1_filter_names,  # FROM RIG JSON
-                "detector_name": self.job_settings.ch1_detector_name,  # FROM RIG JSON
+                "filter_names": self.job_settings.ch1_filter_names,
+                "detector_name": self.job_settings.ch1_detector_name,
                 "excitation_wavelength": (
                     self.job_settings.imaging_laser_wavelength
                 ),
-                "daq_name": self.job_settings.ch1_daq_name,  # FROM RIG JSON
+                "daq_name": self.job_settings.ch1_daq_name,
             },
             2: {
                 "channel_name": "Ch2",
                 "light_source_name": self.job_settings.imaging_laser_name,
-                "filter_names": self.job_settings.ch2_filter_names,  # FROM RIG JSON
-                "detector_name": self.job_settings.ch2_detector_name,  # FROM RIG JSON
+                "filter_names": self.job_settings.ch2_filter_names,
+                "detector_name": self.job_settings.ch2_detector_name,
                 "excitation_wavelength": (
                     self.job_settings.imaging_laser_wavelength
                 ),
-                "daq_name": self.job_settings.ch2_daq_name,  # FROM RIG JSON
+                "daq_name": self.job_settings.ch2_daq_name,
             },
         }
         laser_dict = {
@@ -838,9 +838,12 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 ophys_fovs=[fov_2p],
                 # multiple planes come here
                 stream_modalities=stream_modalities,
-                camera_names=camera_names
+                camera_names=camera_names,
             )
             streams.append(stream_2p)
+
+            hit_rate_trials_0_10 = self.job_settings.hit_rate_trials_0_10
+            hit_rate_trials_20_40 = self.job_settings.hit_rate_trials_20_40
 
             stim_epoch_behavior = StimulusEpoch(
                 stimulus_start_time=stream_start_time,
@@ -856,10 +859,12 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 # opticalBCI class to be added in future
                 stimulus_device_names=[],
                 # from json file, to be added (speaker, bpod ID, )
-                output_parameters={'hit_rate_trials_0_10':self.job_settings.hit_rate_trials_0_10,
-                                   'hit_rate_trials_20_40':self.job_settings.hit_rate_trials_20_40,
-                                   'total_hits':self.job_settings.total_hits,
-                                  'average_hit_rate':self.job_settings.average_hit_rate},  # hit rate, time to reward, ...?
+                output_parameters={
+                    "hit_rate_trials_0_10": hit_rate_trials_0_10,
+                    "hit_rate_trials_20_40": hit_rate_trials_20_40,
+                    "total_hits": self.job_settings.total_hits,
+                    "average_hit_rate": self.job_settings.average_hit_rate,
+                },  # hit rate, time to reward, ...?
                 trials_total=self.job_settings.trial_num,
                 # trials_rewarded = ,  # not using BPOD info yet
             )
