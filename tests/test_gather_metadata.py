@@ -608,6 +608,36 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual("Invalid", main_metadata.metadata_status.value)
         self.assertEqual("632269", main_metadata.subject.subject_id)
 
+    def test_get_main_metadata_with_validation_errors(self):
+        """Tests get_main_metadata method handles validation errors"""
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_settings=MetadataSettings(
+                name="ecephys_632269_2023-10-10_10-10-10",
+                location="s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
+                subject_filepath=(METADATA_DIR / "subject.json"),
+                data_description_filepath=(
+                    METADATA_DIR / "data_description.json"
+                ),
+                procedures_filepath=(METADATA_DIR / "procedures.json"),
+                session_filepath=(METADATA_DIR / "session.json"),
+                rig_filepath=(METADATA_DIR / "rig.json"),
+                processing_filepath=(METADATA_DIR / "processing.json"),
+                acquisition_filepath=(METADATA_DIR / "acquisition.json"),
+                instrument_filepath=(METADATA_DIR / "instrument.json"),
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        main_metadata = metadata_job.get_main_metadata()
+        self.assertIsNotNone(main_metadata.subject)
+        self.assertIsNotNone(main_metadata.procedures)
+        self.assertIsNotNone(main_metadata.data_description)
+        self.assertIsNotNone(main_metadata.session)
+        self.assertIsNotNone(main_metadata.rig)
+        self.assertIsNotNone(main_metadata.processing)
+        self.assertIsNotNone(main_metadata.acquisition)
+        self.assertIsNotNone(main_metadata.instrument)
+
     @patch("builtins.open", new_callable=mock_open())
     @patch("json.dump")
     def test_write_json_file(
