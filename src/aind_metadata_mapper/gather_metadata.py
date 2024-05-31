@@ -23,7 +23,7 @@ from aind_data_schema.core.subject import Subject
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 from aind_data_schema_models.pid_names import PIDName
-from pydantic import ValidationError
+from pydantic import Field, ValidationError
 from pydantic_settings import BaseSettings
 
 
@@ -70,7 +70,6 @@ class MetadataSettings(BaseSettings):
     processing_filepath: Optional[Path] = None
     acquisition_filepath: Optional[Path] = None
     instrument_filepath: Optional[Path] = None
-    metadata_directory_path: Optional[Path] = None
 
 
 class JobSettings(BaseSettings):
@@ -83,6 +82,17 @@ class JobSettings(BaseSettings):
     processing_settings: Optional[ProcessingSettings] = None
     metadata_settings: Optional[MetadataSettings] = None
     directory_to_write_to: Path
+    metadata_dir: Optional[Path] = Field(
+        default=None,
+        description="Optional path where user defined metadata files might be",
+    )
+    metadata_dir_force: bool = Field(
+        default=False,
+        description=(
+            "Whether to override the user defined files in metadata_dir with "
+            "those pulled from metadata service"
+        ),
+    )
 
 
 class GatherMetadataJob:
@@ -97,37 +107,107 @@ class GatherMetadataJob:
         """
         self.settings = settings
 
+    def _does_file_exist_in_user_defined_dir(self, file_name: str) -> bool:
+        """
+        Check whether a file exists in a directory.
+        Parameters
+        ----------
+        file_name : str
+          Something like subject.json
+
+        Returns
+        -------
+        True if self.settings.metadata_dir is not None and file is in that dir
+
+        """
+        if self.settings.metadata_dir is not None:
+            file_path_to_check = self.settings.metadata_dir / file_name
+            if file_path_to_check.is_file():
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def _get_file_from_user_defined_directory(self, file_name: str) -> dict:
+        """
+        Get a file from a user defined directory
+        Parameters
+        ----------
+        file_name : str
+          Like subject.json
+
+        Returns
+        -------
+        File contents as a dictionary
+
+        """
+        file_path = self.settings.metadata_dir / file_name
+        # TODO: Add error handler in case json.load fails
+        with open(file_path, "r") as f:
+            contents = json.load(f)
+        return contents
+
     def get_subject(self) -> dict:
         """Get subject metadata"""
-        response = requests.get(
-            self.settings.metadata_service_domain
-            + f"/{self.settings.subject_settings.metadata_service_path}/"
-            + f"{self.settings.subject_settings.subject_id}"
-        )
-
-        if response.status_code < 300 or response.status_code == 406:
-            json_content = response.json()
-            return json_content["data"]
-        else:
-            raise AssertionError(
-                f"Subject metadata is not valid! {response.json()}"
+        file_name = Subject.default_filename()
+        should_use_service: bool = (
+            not self.settings.metadata_dir_force
+            or not self._does_file_exist_in_user_defined_dir(
+                file_name=file_name
             )
+        )
+        if should_use_service:
+            response = requests.get(
+                self.settings.metadata_service_domain
+                + f"/{self.settings.subject_settings.metadata_service_path}/"
+                + f"{self.settings.subject_settings.subject_id}"
+            )
+
+            if response.status_code < 300 or response.status_code == 406:
+                json_content = response.json()
+                return json_content["data"]
+            else:
+                raise AssertionError(
+                    f"Subject metadata is not valid! {response.json()}"
+                )
+        else:
+            contents = self._get_file_from_user_defined_directory(
+                file_name=file_name
+            )
+            return contents
 
     def get_procedures(self) -> dict:
         """Get procedures metadata"""
-        response = requests.get(
-            self.settings.metadata_service_domain
-            + f"/{self.settings.procedures_settings.metadata_service_path}/"
-            + f"{self.settings.procedures_settings.subject_id}"
-        )
-
-        if response.status_code < 300 or response.status_code == 406:
-            json_content = response.json()
-            return json_content["data"]
-        else:
-            raise AssertionError(
-                f"Procedures metadata is not valid! {response.json()}"
+        file_name = Procedures.default_filename()
+        should_use_service: bool = (
+            not self.settings.metadata_dir_force
+            or not self._does_file_exist_in_user_defined_dir(
+                file_name=file_name
             )
+        )
+        if should_use_service:
+            procedures_file_path = (
+                self.settings.procedures_settings.metadata_service_path
+            )
+            response = requests.get(
+                self.settings.metadata_service_domain
+                + f"/{procedures_file_path}/"
+                + f"{self.settings.procedures_settings.subject_id}"
+            )
+
+            if response.status_code < 300 or response.status_code == 406:
+                json_content = response.json()
+                return json_content["data"]
+            else:
+                raise AssertionError(
+                    f"Procedures metadata is not valid! {response.json()}"
+                )
+        else:
+            contents = self._get_file_from_user_defined_directory(
+                file_name=file_name
+            )
+            return contents
 
     def get_raw_data_description(self) -> dict:
         """Get raw data description metadata"""
@@ -157,55 +237,126 @@ class GatherMetadataJob:
             return funding_info, investigators
 
         # Returns a dict with platform, subject_id, and acq_datetime
-        basic_settings = RawDataDescription.parse_name(
-            name=self.settings.raw_data_description_settings.name
+        file_name = RawDataDescription.default_filename()
+        should_use_service: bool = (
+            not self.settings.metadata_dir_force
+            or not self._does_file_exist_in_user_defined_dir(
+                file_name=file_name
+            )
         )
-        funding_source, investigator_list = get_funding_info(
-            self.settings.metadata_service_domain,
-            self.settings.raw_data_description_settings.metadata_service_path,
-            self.settings.raw_data_description_settings.project_name,
-        )
+        if should_use_service:
+            basic_settings = RawDataDescription.parse_name(
+                name=self.settings.raw_data_description_settings.name
+            )
+            ds_settings = self.settings.raw_data_description_settings
+            funding_source, investigator_list = get_funding_info(
+                self.settings.metadata_service_domain,
+                ds_settings.metadata_service_path,
+                self.settings.raw_data_description_settings.project_name,
+            )
 
-        try:
-            return json.loads(
-                RawDataDescription(
-                    name=self.settings.raw_data_description_settings.name,
-                    institution=(
-                        self.settings.raw_data_description_settings.institution
-                    ),
-                    modality=(
-                        self.settings.raw_data_description_settings.modality
-                    ),
-                    funding_source=funding_source,
-                    investigators=investigator_list,
-                    **basic_settings,
-                ).model_dump_json()
+            try:
+                institution = (
+                    self.settings.raw_data_description_settings.institution
+                )
+                modality = self.settings.raw_data_description_settings.modality
+                return json.loads(
+                    RawDataDescription(
+                        name=self.settings.raw_data_description_settings.name,
+                        institution=institution,
+                        modality=modality,
+                        funding_source=funding_source,
+                        investigators=investigator_list,
+                        **basic_settings,
+                    ).model_dump_json()
+                )
+            except ValidationError:
+                institution = (
+                    self.settings.raw_data_description_settings.institution
+                )
+                modality = self.settings.raw_data_description_settings.modality
+                return json.loads(
+                    RawDataDescription.model_construct(
+                        name=self.settings.raw_data_description_settings.name,
+                        institution=institution,
+                        modality=modality,
+                        funding_source=funding_source,
+                        investigators=investigator_list,
+                        **basic_settings,
+                    ).model_dump_json()
+                )
+        else:
+            contents = self._get_file_from_user_defined_directory(
+                file_name=file_name
             )
-        except ValidationError:
-            return json.loads(
-                RawDataDescription.model_construct(
-                    name=self.settings.raw_data_description_settings.name,
-                    institution=(
-                        self.settings.raw_data_description_settings.institution
-                    ),
-                    modality=(
-                        self.settings.raw_data_description_settings.modality
-                    ),
-                    funding_source=funding_source,
-                    investigators=investigator_list,
-                    **basic_settings,
-                ).model_dump_json()
-            )
+            return contents
 
     def get_processing_metadata(self):
         """Get processing metadata"""
 
-        processing_instance = Processing(
-            processing_pipeline=(
-                self.settings.processing_settings.pipeline_process
+        file_name = Processing.default_filename()
+        should_use_service: bool = (
+            not self.settings.metadata_dir_force
+            or not self._does_file_exist_in_user_defined_dir(
+                file_name=file_name
             )
         )
-        return json.loads(processing_instance.model_dump_json())
+        if should_use_service:
+            processing_instance = Processing(
+                processing_pipeline=(
+                    self.settings.processing_settings.pipeline_process
+                )
+            )
+            return json.loads(processing_instance.model_dump_json())
+        else:
+            contents = self._get_file_from_user_defined_directory(
+                file_name=file_name
+            )
+            return contents
+
+    def get_session_metadata(self) -> Optional[dict]:
+        """Get session metadata"""
+        file_name = Session.default_filename()
+        if self._does_file_exist_in_user_defined_dir(file_name=file_name):
+            contents = self._get_file_from_user_defined_directory(
+                file_name=file_name
+            )
+            return contents
+        else:
+            return None
+
+    def get_rig_metadata(self) -> Optional[dict]:
+        """Get rig metadata"""
+        file_name = Rig.default_filename()
+        if self._does_file_exist_in_user_defined_dir(file_name=file_name):
+            contents = self._get_file_from_user_defined_directory(
+                file_name=file_name
+            )
+            return contents
+        else:
+            return None
+
+    def get_acquisition_metadata(self) -> Optional[dict]:
+        """Get acquisition metadata"""
+        file_name = Acquisition.default_filename()
+        if self._does_file_exist_in_user_defined_dir(file_name=file_name):
+            contents = self._get_file_from_user_defined_directory(
+                file_name=file_name
+            )
+            return contents
+        else:
+            return None
+
+    def get_instrument_metadata(self) -> Optional[dict]:
+        """Get instrument metadata"""
+        file_name = Instrument.default_filename()
+        if self._does_file_exist_in_user_defined_dir(file_name=file_name):
+            contents = self._get_file_from_user_defined_directory(
+                file_name=file_name
+            )
+            return contents
+        else:
+            return None
 
     def get_main_metadata(self) -> Metadata:
         """Get main Metadata model"""
@@ -237,18 +388,6 @@ class GatherMetadataJob:
             else:
                 return None
 
-        if self.settings.metadata_settings.metadata_directory_path:
-            core_schema_file_names = [
-                s.default_filename()
-                for s in SchemaWriter.get_schemas()
-                if s.default_filename() != Metadata.default_filename()
-            ]
-            for file_name in core_schema_file_names:
-                for core_model in AindCoreModel.__subclasses__():
-                    path = self.settings.metadata_settings.metadata_directory_path / file_name
-                    model = load_model(path, core_model)
-
-        # load models from different files
         subject = load_model(
             self.settings.metadata_settings.subject_filepath, Subject
         )
@@ -306,8 +445,9 @@ class GatherMetadataJob:
         with open(output_path, "w") as f:
             json.dump(contents, f, indent=3)
 
-    def run_job(self) -> None:
-        """Run job"""
+    def _gather_automated_metadata(self):
+        """Gather metadata that can be retrieved automatically or from a
+        user defined directory"""
         if self.settings.subject_settings is not None:
             contents = self.get_subject()
             self._write_json_file(
@@ -328,6 +468,39 @@ class GatherMetadataJob:
             self._write_json_file(
                 filename=Processing.default_filename(), contents=contents
             )
+
+    def _gather_non_automated_metadata(self):
+        """Gather metadata that cannot yet be retrieved automatically but
+        may be in a user defined directory."""
+        if self.settings.metadata_settings is None:
+            rig_contents = self.get_rig_metadata()
+            if rig_contents:
+                self._write_json_file(
+                    filename=Rig.default_filename(), contents=rig_contents
+                )
+            session_contents = self.get_session_metadata()
+            if session_contents:
+                self._write_json_file(
+                    filename=Session.default_filename(),
+                    contents=session_contents,
+                )
+            acq_contents = self.get_acquisition_metadata()
+            if acq_contents:
+                self._write_json_file(
+                    filename=Acquisition.default_filename(),
+                    contents=acq_contents,
+                )
+            instrument_contents = self.get_instrument_metadata()
+            if instrument_contents:
+                self._write_json_file(
+                    filename=Instrument.default_filename(),
+                    contents=instrument_contents,
+                )
+
+    def run_job(self) -> None:
+        """Run job"""
+        self._gather_automated_metadata()
+        self._gather_non_automated_metadata()
         if self.settings.metadata_settings is not None:
             metadata = self.get_main_metadata()
             metadata.write_standard_file(
