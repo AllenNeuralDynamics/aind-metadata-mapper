@@ -518,9 +518,21 @@ class GatherMetadataJob:
         self._gather_non_automated_metadata()
         if self.settings.metadata_settings is not None:
             metadata = self.get_main_metadata()
-            metadata.write_standard_file(
-                output_directory=self.settings.directory_to_write_to
+            # TODO: may need to update aind-data-schema write standard file
+            #  class
+            output_path = (
+                self.settings.directory_to_write_to
+                / Metadata.default_filename()
             )
+            contents = json.loads(metadata.model_dump_json(by_alias=True))
+            with open(output_path, "w") as f:
+                json.dump(
+                    contents,
+                    f,
+                    indent=3,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
 
 
 if __name__ == "__main__":

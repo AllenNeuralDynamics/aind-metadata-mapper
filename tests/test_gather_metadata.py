@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
+from aind_data_schema.core.metadata import Metadata
 from aind_data_schema.core.processing import DataProcess, PipelineProcess
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.process_names import ProcessName
@@ -680,8 +681,12 @@ class TestGatherMetadataJob(unittest.TestCase):
         "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
         "._write_json_file"
     )
+    @patch("builtins.open", new_callable=mock_open())
+    @patch("json.dump")
     def test_run_job(
         self,
+        mock_json_dump: MagicMock,
+        mock_open_file: MagicMock,
         mock_write_json_file: MagicMock,
         mock_get_main_metadata: MagicMock,
         mock_get_processing_metadata: MagicMock,
@@ -745,6 +750,9 @@ class TestGatherMetadataJob(unittest.TestCase):
             ),
         )
 
+        # TODO: Add better mocked response
+        mock_get_main_metadata.return_value = Metadata.model_construct()
+
         metadata_job = GatherMetadataJob(settings=job_settings)
 
         metadata_job.run_job()
@@ -755,6 +763,29 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get_processing_metadata.assert_called_once()
         mock_get_main_metadata.assert_called_once()
         mock_write_json_file.assert_called()
+        mock_open_file.assert_called()
+        mock_json_dump.assert_called()
+
+    @patch("builtins.open", new_callable=mock_open())
+    @patch("json.dump")
+    def test_run_job_main_metadata(
+        self, mock_json_dump: MagicMock, mock_write_file: MagicMock
+    ):
+        """Tests run job writes metadata json correctly"""
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_settings=MetadataSettings(
+                name="ecephys_632269_2023-10-10_10-10-10",
+                location="s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        metadata_job.run_job()
+        json_contents = mock_json_dump.mock_calls[0].args[0]
+        mock_write_file.assert_called()
+        self.assertIsNotNone(json_contents.get("_id"))
+        self.assertIsNone(json_contents.get("id"))
 
 
 if __name__ == "__main__":
