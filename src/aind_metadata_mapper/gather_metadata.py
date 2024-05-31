@@ -376,7 +376,7 @@ class GatherMetadataJob:
             Optional[AindCodeModel]
 
             """
-            if filepath is not None:
+            if filepath is not None and filepath.is_file():
                 with open(filepath, "r") as f:
                     contents = json.load(f)
                 try:
