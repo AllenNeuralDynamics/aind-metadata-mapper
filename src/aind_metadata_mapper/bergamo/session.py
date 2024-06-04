@@ -28,6 +28,7 @@ from aind_data_schema.components.stimulus import (
     PhotoStimulationGroup,
 )
 from aind_data_schema.core.session import (
+    DetectorConfig,
     FieldOfView,
     LaserConfig,
     Modality,
@@ -42,7 +43,6 @@ from aind_data_schema.core.session import (
     StimulusModality,
     Stream,
     TriggerType,
-    DetectorConfig
 )
 from aind_data_schema_models.units import PowerUnit
 from pydantic import Field
@@ -464,16 +464,15 @@ class BergamoEtl(GenericEtl[JobSettings]):
             ),  # hard coded
             url="https://www.mbfbioscience.com/products/scanimage/",
         )  # hard coded
-
         detector1 = DetectorConfig.model_construct(
             name=self.job_settings.ch1_detector_name,
             exposure_time=None,
-            trigger_type=TriggerType.INTERNAL.value
+            trigger_type=TriggerType.INTERNAL.value,
         )
         detector2 = DetectorConfig.model_construct(
             name=self.job_settings.ch2_detector_name,
             exposure_time=None,
-            trigger_type=TriggerType.INTERNAL.value
+            trigger_type=TriggerType.INTERNAL.value,
         )
         ch_detectors = [detector1, detector2]
         all_stream_start_times = []
@@ -616,7 +615,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 ],
                 stack_parameters=zstack,
                 stream_modalities=[Modality.POPHYS],
-                detectors=ch_detectors if daq_names else []
+                detectors=ch_detectors if daq_names else [],
             )
             streams.append(stream_stack)
 
@@ -727,7 +726,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 ophys_fovs=[fov_2p],
                 # multiple planes come here
                 stream_modalities=[Modality.POPHYS],
-                detectors=ch_detectors if daq_names else []
+                detectors=ch_detectors if daq_names else [],
             )
             streams.append(stream_2p)
 
