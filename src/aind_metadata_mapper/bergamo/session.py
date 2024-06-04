@@ -519,7 +519,11 @@ class BergamoEtl(GenericEtl[JobSettings]):
             detectors = []
             for channel_num in channel_nums:
                 daq_names.append(channel_dict[channel_num]["daq_name"])
-                detectors.append(self._create_detector_config(channel_dict[channel_num]["detector_name"]))
+                detectors.append(
+                    self._create_detector_config(
+                        channel_dict[channel_num]["detector_name"]
+                    )
+                )
 
             channels = []
             start_time_corrected = (
@@ -662,7 +666,11 @@ class BergamoEtl(GenericEtl[JobSettings]):
             detectors = []
             for channel_num in channel_nums:
                 daq_names.append(channel_dict[channel_num]["daq_name"])
-                detectors.append(self._create_detector_config(channel_dict[channel_num]["detector_name"]))
+                detectors.append(
+                    self._create_detector_config(
+                        channel_dict[channel_num]["detector_name"]
+                    )
+                )
 
             # channels = []
             start_time_corrected = (
@@ -786,7 +794,11 @@ class BergamoEtl(GenericEtl[JobSettings]):
             detectors = []
             for channel_num in channel_nums:
                 daq_names.append(channel_dict[channel_num]["daq_name"])
-                detectors.append(self._create_detector_config(channel_dict[channel_num]["detector_name"]))
+                detectors.append(
+                    self._create_detector_config(
+                        channel_dict[channel_num]["detector_name"]
+                    )
+                )
             # channels = []
             start_time_corrected = (
                 last_frame_description["epoch"]
@@ -937,7 +949,11 @@ class BergamoEtl(GenericEtl[JobSettings]):
             detectors = []
             for channel_num in channel_nums:
                 daq_names.append(channel_dict[channel_num]["daq_name"])
-                detectors.append(self._create_detector_config(channel_dict[channel_num]["detector_name"]))
+                detectors.append(
+                    self._create_detector_config(
+                        channel_dict[channel_num]["detector_name"]
+                    )
+                )
             # channels = []
             start_time_corrected = (
                 last_frame_description["epoch"]
