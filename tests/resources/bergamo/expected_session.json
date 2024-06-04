@@ -44,12 +44,6 @@
           "exposure_time": null,
           "exposure_time_unit": "millisecond",
           "trigger_type": "Internal"
-        },
-        {
-          "name": "Red PMT",
-          "exposure_time": null,
-          "exposure_time_unit": "millisecond",
-          "trigger_type": "Internal"
         }
       ],
       "fiber_connections": [],
@@ -135,12 +129,6 @@
           "exposure_time": null,
           "exposure_time_unit": "millisecond",
           "trigger_type": "Internal"
-        },
-        {
-          "name": "Red PMT",
-          "exposure_time": null,
-          "exposure_time_unit": "millisecond",
-          "trigger_type": "Internal"
         }
       ],
       "fiber_connections": [],
@@ -211,12 +199,6 @@
       "detectors": [
         {
           "name": "Green PMT",
-          "exposure_time": null,
-          "exposure_time_unit": "millisecond",
-          "trigger_type": "Internal"
-        },
-        {
-          "name": "Red PMT",
           "exposure_time": null,
           "exposure_time_unit": "millisecond",
           "trigger_type": "Internal"
@@ -301,12 +283,6 @@
           "exposure_time": null,
           "exposure_time_unit": "millisecond",
           "trigger_type": "Internal"
-        },
-        {
-          "name": "Red PMT",
-          "exposure_time": null,
-          "exposure_time_unit": "millisecond",
-          "trigger_type": "Internal"
         }
       ],
       "fiber_connections": [],
@@ -388,12 +364,6 @@
           "exposure_time": null,
           "exposure_time_unit": "millisecond",
           "trigger_type": "Internal"
-        },
-        {
-          "name": "Red PMT",
-          "exposure_time": null,
-          "exposure_time_unit": "millisecond",
-          "trigger_type": "Internal"
         }
       ],
       "fiber_connections": [],
@@ -466,7 +436,14 @@
       "ephys_modules": [],
       "stick_microscopes": [],
       "manipulator_modules": [],
-      "detectors": [],
+      "detectors": [
+        {
+          "name": "Green PMT",
+          "exposure_time": null,
+          "exposure_time_unit": "millisecond",
+          "trigger_type": "Internal"
+        }
+      ],
       "fiber_connections": [],
       "fiber_modules": [],
       "ophys_fovs": [
