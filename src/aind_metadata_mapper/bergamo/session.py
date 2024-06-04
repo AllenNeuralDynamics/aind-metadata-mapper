@@ -41,6 +41,8 @@ from aind_data_schema.core.session import (
     StimulusEpoch,
     StimulusModality,
     Stream,
+    TriggerType,
+    DetectorConfig
 )
 from aind_data_schema_models.units import PowerUnit
 from pydantic import Field
@@ -73,7 +75,7 @@ class JobSettings(BaseSettings):
     notes: Optional[str]
 
     # fields with default values
-    mouse_platform_name: str = "tube"  # should match rig json
+    mouse_platform_name: str = "Standard Mouse Tube"  # FROM RIG JSON
     active_mouse_platform: bool = False
     session_type: str = "BCI"
     iacuc_protocol: str = "2109"
@@ -92,9 +94,10 @@ class JobSettings(BaseSettings):
     ch2_filter_names: List[str] = ["Red emission filter", "Emission dichroic"]
     ch2_detector_name: str = "Red PMT"
     ch2_daq_name: str = "PXI"
-    imaging_laser_name: str = "Chameleon Laser"  # should match rig json
+    imaging_laser_name: str = "Chameleon Laser"
 
-    photostim_laser_name: str = "Monaco Laser"  # should match rig json
+    photostim_laser_name: str = "Monaco Laser"
+    stimulus_device_names: List[str] = ["speaker", "lickport"]  # FROM RIG JSON
     photostim_laser_wavelength: int = 1040
     fov_coordinate_ml: Decimal = Decimal("1.5")
     fov_coordinate_ap: float = Decimal("1.5")
@@ -461,6 +464,18 @@ class BergamoEtl(GenericEtl[JobSettings]):
             ),  # hard coded
             url="https://www.mbfbioscience.com/products/scanimage/",
         )  # hard coded
+
+        detector1 = DetectorConfig.model_construct(
+            name=self.job_settings.ch1_detector_name,
+            exposure_time=None,
+            trigger_type=TriggerType.INTERNAL.value
+        )
+        detector2 = DetectorConfig.model_construct(
+            name=self.job_settings.ch2_detector_name,
+            exposure_time=None,
+            trigger_type=TriggerType.INTERNAL.value
+        )
+        ch_detectors = [detector1, detector2]
         all_stream_start_times = []
         all_stream_end_times = []
         streams = []
@@ -601,6 +616,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 ],
                 stack_parameters=zstack,
                 stream_modalities=[Modality.POPHYS],
+                detectors=ch_detectors if daq_names else []
             )
             streams.append(stream_stack)
 
@@ -633,6 +649,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
             daq_names = []
             for channel_num in channel_nums:
                 daq_names.append(channel_dict[channel_num]["daq_name"])
+
             # channels = []
             start_time_corrected = (
                 last_frame_description["epoch"]
@@ -710,6 +727,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 ophys_fovs=[fov_2p],
                 # multiple planes come here
                 stream_modalities=[Modality.POPHYS],
+                detectors=ch_detectors if daq_names else []
             )
             streams.append(stream_2p)
 
@@ -839,6 +857,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 # multiple planes come here
                 stream_modalities=stream_modalities,
                 camera_names=camera_names,
+                detectors=ch_detectors if daq_names else [],
             )
             streams.append(stream_2p)
 
@@ -857,7 +876,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 # ,StimulusModality.TACTILE],# tactile not in this version yet
                 stimulus_parameters=[],
                 # opticalBCI class to be added in future
-                stimulus_device_names=[],
+                stimulus_device_names=self.job_settings.stimulus_device_names,
                 # from json file, to be added (speaker, bpod ID, )
                 output_parameters={
                     "hit_rate_trials_0_10": hit_rate_trials_0_10,
@@ -1060,7 +1079,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 stimulus_modalities=[StimulusModality.OPTOGENETICS],
                 stimulus_parameters=[photostim],
                 # opticalBCI class to be added in future
-                stimulus_device_names=[],  # from json file, to be added ()
+                stimulus_device_names=self.job_settings.stimulus_device_names,
                 light_source_config=LaserConfig(
                     # from rig json
                     name=self.job_settings.photostim_laser_name,
@@ -1072,6 +1091,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 ),
             )
             stim_epochs.append(stim_epoch_photostim)
+        # TODO: remove model_construct, fill in exposure time from acq machine
         s = Session(
             experimenter_full_name=self.job_settings.experimenter_full_name,
             # user added
