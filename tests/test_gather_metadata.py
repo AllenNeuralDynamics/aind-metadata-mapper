@@ -224,7 +224,10 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get.assert_not_called()
 
     @patch("requests.get")
-    def test_get_procedures_error(self, mock_get: MagicMock):
+    @patch("logging.warning")
+    def test_get_procedures_warning(
+        self, mock_warn: MagicMock, mock_get: MagicMock
+    ):
         """Tests get_procedures when an error is raised"""
         mock_response = Response()
         mock_response.status_code = 500
@@ -240,13 +243,12 @@ class TestGatherMetadataJob(unittest.TestCase):
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        with self.assertRaises(AssertionError) as e:
-            metadata_job.get_procedures()
-        expected_error_message = (
+        output = metadata_job.get_procedures()
+        self.assertIsNone(output)
+        mock_warn.assert_called_once_with(
             "Procedures metadata is not valid! "
             "{'message': 'Internal Server Error'}"
         )
-        self.assertTrue(expected_error_message in str(e.exception))
 
     @patch("requests.get")
     def test_get_raw_data_description(self, mock_get: MagicMock):

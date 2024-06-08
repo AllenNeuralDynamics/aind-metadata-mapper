@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 from typing import List, Optional, Type
@@ -177,7 +178,7 @@ class GatherMetadataJob:
             )
             return contents
 
-    def get_procedures(self) -> dict:
+    def get_procedures(self) -> Optional[dict]:
         """Get procedures metadata"""
         file_name = Procedures.default_filename()
         should_use_service: bool = (
@@ -200,9 +201,10 @@ class GatherMetadataJob:
                 json_content = response.json()
                 return json_content["data"]
             else:
-                raise AssertionError(
+                logging.warning(
                     f"Procedures metadata is not valid! {response.json()}"
                 )
+                return None
         else:
             contents = self._get_file_from_user_defined_directory(
                 file_name=file_name
@@ -470,9 +472,10 @@ class GatherMetadataJob:
             )
         if self.settings.procedures_settings is not None:
             contents = self.get_procedures()
-            self._write_json_file(
-                filename=Procedures.default_filename(), contents=contents
-            )
+            if contents is not None:
+                self._write_json_file(
+                    filename=Procedures.default_filename(), contents=contents
+                )
         if self.settings.raw_data_description_settings is not None:
             contents = self.get_raw_data_description()
             self._write_json_file(
