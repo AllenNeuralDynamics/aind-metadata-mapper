@@ -246,8 +246,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         output = metadata_job.get_procedures()
         self.assertIsNone(output)
         mock_warn.assert_called_once_with(
-            "Procedures metadata is not valid! "
-            "{'message': 'Internal Server Error'}"
+            "Procedures metadata is not valid! 500"
         )
 
     @patch("requests.get")

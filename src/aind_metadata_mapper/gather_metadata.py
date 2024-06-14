@@ -202,7 +202,7 @@ class GatherMetadataJob:
                 return json_content["data"]
             else:
                 logging.warning(
-                    f"Procedures metadata is not valid! {response.json()}"
+                    f"Procedures metadata is not valid! {response.status_code}"
                 )
                 return None
         else:
