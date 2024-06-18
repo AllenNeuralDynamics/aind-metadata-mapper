@@ -610,7 +610,10 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual("Invalid", main_metadata.metadata_status.value)
         self.assertEqual("632269", main_metadata.subject.subject_id)
 
-    def test_get_main_metadata_with_validation_errors(self):
+    @patch("logging.warning")
+    def test_get_main_metadata_with_validation_errors(
+            self, mock_warn: MagicMock
+    ):
         """Tests get_main_metadata method handles validation errors"""
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
@@ -639,6 +642,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertIsNotNone(main_metadata.processing)
         self.assertIsNotNone(main_metadata.acquisition)
         self.assertIsNotNone(main_metadata.instrument)
+        mock_warn.assert_called_once()
 
     @patch("builtins.open", new_callable=mock_open())
     @patch("json.dump")
