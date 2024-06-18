@@ -1,0 +1,396 @@
+{
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/session.py",
+   "schema_version": "0.2.6",
+   "protocol_id": [
+      ""
+   ],
+   "experimenter_full_name": [
+      "fake mae"
+   ],
+   "session_start_time": "2023-07-21T18:07:59Z",
+   "session_end_time": "2023-07-21T19:56:23Z",
+   "session_type": "3D MRI Scan",
+   "iacuc_protocol": "fake iacuc",
+   "rig_id": "fake scanner",
+   "calibrations": [],
+   "maintenance": [],
+   "subject_id": "fake subject",
+   "animal_weight_prior": null,
+   "animal_weight_post": null,
+   "weight_unit": "gram",
+   "anaesthesia": null,
+   "data_streams": [
+      {
+         "stream_start_time": "2023-07-21T18:07:59Z",
+         "stream_end_time": "2023-07-21T19:56:23Z",
+         "daq_names": [],
+         "camera_names": [],
+         "light_sources": [],
+         "ephys_modules": [],
+         "stick_microscopes": [],
+         "manipulator_modules": [],
+         "detectors": [],
+         "fiber_connections": [],
+         "fiber_modules": [],
+         "ophys_fovs": [],
+         "slap_fovs": null,
+         "stack_parameters": null,
+         "mri_scans": [
+            {
+               "scan_index": 1,
+               "scan_type": "3D Scan",
+               "primary_scan": false,
+               "mri_scanner": {
+                  "device_type": "Scanner",
+                  "name": "fake scanner",
+                  "serial_number": null,
+                  "manufacturer": null,
+                  "model": null,
+                  "path_to_cad": null,
+                  "port_index": null,
+                  "additional_settings": {},
+                  "notes": null,
+                  "scanner_location": "Fred Hutch",
+                  "magnetic_strength": 7,
+                  "magnetic_strength_unit": "T"
+               },
+               "scan_sequence_type": "Other",
+               "rare_factor": null,
+               "echo_time": "3.42",
+               "effective_echo_time": null,
+               "echo_time_unit": "millisecond",
+               "repetition_time": "100.0",
+               "repetition_time_unit": "millisecond",
+               "vc_orientation": null,
+               "vc_position": null,
+               "subject_position": "Supine",
+               "voxel_sizes": null,
+               "processing_steps": [],
+               "additional_scan_parameters": {},
+               "notes": "Scan sequence FLASH not recognized"
+            },
+            {
+               "scan_index": 2,
+               "scan_type": "3D Scan",
+               "primary_scan": false,
+               "mri_scanner": {
+                  "device_type": "Scanner",
+                  "name": "fake scanner",
+                  "serial_number": null,
+                  "manufacturer": null,
+                  "model": null,
+                  "path_to_cad": null,
+                  "port_index": null,
+                  "additional_settings": {},
+                  "notes": null,
+                  "scanner_location": "Fred Hutch",
+                  "magnetic_strength": 7,
+                  "magnetic_strength_unit": "T"
+               },
+               "scan_sequence_type": "RARE",
+               "rare_factor": 8,
+               "echo_time": "5.49333333333333",
+               "effective_echo_time": "5.49333333333332962666872845147736370563507080078125",
+               "echo_time_unit": "millisecond",
+               "repetition_time": "2000.0",
+               "repetition_time_unit": "millisecond",
+               "vc_orientation": null,
+               "vc_position": null,
+               "subject_position": "Supine",
+               "voxel_sizes": null,
+               "processing_steps": [],
+               "additional_scan_parameters": {},
+               "notes": null
+            },
+            {
+               "scan_index": 3,
+               "scan_type": "3D Scan",
+               "primary_scan": false,
+               "mri_scanner": {
+                  "device_type": "Scanner",
+                  "name": "fake scanner",
+                  "serial_number": null,
+                  "manufacturer": null,
+                  "model": null,
+                  "path_to_cad": null,
+                  "port_index": null,
+                  "additional_settings": {},
+                  "notes": null,
+                  "scanner_location": "Fred Hutch",
+                  "magnetic_strength": 7,
+                  "magnetic_strength_unit": "T"
+               },
+               "scan_sequence_type": "RARE",
+               "rare_factor": 8,
+               "echo_time": "5.49333333333333",
+               "effective_echo_time": "5.49333333333332962666872845147736370563507080078125",
+               "echo_time_unit": "millisecond",
+               "repetition_time": "2000.0",
+               "repetition_time_unit": "millisecond",
+               "vc_orientation": null,
+               "vc_position": null,
+               "subject_position": "Supine",
+               "voxel_sizes": null,
+               "processing_steps": [],
+               "additional_scan_parameters": {},
+               "notes": null
+            },
+            {
+               "scan_index": 4,
+               "scan_type": "3D Scan",
+               "primary_scan": false,
+               "mri_scanner": {
+                  "device_type": "Scanner",
+                  "name": "fake scanner",
+                  "serial_number": null,
+                  "manufacturer": null,
+                  "model": null,
+                  "path_to_cad": null,
+                  "port_index": null,
+                  "additional_settings": {},
+                  "notes": null,
+                  "scanner_location": "Fred Hutch",
+                  "magnetic_strength": 7,
+                  "magnetic_strength_unit": "T"
+               },
+               "scan_sequence_type": "RARE",
+               "rare_factor": 4,
+               "echo_time": "5.33333333333333",
+               "effective_echo_time": "10.6666666666666998253276688046753406524658203125",
+               "echo_time_unit": "millisecond",
+               "repetition_time": "500.0",
+               "repetition_time_unit": "millisecond",
+               "vc_orientation": {
+                  "type": "rotation",
+                  "rotation": [
+                     "1.0",
+                     "0.0",
+                     "0.0",
+                     "0.0",
+                     "0.0",
+                     "-1.0",
+                     "0.0",
+                     "1.0",
+                     "0.0"
+                  ]
+               },
+               "vc_position": {
+                  "type": "translation",
+                  "translation": [
+                     "-6.1",
+                     "-7.1",
+                     "8.4"
+                  ]
+               },
+               "subject_position": "Supine",
+               "voxel_sizes": {
+                  "type": "scale",
+                  "scale": [
+                     "0.5",
+                     "0.4375",
+                     "0.52"
+                  ]
+               },
+               "processing_steps": [],
+               "additional_scan_parameters": {},
+               "notes": null
+            },
+            {
+               "scan_index": 5,
+               "scan_type": "3D Scan",
+               "primary_scan": false,
+               "mri_scanner": {
+                  "device_type": "Scanner",
+                  "name": "fake scanner",
+                  "serial_number": null,
+                  "manufacturer": null,
+                  "model": null,
+                  "path_to_cad": null,
+                  "port_index": null,
+                  "additional_settings": {},
+                  "notes": null,
+                  "scanner_location": "Fred Hutch",
+                  "magnetic_strength": 7,
+                  "magnetic_strength_unit": "T"
+               },
+               "scan_sequence_type": "RARE",
+               "rare_factor": 4,
+               "echo_time": "5.33333333333333",
+               "effective_echo_time": "10.6666666666666998253276688046753406524658203125",
+               "echo_time_unit": "millisecond",
+               "repetition_time": "500.0",
+               "repetition_time_unit": "millisecond",
+               "vc_orientation": {
+                  "type": "rotation",
+                  "rotation": [
+                     "1.0",
+                     "0.0",
+                     "0.0",
+                     "0.0",
+                     "0.0",
+                     "-1.0",
+                     "0.0",
+                     "1.0",
+                     "0.0"
+                  ]
+               },
+               "vc_position": {
+                  "type": "translation",
+                  "translation": [
+                     "-6.1",
+                     "-7.1",
+                     "8.1"
+                  ]
+               },
+               "subject_position": "Supine",
+               "voxel_sizes": {
+                  "type": "scale",
+                  "scale": [
+                     "0.5",
+                     "0.4375",
+                     "0.52"
+                  ]
+               },
+               "processing_steps": [],
+               "additional_scan_parameters": {},
+               "notes": null
+            },
+            {
+               "scan_index": 6,
+               "scan_type": "3D Scan",
+               "primary_scan": false,
+               "mri_scanner": {
+                  "device_type": "Scanner",
+                  "name": "fake scanner",
+                  "serial_number": null,
+                  "manufacturer": null,
+                  "model": null,
+                  "path_to_cad": null,
+                  "port_index": null,
+                  "additional_settings": {},
+                  "notes": null,
+                  "scanner_location": "Fred Hutch",
+                  "magnetic_strength": 7,
+                  "magnetic_strength_unit": "T"
+               },
+               "scan_sequence_type": "RARE",
+               "rare_factor": 4,
+               "echo_time": "5.33333333333333",
+               "effective_echo_time": "10.6666666666666998253276688046753406524658203125",
+               "echo_time_unit": "millisecond",
+               "repetition_time": "500.0",
+               "repetition_time_unit": "millisecond",
+               "vc_orientation": {
+                  "type": "rotation",
+                  "rotation": [
+                     "1.0",
+                     "0.0",
+                     "0.0",
+                     "0.0",
+                     "0.0",
+                     "-1.0",
+                     "0.0",
+                     "1.0",
+                     "0.0"
+                  ]
+               },
+               "vc_position": {
+                  "type": "translation",
+                  "translation": [
+                     "-6.1",
+                     "-7.1",
+                     "7.9"
+                  ]
+               },
+               "subject_position": "Supine",
+               "voxel_sizes": {
+                  "type": "scale",
+                  "scale": [
+                     "0.5",
+                     "0.4375",
+                     "0.52"
+                  ]
+               },
+               "processing_steps": [],
+               "additional_scan_parameters": {},
+               "notes": null
+            },
+            {
+               "scan_index": 7,
+               "scan_type": "3D Scan",
+               "primary_scan": false,
+               "mri_scanner": {
+                  "device_type": "Scanner",
+                  "name": "fake scanner",
+                  "serial_number": null,
+                  "manufacturer": null,
+                  "model": null,
+                  "path_to_cad": null,
+                  "port_index": null,
+                  "additional_settings": {},
+                  "notes": null,
+                  "scanner_location": "Fred Hutch",
+                  "magnetic_strength": 7,
+                  "magnetic_strength_unit": "T"
+               },
+               "scan_sequence_type": "RARE",
+               "rare_factor": 4,
+               "echo_time": "5.33333333333333",
+               "effective_echo_time": "10.6666666666666998253276688046753406524658203125",
+               "echo_time_unit": "millisecond",
+               "repetition_time": "500.0",
+               "repetition_time_unit": "millisecond",
+               "vc_orientation": {
+                  "type": "rotation",
+                  "rotation": [
+                     "1.0",
+                     "0.0",
+                     "0.0",
+                     "0.0",
+                     "0.0",
+                     "-1.0",
+                     "0.0",
+                     "1.0",
+                     "0.0"
+                  ]
+               },
+               "vc_position": {
+                  "type": "translation",
+                  "translation": [
+                     "-6.1",
+                     "-7.0",
+                     "7.9"
+                  ]
+               },
+               "subject_position": "Supine",
+               "voxel_sizes": {
+                  "type": "scale",
+                  "scale": [
+                     "0.1",
+                     "0.1",
+                     "0.1"
+                  ]
+               },
+               "processing_steps": [],
+               "additional_scan_parameters": {},
+               "notes": null
+            }
+         ],
+         "stream_modalities": [
+            {
+               "name": "Magnetic resonance imaging",
+               "abbreviation": "MRI"
+            }
+         ],
+         "software": [],
+         "notes": null
+      }
+   ],
+   "stimulus_epochs": [],
+   "mouse_platform_name": "NA",
+   "active_mouse_platform": false,
+   "reward_delivery": null,
+   "reward_consumed_total": null,
+   "reward_consumed_unit": "microliter",
+   "notes": "test"
+}

@@ -202,7 +202,7 @@ class GatherMetadataJob:
                 return json_content["data"]
             else:
                 logging.warning(
-                    f"Procedures metadata is not valid! {response.json()}"
+                    f"Procedures metadata is not valid! {response.status_code}"
                 )
                 return None
         else:
@@ -428,7 +428,8 @@ class GatherMetadataJob:
                 instrument=instrument,
             )
             return metadata
-        except (ValidationError, ValueError, AttributeError, KeyError):
+        except Exception as e:
+            logging.warning(f"Issue with metadata construction! {e.args}")
             metadata = Metadata.model_construct(
                 name=self.settings.metadata_settings.name,
                 location=self.settings.metadata_settings.location,
