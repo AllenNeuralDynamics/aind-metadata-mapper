@@ -1,10 +1,10 @@
 """Sets up the MRI ingest ETL"""
 
-import logging
 import argparse
+import json
+import logging
 import sys
 import traceback
-import json
 from datetime import datetime, timedelta
 from decimal import Decimal
 from pathlib import Path

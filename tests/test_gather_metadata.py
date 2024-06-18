@@ -612,7 +612,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     @patch("logging.warning")
     def test_get_main_metadata_with_validation_errors(
-            self, mock_warn: MagicMock
+        self, mock_warn: MagicMock
     ):
         """Tests get_main_metadata method handles validation errors"""
         job_settings = JobSettings(
