@@ -1,7 +1,10 @@
 """Sets up the MRI ingest ETL"""
 
 import logging
+import argparse
+import sys
 import traceback
+import json
 from datetime import datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -84,6 +87,40 @@ class MRIEtl(GenericEtl[JobSettings]):
         else:
             job_settings_model = job_settings
         super().__init__(job_settings=job_settings_model)
+
+    @classmethod
+    def from_args(cls, args: list):
+        """
+        Adds ability to construct settings from a list of arguments.
+        Parameters
+        ----------
+        args : list
+        A list of command line arguments to parse.
+        """
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "-u",
+            "--job-settings",
+            required=True,
+            type=json.loads,
+            help=(
+                r"""
+                Custom settings defined by the user defined as a json
+                 string. For example: -u
+                 '{"experimenter_full_name":["John Smith","Jane Smith"],
+                 "subject_id":"12345",
+                 "session_start_time":"2023-10-10T10:10:10",
+                 "session_end_time":"2023-10-10T18:10:10",
+                 "project":"my_project"}
+                """
+            ),
+        )
+        job_args = parser.parse_args(args)
+        job_settings_from_args = JobSettings(**job_args.job_settings)
+        return cls(
+            job_settings=job_settings_from_args,
+        )
 
     def _extract(self) -> BrukerMetadata:
         """Extract the data from the bruker files."""
@@ -192,7 +229,8 @@ class MRIEtl(GenericEtl[JobSettings]):
             notes=self.job_settings.session_notes,
         )
 
-    def get_position(self, subject_data):
+    @staticmethod
+    def get_position(subject_data):
         """Get the position of the subject."""
         subj_pos = subject_data["SUBJECT_position"]
         if "supine" in subj_pos.lower():
@@ -201,28 +239,32 @@ class MRIEtl(GenericEtl[JobSettings]):
             return "Prone"
         return subj_pos
 
-    def get_scan_sequence_type(self, method):
+    @staticmethod
+    def get_scan_sequence_type(method):
         """Get the scan sequence type."""
         if "RARE" in method["Method"]:
             return MriScanSequence(method["Method"])
 
         return MriScanSequence.OTHER
 
-    def get_rotation(self, visu_pars):
+    @staticmethod
+    def get_rotation(visu_pars):
         """Get the rotation."""
         rotation = visu_pars.get("VisuCoreOrientation")
         if rotation.shape == (1, 9):
             return Rotation3dTransform(rotation=rotation.tolist()[0])
         return None
 
-    def get_translation(self, visu_pars):
+    @staticmethod
+    def get_translation(visu_pars):
         """Get the translation."""
         translation = visu_pars.get("VisuCorePosition")
         if translation.shape == (1, 3):
             return Translation3dTransform(translation=translation.tolist()[0])
         return None
 
-    def get_scale(self, method):
+    @staticmethod
+    def get_scale(method):
         """Get the scale."""
         scale = method.get("SpatResol")
         if not isinstance(scale, list):
@@ -295,3 +337,9 @@ class MRIEtl(GenericEtl[JobSettings]):
         except Exception as e:
             logging.error(traceback.format_exc())
             logging.error(f"Error loading scan {scan_index}: {e}")
+
+
+if __name__ == "__main__":
+    sys_args = sys.argv[1:]
+    etl = MRIEtl.from_args(sys_args)
+    etl.run_job()

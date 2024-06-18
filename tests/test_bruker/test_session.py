@@ -1,4 +1,4 @@
-"""Tests methods defined in the mri_loader module"""
+"""Tests methods defined in the session module"""
 
 import json
 import os
@@ -17,7 +17,7 @@ from aind_data_schema.components.devices import (
     ScannerLocation,
 )
 
-from aind_metadata_mapper.bruker.mri_loader import JobSettings, MRIEtl
+from aind_metadata_mapper.bruker.session import JobSettings, MRIEtl
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
@@ -64,7 +64,7 @@ class TestMRIWriter(unittest.TestCase):
 
     @classmethod
     @patch(
-        "aind_metadata_mapper.bruker.mri_loader.BrukerMetadata",
+        "aind_metadata_mapper.bruker.session.BrukerMetadata",
         new=MockBrukerMetadata,
     )
     def setUpClass(cls):
@@ -104,7 +104,7 @@ class TestMRIWriter(unittest.TestCase):
         self.assertEqual(etl1.job_settings, etl0.job_settings)
 
     @patch(
-        "aind_metadata_mapper.bruker.mri_loader.BrukerMetadata",
+        "aind_metadata_mapper.bruker.session.BrukerMetadata",
         new=MockBrukerMetadata,
     )
     def test_extract(self):
@@ -115,7 +115,7 @@ class TestMRIWriter(unittest.TestCase):
         self.assertIsNotNone(bruker_metadata.subject_data)
 
     @patch(
-        "aind_metadata_mapper.bruker.mri_loader.BrukerMetadata",
+        "aind_metadata_mapper.bruker.session.BrukerMetadata",
         new=MockBrukerMetadata,
     )
     def test_etl(self) -> None:
