@@ -109,10 +109,17 @@ class U19Etl(GenericEtl[JobSettings]):
             return item['data']
         return None
     
-    def extract_procedures(self, procedure_file):
+    def extract_procedures(self, subj_id, procedure_file):
         """Extract the procedures from the procedure file."""
 
-        return [procedure for procedure in procedure_file['subject_procedures']]
+        self.procedures[subj_id] = [procedure for procedure in procedure_file['subject_procedures']]
+    
+    def extract_coordinates(self, coordinate_file):
+        """Extract the coordinates from the coordinate file."""
+        self.coord_values = {}
+
+        for row_idx, row in coordinate_file.iterrows():
+            self.coord_values[row['Coord.']] = row['Pax. Structure']
     
 
     def transform_perfusion(self, subj_id: str):
@@ -123,10 +130,13 @@ class U19Etl(GenericEtl[JobSettings]):
             output_specimen_ids=[subj_id]
         )
     
-    def transform_nanoject(self, procedure, row, injection: str):
+    def transform_nanoject(self, subj_id, existing_procedure, row, injection: str):
         """Transform the nanoject procedure."""
 
         virus = row[injection]['Virus']
+        if pd.isnull(virus):
+            return None
+        
         inj_angle = row[injection]['Inj Angle']
         inj_vol = row[injection]['nL']
         coord_ml = row[injection]['M/L']
@@ -150,12 +160,90 @@ class U19Etl(GenericEtl[JobSettings]):
 
         inj_mats = [mat1]
 
+        for key, value in [
+            ('injection_volume', inj_vol),
+            ('injection_angle', inj_angle),
+            ('injection_coordinate_ml', coord_ml),
+            ('injection_coordinate_ap', coord_ap),
+            ('injection_coordinate_depth', coord_depth),
+            ('injection_hemisphere', hemisphere),
+        ]:
+            if not self.matched_value(value, key, existing_procedure):
+                existing_procedure[key] = value
+
+        for item in [inj_vol, coord_depth,]:
+            if type(item) is not list:
+                item = [item]
+
         return NanojectInjection(
-            protocol_id="dx.doi.org/10.17504/protocols.io.bg5vjy66",
-            output_specimen_ids=[subj_id]
+            injection_materials=inj_mats,
+            recovery_time=existing_procedure['recovery_time'],
+            recovery_time_unit=existing_procedure['recovery_time_unit'],
+            injection_duration=existing_procedure['injection_duration'],
+            injection_duration_unit=existing_procedure['injection_duration_unit'],
+            instrument_id=existing_procedure['instrument_id'],
+            protocol_id="dx.doi.org/10.17504/protocols.io.bgpujvnw",
+            injection_volume=inj_vol,
+            injection_volume_unit=VolumeUnit.NL,
+            injection_coordinate_ml=coord_ml,
+            injection_coordinate_ap=coord_ap,
+            injection_coordinate_depth=coord_depth,
+            injection_coordinate_unit=SizeUnit.MM,
+            injection_coordinate_reference=existing_procedure['injection_coordinate_reference'],
+            bregma_to_lambda_distance=existing_procedure['bregma_to_lambda_distance'],
+            bregma_to_lambda_unit=existing_procedure['bregma_to_lambda_unit'],
+            inj_angle=inj_angle,
+            injection_angle_unit="degrees",
+            targeted_structure='Isocortex',
+            injection_hemisphere=hemisphere
         )
+    
+    def transform_row(self, subj_id: str, row):
+        subj_id = str(row['SubjInfo']['Mouse ID']).strip().lower()
+        logging.info(f"Transforming row for {subj_id}.")
+
+        procedure_file = self.download_procedure_file(subj_id)
+        if procedure_file:
+            procedures = self.extract_procedures(procedure_file)
+
+        headers = ['Perfusion', 'Inj 1', 'Inj 2', 'Inj 3']
+
+        if procedures[subj_id][0]["procedure_type"] != 'Perfusion':
+            headers = ['Inj 1', 'Inj 2', 'Inj 3']
+
+        for proc_idx, inj in enumerate(headers):
+            if proc_idx < len(procedures):
+                cur_procedure = procedures[proc_idx]
+            else:
+                continue
+
+            logging.info(f"loaded {subj_id} - procedure: {cur_procedure['procedure_type']} - expected: {inj} - data: {cur_procedure}")
+
+            date = row[inj]['Date']
+
+            if not pd.isnull(date):
+                date = row[inj]['Date'].date()
+
+            if procedure_file['start_date'] is None:
+                procedure_file['start_date'] = date
+            else:
+                procedure_file['start_date'] = datetime.strptime(procedure_file["start_date"], "%Y-%m-%d").date()
+
+            if not self.matched_value(date, 'start_date', row):
+                logging.info(f"DATE MISSMATCH: {date} - {row['start_date']}")
+
+            if inj != 'Perfusion':
+                target_name = row['Coordinate Targets'][inj]
+                target = self.coord_values[target_name]
+
+
 
         
+    def matched_value(self, value, key, row):
+        if row[key] != value and value != None:
+            logging.warning(f"Value mismatch for {key}:\nspreadsheet value: {value}\nprocedure value: {row[key]}.")
+            return False
+        return True
 
     def run_job(self) -> JobResponse:
         """Run the job and return the response."""
