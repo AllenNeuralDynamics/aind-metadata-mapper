@@ -28,7 +28,7 @@ class JobSettings(BaseSettings):
     """Data that needs to be input by user."""
 
     tracking_sheet_path: Path
-    tracker_sheet_name: str
+    tracking_sheet_name: str
     coordinate_sheet_path: Path
     coordinate_sheet_name: str
     output_directory: Optional[Path] = Field(
@@ -71,28 +71,42 @@ class U19Etl(GenericEtl[JobSettings]):
             job_settings_model = job_settings
         super().__init__(job_settings=job_settings_model)
 
-    def _extract(self, subj_id) -> :
+    def run_job(self) -> JobResponse:
+        """Run the job and return the response."""
+
+        extracted = self._extract()
+        transformed = self._transform(extracted)
+
+        job_response = self._load(
+            transformed, self.job_settings.output_directory
+        )
+
+        return job_response
+
+    def _extract(self) -> dict:
         """Extract the data from the bruker files."""
 
+        self.tracker_sheet = pd.read_excel(self.job_settings.tracking_sheet_path, sheet_name=self.job_settings.tracking_sheet_name, header=[0,1], converters={("SubjInfo", "Mouse ID"): str})
+        self.coords_sheet = pd.read_excel(self.job_settings.coordinate_sheet_path, sheet_name=self.job_settings.coordinate_sheet_name)
 
+        procedure_files = {}
 
-        return metadata
+        for row_idx, row in self.tracker_sheet.iterrows():
+            if not pd.isna(row['Neuroglancer']['Link']):
+                subj_id = str(row['SubjInfo']['Mouse ID']).strip().lower()
+                logging.info(f"Extracting data for {subj_id}.")
+                print(subj_id)
+                procedure_files[subj_id] = self.download_procedure_file(subj_id)
+            else:
+                logging.warning(f"Neuroglancer link missing for {subj_id}.")
+                continue
+
+        return procedure_files
 
     def _transform(self, info_row) -> Surgery:
         """Transform the data into the AIND data schema."""
 
-        return Surgery(
-            start_date=,
-            experimenter_full_name=,
-            iacuc_protocol=,
-            animal_weight_prior=,
-            animal_weight_post=,
-            weight_unit=,
-            anaesthesia=,
-            workstation_id=,
-            procedures=,
-            notes=,
-        )
+        pass
     
     def download_procedure_file(self, subj_id: str):
         """Download the procedure file for a subject."""
@@ -137,11 +151,11 @@ class U19Etl(GenericEtl[JobSettings]):
         if pd.isnull(virus):
             return None
         
-        inj_angle = row[injection]['Inj Angle']
-        inj_vol = row[injection]['nL']
-        coord_ml = row[injection]['M/L']
-        coord_ap = row[injection]['A/P']
-        coord_depth = row[injection]['D/V']
+        inj_angle = Decimal(str(row[injection]['Inj Angle']))
+        inj_vol = Decimal(str(row[injection]['nL']))
+        coord_ml = Decimal(str(row[injection]['M/L']))
+        coord_ap = Decimal(str(row[injection]['A/P']))
+        coord_depth = Decimal(str(row[injection]['D/V']))
         hemisphere = row[injection]['Hemisphere']
 
         virus_titer = None
@@ -202,6 +216,8 @@ class U19Etl(GenericEtl[JobSettings]):
         subj_id = str(row['SubjInfo']['Mouse ID']).strip().lower()
         logging.info(f"Transforming row for {subj_id}.")
 
+        generated_procedures = {}
+
         procedure_file = self.download_procedure_file(subj_id)
         if procedure_file:
             procedures = self.extract_procedures(procedure_file)
@@ -233,8 +249,40 @@ class U19Etl(GenericEtl[JobSettings]):
                 logging.info(f"DATE MISSMATCH: {date} - {row['start_date']}")
 
             if inj != 'Perfusion':
+                # Not using this for some reason. Mathew thinks the targetting is too specific, and has blanketted all of them to Isocortex
                 target_name = row['Coordinate Targets'][inj]
                 target = self.coord_values[target_name]
+
+            if procedure_file['procedure_type'] == 'Perfusion':
+                cur_generated = self.transform_perfusion(subj_id)
+            elif procedure_file['procedure_type'] == 'Nanoject Injection':
+                cur_generated = self.transform_nanoject(subj_id, cur_procedure, row, inj)
+            else:
+                logging.error(f"Unknown procedure type: {procedure_file['procedure_type']} for {subj_id}.")
+                continue
+
+
+            if date in generated_procedures.keys():
+                generated_procedures[date].append(cur_generated)
+            else:
+                generated_procedures[date] = [cur_generated]
+
+        generated_surgeries = []
+        for date, procedures in generated_procedures.items():
+            generated_surgeries.append(
+                Surgery(
+                    start_date=date,
+                    experimenter_full_name=self.job_settings.experimenter_full_name,
+                    iacuc_protocol=procedure_file['iacuc_protocol'],
+                    animal_weight_prior=procedure_file['animal_weight_prior'],
+                    animal_weight_post=procedure_file['animal_weight_post'],
+                    weight_unit=procedure_file['weight_unit'],
+                    anaesthesia=procedure_file['anaesthesia'],
+                    workstation_id=procedure_file['workstation_id'],
+                    procedures=procedures,
+                    notes=procedure_file['notes'],
+                )
+            )
 
 
 

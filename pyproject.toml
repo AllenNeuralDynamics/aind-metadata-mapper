@@ -25,6 +25,7 @@ dependencies = [
     "pillow",
     "bruker2nifti==1.0.4",
     "requests",
+    "pandas",
     "pytz"
 ]
 
