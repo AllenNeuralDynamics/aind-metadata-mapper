@@ -334,8 +334,15 @@ class BergamoEtl(GenericEtl[JobSettings]):
         parsed_map = {}
         for file_stem, files in tif_file_locations.items():
             # number_of_files = len(files)
-            last_file = files[-1]
-            raw_info = self.extract_raw_info_from_file(last_file)
+            last_idx = -1
+            metadata_extracted = False
+            while not metadata_extracted:
+                try:
+                    last_file = files[last_idx]
+                    raw_info = self.extract_raw_info_from_file(last_file)
+                    metadata_extracted = True
+                except:
+                    last_idx -= 1
             raw_info_first_file = self.extract_raw_info_from_file(files[0])
             # parsed_info = parse_raw_metadata(
             #     raw_image_info=raw_info, number_of_files=number_of_files
