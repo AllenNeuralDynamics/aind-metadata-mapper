@@ -189,3 +189,25 @@ def get_running_array(pkl, key):
             )
 
     return np.array(result)
+
+
+def check_if_behavior(pkl):
+    """
+    Returns if behavior is present in a pkl file
+
+    Parameters
+    ----------
+    pkl : dict
+        pkl file.
+
+    Returns
+    -------
+    data: bool
+        True if behavior is present
+
+    """
+    try:
+        pkl["items"]['behavior']
+        return True
+    except KeyError:
+        return False

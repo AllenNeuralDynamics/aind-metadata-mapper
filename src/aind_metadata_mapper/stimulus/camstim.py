@@ -104,7 +104,13 @@ class Camstim:
 
             self.session_start = sync.get_start_time(sync_data)
             self.session_end = sync.get_stop_time(sync_data)
-            self.build_stimulus_table()
+
+            pkl_data = pkl.load_pkl(self.pkl_path)
+            is_behavior = pkl.check_if_behavior(pkl_data)
+            if is_behavior:
+                self.build_behavior_table()
+            else:
+                self.build_stimulus_table()
             # self.build_behavior_table()
 
             print("getting stim epochs")
