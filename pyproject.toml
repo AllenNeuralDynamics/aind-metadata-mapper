@@ -19,7 +19,6 @@ dynamic = ["version"]
 dependencies = [
     "aind-data-schema==0.36.0",
     "aind-data-schema-models==0.1.7",
-    "aind-metadata-upgrader",
     "scanimage-tiff-reader==1.4.1.4",
     "tifffile==2024.2.12",
     "pydantic-settings>=2.0",
