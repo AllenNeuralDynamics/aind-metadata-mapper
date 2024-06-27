@@ -1,0 +1,432 @@
+{
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/session.py",
+   "schema_version": "0.2.4",
+   "protocol_id": [],
+   "experimenter_full_name": [
+      "Ryan Gillis"
+   ],
+   "session_start_time": "2023-12-06T14:19:28.451851-08:00",
+   "session_end_time": "2023-12-06T16:35:21.451851-08:00",
+   "session_type": "",
+   "iacuc_protocol": "2117",
+   "rig_id": "NP.0",
+   "calibrations": [],
+   "maintenance": [],
+   "subject_id": "699244",
+   "animal_weight_prior": null,
+   "animal_weight_post": null,
+   "weight_unit": "gram",
+   "anaesthesia": null,
+   "data_streams": [
+      {
+         "stream_start_time": "2023-12-06T14:19:48.438747-08:00",
+         "stream_end_time": "2023-12-06T16:35:21.826972-08:00",
+         "daq_names": [],
+         "camera_names": [],
+         "light_sources": [],
+         "ephys_modules": [
+            {
+               "assembly_name": "PROBEA",
+               "arc_angle": "0.0",
+               "module_angle": "0.0",
+               "angle_unit": "degrees",
+               "rotation_angle": "0.0",
+               "coordinate_transform": null,
+               "calibration_date": null,
+               "notes": "",
+               "primary_targeted_structure": "none",
+               "targeted_ccf_coordinates": [],
+               "manipulator_coordinates": {
+                  "x": "1433.0",
+                  "y": "2089.0",
+                  "z": "6000.0",
+                  "unit": "micrometer"
+               },
+               "implant_hole_number": null,
+               "ephys_probes": [
+                  {
+                     "name": "PROBEA",
+                     "other_targeted_structures": []
+                  }
+               ]
+            },
+            {
+               "assembly_name": "PROBEB",
+               "arc_angle": "0.0",
+               "module_angle": "0.0",
+               "angle_unit": "degrees",
+               "rotation_angle": "0.0",
+               "coordinate_transform": null,
+               "calibration_date": null,
+               "notes": "",
+               "primary_targeted_structure": "none",
+               "targeted_ccf_coordinates": [],
+               "manipulator_coordinates": {
+                  "x": "1561.0",
+                  "y": "2747.5",
+                  "z": "6000.0",
+                  "unit": "micrometer"
+               },
+               "implant_hole_number": null,
+               "ephys_probes": [
+                  {
+                     "name": "PROBEB",
+                     "other_targeted_structures": []
+                  }
+               ]
+            },
+            {
+               "assembly_name": "PROBEC",
+               "arc_angle": "0.0",
+               "module_angle": "0.0",
+               "angle_unit": "degrees",
+               "rotation_angle": "0.0",
+               "coordinate_transform": null,
+               "calibration_date": null,
+               "notes": "",
+               "primary_targeted_structure": "none",
+               "targeted_ccf_coordinates": [],
+               "manipulator_coordinates": {
+                  "x": "2594.0",
+                  "y": "3242.5",
+                  "z": "5999.0",
+                  "unit": "micrometer"
+               },
+               "implant_hole_number": null,
+               "ephys_probes": [
+                  {
+                     "name": "PROBEC",
+                     "other_targeted_structures": []
+                  }
+               ]
+            },
+            {
+               "assembly_name": "PROBED",
+               "arc_angle": "0.0",
+               "module_angle": "0.0",
+               "angle_unit": "degrees",
+               "rotation_angle": "0.0",
+               "coordinate_transform": null,
+               "calibration_date": null,
+               "notes": "",
+               "primary_targeted_structure": "none",
+               "targeted_ccf_coordinates": [],
+               "manipulator_coordinates": {
+                  "x": "100.0",
+                  "y": "1223.5",
+                  "z": "6000.0",
+                  "unit": "micrometer"
+               },
+               "implant_hole_number": null,
+               "ephys_probes": [
+                  {
+                     "name": "PROBED",
+                     "other_targeted_structures": []
+                  }
+               ]
+            },
+            {
+               "assembly_name": "PROBEE",
+               "arc_angle": "0.0",
+               "module_angle": "0.0",
+               "angle_unit": "degrees",
+               "rotation_angle": "0.0",
+               "coordinate_transform": null,
+               "calibration_date": null,
+               "notes": "",
+               "primary_targeted_structure": "none",
+               "targeted_ccf_coordinates": [],
+               "manipulator_coordinates": {
+                  "x": "2333.5",
+                  "y": "3923.0",
+                  "z": "6000.5",
+                  "unit": "micrometer"
+               },
+               "implant_hole_number": null,
+               "ephys_probes": [
+                  {
+                     "name": "PROBEE",
+                     "other_targeted_structures": []
+                  }
+               ]
+            },
+            {
+               "assembly_name": "PROBEF",
+               "arc_angle": "0.0",
+               "module_angle": "0.0",
+               "angle_unit": "degrees",
+               "rotation_angle": "0.0",
+               "coordinate_transform": null,
+               "calibration_date": null,
+               "notes": "",
+               "primary_targeted_structure": "none",
+               "targeted_ccf_coordinates": [],
+               "manipulator_coordinates": {
+                  "x": "1176.0",
+                  "y": "1760.5",
+                  "z": "6000.5",
+                  "unit": "micrometer"
+               },
+               "implant_hole_number": null,
+               "ephys_probes": [
+                  {
+                     "name": "PROBEF",
+                     "other_targeted_structures": []
+                  }
+               ]
+            }
+         ],
+         "stick_microscopes": [],
+         "manipulator_modules": [],
+         "detectors": [],
+         "fiber_connections": [],
+         "fiber_modules": [],
+         "ophys_fovs": [],
+         "slap_fovs": null,
+         "stack_parameters": null,
+         "mri_scans": [],
+         "stream_modalities": [
+            {
+               "name": "Extracellular electrophysiology",
+               "abbreviation": "ecephys"
+            }
+         ],
+         "software": [],
+         "notes": null
+      },
+      {
+         "stream_start_time": "2023-12-06T14:19:28.451851-08:00",
+         "stream_end_time": "2023-12-06T16:35:21.451851-08:00",
+         "daq_names": [
+            "Sync"
+         ],
+         "camera_names": [],
+         "light_sources": [],
+         "ephys_modules": [],
+         "stick_microscopes": [],
+         "manipulator_modules": [],
+         "detectors": [],
+         "fiber_connections": [],
+         "fiber_modules": [],
+         "ophys_fovs": [],
+         "slap_fovs": null,
+         "stack_parameters": null,
+         "mri_scans": [],
+         "stream_modalities": [
+            {
+               "name": "Behavior",
+               "abbreviation": "behavior"
+            }
+         ],
+         "software": [],
+         "notes": null
+      },
+      {
+         "stream_start_time": "2023-12-06T14:19:42.505991-08:00",
+         "stream_end_time": "2023-12-06T16:35:21.451431-08:00",
+         "daq_names": [],
+         "camera_names": [
+            "Front camera",
+            "Side camera",
+            "Eye camera"
+         ],
+         "light_sources": [],
+         "ephys_modules": [],
+         "stick_microscopes": [],
+         "manipulator_modules": [],
+         "detectors": [],
+         "fiber_connections": [],
+         "fiber_modules": [],
+         "ophys_fovs": [],
+         "slap_fovs": null,
+         "stack_parameters": null,
+         "mri_scans": [],
+         "stream_modalities": [
+            {
+               "name": "Behavior videos",
+               "abbreviation": "behavior-videos"
+            }
+         ],
+         "software": [],
+         "notes": null
+      }
+   ],
+   "stimulus_epochs": [
+      {
+         "stimulus_start_time": "2023-12-06T14:20:10.280086",
+         "stimulus_end_time": "2023-12-06T14:21:36.035212",
+         "stimulus_name": "UniqueFFF",
+         "session_number": null,
+         "software": [
+            {
+               "name": "camstim",
+               "version": "0.8.8.dev0",
+               "url": "https://eng-gitlab.corp.alleninstitute.org/braintv/camstim",
+               "parameters": {}
+            }
+         ],
+         "script": {
+            "name": "Openscope_Barcoding_v15",
+            "version": "1.0",
+            "url": "http://stash.corp.alleninstitute.org/users/jeromel/repos/openscope-barcodingstim/raw/production-scripts/TBC_final_production_script.py?at=c32a55558934edeeec337b2040290daba5f86a5d",
+            "parameters": {}
+         },
+         "stimulus_modalities": [
+            "Visual"
+         ],
+         "stimulus_parameters": [
+            {
+               "stimulus_type": "Visual Stimulation",
+               "stimulus_name": "UniqueFFF",
+               "stimulus_parameters": {
+                  "stim_block": [
+                     0.0
+                  ],
+                  "index_repeat": [
+                     0.0
+                  ],
+                  "contrast": [
+                     1.0
+                  ],
+                  "color": [
+                     0.32193,
+                     1.0,
+                     -0.65613,
+                     -0.092532,
+                     0.261228,
+                     0.074928,
+                     -0.30972,
+                     -0.37041,
+                     -0.36834,
+                     0.236637,
+                     0.64884,
+                     0.0271746,
+                     0.067899,
+                     0.09402,
+                     -0.044754,
+                     0.6549,
+                     -0.61227,
+                     -0.136791,
+                     -0.58041,
+                     0.055932,
+                     0.79755,
+                     -0.062466,
+                     0.044301,
+                     0.30717,
+                     0.0104196,
+                     -0.241965,
+                     -0.084207,
+                     -0.177984,
+                     -0.18426,
+                     0.249582,
+                     -0.232755,
+                     0.242715,
+                     -0.213807,
+                     0.241416,
+                     0.3861,
+                     0.173832,
+                     0.39267,
+                     -0.0283053,
+                     -0.055044,
+                     -0.39801,
+                     0.37245,
+                     0.06516,
+                     -0.0149841,
+                     0.107532,
+                     -0.55857,
+                     0.115014,
+                     0.0136872,
+                     0.0105888,
+                     -0.34005,
+                     -0.208233,
+                     0.236022,
+                     0.65667,
+                     -1.0
+                  ],
+                  "stim_index": [
+                     0.0
+                  ],
+                  "spatial_frequency": [],
+                  "orientation": [],
+                  "phase": [],
+                  "temporal_frequency": [],
+                  "x_position": [],
+                  "y_position": []
+               },
+               "stimulus_template_name": [],
+               "notes": null
+            }
+         ],
+         "stimulus_device_names": [],
+         "speaker_config": null,
+         "light_source_config": null,
+         "output_parameters": {},
+         "reward_consumed_during_epoch": null,
+         "reward_consumed_unit": "microliter",
+         "trials_total": null,
+         "trials_finished": null,
+         "trials_rewarded": null,
+         "notes": null
+      },
+      {
+         "stimulus_start_time": "2023-12-06T16:20:32.097261",
+         "stimulus_end_time": "2023-12-06T16:35:01.620541",
+         "stimulus_name": "Optogenetic Stimulation",
+         "session_number": null,
+         "software": [],
+         "script": {
+            "name": "Openscope_Barcoding_v15",
+            "version": "1.0",
+            "url": "http://stash.corp.alleninstitute.org/users/jeromel/repos/openscope-barcodingstim/raw/production-scripts/TBC_final_production_script.py?at=c32a55558934edeeec337b2040290daba5f86a5d",
+            "parameters": {}
+         },
+         "stimulus_modalities": [
+            "Optogenetics"
+         ],
+         "stimulus_parameters": [
+            {
+               "stimulus_type": "Visual Stimulation",
+               "stimulus_name": "Optogenetic Stimulation",
+               "stimulus_parameters": {
+                  "condition": [
+                     "2 ms pulses at 20 Hz",
+                     "2 ms pulses at 10 Hz'",
+                     "2 ms pulses at 30 Hz"
+                  ],
+                  "level": [
+                     0.77,
+                     0.97,
+                     1.35
+                  ],
+                  "stimulus_name": [
+                     "30Hz_2ms",
+                     "20Hz_2ms",
+                     "10Hz_2ms"
+                  ],
+                  "duration": [
+                     1.0
+                  ]
+               },
+               "stimulus_template_name": [],
+               "notes": null
+            }
+         ],
+         "stimulus_device_names": [],
+         "speaker_config": null,
+         "light_source_config": null,
+         "output_parameters": {},
+         "reward_consumed_during_epoch": null,
+         "reward_consumed_unit": "microliter",
+         "trials_total": null,
+         "trials_finished": null,
+         "trials_rewarded": null,
+         "notes": null
+      }
+   ],
+   "mouse_platform_name": "Mouse Platform",
+   "active_mouse_platform": false,
+   "reward_delivery": null,
+   "reward_consumed_total": null,
+   "reward_consumed_unit": "milliliter",
+   "notes": ""
+}

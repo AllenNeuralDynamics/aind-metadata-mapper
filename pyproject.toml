@@ -26,7 +26,13 @@ dependencies = [
     "pillow",
     "bruker2nifti==1.0.4",
     "requests",
+    "pillow",
+    "h5py",
     "pandas",
+    "numpy",
+    "np_session",
+    "npc_ephys",
+    "scipy",
     "pytz"
 ]
 
