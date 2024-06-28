@@ -1,6 +1,5 @@
 import json
 import os
-import pickle
 import unittest
 from datetime import datetime
 from pathlib import Path
