@@ -2,25 +2,38 @@ import json
 import os
 import pickle
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
-from aind_metadata_mapper.U19.u19_etl import JobSettings, U19Etl, strings_to_dates, get_dates
-from aind_metadata_upgrader.utils import construct_new_model
-from aind_data_schema.core.procedures import Procedures, SpecimenProcedure, SpecimenProcedureType, Reagent
-from datetime import datetime
+
 import pandas as pd
+from aind_data_schema.core.procedures import (
+    Procedures,
+    Reagent,
+    SpecimenProcedure,
+    SpecimenProcedureType,
+)
 from aind_data_schema_models.organizations import Organization
+from aind_metadata_upgrader.utils import construct_new_model
+
+from aind_metadata_mapper.U19.u19_etl import (
+    JobSettings,
+    U19Etl,
+    get_dates,
+    strings_to_dates,
+)
 
 RESOURCES_DIR = (
-    Path(os.path.dirname(os.path.realpath(__file__)))
-    / "resources"
-    / "U19"
+    Path(os.path.dirname(os.path.realpath(__file__))) / "resources" / "U19"
 )
 
 EXAMPLE_TISSUE_SHEET = RESOURCES_DIR / "example_tissue_sheet.xlsx"
-EXAMPLE_DOWNLOAD_PROCEDURE = RESOURCES_DIR / "example_downloaded_procedure.json"
+EXAMPLE_DOWNLOAD_PROCEDURE = (
+    RESOURCES_DIR / "example_downloaded_procedure.json"
+)
 EXAMPLE_DOWNLOAD_RESPONSE = RESOURCES_DIR / "example_downloaded_response.json"
 EXAMPLE_OUTPUT = RESOURCES_DIR / "example_output.json"
+
 
 class TestU19Writer(unittest.TestCase):
     """Test methods in SchemaWriter class."""
@@ -33,7 +46,7 @@ class TestU19Writer(unittest.TestCase):
             self.example_output = json.load(f)
 
         self.example_job_settings = JobSettings(
-            tissue_sheet_path= EXAMPLE_TISSUE_SHEET,
+            tissue_sheet_path=EXAMPLE_TISSUE_SHEET,
             tissue_sheet_names=[
                 "Dec 2022 - Feb 2023",
                 "Mar - May 2023",
@@ -42,9 +55,9 @@ class TestU19Writer(unittest.TestCase):
                 "Dec 2023 - Feb 2024",
                 "Mar - May 2024",
             ],
-            experimenter_full_name = ["Mathew Summers"],
-            subject_to_ingest = '721832',
-            allow_validation_errors = True
+            experimenter_full_name=["Mathew Summers"],
+            subject_to_ingest="721832",
+            allow_validation_errors=True,
         )
 
     def test_constructor_from_string(self) -> None:
@@ -94,14 +107,12 @@ class TestU19Writer(unittest.TestCase):
         transformed = etl._transform(extracted, "721832")
 
         self.assertEqual(
-            len(
-                transformed.specimen_procedures
-            ),
+            len(transformed.specimen_procedures),
             len(
                 construct_new_model(
                     self.example_output, Procedures, True
                 ).specimen_procedures
-            )
+            ),
         )
 
     @patch("aind_metadata_mapper.U19.u19_etl.U19Etl._transform")
@@ -115,7 +126,9 @@ class TestU19Writer(unittest.TestCase):
         etl = U19Etl(self.example_job_settings)
         transformed = etl._transform("721832")
 
-        job_response = etl._load(transformed, self.example_job_settings.output_directory)
+        job_response = etl._load(
+            transformed, self.example_job_settings.output_directory
+        )
 
         actual_output = json.loads(job_response.data)
 
@@ -136,13 +149,14 @@ class TestU19Writer(unittest.TestCase):
 
         with open(EXAMPLE_DOWNLOAD_RESPONSE, "r") as f:
             example_download_response = json.load(f)
-            mock_requests.return_value.json.return_value = example_download_response
+            mock_requests.return_value.json.return_value = (
+                example_download_response
+            )
 
         etl = U19Etl(self.example_job_settings)
         response = etl.download_procedure_file("721832")
 
-        self.assertEqual(response, example_download_response['data'])
-
+        self.assertEqual(response, example_download_response["data"])
 
     def test_load_specimen_procedure_file(self):
         """Test load_specimen_procedure_file method."""
@@ -159,8 +173,12 @@ class TestU19Writer(unittest.TestCase):
         dates = get_dates(date_str)
         dates = strings_to_dates(dates)
 
-        self.assertEqual(dates[0], datetime.strptime("12/01/22", "%m/%d/%y").date())
-        self.assertEqual(dates[1], datetime.strptime("12/02/22", "%m/%d/%y").date())
+        self.assertEqual(
+            dates[0], datetime.strptime("12/01/22", "%m/%d/%y").date()
+        )
+        self.assertEqual(
+            dates[1], datetime.strptime("12/02/22", "%m/%d/%y").date()
+        )
 
     def test_extract_spec_procedures(self):
         """Test extract_spec_procedures method."""
@@ -170,22 +188,28 @@ class TestU19Writer(unittest.TestCase):
 
         row = etl.find_sheet_row("721832")
 
-        easyindex_100_date = row['Index matching']['100% EasyIndex']['Date(s)'].iloc[0]
+        easyindex_100_date = row["Index matching"]["100% EasyIndex"][
+            "Date(s)"
+        ].iloc[0]
         if not pd.isna(easyindex_100_date):
-            easyindex_100_date = strings_to_dates(get_dates(easyindex_100_date))
+            easyindex_100_date = strings_to_dates(
+                get_dates(easyindex_100_date)
+            )
 
-        easyindex_100_lot = row['Index matching']['EasyIndex']['Lot#'].iloc[0]
+        easyindex_100_lot = row["Index matching"]["EasyIndex"]["Lot#"].iloc[0]
         if pd.isna(easyindex_100_lot):
             easyindex_100_lot = "unknown"
 
-        easyindex_notes = row['Index matching']['Notes']['Unnamed: 22_level_2'].iloc[0]
+        easyindex_notes = row["Index matching"]["Notes"][
+            "Unnamed: 22_level_2"
+        ].iloc[0]
         if pd.isna(easyindex_notes):
             easyindex_notes = "None"
 
         easyindex_100_reagent = Reagent(
             name="EasyIndex",
             source=Organization.LIFECANVAS,
-            lot_number=easyindex_100_lot
+            lot_number=easyindex_100_lot,
         )
 
         test_spec_procedure = SpecimenProcedure(
@@ -195,18 +219,12 @@ class TestU19Writer(unittest.TestCase):
             start_date=easyindex_100_date[0],
             end_date=easyindex_100_date[1],
             experimenter_full_name="Holly Myers",
-            protocol_id=['none'], 
+            protocol_id=["none"],
             reagents=[easyindex_100_reagent],
-            notes=easyindex_notes
+            notes=easyindex_notes,
         )
 
         extracted_procedures = etl.extract_spec_procedures("721832", row)
 
         self.assertEqual(len(extracted_procedures), 6)
         self.assertEqual(extracted_procedures[5], test_spec_procedure)
-
-    
-
-    
-
-    
