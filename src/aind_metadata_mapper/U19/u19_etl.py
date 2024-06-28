@@ -78,10 +78,10 @@ class U19Etl(GenericEtl[JobSettings]):
         extracted = self._extract(self.job_settings.subject_to_ingest)
         transformed = self._transform(extracted, self.job_settings.subject_to_ingest)
 
-        job_responses = self._load(
+        job_response = self._load(
             transformed, self.job_settings.output_directory
         )
-        return job_responses
+        return job_response
     
     def _extract(self, subj):
         """Extract the data from the U19 server."""
@@ -102,7 +102,7 @@ class U19Etl(GenericEtl[JobSettings]):
                 return
             existing_procedure['specimen_procedures'] = self.extract_spec_procedures(subj_id, row)
 
-        return construct_new_model(existing_procedure, Procedures, self.job_settings.allow_validation_errors)
+            return construct_new_model(existing_procedure, Procedures, self.job_settings.allow_validation_errors)
 
     def find_sheet_row(self, subj_id):
         """Return the sheet that the subject is on."""
