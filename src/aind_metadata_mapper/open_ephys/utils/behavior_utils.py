@@ -1,13 +1,14 @@
 """ Utils to process behavior info for stimulus"""
 
+import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
+
 import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
 import aind_metadata_mapper.open_ephys.utils.stim_utils as stim
-import logging
 
 INT_NULL = -99
 

@@ -2,13 +2,14 @@
 
 import ast
 import functools
+import logging
 import re
 from pathlib import Path
 from typing import List
-import logging
 
 import numpy as np
 import pandas as pd
+
 import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
 

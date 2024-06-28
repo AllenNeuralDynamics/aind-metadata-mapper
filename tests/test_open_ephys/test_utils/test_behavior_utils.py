@@ -1,11 +1,11 @@
 """ Unit tests for the behavior_utils module in the utils package. """
 
 import unittest
-
-import pandas as pd
-import numpy as np
-
 from unittest.mock import MagicMock, patch
+
+import numpy as np
+import pandas as pd
+
 from aind_metadata_mapper.open_ephys.utils import behavior_utils as behavior
 
 
@@ -18,8 +18,7 @@ class TestBehaviorUtils(unittest.TestCase):
         "aind_metadata_mapper.open_ephys.utils"
         ".behavior_utils.get_visual_stimuli_df"
     )
-    def test_get_stimulus_presentations(self,
-                                        mock_get_visual_stimuli_df):
+    def test_get_stimulus_presentations(self, mock_get_visual_stimuli_df):
         """
         Tests the get_stimulus_presentations function
         """
@@ -909,8 +908,9 @@ class TestBehaviorUtils(unittest.TestCase):
         "aind_metadata_mapper.open_ephys.utils.behavior_utils"
         ".add_fingerprint_stimulus"
     )
-    @patch("aind_metadata_mapper.open_ephys.utils"
-           ".behavior_utils.postprocess")
+    @patch(
+        "aind_metadata_mapper.open_ephys.utils" ".behavior_utils.postprocess"
+    )
     def test_from_stimulus_file(
         self,
         mock_postprocess,
