@@ -342,7 +342,6 @@ class BergamoEtl(GenericEtl[JobSettings]):
                     raw_info = self.extract_raw_info_from_file(last_file)
                     metadata_extracted = True
                 except Exception as e:
-                    disp(e)
                     last_idx -= 1
             raw_info_first_file = self.extract_raw_info_from_file(files[0])
             # parsed_info = parse_raw_metadata(
@@ -652,7 +651,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
 
         # ONLY 2P STREAM DURING SPONT
         for spont_file_info_now in spont_file_info:
-            ## generate tiff list
+            # generate tiff list
             tiff_stem = spont_file_info_now[0][0]
             tiff_list = []
             for pathnow in spont_file_info_now[1][1][0]:
@@ -789,7 +788,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
 
         # 2P + behavior + behavior video STREAM DURING BEHAVIOR
         for behavior_file_info_now in behavior_file_info:
-            ## generate tiff list
+            # generate tiff list
             tiff_stem = behavior_file_info_now[0][0]
             tiff_list = []
             for pathnow in behavior_file_info_now[1][1][0]:
@@ -952,7 +951,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
 
         # 2P + behavior + behavior video STREAM DURING BEHAVIOR
         for photo_stim_file_info_now in photo_stim_file_info:
-            ## generate tiff list
+            # generate tiff list
             tiff_stem = photo_stim_file_info_now[0][0]
             tiff_list = []
             for pathnow in photo_stim_file_info_now[1][1][0]:
