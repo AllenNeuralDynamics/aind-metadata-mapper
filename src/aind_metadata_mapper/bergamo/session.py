@@ -1,5 +1,5 @@
 """Module to map bergamo metadata into a session model."""
-
+import logging
 import argparse
 import bisect
 import json
@@ -342,6 +342,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                     raw_info = self.extract_raw_info_from_file(last_file)
                     metadata_extracted = True
                 except Exception as e:
+                    logging.warning(e)
                     last_idx -= 1
             raw_info_first_file = self.extract_raw_info_from_file(files[0])
             # parsed_info = parse_raw_metadata(
