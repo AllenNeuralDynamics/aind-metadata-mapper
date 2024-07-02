@@ -342,6 +342,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                     raw_info = self.extract_raw_info_from_file(last_file)
                     metadata_extracted = True
                 except Exception as e:
+                    disp(e)
                     last_idx -= 1
             raw_info_first_file = self.extract_raw_info_from_file(files[0])
             # parsed_info = parse_raw_metadata(
@@ -498,7 +499,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
         stim_epochs = []
         # ONLY 2P STREAM DURING STACKS
         for stack_file_info_now in stack_file_info:
-            ## generate tiff list
+            # generate tiff list
             tiff_stem = stack_file_info_now[0][0]
             tiff_list = []
             for pathnow in stack_file_info_now[1][1][0]:
@@ -645,7 +646,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 stack_parameters=zstack,
                 stream_modalities=[Modality.POPHYS],
                 detectors=detectors,
-                notes = 'tiff_stem:{}'.format(tiff_stem),
+                notes="tiff_stem:{}".format(tiff_stem),
             )
             streams.append(stream_stack)
 
@@ -768,7 +769,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 # multiple planes come here
                 stream_modalities=[Modality.POPHYS],
                 detectors=detectors,
-                notes = 'tiff_stem:{}'.format(tiff_stem),
+                notes="tiff_stem:{}".format(tiff_stem),
             )
             streams.append(stream_2p)
 
@@ -779,8 +780,10 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 stimulus_name="spontaneous activity",  # user defined in script
                 stimulus_modalities=[StimulusModality.NONE],
                 notes="absence of any kind of stimulus",
-                output_parameters={'tiff_files':tiff_list,
-                                  'tiff_stem':tiff_stem},
+                output_parameters={
+                    "tiff_files": tiff_list,
+                    "tiff_stem": tiff_stem,
+                },
             )
             stim_epochs.append(stim_epoch_spont)
 
@@ -791,7 +794,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
             tiff_list = []
             for pathnow in behavior_file_info_now[1][1][0]:
                 tiff_list.append(Path(pathnow).name)
-                
+
             tiff_header = behavior_file_info_now[1][0].reader_metadata_header
             last_frame_description = behavior_file_info_now[1][
                 0
@@ -913,7 +916,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 stream_modalities=stream_modalities,
                 camera_names=camera_names,
                 detectors=detectors,
-                notes = 'tiff_stem:{}'.format(tiff_stem),
+                notes="tiff_stem:{}".format(tiff_stem),
             )
             streams.append(stream_2p)
 
@@ -935,8 +938,8 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 stimulus_device_names=self.job_settings.stimulus_device_names,
                 # from json file, to be added (speaker, bpod ID, )
                 output_parameters={
-                    "tiff_files":tiff_list,
-                    "tiff_stem":tiff_stem,
+                    "tiff_files": tiff_list,
+                    "tiff_stem": tiff_stem,
                     "hit_rate_trials_0_10": hit_rate_trials_0_10,
                     "hit_rate_trials_20_40": hit_rate_trials_20_40,
                     "total_hits": self.job_settings.total_hits,
@@ -1067,7 +1070,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 # multiple planes come here
                 stream_modalities=[Modality.POPHYS],
                 detectors=detectors,
-                notes = 'tiff_stem:{}'.format(tiff_stem),
+                notes="tiff_stem:{}".format(tiff_stem),
             )
             streams.append(stream_2p)
 
@@ -1160,8 +1163,10 @@ class BergamoEtl(GenericEtl[JobSettings]):
                     # from tiff header,
                     excitation_power_unit=PowerUnit.PERCENT,
                 ),
-                output_parameters={'tiff_files':tiff_list,
-                                  'tiff_stem':tiff_stem},
+                output_parameters={
+                    "tiff_files": tiff_list,
+                    "tiff_stem": tiff_stem,
+                },
             )
             stim_epochs.append(stim_epoch_photostim)
         # TODO: remove model_construct, fill in exposure time from acq machine
