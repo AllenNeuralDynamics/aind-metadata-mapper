@@ -8,5 +8,5 @@ Stage: build
 
 %post
     cd ${SINGULARITY_ROOTFS}/aind-metadata-mapper
-    pip install . --no-cache-dir
+    pip install .[all] --no-cache-dir
     rm -rf ${SINGULARITY_ROOTFS}/aind-metadata-mapper

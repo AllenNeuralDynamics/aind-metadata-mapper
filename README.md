@@ -14,7 +14,12 @@ Repository to contain code that will parse source files into aind-data-schema mo
 ## Installation
 To use the software, in the root directory, run
 ```bash
-pip install -e .
+pip install -e .[all]
+```
+
+It's possible to install just a small subset of dependencies. For example,
+```bash
+pip install -e .[bergamo]
 ```
 
 To develop the code, run
