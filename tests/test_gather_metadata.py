@@ -597,7 +597,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             "  Expected `BreedingInfo` but got `dict`"
             " - serialized value may not be as expected\n"
             "  Expected `Union[AllenInstitute, ColumbiaUniversity,"
-            " HuazhongUniversityOfScienceAndTechnology,"
+            " HuazhongUniversityOfScienceAndTechnology, JaneliaResearchCampus"
             " JacksonLaboratory, NewYorkUniversity, Other]` but got `dict`"
             " - serialized value may not be as expected"
         )
