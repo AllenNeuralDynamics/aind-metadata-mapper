@@ -601,7 +601,6 @@ class TestGatherMetadataJob(unittest.TestCase):
             " JacksonLaboratory, NewYorkUniversity, Other]` but got `dict`"
             " - serialized value may not be as expected"
         )
-
         self.assertEqual(expected_warnings, str(w.warning))
         self.assertEqual(
             "s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",

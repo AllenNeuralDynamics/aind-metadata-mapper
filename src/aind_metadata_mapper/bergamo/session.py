@@ -1,5 +1,5 @@
 """Module to map bergamo metadata into a session model."""
-
+import logging
 import argparse
 import bisect
 import json
@@ -334,8 +334,16 @@ class BergamoEtl(GenericEtl[JobSettings]):
         parsed_map = {}
         for file_stem, files in tif_file_locations.items():
             # number_of_files = len(files)
-            last_file = files[-1]
-            raw_info = self.extract_raw_info_from_file(last_file)
+            last_idx = -1
+            metadata_extracted = False
+            while not metadata_extracted:
+                try:
+                    last_file = files[last_idx]
+                    raw_info = self.extract_raw_info_from_file(last_file)
+                    metadata_extracted = True
+                except Exception as e:
+                    logging.warning(e)
+                    last_idx -= 1
             raw_info_first_file = self.extract_raw_info_from_file(files[0])
             # parsed_info = parse_raw_metadata(
             #     raw_image_info=raw_info, number_of_files=number_of_files
@@ -491,6 +499,11 @@ class BergamoEtl(GenericEtl[JobSettings]):
         stim_epochs = []
         # ONLY 2P STREAM DURING STACKS
         for stack_file_info_now in stack_file_info:
+            # generate tiff list
+            tiff_stem = stack_file_info_now[0][0]
+            tiff_list = []
+            for pathnow in stack_file_info_now[1][1][0]:
+                tiff_list.append(Path(pathnow).name)
             tiff_header = stack_file_info_now[1][0].reader_metadata_header
             last_frame_description = stack_file_info_now[1][
                 0
@@ -633,11 +646,17 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 stack_parameters=zstack,
                 stream_modalities=[Modality.POPHYS],
                 detectors=detectors,
+                notes="tiff_stem:{}".format(tiff_stem),
             )
             streams.append(stream_stack)
 
         # ONLY 2P STREAM DURING SPONT
         for spont_file_info_now in spont_file_info:
+            # generate tiff list
+            tiff_stem = spont_file_info_now[0][0]
+            tiff_list = []
+            for pathnow in spont_file_info_now[1][1][0]:
+                tiff_list.append(Path(pathnow).name)
             tiff_header = spont_file_info_now[1][0].reader_metadata_header
             last_frame_description = spont_file_info_now[1][
                 0
@@ -750,6 +769,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 # multiple planes come here
                 stream_modalities=[Modality.POPHYS],
                 detectors=detectors,
+                notes="tiff_stem:{}".format(tiff_stem),
             )
             streams.append(stream_2p)
 
@@ -760,11 +780,21 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 stimulus_name="spontaneous activity",  # user defined in script
                 stimulus_modalities=[StimulusModality.NONE],
                 notes="absence of any kind of stimulus",
+                output_parameters={
+                    "tiff_files": tiff_list,
+                    "tiff_stem": tiff_stem,
+                },
             )
             stim_epochs.append(stim_epoch_spont)
 
         # 2P + behavior + behavior video STREAM DURING BEHAVIOR
         for behavior_file_info_now in behavior_file_info:
+            # generate tiff list
+            tiff_stem = behavior_file_info_now[0][0]
+            tiff_list = []
+            for pathnow in behavior_file_info_now[1][1][0]:
+                tiff_list.append(Path(pathnow).name)
+
             tiff_header = behavior_file_info_now[1][0].reader_metadata_header
             last_frame_description = behavior_file_info_now[1][
                 0
@@ -886,6 +916,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 stream_modalities=stream_modalities,
                 camera_names=camera_names,
                 detectors=detectors,
+                notes="tiff_stem:{}".format(tiff_stem),
             )
             streams.append(stream_2p)
 
@@ -907,6 +938,8 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 stimulus_device_names=self.job_settings.stimulus_device_names,
                 # from json file, to be added (speaker, bpod ID, )
                 output_parameters={
+                    "tiff_files": tiff_list,
+                    "tiff_stem": tiff_stem,
                     "hit_rate_trials_0_10": hit_rate_trials_0_10,
                     "hit_rate_trials_20_40": hit_rate_trials_20_40,
                     "total_hits": self.job_settings.total_hits,
@@ -919,6 +952,11 @@ class BergamoEtl(GenericEtl[JobSettings]):
 
         # 2P + behavior + behavior video STREAM DURING BEHAVIOR
         for photo_stim_file_info_now in photo_stim_file_info:
+            # generate tiff list
+            tiff_stem = photo_stim_file_info_now[0][0]
+            tiff_list = []
+            for pathnow in photo_stim_file_info_now[1][1][0]:
+                tiff_list.append(Path(pathnow).name)
             tiff_header = photo_stim_file_info_now[1][0].reader_metadata_header
             last_frame_description = photo_stim_file_info_now[1][
                 0
@@ -1032,6 +1070,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 # multiple planes come here
                 stream_modalities=[Modality.POPHYS],
                 detectors=detectors,
+                notes="tiff_stem:{}".format(tiff_stem),
             )
             streams.append(stream_2p)
 
@@ -1124,6 +1163,10 @@ class BergamoEtl(GenericEtl[JobSettings]):
                     # from tiff header,
                     excitation_power_unit=PowerUnit.PERCENT,
                 ),
+                output_parameters={
+                    "tiff_files": tiff_list,
+                    "tiff_stem": tiff_stem,
+                },
             )
             stim_epochs.append(stim_epoch_photostim)
         # TODO: remove model_construct, fill in exposure time from acq machine
