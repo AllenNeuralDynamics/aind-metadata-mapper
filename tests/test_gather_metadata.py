@@ -13,7 +13,9 @@ from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.process_names import ProcessName
 from requests import Response
 
+from aind_metadata_mapper.core import JobResponse
 from aind_metadata_mapper.gather_metadata import (
+    AcquisitionSettings,
     GatherMetadataJob,
     JobSettings,
     MetadataSettings,
@@ -21,6 +23,9 @@ from aind_metadata_mapper.gather_metadata import (
     ProcessingSettings,
     RawDataDescriptionSettings,
     SubjectSettings,
+)
+from aind_metadata_mapper.smartspim.acquisition import (
+    JobSettings as SmartSpimAcquisitionJobSettings,
 )
 
 RESOURCES_DIR = (
@@ -521,6 +526,56 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_acquisition_metadata()
+        self.assertIsNone(contents)
+
+    @patch("aind_metadata_mapper.smartspim.acquisition.SmartspimETL.run_job")
+    def test_get_acquisition_metadata_smartspim_success(
+        self, mock_run_job: MagicMock
+    ):
+        """Tests get_acquisition_metadata returns something when requesting
+        SmartSPIM metadata"""
+
+        mock_run_job.return_value = JobResponse(
+            status_code=200, data=json.dumps({"some_key": "some_value"})
+        )
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            acquisition_settings=AcquisitionSettings(
+                job_settings=SmartSpimAcquisitionJobSettings(
+                    subject_id="695464",
+                    raw_dataset_path=Path(
+                        "SmartSPIM_695464_2023-10-18_20-30-30"
+                    ),
+                )
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_acquisition_metadata()
+        self.assertEqual(json.dumps({"some_key": "some_value"}), contents)
+
+    @patch("aind_metadata_mapper.smartspim.acquisition.SmartspimETL.run_job")
+    def test_get_acquisition_metadata_smartspim_error(
+        self, mock_run_job: MagicMock
+    ):
+        """Tests get_acquisition_metadata returns None when requesting
+        SmartSPIM metadata and a 500 response is returned."""
+
+        mock_run_job.return_value = JobResponse(status_code=500, data=None)
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            acquisition_settings=AcquisitionSettings(
+                job_settings=SmartSpimAcquisitionJobSettings(
+                    subject_id="695464",
+                    raw_dataset_path=Path(
+                        "SmartSPIM_695464_2023-10-18_20-30-30"
+                    ),
+                )
+            ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_acquisition_metadata()

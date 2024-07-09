@@ -5,29 +5,28 @@ File containing CamstimEphysSession class
 import argparse
 import datetime
 import json
+import logging
 import re
 from pathlib import Path
 
-from aind_data_schema.components.coordinates import Coordinates3d
-from aind_data_schema.core.session import (
-    Session,
-    EphysModule,
-    EphysProbeConfig,
-    Stream
-)
-from aind_data_schema_models.modalities import Modality
 import np_session
 import npc_ephys
 import npc_mvr
 import npc_sessions
 import numpy as np
 import pandas as pd
-import logging
+from aind_data_schema.components.coordinates import Coordinates3d
+from aind_data_schema.core.session import (
+    EphysModule,
+    EphysProbeConfig,
+    Session,
+    Stream,
+)
+from aind_data_schema_models.modalities import Modality
 
-import aind_metadata_mapper.stimulus.camstim
-import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
 import aind_metadata_mapper.open_ephys.utils.constants as constants
-
+import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
+import aind_metadata_mapper.stimulus.camstim
 
 logger = logging.getLogger(__name__)
 
@@ -202,9 +201,7 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
             )
         if probe_row.empty:
             return (
-                Coordinates3d(
-                    x="0.0", y="0.0", z="0.0", unit="micrometer"
-                ),
+                Coordinates3d(x="0.0", y="0.0", z="0.0", unit="micrometer"),
                 "Coordinate info not available",
             )
         else:
@@ -214,9 +211,7 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
                 probe_row["z"].item(),
             )
         return (
-            Coordinates3d(
-                x=x, y=y, z=z, unit="micrometer"
-            ),
+            Coordinates3d(x=x, y=y, z=z, unit="micrometer"),
             "",
         )
 
@@ -241,9 +236,7 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
                 module_angle=0.0,
                 rotation_angle=0.0,
                 primary_targeted_structure="none",
-                ephys_probes=[
-                    EphysProbeConfig(name=probe_name.upper())
-                ],
+                ephys_probes=[EphysProbeConfig(name=probe_name.upper())],
                 manipulator_coordinates=manipulator_coordinates,
                 notes=notes,
             )

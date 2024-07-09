@@ -1,12 +1,12 @@
 """ Unit tests for the stim_utils module in the utils package. """
 
-import unittest
 import re
-
-import pandas as pd
-import numpy as np
-
+import unittest
 from unittest.mock import MagicMock, patch
+
+import numpy as np
+import pandas as pd
+
 from aind_metadata_mapper.open_ephys.utils import stim_utils as stim
 
 
@@ -545,8 +545,7 @@ class TestStimUtils(unittest.TestCase):
         ".stim_utils.read_stimulus_name_from_path"
     )
     @patch(
-        "aind_metadata_mapper.open_ephys.utils"
-        ".stim_utils.get_stimulus_type"
+        "aind_metadata_mapper.open_ephys.utils" ".stim_utils.get_stimulus_type"
     )
     @patch(
         "aind_metadata_mapper.open_ephys.utils"

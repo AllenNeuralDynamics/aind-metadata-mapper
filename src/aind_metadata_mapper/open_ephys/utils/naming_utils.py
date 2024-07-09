@@ -1,8 +1,10 @@
 """ Utils to process naming of stimulus columns"""
 
-import numpy as np
-import warnings
 import logging
+import warnings
+
+import numpy as np
+
 import aind_metadata_mapper.open_ephys.utils.constants as constants
 
 logger = logging.getLogger(__name__)

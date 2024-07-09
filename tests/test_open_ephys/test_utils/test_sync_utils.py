@@ -1,11 +1,10 @@
 """ Tests for the sync_utils module """
 
 import unittest
-
-import numpy as np
-
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
+
+import numpy as np
 
 from aind_metadata_mapper.open_ephys.utils import sync_utils as sync
 

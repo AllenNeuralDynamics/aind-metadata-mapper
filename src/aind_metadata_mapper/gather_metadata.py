@@ -27,6 +27,19 @@ from aind_data_schema_models.pid_names import PIDName
 from pydantic import Field, ValidationError
 from pydantic_settings import BaseSettings
 
+from aind_metadata_mapper.smartspim.acquisition import (
+    JobSettings as SmartSpimAcquisitionJobSettings,
+)
+from aind_metadata_mapper.smartspim.acquisition import SmartspimETL
+
+
+class AcquisitionSettings(BaseSettings):
+    """Fields needed to retrieve acquisition metadata"""
+
+    # TODO: we can change this to a tagged union once more acquisition settings
+    #  are added
+    job_settings: SmartSpimAcquisitionJobSettings
+
 
 class SubjectSettings(BaseSettings):
     """Fields needed to retrieve subject metadata"""
@@ -78,6 +91,7 @@ class JobSettings(BaseSettings):
 
     metadata_service_domain: Optional[str] = None
     subject_settings: Optional[SubjectSettings] = None
+    acquisition_settings: Optional[AcquisitionSettings] = None
     raw_data_description_settings: Optional[RawDataDescriptionSettings] = None
     procedures_settings: Optional[ProceduresSettings] = None
     processing_settings: Optional[ProcessingSettings] = None
@@ -346,6 +360,15 @@ class GatherMetadataJob:
                 file_name=file_name
             )
             return contents
+        elif self.settings.acquisition_settings is not None:
+            acquisition_job = SmartspimETL(
+                job_settings=(self.settings.acquisition_settings.job_settings)
+            )
+            job_response = acquisition_job.run_job()
+            if job_response.status_code != 500:
+                return job_response.data
+            else:
+                return None
         else:
             return None
 
