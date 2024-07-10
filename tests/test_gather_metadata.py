@@ -555,7 +555,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_acquisition_metadata()
-        self.assertEqual(json.dumps({"some_key": "some_value"}), contents)
+        self.assertEqual({"some_key": "some_value"}, contents)
 
     @patch("aind_metadata_mapper.smartspim.acquisition.SmartspimETL.run_job")
     def test_get_acquisition_metadata_smartspim_error(

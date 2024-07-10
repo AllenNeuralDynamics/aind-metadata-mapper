@@ -366,7 +366,7 @@ class GatherMetadataJob:
             )
             job_response = acquisition_job.run_job()
             if job_response.status_code != 500:
-                return job_response.data
+                return json.loads(job_response.data)
             else:
                 return None
         else:
