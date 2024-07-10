@@ -48,10 +48,12 @@ class JobSettings(BaseSettings):
 
 
 def get_dates(string):
+    """Get the dates from a string."""
     return [str.strip(date) for date in string.split(" - ")]
 
 
 def strings_to_dates(strings):
+    """Convert strings to dates."""
     date1 = datetime.strptime(strings[0], "%m/%d/%y").date()
     date2 = datetime.strptime(strings[1], "%m/%d/%y").date()
     return (date1, date2)
@@ -164,8 +166,8 @@ class U19Etl(GenericEtl[JobSettings]):
             self.tissue_sheets.append(df)
 
     def extract_spec_procedures(self, subj_id, row):  # noqa: C901
-
-        default_protocol = "dx.doi.org/10.17504/protocols.io.bgpujvnw"
+        """Extract the specimen procedures from the spreadsheet."""
+        
         default_source = Organization.LIFECANVAS
 
         subj_id = (
@@ -173,13 +175,10 @@ class U19Etl(GenericEtl[JobSettings]):
             .strip()
             .lower()
         )
-        clearing_method = row["SubjInfo"]["Unnamed: 1_level_1"][
-            "ClearingMethod"
-        ].iloc[0]
+
         experimenter = row["SubjInfo"]["Unnamed: 2_level_1"][
             "Experimenter"
         ].iloc[0]
-        institute = row["SubjInfo"]["Unnamed: 3_level_1"]["Institute"].iloc[0]
 
         shield_off_date = row["Fixation"]["SHIELD OFF"]["Date(s)"].iloc[0]
 
@@ -261,12 +260,7 @@ class U19Etl(GenericEtl[JobSettings]):
         ]["Lot#"].iloc[0]
         if pd.isna(active_conduction_buffer_lot):
             active_conduction_buffer_lot = "unknown"
-        active_delip_buffer = row["Active Delipidation"][
-            "Active Delipidation"
-        ]["Date(s)"].iloc[0]
-        active_delip_settings = row["Active Delipidation"]["Settings"][
-            "Unnamed: 16_level_2"
-        ].iloc[0]
+
         active_delip_notes = row["Active Delipidation"]["Notes"][
             "Unnamed: 17_level_2"
         ].iloc[0]

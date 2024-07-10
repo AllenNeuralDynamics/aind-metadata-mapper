@@ -1,3 +1,5 @@
+"""Test U19 ETL class."""
+
 import json
 import os
 import unittest
