@@ -4,10 +4,17 @@ import logging
 
 from aind_data_schema.base import AindModel
 from pydantic import ValidationError
-from pydantic.fields import PydanticUndefined
 
-def construct_new_model(model_inputs: dict, model_type: AindModel, allow_validation_errors=False):
-    """Validate a model, if it fails and validation error flag is on, construct a model"""
+
+def construct_new_model(
+        model_inputs: dict,
+        model_type: AindModel,
+        allow_validation_errors=False
+):
+    """
+    Validate a model,
+    if it fails and validation error flag is on, construct a model
+    """
 
     try:
         return model_type.model_validate(model_inputs)
