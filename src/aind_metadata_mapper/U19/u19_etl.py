@@ -15,7 +15,7 @@ from aind_data_schema.core.procedures import (
     SpecimenProcedureType,
 )
 from aind_data_schema_models.organizations import Organization
-from aind_metadata_upgrader.utils import construct_new_model
+from aind_metadata_mapper.utils import construct_new_model
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
