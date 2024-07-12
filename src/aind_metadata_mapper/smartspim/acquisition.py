@@ -4,15 +4,14 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Literal, Optional, Union
 
 from aind_data_schema.components.coordinates import ImageAxis
 from aind_data_schema.core import acquisition
 from pydantic_settings import BaseSettings
 
 from aind_metadata_mapper.core import GenericEtl, JobResponse
-
-from .utils import (
+from aind_metadata_mapper.smartspim.utils import (
     get_anatomical_direction,
     get_excitation_emission_waves,
     get_session_end,
@@ -24,9 +23,12 @@ from .utils import (
 class JobSettings(BaseSettings):
     """Data to be entered by the user."""
 
+    # Field can be used to switch between different acquisition etl jobs
+    job_settings_name: Literal["SmartSPIM"] = "SmartSPIM"
+
     subject_id: str
     raw_dataset_path: Path
-    output_directory: Path
+    output_directory: Optional[Path] = None
 
     # Metadata names
     asi_filename: str = "derivatives/ASI_logging.txt"
@@ -42,7 +44,7 @@ class SmartspimETL(GenericEtl):
     for a SmartSPIM session
     """
 
-    def __init__(self, job_settings: BaseSettings):
+    def __init__(self, job_settings: Union[BaseSettings, str]):
         """
         Constructor method
 
