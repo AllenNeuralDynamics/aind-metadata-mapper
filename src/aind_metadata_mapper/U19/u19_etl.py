@@ -167,7 +167,7 @@ class U19Etl(GenericEtl[JobSettings]):
 
     def extract_spec_procedures(self, subj_id, row):  # noqa: C901
         """Extract the specimen procedures from the spreadsheet."""
-        
+
         default_source = Organization.LIFECANVAS
 
         subj_id = (
