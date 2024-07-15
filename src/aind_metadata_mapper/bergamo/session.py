@@ -1,4 +1,5 @@
 """Module to map bergamo metadata into a session model."""
+
 import argparse
 import bisect
 import json

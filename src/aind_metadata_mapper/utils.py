@@ -7,9 +7,7 @@ from pydantic import ValidationError
 
 
 def construct_new_model(
-        model_inputs: dict,
-        model_type: AindModel,
-        allow_validation_errors=False
+    model_inputs: dict, model_type: AindModel, allow_validation_errors=False
 ):
     """
     Validate a model,

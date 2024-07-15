@@ -15,7 +15,6 @@ from aind_data_schema.core.procedures import (
     SpecimenProcedureType,
 )
 from aind_data_schema_models.organizations import Organization
-from aind_metadata_mapper.utils import construct_new_model
 
 from aind_metadata_mapper.U19.u19_etl import (
     JobSettings,
@@ -23,6 +22,7 @@ from aind_metadata_mapper.U19.u19_etl import (
     get_dates,
     strings_to_dates,
 )
+from aind_metadata_mapper.utils import construct_new_model
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__))) / "resources" / "U19"
@@ -90,7 +90,10 @@ class TestU19Writer(unittest.TestCase):
         etl = U19Etl(self.example_job_settings)
         extracted = etl._extract(self.example_job_settings.subject_to_ingest)
 
-        self.assertEqual(extracted["subject_id"], self.example_job_settings.subject_to_ingest)
+        self.assertEqual(
+            extracted["subject_id"],
+            self.example_job_settings.subject_to_ingest,
+        )
 
     def test_transform(self):
         """Test transform method."""
@@ -101,7 +104,9 @@ class TestU19Writer(unittest.TestCase):
         with open(EXAMPLE_DOWNLOAD_PROCEDURE, "r") as f:
             extracted = json.load(f)
 
-        transformed = etl._transform(extracted, self.example_job_settings.subject_to_ingest)
+        transformed = etl._transform(
+            extracted, self.example_job_settings.subject_to_ingest
+        )
 
         self.assertEqual(
             len(transformed.specimen_procedures),
@@ -121,7 +126,9 @@ class TestU19Writer(unittest.TestCase):
         )
 
         etl = U19Etl(self.example_job_settings)
-        transformed = etl._transform(self.example_job_settings.subject_to_ingest)
+        transformed = etl._transform(
+            self.example_job_settings.subject_to_ingest
+        )
 
         job_response = etl._load(
             transformed, self.example_job_settings.output_directory
@@ -151,7 +158,9 @@ class TestU19Writer(unittest.TestCase):
             )
 
         etl = U19Etl(self.example_job_settings)
-        response = etl.download_procedure_file(self.example_job_settings.subject_to_ingest)
+        response = etl.download_procedure_file(
+            self.example_job_settings.subject_to_ingest
+        )
 
         self.assertEqual(response, example_download_response["data"])
 
@@ -221,7 +230,9 @@ class TestU19Writer(unittest.TestCase):
             notes=easyindex_notes,
         )
 
-        extracted_procedures = etl.extract_spec_procedures(self.example_job_settings.subject_to_ingest, row)
+        extracted_procedures = etl.extract_spec_procedures(
+            self.example_job_settings.subject_to_ingest, row
+        )
 
         self.assertEqual(len(extracted_procedures), 6)
         self.assertEqual(extracted_procedures[5], test_spec_procedure)
