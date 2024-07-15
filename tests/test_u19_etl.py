@@ -28,7 +28,7 @@ RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__))) / "resources" / "U19"
 )
 
-EXAMPLE_TISSUE_SHEET = RESOURCES_DIR / "example_tissue_sheet.xlsx"
+EXAMPLE_TISSUE_SHEET = RESOURCES_DIR / "example_tissue_subject.xlsx"
 EXAMPLE_DOWNLOAD_PROCEDURE = (
     RESOURCES_DIR / "example_downloaded_procedure.json"
 )
@@ -49,14 +49,10 @@ class TestU19Writer(unittest.TestCase):
         self.example_job_settings = JobSettings(
             tissue_sheet_path=EXAMPLE_TISSUE_SHEET,
             tissue_sheet_names=[
-                "Dec 2022 - Feb 2023",
-                "Mar - May 2023",
-                "Jun - Aug 2023",
-                "Sep - Nov 2023",
-                "Dec 2023 - Feb 2024",
-                "Mar - May 2024",
+                "example_sheet",
+                "extra sheet",
             ],
-            experimenter_full_name=["Mathew Summers"],
+            experimenter_full_name=["Some Fella"],
             subject_to_ingest="721832",
             allow_validation_errors=True,
         )
@@ -92,9 +88,9 @@ class TestU19Writer(unittest.TestCase):
             mock_download_procedure.return_value = json.load(f)
 
         etl = U19Etl(self.example_job_settings)
-        extracted = etl._extract("721832")
+        extracted = etl._extract(self.example_job_settings.subject_to_ingest)
 
-        self.assertEqual(extracted["subject_id"], "721832")
+        self.assertEqual(extracted["subject_id"], self.example_job_settings.subject_to_ingest)
 
     def test_transform(self):
         """Test transform method."""
@@ -105,7 +101,7 @@ class TestU19Writer(unittest.TestCase):
         with open(EXAMPLE_DOWNLOAD_PROCEDURE, "r") as f:
             extracted = json.load(f)
 
-        transformed = etl._transform(extracted, "721832")
+        transformed = etl._transform(extracted, self.example_job_settings.subject_to_ingest)
 
         self.assertEqual(
             len(transformed.specimen_procedures),
@@ -125,7 +121,7 @@ class TestU19Writer(unittest.TestCase):
         )
 
         etl = U19Etl(self.example_job_settings)
-        transformed = etl._transform("721832")
+        transformed = etl._transform(self.example_job_settings.subject_to_ingest)
 
         job_response = etl._load(
             transformed, self.example_job_settings.output_directory
@@ -140,7 +136,7 @@ class TestU19Writer(unittest.TestCase):
 
         etl = U19Etl(self.example_job_settings)
         etl.load_specimen_procedure_file()
-        row = etl.find_sheet_row("721832")
+        row = etl.find_sheet_row(self.example_job_settings.subject_to_ingest)
 
         self.assertTrue(row is not None)
 
@@ -155,7 +151,7 @@ class TestU19Writer(unittest.TestCase):
             )
 
         etl = U19Etl(self.example_job_settings)
-        response = etl.download_procedure_file("721832")
+        response = etl.download_procedure_file(self.example_job_settings.subject_to_ingest)
 
         self.assertEqual(response, example_download_response["data"])
 
@@ -165,7 +161,7 @@ class TestU19Writer(unittest.TestCase):
         etl = U19Etl(self.example_job_settings)
         etl.load_specimen_procedure_file()
 
-        self.assertTrue(len(etl.tissue_sheets) == 6)
+        self.assertTrue(len(etl.tissue_sheets) == 2)
 
     def test_strings_to_dates(self):
         """Test strings_to_dates method."""
@@ -187,7 +183,7 @@ class TestU19Writer(unittest.TestCase):
         etl = U19Etl(self.example_job_settings)
         etl.load_specimen_procedure_file()
 
-        row = etl.find_sheet_row("721832")
+        row = etl.find_sheet_row(self.example_job_settings.subject_to_ingest)
 
         easyindex_100_date = row["Index matching"]["100% EasyIndex"][
             "Date(s)"
@@ -214,18 +210,18 @@ class TestU19Writer(unittest.TestCase):
         )
 
         test_spec_procedure = SpecimenProcedure(
-            specimen_id="721832",
+            specimen_id=self.example_job_settings.subject_to_ingest,
             procedure_type=SpecimenProcedureType.REFRACTIVE_INDEX_MATCHING,
             procedure_name="100% EasyIndex",
             start_date=easyindex_100_date[0],
             end_date=easyindex_100_date[1],
-            experimenter_full_name="Holly Myers",
+            experimenter_full_name="Some Fella",
             protocol_id=["none"],
             reagents=[easyindex_100_reagent],
             notes=easyindex_notes,
         )
 
-        extracted_procedures = etl.extract_spec_procedures("721832", row)
+        extracted_procedures = etl.extract_spec_procedures(self.example_job_settings.subject_to_ingest, row)
 
         self.assertEqual(len(extracted_procedures), 6)
         self.assertEqual(extracted_procedures[5], test_spec_procedure)
