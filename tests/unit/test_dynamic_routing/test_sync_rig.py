@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 from aind_metadata_mapper.dynamic_routing.sync_rig import (  # type: ignore
     SyncRigEtl,
 )
-from tests.test_dynamic_routing import test_utils as test_utils
+from tests.unit.test_dynamic_routing import test_utils as test_utils
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
