@@ -45,7 +45,7 @@ jobs:
         with:
           role-to-assume: ${{ env.AWS_DATA_SCHEMA_ROLE_DEV }}
           role-session-name: github-integration-test-session
-          aws-region: ${{ env.AWS_REGION }
+          aws-region: ${{ env.AWS_REGION }}
       - name: run integration tests
         run:
           python -m tests/integraton/test_bergamo/test_session
