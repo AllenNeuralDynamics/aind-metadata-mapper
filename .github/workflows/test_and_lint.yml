@@ -46,7 +46,7 @@ jobs:
       - name: Configure aws credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: ${{ env.AWS_DATA_SCHEMA_ROLE_DEV }}
+          role-to-assume: ${{ env.AWS_DATA_SCHEMA_ROLE }}
           role-session-name: github-integration-test-session
           aws-region: ${{ env.AWS_REGION }}
       - name: run integration tests
