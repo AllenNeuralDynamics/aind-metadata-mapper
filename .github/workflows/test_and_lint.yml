@@ -47,6 +47,8 @@ jobs:
           role-session-name: github-integration-test-session
           aws-region: ${{ env.AWS_REGION }
       - name: run integration tests
+        run:
+          python -m tests/integraton/test_bergamo/test_session
 
 
 
