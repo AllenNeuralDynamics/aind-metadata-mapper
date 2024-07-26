@@ -24,7 +24,7 @@ jobs:
       run: flake8 . && interrogate --verbose .
     - name: Run tests and coverage
       run: coverage run -m unittest discover && coverage report
-  integration tests:
+  integration_tests:
     runs-on: ubuntu-latest
     env:
       AWS_DATA_SCHEMA_ROLE: ${{ secrets.AWS_DATA_SCHEMA_ROLE_DEV }}
