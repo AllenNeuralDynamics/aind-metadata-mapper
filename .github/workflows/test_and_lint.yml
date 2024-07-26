@@ -26,6 +26,9 @@ jobs:
       run: coverage run -m unittest discover && coverage report
   integration_tests:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     env:
       AWS_DATA_SCHEMA_ROLE: ${{ secrets.AWS_DATA_SCHEMA_ROLE_DEV }}
       AWS_DATA_SCHEMA_BUCKET: ${{ vars.AWS_DATA_SCHEMA_BUCKET_DEV }}
