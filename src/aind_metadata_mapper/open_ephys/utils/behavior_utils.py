@@ -1,13 +1,14 @@
 """ Utils to process behavior info for stimulus"""
 
+import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
+
 import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
 import aind_metadata_mapper.open_ephys.utils.stim_utils as stim
-import logging
 
 INT_NULL = -99
 
@@ -320,9 +321,7 @@ def get_stimulus_metadata(pkl) -> pd.DataFrame:
         )
 
     # get the grating metadata will be empty if gratings are absent
-    grating_df = get_gratings_metadata(
-        stimuli, start_idx=len(stimulus_index_df)
-    )
+    grating_df = get_gratings_metadata(stimuli, start_idx=len(stimulus_index_df))
     stimulus_index_df = pd.concat(
         [stimulus_index_df, grating_df], ignore_index=True, sort=False
     )
@@ -501,9 +500,7 @@ def get_visual_stimuli_df(data, time) -> pd.DataFrame:
     n_frames = len(time)
     visual_stimuli_data = []
     for stim_dict in stimuli.values():
-        for idx, (attr_name, attr_value, _, frame) in enumerate(
-            stim_dict["set_log"]
-        ):
+        for idx, (attr_name, attr_value, _, frame) in enumerate(stim_dict["set_log"]):
             orientation = attr_value if attr_name.lower() == "ori" else np.nan
             image_name = attr_value if attr_name.lower() == "image" else np.nan
 
@@ -513,9 +510,7 @@ def get_visual_stimuli_df(data, time) -> pd.DataFrame:
                 frame,
                 n_frames,
             )
-            draw_epochs = get_draw_epochs(
-                stim_dict["draw_log"], *stimulus_epoch
-            )
+            draw_epochs = get_draw_epochs(stim_dict["draw_log"], *stimulus_epoch)
 
             for epoch_start, epoch_end in draw_epochs:
                 visual_stimuli_data.append(
@@ -536,9 +531,7 @@ def get_visual_stimuli_df(data, time) -> pd.DataFrame:
 
     # Add omitted flash info:
     try:
-        omitted_flash_frame_log = data["items"]["behavior"][
-            "omitted_flash_frame_log"
-        ]
+        omitted_flash_frame_log = data["items"]["behavior"]["omitted_flash_frame_log"]
     except KeyError:
         # For sessions for which there were no omitted flashes
         omitted_flash_frame_log = dict()
@@ -552,9 +545,7 @@ def get_visual_stimuli_df(data, time) -> pd.DataFrame:
         # to see if they are in the stim log
         offsets = np.arange(-3, 4)
         offset_arr = np.add(
-            np.repeat(
-                omitted_flash_frames[:, np.newaxis], offsets.shape[0], axis=1
-            ),
+            np.repeat(omitted_flash_frames[:, np.newaxis], offsets.shape[0], axis=1),
             offsets,
         )
         matched_any_offset = np.any(np.isin(offset_arr, stim_frames), axis=1)
@@ -623,9 +614,7 @@ def is_change_event(stimulus_presentations: pd.DataFrame) -> pd.Series:
     is_change = stimuli != prev_stimuli
 
     # reset back to original index
-    is_change = is_change.reindex(stimulus_presentations.index).rename(
-        "is_change"
-    )
+    is_change = is_change.reindex(stimulus_presentations.index).rename("is_change")
 
     # Excluded stimuli are not change events
     is_change = is_change.fillna(False)
@@ -665,15 +654,11 @@ def get_flashes_since_change(
             if row["is_change"] or idx == 0:
                 flashes_since_change.iloc[idx] = 0
             else:
-                flashes_since_change.iloc[idx] = (
-                    flashes_since_change.iloc[idx - 1] + 1
-                )
+                flashes_since_change.iloc[idx] = flashes_since_change.iloc[idx - 1] + 1
     return flashes_since_change
 
 
-def add_active_flag(
-    stim_pres_table: pd.DataFrame, trials: pd.DataFrame
-) -> pd.DataFrame:
+def add_active_flag(stim_pres_table: pd.DataFrame, trials: pd.DataFrame) -> pd.DataFrame:
     """Mark the active stimuli by lining up the stimulus times with the
     trials times.
 
@@ -826,9 +811,7 @@ def fix_omitted_end_frame(stim_pres_table: pd.DataFrame) -> pd.DataFrame:
         stim_pres_table[stim_pres_table["omitted"]]["start_frame"]
         + median_stim_frame_duration
     )
-    stim_pres_table.loc[stim_pres_table["omitted"], "end_frame"] = (
-        omitted_end_frames
-    )
+    stim_pres_table.loc[stim_pres_table["omitted"], "end_frame"] = omitted_end_frames
 
     stim_dtypes = stim_pres_table.dtypes.to_dict()
     stim_dtypes["start_frame"] = int
@@ -837,9 +820,7 @@ def fix_omitted_end_frame(stim_pres_table: pd.DataFrame) -> pd.DataFrame:
     return stim_pres_table.astype(stim_dtypes)
 
 
-def compute_is_sham_change(
-    stim_df: pd.DataFrame, trials: pd.DataFrame
-) -> pd.DataFrame:
+def compute_is_sham_change(stim_df: pd.DataFrame, trials: pd.DataFrame) -> pd.DataFrame:
     """Add is_sham_change to stimulus presentation table.
 
     Parameters
@@ -860,17 +841,13 @@ def compute_is_sham_change(
         or "stimulus_block" not in stim_df.columns
     ):
         return stim_df
-    stim_trials = stim_df.merge(
-        trials, left_on="trials_id", right_index=True, how="left"
-    )
+    stim_trials = stim_df.merge(trials, left_on="trials_id", right_index=True, how="left")
     catch_frames = stim_trials[stim_trials["catch"].fillna(False)][
         "change_frame"
     ].unique()
 
     stim_df["is_sham_change"] = False
-    catch_flashes = stim_df[
-        stim_df["start_frame"].isin(catch_frames)
-    ].index.values
+    catch_flashes = stim_df[stim_df["start_frame"].isin(catch_frames)].index.values
     stim_df.loc[catch_flashes, "is_sham_change"] = True
 
     stim_blocks = stim_df.stimulus_block
@@ -892,9 +869,9 @@ def compute_is_sham_change(
                 if np.array_equal(
                     active_images, stim_image_names[passive_block_mask].values
                 ):
-                    stim_df.loc[passive_block_mask, "is_sham_change"] = (
-                        stim_df[active_block_mask]["is_sham_change"].values
-                    )
+                    stim_df.loc[passive_block_mask, "is_sham_change"] = stim_df[
+                        active_block_mask
+                    ]["is_sham_change"].values
 
     return stim_df.sort_index()
 
@@ -919,34 +896,28 @@ def fingerprint_from_stimulus_file(
     `fingerprintStimulus`
         Instantiated fingerprintStimulus
     """
-    fingerprint_stim = stimulus_file["items"]["behavior"]["items"][
-        "fingerprint"
-    ]["static_stimulus"]
+    fingerprint_stim = stimulus_file["items"]["behavior"]["items"]["fingerprint"][
+        "static_stimulus"
+    ]
 
     n_repeats = fingerprint_stim["runs"]
 
     # spontaneous + fingerprint indices relative to start of session
     stimulus_session_frame_indices = np.array(
-        stimulus_file["items"]["behavior"]["items"]["fingerprint"][
-            "frame_indices"
-        ]
+        stimulus_file["items"]["behavior"]["items"]["fingerprint"]["frame_indices"]
     )
 
     movie_length = int(len(fingerprint_stim["sweep_frames"]) / n_repeats)
 
     # Start index within the spontaneous + fingerprint block
-    movie_start_index = sum(
-        1 for frame in fingerprint_stim["frame_list"] if frame == -1
-    )
+    movie_start_index = sum(1 for frame in fingerprint_stim["frame_list"] if frame == -1)
     res = []
     for repeat in range(n_repeats):
         for frame in range(movie_length):
             # 0-indexed frame indices relative to start of fingerprint
             # movie
             stimulus_frame_indices = np.array(
-                fingerprint_stim["sweep_frames"][
-                    frame + (repeat * movie_length)
-                ]
+                fingerprint_stim["sweep_frames"][frame + (repeat * movie_length)]
             )
             start_frame, end_frame = stimulus_session_frame_indices[
                 stimulus_frame_indices + movie_start_index
@@ -973,9 +944,7 @@ def fingerprint_from_stimulus_file(
     )  # + 2 since there is a gap before this stimulus
     table["stim_name"] = "natural_movie_one"
 
-    table = table.astype(
-        {c: "int64" for c in table.select_dtypes(include="int")}
-    )
+    table = table.astype({c: "int64" for c in table.select_dtypes(include="int")})
 
     return table
 
@@ -1022,9 +991,7 @@ def from_stimulus_file(
     data = pkl.load_pkl(stimulus_file)
     raw_stim_pres_df = get_stimulus_presentations(data, stimulus_timestamps)
     raw_stim_pres_df = raw_stim_pres_df.drop(columns=["index"])
-    raw_stim_pres_df = check_for_errant_omitted_stimulus(
-        input_df=raw_stim_pres_df
-    )
+    raw_stim_pres_df = check_for_errant_omitted_stimulus(input_df=raw_stim_pres_df)
 
     # Fill in nulls for image_name
     # This makes two assumptions:
@@ -1033,13 +1000,11 @@ def from_stimulus_file(
     #      values for `image_name` are null.
     if pd.isnull(raw_stim_pres_df["image_name"]).all():
         if ~pd.isnull(raw_stim_pres_df["orientation"]).all():
-            raw_stim_pres_df["image_name"] = raw_stim_pres_df[
-                "orientation"
-            ].apply(lambda x: f"gratings_{x}")
-        else:
-            raise ValueError(
-                "All values for 'orientation' and " "'image_name are null."
+            raw_stim_pres_df["image_name"] = raw_stim_pres_df["orientation"].apply(
+                lambda x: f"gratings_{x}"
             )
+        else:
+            raise ValueError("All values for 'orientation' and " "'image_name are null.")
 
     stimulus_metadata_df = get_stimulus_metadata(data)
 
@@ -1067,9 +1032,7 @@ def from_stimulus_file(
         .sort_index()
         .set_index("timestamps", drop=True)
     )
-    stimulus_index_df["image_index"] = stimulus_index_df["image_index"].astype(
-        "int"
-    )
+    stimulus_index_df["image_index"] = stimulus_index_df["image_index"].astype("int")
     stim_pres_df = raw_stim_pres_df.merge(
         stimulus_index_df,
         left_on="start_time",
@@ -1083,9 +1046,7 @@ def from_stimulus_file(
             f" {len(stim_pres_df)}."
         )
 
-    stim_pres_df["is_change"] = is_change_event(
-        stimulus_presentations=stim_pres_df
-    )
+    stim_pres_df["is_change"] = is_change_event(stimulus_presentations=stim_pres_df)
     stim_pres_df["flashes_since_change"] = get_flashes_since_change(
         stimulus_presentations=stim_pres_df
     )
@@ -1093,9 +1054,7 @@ def from_stimulus_file(
     # Sort columns then drop columns which contain only all NaN values
     stim_pres_df = stim_pres_df[sorted(stim_pres_df)].dropna(axis=1, how="all")
     if limit_to_images is not None:
-        stim_pres_df = stim_pres_df[
-            stim_pres_df["image_name"].isin(limit_to_images)
-        ]
+        stim_pres_df = stim_pres_df[stim_pres_df["image_name"].isin(limit_to_images)]
         stim_pres_df.index = pd.Index(
             range(stim_pres_df.shape[0]), name=stim_pres_df.index.name
         )
@@ -1105,9 +1064,7 @@ def from_stimulus_file(
 
     stim_pres_df = fix_omitted_end_frame(stim_pres_df)
 
-    has_fingerprint_stimulus = (
-        "fingerprint" in data["items"]["behavior"]["items"]
-    )
+    has_fingerprint_stimulus = "fingerprint" in data["items"]["behavior"]["items"]
     if has_fingerprint_stimulus:
         stim_pres_df = add_fingerprint_stimulus(
             stimulus_presentations=stim_pres_df,
@@ -1240,9 +1197,7 @@ def check_for_errant_omitted_stimulus(
             Dataframe with omitted stimulus removed from first row or if not
         """
         if stimulus_block is not None:
-            first_row = input_df[
-                input_df["stimulus_block"] == stim_block
-            ].iloc[0]
+            first_row = input_df[input_df["stimulus_block"] == stim_block].iloc[0]
         else:
             first_row = input_df.iloc[0]
 
@@ -1258,9 +1213,7 @@ def check_for_errant_omitted_stimulus(
                     input_df=input_df, stimulus_block=stim_block
                 )
         else:
-            input_df = safe_omitted_check(
-                input_df=input_df, stimulus_block=None
-            )
+            input_df = safe_omitted_check(input_df=input_df, stimulus_block=None)
     return input_df
 
 
@@ -1282,9 +1235,7 @@ def fill_missing_values_for_omitted_flashes(
         Amount of time a stimulus is omitted for in seconds
     """
     omitted = df["omitted"].fillna(False)
-    df.loc[omitted, "stop_time"] = (
-        df.loc[omitted, "start_time"] + omitted_time_duration
-    )
+    df.loc[omitted, "stop_time"] = df.loc[omitted, "start_time"] + omitted_time_duration
     df.loc[omitted, "duration"] = omitted_time_duration
     return df
 
@@ -1325,13 +1276,9 @@ def get_spontaneous_stimulus(
             {
                 "duration": stimulus_presentations_table.iloc[0]["start_time"],
                 "start_time": 0,
-                "stop_time": stimulus_presentations_table.iloc[0][
-                    "start_time"
-                ],
+                "stop_time": stimulus_presentations_table.iloc[0]["start_time"],
                 "start_frame": 0,
-                "end_frame": stimulus_presentations_table.iloc[0][
-                    "start_frame"
-                ],
+                "end_frame": stimulus_presentations_table.iloc[0]["start_frame"],
                 "stim_block": 0,
                 "stim_name": "spontaneous",
             }
@@ -1371,9 +1318,7 @@ def get_spontaneous_stimulus(
 
     res = pd.DataFrame(res)
 
-    return pd.concat([stimulus_presentations_table, res]).sort_values(
-        "start_frame"
-    )
+    return pd.concat([stimulus_presentations_table, res]).sort_values("start_frame")
 
 
 def add_fingerprint_stimulus(
@@ -1395,9 +1340,7 @@ def add_fingerprint_stimulus(
         stimulus_timestamps=stimulus_timestamps,
     )
 
-    stimulus_presentations = pd.concat(
-        [stimulus_presentations, fingerprint_stimulus]
-    )
+    stimulus_presentations = pd.concat([stimulus_presentations, fingerprint_stimulus])
     stimulus_presentations = get_spontaneous_stimulus(
         stimulus_presentations_table=stimulus_presentations
     )

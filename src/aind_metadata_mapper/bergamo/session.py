@@ -302,9 +302,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
             return TifFileGroup.PHOTOSTIM
         elif (
             header.get("hIntegrationRoiManager", {}).get("enable") == "true"
-            and header.get("hIntegrationRoiManager", {}).get(
-                "outputChannelsEnabled"
-            )
+            and header.get("hIntegrationRoiManager", {}).get("outputChannelsEnabled")
             == "true"
             and header.get("extTrigEnable", {}) == "1"
         ):
@@ -316,9 +314,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
 
     def extract_parsed_metadata_info_from_files(
         self, tif_file_locations: Dict[str, List[Path]]
-    ) -> Dict[
-        Tuple[str, TifFileGroup], List[Union[RawImageInfo, List[List[Path]]]]
-    ]:
+    ) -> Dict[Tuple[str, TifFileGroup], List[Union[RawImageInfo, List[List[Path]]]]]:
         """
         Loop through list of files and use ScanImageTiffReader to read metadata
         Parameters
@@ -369,28 +365,20 @@ class BergamoEtl(GenericEtl[JobSettings]):
             tif_file_locations=tif_file_locations
         )
         stack_file_info = [
-            (k, v)
-            for k, v in parsed_metadata.items()
-            if k[1] == TifFileGroup.STACK
+            (k, v) for k, v in parsed_metadata.items() if k[1] == TifFileGroup.STACK
         ]
         spont_file_info = [
-            (k, v)
-            for k, v in parsed_metadata.items()
-            if k[1] == TifFileGroup.SPONTANEOUS
+            (k, v) for k, v in parsed_metadata.items() if k[1] == TifFileGroup.SPONTANEOUS
         ]
         behavior_file_info = [
-            (k, v)
-            for k, v in parsed_metadata.items()
-            if k[1] == TifFileGroup.BEHAVIOR
+            (k, v) for k, v in parsed_metadata.items() if k[1] == TifFileGroup.BEHAVIOR
         ]
         photo_stim_file_info = [
-            (k, v)
-            for k, v in parsed_metadata.items()
-            if k[1] == TifFileGroup.PHOTOSTIM
+            (k, v) for k, v in parsed_metadata.items() if k[1] == TifFileGroup.PHOTOSTIM
         ]
-        first_tiff_metadata_header = parsed_metadata[
-            list(parsed_metadata.keys())[0]
-        ][0].reader_metadata_header
+        first_tiff_metadata_header = parsed_metadata[list(parsed_metadata.keys())[0]][
+            0
+        ].reader_metadata_header
         # FROM RIG JSON: filter_names, detector_name, daq_name
         channel_dict = {
             1: {
@@ -398,9 +386,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 "light_source_name": self.job_settings.imaging_laser_name,
                 "filter_names": self.job_settings.ch1_filter_names,
                 "detector_name": self.job_settings.ch1_detector_name,
-                "excitation_wavelength": (
-                    self.job_settings.imaging_laser_wavelength
-                ),
+                "excitation_wavelength": (self.job_settings.imaging_laser_wavelength),
                 "daq_name": self.job_settings.ch1_daq_name,
             },
             2: {
@@ -408,9 +394,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 "light_source_name": self.job_settings.imaging_laser_name,
                 "filter_names": self.job_settings.ch2_filter_names,
                 "detector_name": self.job_settings.ch2_detector_name,
-                "excitation_wavelength": (
-                    self.job_settings.imaging_laser_wavelength
-                ),
+                "excitation_wavelength": (self.job_settings.imaging_laser_wavelength),
                 "daq_name": self.job_settings.ch2_daq_name,
             },
         }
@@ -492,23 +476,17 @@ class BergamoEtl(GenericEtl[JobSettings]):
         # ONLY 2P STREAM DURING STACKS
         for stack_file_info_now in stack_file_info:
             tiff_header = stack_file_info_now[1][0].reader_metadata_header
-            last_frame_description = stack_file_info_now[1][
-                0
-            ].reader_descriptions[-1]
+            last_frame_description = stack_file_info_now[1][0].reader_descriptions[-1]
             # THIS THING REPEATS FOR EVERY STREAM
             z_list = np.asarray(
                 tiff_header["hStackManager"]["zs"].strip("[]").split(" "),
                 float,
             )
             z_start = (
-                np.min(z_list)
-                - np.median(z_list)
-                + self.job_settings.fov_imaging_depth
+                np.min(z_list) - np.median(z_list) + self.job_settings.fov_imaging_depth
             )
             z_end = (
-                np.max(z_list)
-                - np.median(z_list)
-                + self.job_settings.fov_imaging_depth
+                np.max(z_list) - np.median(z_list) + self.job_settings.fov_imaging_depth
             )
             z_step = float(tiff_header["hStackManager"]["stackZStepSize"])
             channel_nums = np.asarray(
@@ -527,20 +505,13 @@ class BergamoEtl(GenericEtl[JobSettings]):
 
             channels = []
             start_time_corrected = (
-                last_frame_description["epoch"]
-                .strip("[]")
-                .replace("  ", " 0")
-                .split(" ")
+                last_frame_description["epoch"].strip("[]").replace("  ", " 0").split(" ")
             )
             start_time_corrected = " ".join(
                 start_time_corrected[:-1]
                 + [
-                    str(int(np.floor(float(start_time_corrected[-1])))).zfill(
-                        2
-                    ),
-                    str(
-                        int(1000000 * (float(start_time_corrected[-1]) % 1))
-                    ).zfill(6),
+                    str(int(np.floor(float(start_time_corrected[-1])))).zfill(2),
+                    str(int(1000000 * (float(start_time_corrected[-1]) % 1))).zfill(6),
                 ]
             )
             stream_start_time = datetime.strptime(
@@ -561,20 +532,14 @@ class BergamoEtl(GenericEtl[JobSettings]):
                         start_depth=z_start,
                         end_depth=z_end,
                         channel_name=channel_dict[channel_num]["channel_name"],
-                        light_source_name=channel_dict[channel_num][
-                            "light_source_name"
-                        ],
+                        light_source_name=channel_dict[channel_num]["light_source_name"],
                         filter_names=channel_dict[channel_num]["filter_names"],
-                        detector_name=channel_dict[channel_num][
-                            "detector_name"
-                        ],
+                        detector_name=channel_dict[channel_num]["detector_name"],
                         excitation_wavelength=channel_dict[channel_num][
                             "excitation_wavelength"
                         ],
                         excitation_power=np.asarray(
-                            tiff_header["hBeams"]["powers"]
-                            .strip("[]")
-                            .split(" "),
+                            tiff_header["hBeams"]["powers"].strip("[]").split(" "),
                             float,
                         )[laser_dict["imaging_laser"]["power_index"]],
                         # from tiff header,
@@ -584,27 +549,20 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 )
             zstack = Stack(
                 channels=channels,
-                number_of_planes=int(
-                    tiff_header["hStackManager"]["numSlices"]
-                ),
+                number_of_planes=int(tiff_header["hStackManager"]["numSlices"]),
                 step_size=z_step,
                 number_of_plane_repeats_per_volume=int(
                     tiff_header["hStackManager"]["framesPerSlice"]
                 ),
-                number_of_volume_repeats=int(
-                    tiff_header["hStackManager"]["numVolumes"]
-                ),
+                number_of_volume_repeats=int(tiff_header["hStackManager"]["numVolumes"]),
                 fov_coordinate_ml=self.job_settings.fov_coordinate_ml,
                 fov_coordinate_ap=self.job_settings.fov_coordinate_ap,
                 fov_reference="there is no reference",
                 fov_width=int(tiff_header["hRoiManager"]["pixelsPerLine"]),
                 fov_height=int(tiff_header["hRoiManager"]["linesPerFrame"]),
-                magnification=str(
-                    tiff_header["hRoiManager"]["scanZoomFactor"]
-                ),
+                magnification=str(tiff_header["hRoiManager"]["scanZoomFactor"]),
                 fov_scale_factor=(
-                    FOV_1x_micron
-                    / float(tiff_header["hRoiManager"]["scanZoomFactor"])
+                    FOV_1x_micron / float(tiff_header["hRoiManager"]["scanZoomFactor"])
                 )
                 / float(tiff_header["hRoiManager"]["linesPerFrame"]),
                 # microns per pixel
@@ -622,9 +580,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                         wavelength=self.job_settings.imaging_laser_wavelength,
                         # user set value
                         excitation_power=np.asarray(
-                            tiff_header["hBeams"]["powers"]
-                            .strip("[]")
-                            .split(" "),
+                            tiff_header["hBeams"]["powers"].strip("[]").split(" "),
                             float,
                         )[laser_dict["imaging_laser"]["power_index"]],
                         excitation_power_unit=PowerUnit.PERCENT,
@@ -639,9 +595,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
         # ONLY 2P STREAM DURING SPONT
         for spont_file_info_now in spont_file_info:
             tiff_header = spont_file_info_now[1][0].reader_metadata_header
-            last_frame_description = spont_file_info_now[1][
-                0
-            ].reader_descriptions[-1]
+            last_frame_description = spont_file_info_now[1][0].reader_descriptions[-1]
             # THIS THING REPEATS FOR EVERY STREAM
             z_list = np.asarray(
                 tiff_header["hStackManager"]["zs"].strip("[]").split(" "),
@@ -674,20 +628,13 @@ class BergamoEtl(GenericEtl[JobSettings]):
 
             # channels = []
             start_time_corrected = (
-                last_frame_description["epoch"]
-                .strip("[]")
-                .replace("  ", " 0")
-                .split(" ")
+                last_frame_description["epoch"].strip("[]").replace("  ", " 0").split(" ")
             )
             start_time_corrected = " ".join(
                 start_time_corrected[:-1]
                 + [
-                    str(int(np.floor(float(start_time_corrected[-1])))).zfill(
-                        2
-                    ),
-                    str(
-                        int(1000000 * (float(start_time_corrected[-1]) % 1))
-                    ).zfill(6),
+                    str(int(np.floor(float(start_time_corrected[-1])))).zfill(2),
+                    str(int(1000000 * (float(start_time_corrected[-1]) % 1))).zfill(6),
                 ]
             )
             stream_start_time = datetime.strptime(
@@ -712,12 +659,9 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 fov_reference="there is no reference",
                 fov_width=int(tiff_header["hRoiManager"]["pixelsPerLine"]),
                 fov_height=int(tiff_header["hRoiManager"]["linesPerFrame"]),
-                magnification=str(
-                    tiff_header["hRoiManager"]["scanZoomFactor"]
-                ),
+                magnification=str(tiff_header["hRoiManager"]["scanZoomFactor"]),
                 fov_scale_factor=(
-                    FOV_1x_micron
-                    / float(tiff_header["hRoiManager"]["scanZoomFactor"])
+                    FOV_1x_micron / float(tiff_header["hRoiManager"]["scanZoomFactor"])
                 )
                 / float(tiff_header["hRoiManager"]["linesPerFrame"]),
                 # microns per pixel
@@ -737,9 +681,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                         wavelength=self.job_settings.imaging_laser_wavelength,
                         # user set value
                         excitation_power=np.asarray(
-                            tiff_header["hBeams"]["powers"]
-                            .strip("[]")
-                            .split(" "),
+                            tiff_header["hBeams"]["powers"].strip("[]").split(" "),
                             float,
                         )[laser_dict["imaging_laser"]["power_index"]],
                         # from tiff header,
@@ -766,9 +708,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
         # 2P + behavior + behavior video STREAM DURING BEHAVIOR
         for behavior_file_info_now in behavior_file_info:
             tiff_header = behavior_file_info_now[1][0].reader_metadata_header
-            last_frame_description = behavior_file_info_now[1][
-                0
-            ].reader_descriptions[-1]
+            last_frame_description = behavior_file_info_now[1][0].reader_descriptions[-1]
             # THIS THING REPEATS FOR EVERY STREAM
 
             # z_list = np.asarray(
@@ -801,20 +741,13 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 )
             # channels = []
             start_time_corrected = (
-                last_frame_description["epoch"]
-                .strip("[]")
-                .replace("  ", " 0")
-                .split(" ")
+                last_frame_description["epoch"].strip("[]").replace("  ", " 0").split(" ")
             )
             start_time_corrected = " ".join(
                 start_time_corrected[:-1]
                 + [
-                    str(int(np.floor(float(start_time_corrected[-1])))).zfill(
-                        2
-                    ),
-                    str(
-                        int(1000000 * (float(start_time_corrected[-1]) % 1))
-                    ).zfill(6),
+                    str(int(np.floor(float(start_time_corrected[-1])))).zfill(2),
+                    str(int(1000000 * (float(start_time_corrected[-1]) % 1))).zfill(6),
                 ]
             )
             stream_start_time = datetime.strptime(
@@ -839,12 +772,9 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 fov_reference="there is no reference",
                 fov_width=int(tiff_header["hRoiManager"]["pixelsPerLine"]),
                 fov_height=int(tiff_header["hRoiManager"]["linesPerFrame"]),
-                magnification=str(
-                    tiff_header["hRoiManager"]["scanZoomFactor"]
-                ),
+                magnification=str(tiff_header["hRoiManager"]["scanZoomFactor"]),
                 fov_scale_factor=(
-                    FOV_1x_micron
-                    / float(tiff_header["hRoiManager"]["scanZoomFactor"])
+                    FOV_1x_micron / float(tiff_header["hRoiManager"]["scanZoomFactor"])
                 )
                 / float(tiff_header["hRoiManager"]["linesPerFrame"]),
                 # microns per pixel
@@ -872,9 +802,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                         wavelength=self.job_settings.imaging_laser_wavelength,
                         # user set value
                         excitation_power=np.asarray(
-                            tiff_header["hBeams"]["powers"]
-                            .strip("[]")
-                            .split(" "),
+                            tiff_header["hBeams"]["powers"].strip("[]").split(" "),
                             float,
                         )[laser_dict["imaging_laser"]["power_index"]],
                         # from tiff header,
@@ -920,9 +848,9 @@ class BergamoEtl(GenericEtl[JobSettings]):
         # 2P + behavior + behavior video STREAM DURING BEHAVIOR
         for photo_stim_file_info_now in photo_stim_file_info:
             tiff_header = photo_stim_file_info_now[1][0].reader_metadata_header
-            last_frame_description = photo_stim_file_info_now[1][
-                0
-            ].reader_descriptions[-1]
+            last_frame_description = photo_stim_file_info_now[1][0].reader_descriptions[
+                -1
+            ]
 
             # THIS THING REPEATS FOR EVERY STREAM
 
@@ -956,20 +884,13 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 )
             # channels = []
             start_time_corrected = (
-                last_frame_description["epoch"]
-                .strip("[]")
-                .replace("  ", " 0")
-                .split(" ")
+                last_frame_description["epoch"].strip("[]").replace("  ", " 0").split(" ")
             )
             start_time_corrected = " ".join(
                 start_time_corrected[:-1]
                 + [
-                    str(int(np.floor(float(start_time_corrected[-1])))).zfill(
-                        2
-                    ),
-                    str(
-                        int(1000000 * (float(start_time_corrected[-1]) % 1))
-                    ).zfill(6),
+                    str(int(np.floor(float(start_time_corrected[-1])))).zfill(2),
+                    str(int(1000000 * (float(start_time_corrected[-1]) % 1))).zfill(6),
                 ]
             )
             stream_start_time = datetime.strptime(
@@ -994,12 +915,9 @@ class BergamoEtl(GenericEtl[JobSettings]):
                 fov_reference="there is no reference",
                 fov_width=int(tiff_header["hRoiManager"]["pixelsPerLine"]),
                 fov_height=int(tiff_header["hRoiManager"]["linesPerFrame"]),
-                magnification=str(
-                    tiff_header["hRoiManager"]["scanZoomFactor"]
-                ),
+                magnification=str(tiff_header["hRoiManager"]["scanZoomFactor"]),
                 fov_scale_factor=(
-                    FOV_1x_micron
-                    / float(tiff_header["hRoiManager"]["scanZoomFactor"])
+                    FOV_1x_micron / float(tiff_header["hRoiManager"]["scanZoomFactor"])
                 )
                 / float(tiff_header["hRoiManager"]["linesPerFrame"]),
                 # microns per pixel
@@ -1019,9 +937,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                         wavelength=self.job_settings.imaging_laser_wavelength,
                         # user set value
                         excitation_power=np.asarray(
-                            tiff_header["hBeams"]["powers"]
-                            .strip("[]")
-                            .split(" "),
+                            tiff_header["hBeams"]["powers"].strip("[]").split(" "),
                             float,
                         )[laser_dict["imaging_laser"]["power_index"]],
                         # from tiff header,
@@ -1052,9 +968,9 @@ class BergamoEtl(GenericEtl[JobSettings]):
             group_order = group_order[:num_total_repetitions]
             group_powers = []
             for photostim_group_i, photostim_group in enumerate(
-                photo_stim_file_info_now[1][0].reader_metadata_json[
-                    "RoiGroups"
-                ]["photostimRoiGroups"]
+                photo_stim_file_info_now[1][0].reader_metadata_json["RoiGroups"][
+                    "photostimRoiGroups"
+                ]
             ):
                 number_of_neurons = int(
                     np.array(
@@ -1189,9 +1105,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
             ),
         )
         job_args = parser.parse_args(args)
-        job_settings_from_args = JobSettings.model_validate_json(
-            job_args.job_settings
-        )
+        job_settings_from_args = JobSettings.model_validate_json(job_args.job_settings)
         return cls(
             job_settings=job_settings_from_args,
         )

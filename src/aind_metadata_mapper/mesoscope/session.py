@@ -6,23 +6,29 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import List, Union
-import h5py as h5
-from comb.data_files.behavior_stimulus_file import BehaviorStimulusFile
 
+import h5py as h5
 import tifffile
-from aind_data_schema.core.session import FieldOfView, Session, Stream, LaserConfig, LightEmittingDiodeConfig
-from aind_data_schema_models.modalities import Modality
-from aind_data_schema_models.units import SizeUnit
 from aind_data_schema.components.devices import Lamp
+from aind_data_schema.core.session import (
+    FieldOfView,
+    LaserConfig,
+    LightEmittingDiodeConfig,
+    Session,
+    Stream,
+)
+from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import CoherentScientific
+from aind_data_schema_models.units import SizeUnit
+from comb.data_files.behavior_stimulus_file import BehaviorStimulusFile
 from PIL import Image
 from PIL.TiffTags import TAGS
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
-from aind_metadata_mapper.core import GenericEtl
-import aind_metadata_mapper.stimulus.camstim
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
+import aind_metadata_mapper.stimulus.camstim
+from aind_metadata_mapper.core import GenericEtl
 
 
 class JobSettings(BaseSettings):
@@ -44,14 +50,14 @@ class JobSettings(BaseSettings):
     fov_coordinate_ml: float = 1.5
     fov_coordinate_ap: float = 1.5
     fov_reference: str = "Bregma"
-    experimenter_full_name: List[str] = Field(
-        ..., title="Full name of the experimenter"
-    )
+    experimenter_full_name: List[str] = Field(..., title="Full name of the experimenter")
     mouse_platform_name: str = "disc"
-    optional_output: str = ''
+    optional_output: str = ""
 
 
-class MesoscopeEtl(GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camstim.Camstim):
+class MesoscopeEtl(
+    GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camstim.Camstim
+):
     """Class to manage transforming mesoscope platform json and metadata into
     a Session model."""
 
@@ -75,31 +81,18 @@ class MesoscopeEtl(GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camsti
         else:
             job_settings_model = job_settings
         super().__init__(job_settings=job_settings_model)
-        with open('//allen/programs/mindscope/workgroups/openscope/ahad/medata-mapper/aind-metadata-mapper/tests/resources/open_ephys/camstim_ephys_session.json', 'r') as file:
+        with open(
+            "//allen/programs/mindscope/workgroups/openscope/ahad/medata-mapper/aind-metadata-mapper/tests/resources/open_ephys/camstim_ephys_session.json",
+            "r",
+        ) as file:
             json_settings_camstim = json.load(file)
-        aind_metadata_mapper.stimulus.camstim.Camstim.__init__(self, job_settings.session_id, json_settings_camstim, session_fp=job_settings_model.input_source, output_fp=job_settings_model.optional_output)
-    
-    def custom_camstim_init(self, session_id: str, json_settings: dict):
-        """
-        Custom initializer for Camstim within the MesoscopeEtl class context.
-        """
-        self.npexp_path = self.job_settings.input_source
-
-        self.pkl_path = self.npexp_path / f'{self.job_settings.session_id}.pkl'
-        self.stim_table_path = (
-            self.npexp_path / f"{self.folder}_stim_epochs.csv"
+        aind_metadata_mapper.stimulus.camstim.Camstim.__init__(
+            self,
+            job_settings.session_id,
+            json_settings_camstim,
+            input_directory=job_settings_model.input_source,
+            output_directory=job_settings_model.optional_output,
         )
-        self.sync_path = self.npexp_path / f'{self.job_settings.session_id}*.h5'
-
-        sync_data = sync.load_sync(self.sync_path)
-
-        if not self.stim_table_path.exists():
-            print("building stim table")
-            self.build_stimulus_table()
-
-        print("getting stim epochs")
-        self.stim_epochs = self.epochs_from_stim_table()
-        
 
     def _read_metadata(self, tiff_path: Path):
         """
@@ -120,13 +113,13 @@ class MesoscopeEtl(GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camsti
         ----------
         h5_path : str
             Path to h5 file
-        
+
         Returns
         -------
         dict
         """
         data = h5.File(h5_path)
-        file_contents = data['scanimage_metadata'][()].decode()
+        file_contents = data["scanimage_metadata"][()].decode()
         data.close()
         file_contents = json.loads(file_contents)
         return file_contents
@@ -183,16 +176,14 @@ class MesoscopeEtl(GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camsti
         Session
             The session object
         """
-        imaging_plane_groups = extracted_source["platform"][
-            "imaging_plane_groups"
-        ]
-        timeseries = next(
-            self.job_settings.input_source.glob("*timeseries*.tiff"), ""
-        )
+        imaging_plane_groups = extracted_source["platform"]["imaging_plane_groups"]
+        timeseries = next(self.job_settings.input_source.glob("*timeseries*.tiff"), "")
         if timeseries:
             meta = self._read_metadata(timeseries)
         else:
-            experiment_dir = list(self.job_settings.input_source.glob("ophys_experiment*"))[0]
+            experiment_dir = list(
+                self.job_settings.input_source.glob("ophys_experiment*")
+            )[0]
             experiment_id = experiment_dir.name.split("_")[-1]
             timeseries = next(experiment_dir.glob(f"{experiment_id}.h5"))
             meta = self._read_h5_metadata(str(timeseries))
@@ -200,10 +191,9 @@ class MesoscopeEtl(GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camsti
         data_streams = []
         for group in imaging_plane_groups:
             for plane in group["imaging_planes"]:
-                
                 fov = FieldOfView(
                     coupled_fov_index=int(group["local_z_stack_tif"].split(".")[0][-1]),
-                    index = plane["scanimage_roi_index"],
+                    index=plane["scanimage_roi_index"],
                     fov_coordinate_ml=self.job_settings.fov_coordinate_ml,
                     fov_coordinate_ap=self.job_settings.fov_coordinate_ap,
                     fov_reference=self.job_settings.fov_reference,
@@ -224,17 +214,16 @@ class MesoscopeEtl(GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camsti
         data_streams.append(
             Stream(
                 light_sources=[
-                        LaserConfig(
-                            device_type="Laser",
-                            name="Laser",
-                            wavelength=920,
-                            wavelength_unit=SizeUnit.NM,
-                        ),
-                        LightEmittingDiodeConfig(
-                            name="Epi lamp",
-                            
-                        ),
-                    ],
+                    LaserConfig(
+                        device_type="Laser",
+                        name="Laser",
+                        wavelength=920,
+                        wavelength_unit=SizeUnit.NM,
+                    ),
+                    LightEmittingDiodeConfig(
+                        name="Epi lamp",
+                    ),
+                ],
                 stream_start_time=self.job_settings.session_start_time,
                 stream_end_time=self.job_settings.session_end_time,
                 ophys_fovs=fovs,
@@ -260,7 +249,13 @@ class MesoscopeEtl(GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camsti
                         stream_modalities=[Modality.BEHAVIOR_VIDEOS],
                     )
                 )
-        stimulus_data = BehaviorStimulusFile.from_file(next(self.job_settings.input_source.glob(f"{self.job_settings.session_id}*.pkl")))
+        stimulus_data = BehaviorStimulusFile.from_file(
+            next(
+                self.job_settings.input_source.glob(
+                    f"{self.job_settings.session_id}*.pkl"
+                )
+            )
+        )
         return Session(
             experimenter_full_name=self.job_settings.experimenter_full_name,
             session_type=stimulus_data.session_type,

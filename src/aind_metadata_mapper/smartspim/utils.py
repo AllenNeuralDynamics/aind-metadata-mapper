@@ -148,9 +148,7 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
     if x_res is None:
         x_res = y_res = session_config.get("m/pix")
         if x_res is None:
-            raise KeyError(
-                "Failed getting the x and y resolution from metadata.json"
-            )
+            raise KeyError("Failed getting the x and y resolution from metadata.json")
 
     if z_res is None:
         z_res = session_config.get("Z step (m)")
@@ -203,9 +201,7 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
 
         tile_acquisition = tile.AcquisitionTile(
             channel=channel,
-            notes=(
-                "\nLaser power is in percentage of total, it needs calibration"
-            ),
+            notes=("\nLaser power is in percentage of total, it needs calibration"),
             coordinate_transformations=[tile_transform, scale],
             file_name=f"Ex_{exaltation_wave}_Em_{emission_wave}/"
             f"{tile_info_x}/{tile_info_x}_{tile_info_y}/",

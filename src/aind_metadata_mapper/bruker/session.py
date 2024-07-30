@@ -149,9 +149,7 @@ class MRIEtl(GenericEtl[JobSettings]):
         extracted = self._extract()
         transformed = self._transform(extracted)
 
-        job_response = self._load(
-            transformed, self.job_settings.output_directory
-        )
+        job_response = self._load(transformed, self.job_settings.output_directory)
 
         return job_response
 

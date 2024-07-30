@@ -164,12 +164,8 @@ class FIBEtl(GenericEtl[JobSettings]):
         )
 
         # create stimulus presentation instance
-        experiment_duration = (
-            opto_base + opto_duration + (opto_interval * trial_num)
-        )
-        end_datetime = session_start_time + timedelta(
-            seconds=experiment_duration
-        )
+        experiment_duration = opto_base + opto_duration + (opto_interval * trial_num)
+        end_datetime = session_start_time + timedelta(seconds=experiment_duration)
         stimulus_epochs = StimulusEpoch(
             stimulus_name=stimulus_name,
             stimulus_modalities=[StimulusModality.OPTOGENETICS],
@@ -238,7 +234,5 @@ class FIBEtl(GenericEtl[JobSettings]):
         """Run the etl job and return a JobResponse."""
         extracted = self._extract()
         transformed = self._transform(extracted_source=extracted)
-        job_response = self._load(
-            transformed, self.job_settings.output_directory
-        )
+        job_response = self._load(transformed, self.job_settings.output_directory)
         return job_response

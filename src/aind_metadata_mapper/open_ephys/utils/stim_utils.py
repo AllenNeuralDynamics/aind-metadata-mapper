@@ -2,13 +2,14 @@
 
 import ast
 import functools
+import logging
 import re
 from pathlib import Path
 from typing import List
-import logging
 
 import numpy as np
 import pandas as pd
+
 import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
 
@@ -126,9 +127,7 @@ def enforce_df_column_order(
             pruned_order.append(col)
     # Get the full list of columns in the data frame with our ordered columns
     # first.
-    pruned_order.extend(
-        list(set(input_df.columns).difference(set(pruned_order)))
-    )
+    pruned_order.extend(list(set(input_df.columns).difference(set(pruned_order))))
     return input_df[pruned_order]
 
 
@@ -148,9 +147,7 @@ def seconds_to_frames(seconds, pkl_file):
     frames : list of int
         Frames corresponding to the input seconds.
     """
-    return (np.array(seconds) + pkl.get_pre_blank_sec(pkl_file)) * pkl.get_fps(
-        pkl_file
-    )
+    return (np.array(seconds) + pkl.get_pre_blank_sec(pkl_file)) * pkl.get_fps(pkl_file)
 
 
 def extract_const_params_from_stim_repr(
@@ -283,9 +280,7 @@ def create_stim_table(
 
         stimulus_tables.extend(current_tables)
 
-    stimulus_tables = sorted(
-        stimulus_tables, key=lambda df: min(df[sort_key].values)
-    )
+    stimulus_tables = sorted(stimulus_tables, key=lambda df: min(df[sort_key].values))
     for ii, stim_table in enumerate(stimulus_tables):
         stim_table[block_key] = ii
 
@@ -343,8 +338,7 @@ def make_spontaneous_activity_tables(
 
     if duration_threshold is not None:
         spon_sweeps = spon_sweeps[
-            np.fabs(spon_sweeps[start_key] - spon_sweeps[end_key])
-            > duration_threshold
+            np.fabs(spon_sweeps[start_key] - spon_sweeps[end_key]) > duration_threshold
         ]
         spon_sweeps.reset_index(drop=True, inplace=True)
 
@@ -471,9 +465,7 @@ def convert_frames_to_seconds(
     if extra_frame_time is True and frames_per_second is not None:
         extra_frame_time = 1.0 / frames_per_second
     if extra_frame_time is not False:
-        frame_times = np.append(
-            frame_times, frame_times[-1] + extra_frame_time
-        )
+        frame_times = np.append(frame_times, frame_times[-1] + extra_frame_time)
 
     for column in map_columns:
         stimulus_table[column] = frame_times[
@@ -521,9 +513,7 @@ def apply_display_sequence(
 
     sweep_frames_table = sweep_frames_table.copy()
     if block_key not in sweep_frames_table.columns.values:
-        sweep_frames_table[block_key] = np.zeros(
-            (sweep_frames_table.shape[0]), dtype=int
-        )
+        sweep_frames_table[block_key] = np.zeros((sweep_frames_table.shape[0]), dtype=int)
 
     sweep_frames_table[diff_key] = (
         sweep_frames_table[end_key] - sweep_frames_table[start_key]
@@ -531,9 +521,7 @@ def apply_display_sequence(
 
     sweep_frames_table[start_key] += frame_display_sequence[0, 0]
     for seg in range(len(frame_display_sequence) - 1):
-        match_inds = (
-            sweep_frames_table[start_key] >= frame_display_sequence[seg, 1]
-        )
+        match_inds = sweep_frames_table[start_key] >= frame_display_sequence[seg, 1]
 
         sweep_frames_table.loc[match_inds, start_key] += (
             frame_display_sequence[seg + 1, 0] - frame_display_sequence[seg, 1]
@@ -677,16 +665,12 @@ def build_stimuluswise_table(
     if get_stimulus_name is None:
         get_stimulus_name = read_stimulus_name_from_path
 
-    frame_display_sequence = seconds_to_frames(
-        stimulus["display_sequence"], pickle_file
-    )
+    frame_display_sequence = seconds_to_frames(stimulus["display_sequence"], pickle_file)
 
     sweep_frames_table = pd.DataFrame(
         stimulus["sweep_frames"], columns=(start_key, end_key)
     )
-    sweep_frames_table[block_key] = np.zeros(
-        [sweep_frames_table.shape[0]], dtype=int
-    )
+    sweep_frames_table[block_key] = np.zeros([sweep_frames_table.shape[0]], dtype=int)
     sweep_frames_table = apply_display_sequence(
         sweep_frames_table, frame_display_sequence, block_key=block_key
     )
@@ -719,9 +703,7 @@ def build_stimuluswise_table(
         )
 
     if extract_const_params_from_repr:
-        const_params = parse_stim_repr(
-            stimulus["stim"], drop_params=drop_const_params
-        )
+        const_params = parse_stim_repr(stimulus["stim"], drop_params=drop_const_params)
         existing_columns = set(stim_table.columns)
         for const_param_key, const_param_value in const_params.items():
             existing_cap = const_param_key.capitalize() in existing_columns
@@ -729,16 +711,12 @@ def build_stimuluswise_table(
             existing = const_param_key in existing_columns
 
             if not (existing_cap or existing_upper or existing):
-                stim_table[const_param_key] = [
-                    const_param_value
-                ] * stim_table.shape[0]
+                stim_table[const_param_key] = [const_param_value] * stim_table.shape[0]
             else:
                 raise KeyError(f"column {const_param_key} already exists")
 
     unique_indices = np.unique(stim_table[block_key].values)
-    output = [
-        stim_table.loc[stim_table[block_key] == ii, :] for ii in unique_indices
-    ]
+    output = [stim_table.loc[stim_table[block_key] == ii, :] for ii in unique_indices]
 
     return output
 

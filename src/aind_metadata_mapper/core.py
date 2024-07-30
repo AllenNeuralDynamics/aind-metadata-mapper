@@ -90,9 +90,7 @@ class GenericEtl(ABC, Generic[_T]):
         """
         validation_errors = self._run_validation_check(output_model)
         if validation_errors:
-            validation_message = (
-                f"Validation errors detected: {repr(validation_errors)}"
-            )
+            validation_message = f"Validation errors detected: {repr(validation_errors)}"
             status_code = 406
         else:
             validation_message = "No validation errors detected."
@@ -103,12 +101,8 @@ class GenericEtl(ABC, Generic[_T]):
         else:
             data = None
             try:
-                output_model.write_standard_file(
-                    output_directory=output_directory
-                )
-                message = (
-                    f"Write model to {output_directory}\n" + validation_message
-                )
+                output_model.write_standard_file(output_directory=output_directory)
+                message = f"Write model to {output_directory}\n" + validation_message
             except Exception as e:
                 message = (
                     f"Error writing to {output_directory}: {repr(e)}\n"
@@ -127,9 +121,7 @@ class BaseEtl(ABC):
     """Base etl class. Defines interface for extracting, transforming, and
     loading input sources into a json file saved locally."""
 
-    def __init__(
-        self, input_source: Union[PathLike, str], output_directory: Path
-    ):
+    def __init__(self, input_source: Union[PathLike, str], output_directory: Path):
         """
         Class constructor for Base etl class.
         Parameters
@@ -181,9 +173,7 @@ class BaseEtl(ABC):
         None
 
         """
-        transformed_data.write_standard_file(
-            output_directory=self.output_directory
-        )
+        transformed_data.write_standard_file(output_directory=self.output_directory)
 
     @staticmethod
     def _run_validation_check(model_instance: AindCoreModel) -> None:

@@ -5,6 +5,7 @@ File containing CamstimEphysSession class
 import argparse
 import datetime
 import json
+import logging
 import re
 from pathlib import Path
 
@@ -18,12 +19,10 @@ import npc_mvr
 import npc_sessions
 import numpy as np
 import pandas as pd
-import logging
 
-import aind_metadata_mapper.stimulus.camstim
-import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
 import aind_metadata_mapper.open_ephys.utils.constants as constants
-
+import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
+import aind_metadata_mapper.stimulus.camstim
 
 logger = logging.getLogger(__name__)
 
