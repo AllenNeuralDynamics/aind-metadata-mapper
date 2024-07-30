@@ -51,7 +51,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: run integration tests
         run:
-          python -m tests/integration/test_bergamo/test_session
+          python -m tests.integration.test_bergamo.test_session
 
 
 
