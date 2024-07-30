@@ -4,7 +4,7 @@ from src.aind_metadata_mapper.bergamo.session import JobSettings, BergamoEtl
 import s3fs
 import os
 
-BUCKET_NAME = os.getenv("AWS_DATA_SCHEMA_BUCKET")
+BUCKET_NAME = os.getenv("AWS_METADATA_MAPPER_BUCKET_DEV")
 BASE_DIR = "metadata-mapper-integration-testing/"
 BERGAMO_INPUT_SOURCE = f"{BUCKET_NAME}/{BASE_DIR}/single-plane-ophys_706957_2024-01-12_16-13-29/ophys/"
 LOCAL_DIR = "resources/bergamo/tiff_files/"
