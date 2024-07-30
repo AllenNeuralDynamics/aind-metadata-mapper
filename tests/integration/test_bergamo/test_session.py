@@ -3,9 +3,8 @@
 from src.aind_metadata_mapper.bergamo.session import JobSettings, BergamoEtl
 import s3fs
 import os
-from dotenv import load_dotenv
 
-BUCKET_NAME = os.getenv("AWS_METADATA_MAPPER_BUCKET_DEV")
+BUCKET_NAME = os.getenv("AWS_METADATA_MAPPER_BUCKET")
 print(BUCKET_NAME)
 BASE_DIR = "metadata-mapper-integration-testing"
 BERGAMO_INPUT_SOURCE = f"{BUCKET_NAME}/{BASE_DIR}/single-plane-ophys_706957_2024-01-12_16-13-29/ophys/"
