@@ -106,9 +106,9 @@ class U19Etl(GenericEtl[JobSettings]):
             if row is None:
                 logging.warning(f"Could not find row for {subj_id}")
                 return
-            existing_procedure["specimen_procedures"] = (
-                self.extract_spec_procedures(subj_id, row)
-            )
+            existing_procedure[
+                "specimen_procedures"
+            ] = self.extract_spec_procedures(subj_id, row)
 
             return construct_new_model(
                 existing_procedure,
@@ -332,7 +332,6 @@ class U19Etl(GenericEtl[JobSettings]):
             items.append(shield_off_procedure)
 
         if not pd.isna(shield_on_date):
-
             shield_on_procedure = SpecimenProcedure(
                 specimen_id=subj_id,
                 procedure_type=SpecimenProcedureType.FIXATION,
