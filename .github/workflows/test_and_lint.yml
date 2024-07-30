@@ -1,9 +1,9 @@
 name: Lint and run tests
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
+      - feat-53-integration-testing
 
 jobs:
   ci:
@@ -30,8 +30,8 @@ jobs:
       id-token: write
       contents: read
     env:
-      AWS_DATA_SCHEMA_ROLE: ${{ secrets.AWS_DATA_SCHEMA_ROLE_DEV }}
-      AWS_DATA_SCHEMA_BUCKET: ${{ vars.AWS_DATA_SCHEMA_BUCKET_DEV }}
+      AWS_METADATA_MAPPER_ROLE: ${{ secrets.AWS_METADATA_MAPPER_ROLE_DEV }}
+      AWS_METADATA_MAPPER_BUCKET: ${{ vars.AWS_METADATA_MAPPER_BUCKET_DEV }}
       AWS_REGION: ${{ vars.AWS_REGION_DEV }}
     steps:
       - uses: actions/checkout@v3
@@ -46,7 +46,7 @@ jobs:
       - name: Configure aws credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: ${{ env.AWS_DATA_SCHEMA_ROLE }}
+          role-to-assume: ${{ env.AWS_METADATA_MAPPER_ROLE }}
           role-session-name: github-integration-test-session
           aws-region: ${{ env.AWS_REGION }}
       - name: run integration tests
