@@ -52,6 +52,7 @@ jobs:
       - name: run integration tests
         run:
           python -m tests.integration.test_bergamo.test_session
+          AWS_METADATA_MAPPER_BUCKET_DEV=${{ env.AWS_METADATA_MAPPER_BUCKET }}
 
 
 

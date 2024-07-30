@@ -5,8 +5,8 @@ import s3fs
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
 BUCKET_NAME = os.getenv("AWS_METADATA_MAPPER_BUCKET_DEV")
+print(BUCKET_NAME)
 BASE_DIR = "metadata-mapper-integration-testing"
 BERGAMO_INPUT_SOURCE = f"{BUCKET_NAME}/{BASE_DIR}/single-plane-ophys_706957_2024-01-12_16-13-29/ophys/"
 LOCAL_DIR = "resources/bergamo/tiff_files/"
