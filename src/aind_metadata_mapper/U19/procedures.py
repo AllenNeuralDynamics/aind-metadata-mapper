@@ -44,7 +44,8 @@ class JobSettings(BaseSettings):
     )
     procedures_download_link: str = Field(
         default="http://aind-metadata-service/procedures",
-        description="Link to download the relevant procedures from metadata service"
+        description="Link to download the relevant procedures "
+        "from metadata service",
     )
     allow_validation_errors: bool = Field(
         False, description="Whether or not to allow validation errors."
@@ -110,9 +111,9 @@ class U19Etl(GenericEtl[JobSettings]):
             if row is None:
                 logging.warning(f"Could not find row for {subj_id}")
                 return
-            existing_procedure[
-                "specimen_procedures"
-            ] = self.extract_spec_procedures(subj_id, row)
+            existing_procedure["specimen_procedures"] = (
+                self.extract_spec_procedures(subj_id, row)
+            )
 
             return construct_new_model(
                 existing_procedure,
