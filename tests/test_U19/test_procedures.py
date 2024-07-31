@@ -22,7 +22,7 @@ from aind_metadata_mapper.U19.procedures import (
     get_dates,
     strings_to_dates,
 )
-from aind_metadata_mapper.utils import construct_new_model
+from aind_metadata_mapper.U19.utils import construct_new_model
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
