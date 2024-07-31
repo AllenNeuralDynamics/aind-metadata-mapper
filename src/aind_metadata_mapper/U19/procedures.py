@@ -42,6 +42,10 @@ class JobSettings(BaseSettings):
             " then all subjects in spreadsheet will be ingested."
         ),
     )
+    procedures_download_link: str = Field(
+        default="http://aind-metadata-service/procedures",
+        description="Link to download the relevant procedures from metadata service"
+    )
     allow_validation_errors: bool = Field(
         False, description="Whether or not to allow validation errors."
     )
@@ -132,7 +136,7 @@ class U19Etl(GenericEtl[JobSettings]):
         """Download the procedure file for a subject."""
         # Get the procedure file from the U19 server
         request = requests.get(
-            f"http://aind-metadata-service/procedures/{subj_id}"
+            f"{self.job_settings.procedures_download_link}/{subj_id}"
         )
 
         if request.status_code == 404:
