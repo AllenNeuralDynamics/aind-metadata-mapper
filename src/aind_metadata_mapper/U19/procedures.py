@@ -19,7 +19,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings
 
 from aind_metadata_mapper.core import GenericEtl, JobResponse
-from aind_metadata_mapper.utils import construct_new_model
+from aind_metadata_mapper.U19.utils import construct_new_model
 
 
 class JobSettings(BaseSettings):
