@@ -34,6 +34,7 @@ jobs:
         run:
           sudo apt-get install ./mount-s3.deb
       - name: mount s3 bucket
+        run:
           mkdir bucket_mt
           mount-s3 ${{ secrets.AWS_METADATA_MAPPER_BUCKET_DEV }} bucket_mnt
       - name: run integration tests
