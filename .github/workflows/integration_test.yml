@@ -40,7 +40,7 @@ jobs:
           mkdir bucket_mt
           mount-s3 $AWS_METADATA_MAPPER_BUCKET bucket_mt
       - name: run integration tests
-        run:
+        run: |
           python tests/integration/bergamo/session.py --input_source "bucket_mt/metadata-mapper-integration-testing/bergamo" IntegrationTestBergamo
           umount bucket_mt
 
