@@ -30,9 +30,16 @@ jobs:
           role-to-assume: ${{ env.AWS_METADATA_MAPPER_ROLE }}
           role-session-name: github-integration-test-session
           aws-region: ${{ env.AWS_REGION }}
+      - name: install mountpoint-s3
+        run:
+          sudo apt-get install ./mount-s3.deb
+      - name: mount s3 bucket
+          mkdir bucket_mt
+          mount-s3 ${{ secrets.AWS_METADATA_MAPPER_BUCKET_DEV }} bucket_mnt
       - name: run integration tests
         run:
-          python -m tests.integration.test_bergamo.test_session AWS_METADATA_MAPPER_BUCKET=${{ secrets.AWS_METADATA_MAPPER_BUCKET_DEV }}
+          python tests/integration/bergamo/session.py --input_source "bucket_mnt/metadata-mapper-integration-testing/bergamo/tiff_files" IntegrationTestBergamo
+          unmount bucket_mnt
 
 
 
