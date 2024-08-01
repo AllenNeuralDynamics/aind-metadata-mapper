@@ -38,11 +38,11 @@ jobs:
       - name: mount s3 bucket
         run: |
           mkdir bucket_mt
-          mount-s3 aind-scratch-data-dev-u5u0i5 bucket_mt
+          mount-s3 $${{ env.AWS_METADATA_MAPPER_BUCKET }} bucket_mt
       - name: run integration tests
         run:
-          python tests/integration/bergamo/session.py --input_source "bucket_mnt/metadata-mapper-integration-testing/bergamo/tiff_files" IntegrationTestBergamo
-          unmount bucket_mnt
+          python tests/integration/bergamo/session.py --input_source "bucket_mt/metadata-mapper-integration-testing/bergamo/tiff_files" IntegrationTestBergamo
+          unmount bucket_mt
 
 
 
