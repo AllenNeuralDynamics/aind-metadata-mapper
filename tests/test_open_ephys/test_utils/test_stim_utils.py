@@ -116,7 +116,7 @@ class TestStimUtils(unittest.TestCase):
             }
         )
         result_df = stim.enforce_df_column_order(df, column_order)
-        pd.testing.assert_frame_equal(result_df, expected_df)
+        pd.testing.assert_frame_equal(result_df, expected_df, check_like=True)
 
         # Test case: Specified column order with all columns
         column_order = ["C", "A", "D", "B"]

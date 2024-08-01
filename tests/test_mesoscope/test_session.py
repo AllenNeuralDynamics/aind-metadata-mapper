@@ -148,7 +148,7 @@ class TestMesoscope(unittest.TestCase):
         """Tests that _extract raises a ValueError"""
         mock_is_dir.return_value = True
         mock_path_exists.return_value = False
-        mock_path_glob.return_value = iter([Path("/somedir/a")])
+        mock_path_glob.return_value = iter([Path("somedir/a")])
         etl1 = MesoscopeEtl(
             job_settings=self.example_job_settings,
         )
