@@ -1,38 +1,38 @@
 """Integration test for bergamo session"""
 
 from aind_metadata_mapper.bergamo.session import JobSettings, BergamoEtl
-import s3fs
-import os
+import sys
 import json
-import shutil
+import os
+from pathlib import Path
+import argparse
 
-BUCKET_NAME = os.getenv("AWS_METADATA_MAPPER_BUCKET")
-BASE_DIR = "metadata-mapper-integration-testing/bergamo"
-BERGAMO_INPUT_SOURCE = f"{BUCKET_NAME}/{BASE_DIR}/tiff_files/"
-EXPECTED_SESSION = f"{BUCKET_NAME}/{BASE_DIR}/expected_session.json"
-LOCAL_DIR = "resources/bergamo/tiff_files/"
+RESOURCES_DIR = (
+    Path(os.path.dirname(os.path.realpath(__file__)))
+    / ".."
+    / ".."
+    / "resources"
+    / "bergamo"
+)
 
 
-def test_bergamo_etl():
+def parse_arguments():
+    """Parse input source from command-line argument"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--input_source',
+        type=str,
+        required=True,
+        help="The input source for the ETL job.")
+
+    return parser.parse_args()
+
+
+def run_integration_test(sys_args):
     """Tests that BergamoETL creates session as expected."""
-
-    s3fs_client = s3fs.core.S3FileSystem()
-    s3_ls = s3fs_client.ls(BERGAMO_INPUT_SOURCE)
-
-    os.makedirs(LOCAL_DIR, exist_ok=True)
-
-    # Copies TIFF files from s3 source
-    for path in s3_ls:
-        if not s3fs_client.isdir(path):
-            relative_path = os.path.relpath(path, BERGAMO_INPUT_SOURCE)
-            local_file_path = os.path.join(LOCAL_DIR, relative_path)
-
-            os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-            s3fs_client.get(path, local_file_path)
-
-    # Define JobSettings and run Bergamo job
+    input_source = sys_args.input_source
     job_settings = JobSettings(
-        input_source=LOCAL_DIR,
+        input_source=Path(input_source),
         experimenter_full_name=["Jane Doe"],
         subject_id="706957",
         imaging_laser_wavelength=405,
@@ -43,15 +43,12 @@ def test_bergamo_etl():
     bergamo_job = BergamoEtl(job_settings=job_settings)
     response = bergamo_job.run_job()
 
-    with s3fs_client.open(EXPECTED_SESSION, "r") as s3_file:
-        expected_session = json.load(s3_file)
+    with open(f"{RESOURCES_DIR}/session.json", "r") as file:
+        expected_session = json.load(file)
 
     assert json.loads(response.data) == expected_session
 
-    # Delete downloaded content
-    shutil.rmtree(LOCAL_DIR)
-    print("Cleanup complete: All downloaded files have been deleted.")
-
 
 if __name__ == "__main__":
-    test_bergamo_etl()
+    sys_args = parse_arguments()
+    run_integration_test(sys_args=sys_args)

@@ -24,7 +24,6 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install -e .[all]
-          python -m pip install s3fs
       - name: Configure aws credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
