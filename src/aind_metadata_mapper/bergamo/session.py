@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union, Literal
+from typing import Dict, List, Tuple, Union
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -47,8 +47,8 @@ from aind_data_schema.core.session import (
 from aind_data_schema_models.units import PowerUnit
 from ScanImageTiffReader import ScanImageTiffReader
 
-from aind_metadata_mapper.core import GenericEtl, JobResponse
 from aind_metadata_mapper.bergamo.models import JobSettings
+from aind_metadata_mapper.core import GenericEtl, JobResponse
 
 
 # This class makes it easier to flag which tif files are which expected type

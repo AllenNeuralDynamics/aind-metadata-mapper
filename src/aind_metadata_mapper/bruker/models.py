@@ -1,13 +1,14 @@
 """Module defining JobSettings for Bruker ETL"""
 
-from pydantic_settings import BaseSettings
-from typing import List, Optional, Literal
 from pathlib import Path
-from pydantic import Field
+from typing import List, Literal, Optional
+
 from aind_data_schema.components.devices import (
     MagneticStrength,
     ScannerLocation,
 )
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class JobSettings(BaseSettings):

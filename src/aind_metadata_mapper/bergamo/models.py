@@ -1,9 +1,10 @@
 """Module defining JobSettings for Bergamo ETL"""
-from pydantic_settings import BaseSettings
 from decimal import Decimal
-from typing import List, Optional, Literal
 from pathlib import Path
+from typing import List, Literal, Optional
+
 from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class JobSettings(BaseSettings):

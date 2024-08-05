@@ -10,6 +10,7 @@ from aind_data_schema.core import acquisition
 from pydantic_settings import BaseSettings
 
 from aind_metadata_mapper.core import GenericEtl, JobResponse
+from aind_metadata_mapper.smartspim.models import JobSettings
 from aind_metadata_mapper.smartspim.utils import (
     get_anatomical_direction,
     get_excitation_emission_waves,
@@ -17,7 +18,6 @@ from aind_metadata_mapper.smartspim.utils import (
     make_acq_tiles,
     read_json_as_dict,
 )
-from aind_metadata_mapper.smartspim.models import JobSettings
 
 
 class SmartspimETL(GenericEtl):

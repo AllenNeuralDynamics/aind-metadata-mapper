@@ -1,10 +1,11 @@
 """Module defining JobSettings for Mesoscope ETL"""
 
-from pydantic_settings import BaseSettings
-from typing import List, Literal
-from pathlib import Path
-from pydantic import Field
 from datetime import datetime
+from pathlib import Path
+from typing import List, Literal
+
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class JobSettings(BaseSettings):

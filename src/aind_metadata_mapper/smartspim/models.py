@@ -1,12 +1,14 @@
 """Module defining JobSettings for SmartSPIM ETL"""
 
-from pydantic_settings import BaseSettings
-from typing import Literal, Optional
 from pathlib import Path
+from typing import Literal, Optional
+
+from pydantic_settings import BaseSettings
 
 
 class JobSettings(BaseSettings):
     """Data to be entered by the user."""
+
     # Field can be used to switch between different acquisition etl jobs
     job_settings_name: Literal["SmartSPIM"] = "SmartSPIM"
 
