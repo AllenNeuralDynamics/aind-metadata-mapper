@@ -3,8 +3,7 @@
 import os
 import re
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, Literal, Optional, Union
+from typing import Dict, Union
 
 from aind_data_schema.components.coordinates import ImageAxis
 from aind_data_schema.core import acquisition
@@ -18,24 +17,7 @@ from aind_metadata_mapper.smartspim.utils import (
     make_acq_tiles,
     read_json_as_dict,
 )
-
-
-class JobSettings(BaseSettings):
-    """Data to be entered by the user."""
-
-    # Field can be used to switch between different acquisition etl jobs
-    job_settings_name: Literal["SmartSPIM"] = "SmartSPIM"
-
-    subject_id: str
-    raw_dataset_path: Path
-    output_directory: Optional[Path] = None
-
-    # Metadata names
-    asi_filename: str = "derivatives/ASI_logging.txt"
-    mdata_filename_json: str = "derivatives/metadata.json"
-
-    # Metadata provided by microscope operators
-    processing_manifest_path: str = "derivatives/processing_manifest.json"
+from aind_metadata_mapper.smartspim.models import JobSettings
 
 
 class SmartspimETL(GenericEtl):
