@@ -2,9 +2,8 @@
 
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import List, Optional, Union
+from datetime import timedelta
+from typing import Union
 
 from aind_data_schema.components.stimulus import OptoStimulation, PulseShape
 from aind_data_schema.core.session import (
@@ -17,37 +16,9 @@ from aind_data_schema.core.session import (
     Stream,
 )
 from aind_data_schema_models.modalities import Modality
-from pydantic import Field
-from pydantic_settings import BaseSettings
 
 from aind_metadata_mapper.core import GenericEtl, JobResponse
-
-
-class JobSettings(BaseSettings):
-    """Data that needs to be input by user."""
-
-    output_directory: Optional[Path] = Field(
-        default=None,
-        description=(
-            "Directory where to save the json file to. If None, then json"
-            " contents will be returned in the Response message."
-        ),
-    )
-
-    string_to_parse: str
-    experimenter_full_name: List[str]
-    session_start_time: datetime
-    notes: str
-    labtracks_id: str
-    iacuc_protocol: str
-    light_source_list: List[dict]
-    detector_list: List[dict]
-    fiber_connections_list: List[dict]
-
-    rig_id: str = "ophys_rig"
-    session_type: str = "Foraging_Photometry"
-    mouse_platform_name: str = "Disc"
-    active_mouse_platform: bool = False
+from aind_metadata_mapper.fip.models import JobSettings
 
 
 @dataclass(frozen=True)
