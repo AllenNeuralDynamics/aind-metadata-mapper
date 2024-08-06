@@ -3,7 +3,7 @@ name: Run integration tests
 on:
   push:
     branches:
-      - feat-53-integration-testing
+      - dev
 
 jobs:
   integration_tests:
