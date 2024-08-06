@@ -3,7 +3,7 @@ name: Run integration tests
 on:
   push:
     branches:
-      - dev
+      - feat-53-integration-testing
 
 jobs:
   integration_tests:
@@ -12,9 +12,9 @@ jobs:
       id-token: write
       contents: read
     env:
-      AWS_METADATA_MAPPER_ROLE: ${{ secrets.AWS_METADATA_MAPPER_ROLE_DEV }}
-      AWS_METADATA_MAPPER_BUCKET: ${{ vars.AWS_METADATA_MAPPER_BUCKET_DEV }}
-      AWS_REGION: ${{ vars.AWS_REGION_DEV }}
+      AWS_METADATA_MAPPER_ROLE: ${{ secrets.AWS_METADATA_MAPPER_ROLE_PROD }}
+      AWS_METADATA_MAPPER_BUCKET: ${{ vars.AWS_METADATA_MAPPER_BUCKET_PROD }}
+      AWS_REGION: ${{ vars.AWS_REGION_PROD }}
       MOUNT_S3_URL: ${{ vars.MOUNT_S3_URL }}
     steps:
       - uses: actions/checkout@v3

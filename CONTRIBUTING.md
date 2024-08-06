@@ -45,7 +45,6 @@ There are several libraries used to run linters and check documentation. We've i
 ### Integration Testing
 To ensure that an ETL runs as expected against data on the VAST, you can run an integration test locally by pointing to the input directory on VAST. For example, to test the 'bergamo' package:
 ```bash
-    python tests/integration/bergamo/session.py --input_source "/path/to/test/data/folder" IntegrationTestBergamo
+    python tests/integration/bergamo/session.py --input_source "/allen/aind/scratch/svc_aind_upload/test_data_sets/bergamo" IntegrationTestBergamo
  ```
-
 
