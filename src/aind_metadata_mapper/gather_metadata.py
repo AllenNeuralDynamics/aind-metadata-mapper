@@ -5,7 +5,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import List, Optional, Type, Annotated, Union
+from typing import Annotated, List, Optional, Type, Union
 
 import requests
 from aind_data_schema.base import AindCoreModel
@@ -27,27 +27,26 @@ from aind_data_schema_models.pid_names import PIDName
 from pydantic import Field, ValidationError
 from pydantic_settings import BaseSettings
 
-from aind_metadata_mapper.smartspim.models import (
-    JobSettings as SmartSpimAcquisitionJobSettings,
-)
-from aind_metadata_mapper.smartspim.acquisition import SmartspimETL
-
 from aind_metadata_mapper.bergamo.models import (
     JobSettings as BergamoSessionJobSettings,
 )
+from aind_metadata_mapper.bergamo.session import BergamoEtl
 from aind_metadata_mapper.bruker.models import (
     JobSettings as BrukerSessionJobSettings,
 )
+from aind_metadata_mapper.bruker.session import MRIEtl
 from aind_metadata_mapper.fip.models import (
     JobSettings as FipSessionJobSettings,
 )
+from aind_metadata_mapper.fip.session import FIBEtl
 from aind_metadata_mapper.mesoscope.models import (
     JobSettings as MesoscopeSessionJobSettings,
 )
-from aind_metadata_mapper.bergamo.session import BergamoEtl
-from aind_metadata_mapper.bruker.session import MRIEtl
-from aind_metadata_mapper.fip.session import FIBEtl
 from aind_metadata_mapper.mesoscope.session import MesoscopeEtl
+from aind_metadata_mapper.smartspim.acquisition import SmartspimETL
+from aind_metadata_mapper.smartspim.models import (
+    JobSettings as SmartSpimAcquisitionJobSettings,
+)
 
 
 class SessionSettings(BaseSettings):
@@ -373,21 +372,13 @@ class GatherMetadataJob:
         elif self.settings.session_settings is not None:
             session_settings = self.settings.session_settings.job_settings
             if isinstance(session_settings, BergamoSessionJobSettings):
-                session_job = BergamoEtl(
-                    job_settings=session_settings
-                )
+                session_job = BergamoEtl(job_settings=session_settings)
             elif isinstance(session_settings, BrukerSessionJobSettings):
-                session_job = MRIEtl(
-                    job_settings=session_settings
-                )
+                session_job = MRIEtl(job_settings=session_settings)
             elif isinstance(session_settings, FipSessionJobSettings):
-                session_job = FIBEtl(
-                    job_settings=session_settings
-                )
+                session_job = FIBEtl(job_settings=session_settings)
             else:
-                session_job = MesoscopeEtl(
-                    job_settings=session_settings
-                )
+                session_job = MesoscopeEtl(job_settings=session_settings)
             job_response = session_job.run_job()
             if job_response.status_code != 500:
                 return json.loads(job_response.data)

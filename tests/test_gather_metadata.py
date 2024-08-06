@@ -6,14 +6,27 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
-from pydantic import ValidationError
+
 from aind_data_schema.core.metadata import Metadata
 from aind_data_schema.core.processing import DataProcess, PipelineProcess
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.process_names import ProcessName
+from pydantic import ValidationError
 from requests import Response
 
+from aind_metadata_mapper.bergamo.models import (
+    JobSettings as BergamoSessionJobSettings,
+)
+from aind_metadata_mapper.bergamo.session import BergamoEtl
+from aind_metadata_mapper.bruker.models import (
+    JobSettings as BrukerSessionJobSettings,
+)
+from aind_metadata_mapper.bruker.session import MRIEtl
 from aind_metadata_mapper.core import JobResponse
+from aind_metadata_mapper.fip.models import (
+    JobSettings as FipSessionJobSettings,
+)
+from aind_metadata_mapper.fip.session import FIBEtl
 from aind_metadata_mapper.gather_metadata import (
     AcquisitionSettings,
     GatherMetadataJob,
@@ -22,29 +35,16 @@ from aind_metadata_mapper.gather_metadata import (
     ProceduresSettings,
     ProcessingSettings,
     RawDataDescriptionSettings,
-    SubjectSettings,
     SessionSettings,
-)
-from aind_metadata_mapper.smartspim.acquisition import (
-    JobSettings as SmartSpimAcquisitionJobSettings,
-)
-
-from aind_metadata_mapper.bergamo.models import (
-    JobSettings as BergamoSessionJobSettings,
-)
-from aind_metadata_mapper.bruker.models import (
-    JobSettings as BrukerSessionJobSettings,
-)
-from aind_metadata_mapper.fip.models import (
-    JobSettings as FipSessionJobSettings,
+    SubjectSettings,
 )
 from aind_metadata_mapper.mesoscope.models import (
     JobSettings as MesoscopeSessionJobSettings,
 )
-from aind_metadata_mapper.bergamo.session import BergamoEtl
-from aind_metadata_mapper.bruker.session import MRIEtl
-from aind_metadata_mapper.fip.session import FIBEtl
 from aind_metadata_mapper.mesoscope.session import MesoscopeEtl
+from aind_metadata_mapper.smartspim.acquisition import (
+    JobSettings as SmartSpimAcquisitionJobSettings,
+)
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
@@ -497,7 +497,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     @patch("aind_metadata_mapper.bergamo.session.BergamoEtl.run_job")
     def test_get_session_metadata_bergamo_success(
-            self, mock_run_job: MagicMock
+        self, mock_run_job: MagicMock
     ):
         """Tests get_session_metadata bergamo"""
         mock_run_job.return_value = JobResponse(
@@ -513,11 +513,13 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_session_metadata()
         self.assertEqual({"some_key": "some_value"}, contents)
-        BergamoEtl(job_settings=bergamo_session_settings).run_job.assert_called_once()
+        BergamoEtl(
+            job_settings=bergamo_session_settings
+        ).run_job.assert_called_once()
 
     @patch("aind_metadata_mapper.bruker.session.MRIEtl.run_job")
     def test_get_session_metadata_bruker_success(
-            self, mock_run_job: MagicMock
+        self, mock_run_job: MagicMock
     ):
         """Tests get_session_metadata bruker creates MRIEtl"""
         mock_run_job.return_value = JobResponse(
@@ -533,12 +535,12 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_session_metadata()
         self.assertEqual({"some_key": "some_value"}, contents)
-        MRIEtl(job_settings=bruker_session_settings).run_job.assert_called_once()
+        MRIEtl(
+            job_settings=bruker_session_settings
+        ).run_job.assert_called_once()
 
     @patch("aind_metadata_mapper.fip.session.FIBEtl.run_job")
-    def test_get_session_metadata_fip_success(
-            self, mock_run_job: MagicMock
-    ):
+    def test_get_session_metadata_fip_success(self, mock_run_job: MagicMock):
         """Tests get_session_metadata bruker creates FibEtl"""
         mock_run_job.return_value = JobResponse(
             status_code=200, data=json.dumps({"some_key": "some_value"})
@@ -557,13 +559,15 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     @patch("aind_metadata_mapper.mesoscope.session.MesoscopeEtl.run_job")
     def test_get_session_metadata_mesoscope_success(
-            self, mock_run_job: MagicMock
+        self, mock_run_job: MagicMock
     ):
         """Tests get_session_metadata bruker creates MRIEtl"""
         mock_run_job.return_value = JobResponse(
             status_code=200, data=json.dumps({"some_key": "some_value"})
         )
-        mesoscope_session_settings = MesoscopeSessionJobSettings.model_construct()
+        mesoscope_session_settings = (
+            MesoscopeSessionJobSettings.model_construct()
+        )
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             session_settings=SessionSettings(
@@ -573,7 +577,9 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_session_metadata()
         self.assertEqual({"some_key": "some_value"}, contents)
-        MesoscopeEtl(job_settings=mesoscope_session_settings).run_job.assert_called_once()
+        MesoscopeEtl(
+            job_settings=mesoscope_session_settings
+        ).run_job.assert_called_once()
 
     def test_session_settings_error(self):
         """Tests SessionSettings raises error if JobSettings is not expected"""
@@ -587,9 +593,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             )
 
     @patch("aind_metadata_mapper.bergamo.session.BergamoEtl.run_job")
-    def test_get_session_metadata_error(
-            self, mock_run_job: MagicMock
-    ):
+    def test_get_session_metadata_error(self, mock_run_job: MagicMock):
         """Tests get_session_metadata returns None when requesting
         Bergamo metadata and a 500 response is returned."""
         mock_run_job.return_value = JobResponse(status_code=500, data=None)
