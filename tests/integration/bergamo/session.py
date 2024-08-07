@@ -7,7 +7,8 @@ import sys
 import unittest
 from pathlib import Path
 
-from aind_metadata_mapper.bergamo.session import BergamoEtl, JobSettings
+from aind_metadata_mapper.bergamo.models import JobSettings
+from aind_metadata_mapper.bergamo.session import BergamoEtl
 
 EXPECTED_OUTPUT_FILE_PATH = (
     Path(os.path.dirname(os.path.realpath(__file__)))
