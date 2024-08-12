@@ -1,0 +1,507 @@
+{
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/session.py",
+   "schema_version": "0.2.6",
+   "protocol_id": [],
+   "experimenter_full_name": [
+      "Jane Doe"
+   ],
+   "session_start_time": "2023-03-22T15:10:35.604999-07:00",
+   "session_end_time": "2023-03-22T15:21:33.039442-07:00",
+   "session_type": "BCI",
+   "iacuc_protocol": "2109",
+   "rig_id": "442 Bergamo 2p photostim",
+   "calibrations": [],
+   "maintenance": [],
+   "subject_id": "706957",
+   "animal_weight_prior": null,
+   "animal_weight_post": null,
+   "weight_unit": "gram",
+   "anaesthesia": null,
+   "data_streams": [
+      {
+         "stream_start_time": "2023-03-22T15:12:48.350999-07:00",
+         "stream_end_time": "2023-03-22T15:13:20.870256-07:00",
+         "daq_names": [
+            "PXI"
+         ],
+         "camera_names": [],
+         "light_sources": [
+            {
+               "device_type": "Laser",
+               "name": "Chameleon Laser",
+               "wavelength": 405,
+               "wavelength_unit": "nanometer",
+               "excitation_power": "10.0",
+               "excitation_power_unit": "percent"
+            }
+         ],
+         "ephys_modules": [],
+         "stick_microscopes": [],
+         "manipulator_modules": [],
+         "detectors": [
+            {
+               "name": "Green PMT",
+               "exposure_time": null,
+               "exposure_time_unit": "millisecond",
+               "trigger_type": "Internal"
+            }
+         ],
+         "fiber_connections": [],
+         "fiber_modules": [],
+         "ophys_fovs": [
+            {
+               "index": 0,
+               "imaging_depth": 150,
+               "imaging_depth_unit": "micrometer",
+               "targeted_structure": "M1",
+               "fov_coordinate_ml": "1.5",
+               "fov_coordinate_ap": "1.5",
+               "fov_coordinate_unit": "micrometer",
+               "fov_reference": "there is no reference",
+               "fov_width": 800,
+               "fov_height": 800,
+               "fov_size_unit": "pixel",
+               "magnification": "1.2",
+               "fov_scale_factor": "1.0416666666666667",
+               "fov_scale_factor_unit": "um/pixel",
+               "frame_rate": "19.4188",
+               "frame_rate_unit": "hertz",
+               "coupled_fov_index": null,
+               "power": null,
+               "power_unit": "percent",
+               "power_ratio": null,
+               "scanfield_z": null,
+               "scanfield_z_unit": "micrometer",
+               "scanimage_roi_index": null,
+               "notes": null
+            }
+         ],
+         "slap_fovs": null,
+         "stack_parameters": null,
+         "mri_scans": [],
+         "stream_modalities": [
+            {
+               "name": "Planar optical physiology",
+               "abbreviation": "ophys"
+            }
+         ],
+         "software": [],
+         "notes": "tiff_stem:spont2"
+      },
+      {
+         "stream_start_time": "2023-03-22T15:15:08.795999-07:00",
+         "stream_end_time": "2023-03-22T15:15:52.396783-07:00",
+         "daq_names": [
+            "PXI"
+         ],
+         "camera_names": [],
+         "light_sources": [
+            {
+               "device_type": "Laser",
+               "name": "Chameleon Laser",
+               "wavelength": 405,
+               "wavelength_unit": "nanometer",
+               "excitation_power": "10.0",
+               "excitation_power_unit": "percent"
+            }
+         ],
+         "ephys_modules": [],
+         "stick_microscopes": [],
+         "manipulator_modules": [],
+         "detectors": [
+            {
+               "name": "Green PMT",
+               "exposure_time": null,
+               "exposure_time_unit": "millisecond",
+               "trigger_type": "Internal"
+            }
+         ],
+         "fiber_connections": [],
+         "fiber_modules": [],
+         "ophys_fovs": [
+            {
+               "index": 0,
+               "imaging_depth": 150,
+               "imaging_depth_unit": "micrometer",
+               "targeted_structure": "M1",
+               "fov_coordinate_ml": "1.5",
+               "fov_coordinate_ap": "1.5",
+               "fov_coordinate_unit": "micrometer",
+               "fov_reference": "there is no reference",
+               "fov_width": 800,
+               "fov_height": 800,
+               "fov_size_unit": "pixel",
+               "magnification": "1.2",
+               "fov_scale_factor": "1.0416666666666667",
+               "fov_scale_factor_unit": "um/pixel",
+               "frame_rate": "19.4188",
+               "frame_rate_unit": "hertz",
+               "coupled_fov_index": null,
+               "power": null,
+               "power_unit": "percent",
+               "power_ratio": null,
+               "scanfield_z": null,
+               "scanfield_z_unit": "micrometer",
+               "scanimage_roi_index": null,
+               "notes": null
+            }
+         ],
+         "slap_fovs": null,
+         "stack_parameters": null,
+         "mri_scans": [],
+         "stream_modalities": [
+            {
+               "name": "Planar optical physiology",
+               "abbreviation": "ophys"
+            }
+         ],
+         "software": [],
+         "notes": "tiff_stem:spont3"
+      },
+      {
+         "stream_start_time": "2023-03-22T15:10:35.604999-07:00",
+         "stream_end_time": "2023-03-22T15:11:01.328279-07:00",
+         "daq_names": [
+            "PXI"
+         ],
+         "camera_names": [],
+         "light_sources": [
+            {
+               "device_type": "Laser",
+               "name": "Chameleon Laser",
+               "wavelength": 405,
+               "wavelength_unit": "nanometer",
+               "excitation_power": "10.0",
+               "excitation_power_unit": "percent"
+            }
+         ],
+         "ephys_modules": [],
+         "stick_microscopes": [],
+         "manipulator_modules": [],
+         "detectors": [
+            {
+               "name": "Green PMT",
+               "exposure_time": null,
+               "exposure_time_unit": "millisecond",
+               "trigger_type": "Internal"
+            }
+         ],
+         "fiber_connections": [],
+         "fiber_modules": [],
+         "ophys_fovs": [
+            {
+               "index": 0,
+               "imaging_depth": 150,
+               "imaging_depth_unit": "micrometer",
+               "targeted_structure": "M1",
+               "fov_coordinate_ml": "1.5",
+               "fov_coordinate_ap": "1.5",
+               "fov_coordinate_unit": "micrometer",
+               "fov_reference": "there is no reference",
+               "fov_width": 800,
+               "fov_height": 800,
+               "fov_size_unit": "pixel",
+               "magnification": "1.2",
+               "fov_scale_factor": "1.0416666666666667",
+               "fov_scale_factor_unit": "um/pixel",
+               "frame_rate": "19.4188",
+               "frame_rate_unit": "hertz",
+               "coupled_fov_index": null,
+               "power": null,
+               "power_unit": "percent",
+               "power_ratio": null,
+               "scanfield_z": null,
+               "scanfield_z_unit": "micrometer",
+               "scanimage_roi_index": null,
+               "notes": null
+            }
+         ],
+         "slap_fovs": null,
+         "stack_parameters": null,
+         "mri_scans": [],
+         "stream_modalities": [
+            {
+               "name": "Planar optical physiology",
+               "abbreviation": "ophys"
+            }
+         ],
+         "software": [],
+         "notes": "tiff_stem:spont"
+      },
+      {
+         "stream_start_time": "2023-03-22T15:20:45.973999-07:00",
+         "stream_end_time": "2023-03-22T15:21:33.039442-07:00",
+         "daq_names": [
+            "PXI"
+         ],
+         "camera_names": [
+            "Side Face Camera",
+            "Bottom Face Camera"
+         ],
+         "light_sources": [
+            {
+               "device_type": "Laser",
+               "name": "Chameleon Laser",
+               "wavelength": 405,
+               "wavelength_unit": "nanometer",
+               "excitation_power": "10.0",
+               "excitation_power_unit": "percent"
+            }
+         ],
+         "ephys_modules": [],
+         "stick_microscopes": [],
+         "manipulator_modules": [],
+         "detectors": [
+            {
+               "name": "Green PMT",
+               "exposure_time": null,
+               "exposure_time_unit": "millisecond",
+               "trigger_type": "Internal"
+            }
+         ],
+         "fiber_connections": [],
+         "fiber_modules": [],
+         "ophys_fovs": [
+            {
+               "index": 0,
+               "imaging_depth": 150,
+               "imaging_depth_unit": "micrometer",
+               "targeted_structure": "M1",
+               "fov_coordinate_ml": "1.5",
+               "fov_coordinate_ap": "1.5",
+               "fov_coordinate_unit": "micrometer",
+               "fov_reference": "there is no reference",
+               "fov_width": 800,
+               "fov_height": 800,
+               "fov_size_unit": "pixel",
+               "magnification": "1.2",
+               "fov_scale_factor": "1.0416666666666667",
+               "fov_scale_factor_unit": "um/pixel",
+               "frame_rate": "19.4188",
+               "frame_rate_unit": "hertz",
+               "coupled_fov_index": null,
+               "power": null,
+               "power_unit": "percent",
+               "power_ratio": null,
+               "scanfield_z": null,
+               "scanfield_z_unit": "micrometer",
+               "scanimage_roi_index": null,
+               "notes": null
+            }
+         ],
+         "slap_fovs": null,
+         "stack_parameters": null,
+         "mri_scans": [],
+         "stream_modalities": [
+            {
+               "name": "Planar optical physiology",
+               "abbreviation": "ophys"
+            },
+            {
+               "name": "Behavior",
+               "abbreviation": "behavior"
+            },
+            {
+               "name": "Behavior videos",
+               "abbreviation": "behavior-videos"
+            }
+         ],
+         "software": [],
+         "notes": "tiff_stem:pair3_7vs29"
+      }
+   ],
+   "stimulus_epochs": [
+      {
+         "stimulus_start_time": "2023-03-22T15:12:48.350999-07:00",
+         "stimulus_end_time": "2023-03-22T15:13:20.870256-07:00",
+         "stimulus_name": "spontaneous activity",
+         "session_number": null,
+         "software": [],
+         "script": null,
+         "stimulus_modalities": [
+            "None"
+         ],
+         "stimulus_parameters": null,
+         "stimulus_device_names": [],
+         "speaker_config": null,
+         "light_source_config": null,
+         "output_parameters": {
+            "tiff_files": [
+               "spont2_00001.tif",
+               "spont2_00002.tif",
+               "spont2_00003.tif"
+            ],
+            "tiff_stem": "spont2"
+         },
+         "reward_consumed_during_epoch": null,
+         "reward_consumed_unit": "microliter",
+         "trials_total": null,
+         "trials_finished": null,
+         "trials_rewarded": null,
+         "notes": "absence of any kind of stimulus"
+      },
+      {
+         "stimulus_start_time": "2023-03-22T15:15:08.795999-07:00",
+         "stimulus_end_time": "2023-03-22T15:15:52.396783-07:00",
+         "stimulus_name": "spontaneous activity",
+         "session_number": null,
+         "software": [],
+         "script": null,
+         "stimulus_modalities": [
+            "None"
+         ],
+         "stimulus_parameters": null,
+         "stimulus_device_names": [],
+         "speaker_config": null,
+         "light_source_config": null,
+         "output_parameters": {
+            "tiff_files": [
+               "spont3_00001.tif",
+               "spont3_00002.tif",
+               "spont3_00003.tif",
+               "spont3_00004.tif"
+            ],
+            "tiff_stem": "spont3"
+         },
+         "reward_consumed_during_epoch": null,
+         "reward_consumed_unit": "microliter",
+         "trials_total": null,
+         "trials_finished": null,
+         "trials_rewarded": null,
+         "notes": "absence of any kind of stimulus"
+      },
+      {
+         "stimulus_start_time": "2023-03-22T15:10:35.604999-07:00",
+         "stimulus_end_time": "2023-03-22T15:11:01.328279-07:00",
+         "stimulus_name": "spontaneous activity",
+         "session_number": null,
+         "software": [],
+         "script": null,
+         "stimulus_modalities": [
+            "None"
+         ],
+         "stimulus_parameters": null,
+         "stimulus_device_names": [],
+         "speaker_config": null,
+         "light_source_config": null,
+         "output_parameters": {
+            "tiff_files": [
+               "spont_00001.tif"
+            ],
+            "tiff_stem": "spont"
+         },
+         "reward_consumed_during_epoch": null,
+         "reward_consumed_unit": "microliter",
+         "trials_total": null,
+         "trials_finished": null,
+         "trials_rewarded": null,
+         "notes": "absence of any kind of stimulus"
+      },
+      {
+         "stimulus_start_time": "2023-03-22T15:20:45.973999-07:00",
+         "stimulus_end_time": "2023-03-22T15:21:33.039442-07:00",
+         "stimulus_name": "single neuron BCI conditioning",
+         "session_number": null,
+         "software": [
+            {
+               "name": "pyBpod",
+               "version": "1.8.2",
+               "url": "https://github.com/pybpod/pybpod",
+               "parameters": {}
+            }
+         ],
+         "script": {
+            "name": "pybpod_basic.py",
+            "version": "2d77d15",
+            "url": "https://github.com/rozmar/BCI-motor-control/blob/main/BCI-pybpod-protocols/bci_basic.py",
+            "parameters": {}
+         },
+         "stimulus_modalities": [
+            "Auditory"
+         ],
+         "stimulus_parameters": [],
+         "stimulus_device_names": [
+            "speaker",
+            "lickport"
+         ],
+         "speaker_config": null,
+         "light_source_config": null,
+         "output_parameters": {
+            "tiff_files": [
+               "pair3_7vs29_00001.tif",
+               "pair3_7vs29_00002.tif",
+               "pair3_7vs29_00003.tif",
+               "pair3_7vs29_00004.tif"
+            ],
+            "tiff_stem": "pair3_7vs29",
+            "hit_rate_trials_0_10": null,
+            "hit_rate_trials_20_40": null,
+            "total_hits": null,
+            "average_hit_rate": null
+         },
+         "reward_consumed_during_epoch": null,
+         "reward_consumed_unit": "microliter",
+         "trials_total": null,
+         "trials_finished": null,
+         "trials_rewarded": null,
+         "notes": null
+      }
+   ],
+   "mouse_platform_name": "Standard Mouse Tube",
+   "active_mouse_platform": false,
+   "reward_delivery": {
+      "reward_solution": "Water",
+      "reward_spouts": [
+         {
+            "side": "Center",
+            "starting_position": {
+               "device_position_transformations": [
+                  {
+                     "type": "translation",
+                     "translation": [
+                        "0.0",
+                        "-6.0",
+                        "0.0"
+                     ]
+                  },
+                  {
+                     "type": "rotation",
+                     "rotation": [
+                        "0",
+                        "0",
+                        "0",
+                        "0",
+                        "0",
+                        "0",
+                        "0",
+                        "0",
+                        "0"
+                     ]
+                  }
+               ],
+               "device_origin": "tip of the lickspout",
+               "device_axes": [
+                  {
+                     "name": "X",
+                     "direction": "lateral motion"
+                  },
+                  {
+                     "name": "Y",
+                     "direction": "rostro-caudal motion positive is towards mouse, negative is away"
+                  },
+                  {
+                     "name": "Z",
+                     "direction": "up/down"
+                  }
+               ],
+               "notes": null
+            },
+            "variable_position": true
+         }
+      ],
+      "notes": null
+   },
+   "reward_consumed_total": null,
+   "reward_consumed_unit": "microliter",
+   "notes": null
+}
