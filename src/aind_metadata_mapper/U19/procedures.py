@@ -188,7 +188,9 @@ class U19Etl(GenericEtl[JobSettings]):
         shield_off_date = row["Fixation"]["SHIELD OFF"]["Date(s)"].iloc[0]
 
         if not pd.isna(shield_off_date):
-            shield_off_start_date, shield_off_end_date = strings_to_dates(get_dates(shield_off_date))
+            shield_off_start_date, shield_off_end_date = strings_to_dates(
+                get_dates(shield_off_date)
+            )
         shield_buffer_lot = row["Fixation"]["SHIELD Buffer"]["Lot#"].iloc[0]
         if pd.isna(shield_buffer_lot):
             shield_buffer_lot = "unknown"
@@ -210,7 +212,9 @@ class U19Etl(GenericEtl[JobSettings]):
 
         shield_on_date = row["Fixation"]["SHIELD ON"]["Date(s)"].iloc[0]
         if not pd.isna(shield_on_date):
-            shield_on_start_date, shield_on_end_date = strings_to_dates(get_dates(shield_on_date))
+            shield_on_start_date, shield_on_end_date = strings_to_dates(
+                get_dates(shield_on_date)
+            )
         shield_on_lot = row["Fixation"]["SHIELD ON"]["Lot#"].iloc[0]
         if pd.isna(shield_on_lot):
             shield_on_lot = "unknown"
@@ -226,8 +230,8 @@ class U19Etl(GenericEtl[JobSettings]):
             "24 Hr Delipidation "
         ]["Date(s)"].iloc[0]
         if not pd.isna(passive_delipidation_dates):
-            passive_delipidation_start_date, passive_delipidation_end_date = strings_to_dates(
-                get_dates(passive_delipidation_dates)
+            passive_delipidation_start_date, passive_delipidation_end_date = (
+                strings_to_dates(get_dates(passive_delipidation_dates))
             )
         passive_conduction_buffer_lot = row["Passive delipidation"][
             "Delipidation Buffer"
@@ -282,7 +286,9 @@ class U19Etl(GenericEtl[JobSettings]):
             "Date(s)"
         ].iloc[0]
         if not pd.isna(easyindex_50_date):
-            easyindex_50_start_date, easyindex_50_end_date = strings_to_dates(get_dates(easyindex_50_date))
+            easyindex_50_start_date, easyindex_50_end_date = strings_to_dates(
+                get_dates(easyindex_50_date)
+            )
         easyindex_50_lot = row["Index matching"]["EasyIndex"]["Lot#"].iloc[0]
         if pd.isna(easyindex_50_lot):
             easyindex_50_lot = "unknown"
@@ -290,8 +296,8 @@ class U19Etl(GenericEtl[JobSettings]):
             "Date(s)"
         ].iloc[0]
         if not pd.isna(easyindex_100_date):
-            easyindex_100_start_date, easyindex_100_end_date = strings_to_dates(
-                get_dates(easyindex_100_date)
+            easyindex_100_start_date, easyindex_100_end_date = (
+                strings_to_dates(get_dates(easyindex_100_date))
             )
         easyindex_100_lot = row["Index matching"]["EasyIndex"]["Lot#"].iloc[0]
         if pd.isna(easyindex_100_lot):
