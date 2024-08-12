@@ -1,7 +1,8 @@
 """Defines Job Settings for U19 ETL"""
 
 from pathlib import Path
-from typing import List, Optional, Literal
+from typing import List, Literal, Optional
+
 from pydantic import Field
 from pydantic_settings import BaseSettings
 

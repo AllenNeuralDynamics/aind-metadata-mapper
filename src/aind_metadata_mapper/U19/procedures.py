@@ -3,8 +3,7 @@
 import json
 import logging
 from datetime import datetime
-from pathlib import Path
-from typing import List, Optional, Union
+from typing import Union
 
 import pandas as pd
 import requests
@@ -15,41 +14,10 @@ from aind_data_schema.core.procedures import (
     SpecimenProcedureType,
 )
 from aind_data_schema_models.organizations import Organization
-from pydantic import Field
-from pydantic_settings import BaseSettings
 
 from aind_metadata_mapper.core import GenericEtl, JobResponse
+from aind_metadata_mapper.U19.models import JobSettings
 from aind_metadata_mapper.U19.utils import construct_new_model
-
-
-class JobSettings(BaseSettings):
-    """Data that needs to be input by user."""
-
-    tissue_sheet_path: Path
-    tissue_sheet_names: List[str]
-    output_directory: Optional[Path] = Field(
-        default=None,
-        description=(
-            "Directory where to save the json file to. If None, then json"
-            " contents will be returned in the Response message."
-        ),
-    )
-    experimenter_full_name: List[str]
-    subject_to_ingest: str = Field(
-        default=None,
-        description=(
-            "subject ID to ingest. If None,"
-            " then all subjects in spreadsheet will be ingested."
-        ),
-    )
-    procedures_download_link: str = Field(
-        default="http://aind-metadata-service/procedures",
-        description="Link to download the relevant procedures "
-        "from metadata service",
-    )
-    allow_validation_errors: bool = Field(
-        False, description="Whether or not to allow validation errors."
-    )
 
 
 def get_dates(string):
@@ -111,9 +79,9 @@ class U19Etl(GenericEtl[JobSettings]):
             if row is None:
                 logging.warning(f"Could not find row for {subj_id}")
                 return
-            existing_procedure["specimen_procedures"] = (
-                self.extract_spec_procedures(subj_id, row)
-            )
+            existing_procedure[
+                "specimen_procedures"
+            ] = self.extract_spec_procedures(subj_id, row)
 
             return construct_new_model(
                 existing_procedure,
@@ -230,9 +198,10 @@ class U19Etl(GenericEtl[JobSettings]):
             "24 Hr Delipidation "
         ]["Date(s)"].iloc[0]
         if not pd.isna(passive_delipidation_dates):
-            passive_delipidation_start_date, passive_delipidation_end_date = (
-                strings_to_dates(get_dates(passive_delipidation_dates))
-            )
+            (
+                passive_delipidation_start_date,
+                passive_delipidation_end_date,
+            ) = strings_to_dates(get_dates(passive_delipidation_dates))
         passive_conduction_buffer_lot = row["Passive delipidation"][
             "Delipidation Buffer"
         ]["Lot#"].iloc[0]
@@ -296,9 +265,10 @@ class U19Etl(GenericEtl[JobSettings]):
             "Date(s)"
         ].iloc[0]
         if not pd.isna(easyindex_100_date):
-            easyindex_100_start_date, easyindex_100_end_date = (
-                strings_to_dates(get_dates(easyindex_100_date))
-            )
+            (
+                easyindex_100_start_date,
+                easyindex_100_end_date,
+            ) = strings_to_dates(get_dates(easyindex_100_date))
         easyindex_100_lot = row["Index matching"]["EasyIndex"]["Lot#"].iloc[0]
         if pd.isna(easyindex_100_lot):
             easyindex_100_lot = "unknown"
