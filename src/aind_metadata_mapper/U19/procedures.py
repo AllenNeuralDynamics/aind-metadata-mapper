@@ -61,7 +61,7 @@ def strings_to_dates(strings):
     """Convert strings to dates."""
     date1 = datetime.strptime(strings[0], "%m/%d/%y").date()
     date2 = datetime.strptime(strings[1], "%m/%d/%y").date()
-    return (date1, date2)
+    return [date1, date2]
 
 
 class U19Etl(GenericEtl[JobSettings]):
@@ -188,7 +188,7 @@ class U19Etl(GenericEtl[JobSettings]):
         shield_off_date = row["Fixation"]["SHIELD OFF"]["Date(s)"].iloc[0]
 
         if not pd.isna(shield_off_date):
-            shield_off_date = strings_to_dates(get_dates(shield_off_date))
+            shield_off_start_date, shield_off_end_date = strings_to_dates(get_dates(shield_off_date))
         shield_buffer_lot = row["Fixation"]["SHIELD Buffer"]["Lot#"].iloc[0]
         if pd.isna(shield_buffer_lot):
             shield_buffer_lot = "unknown"
@@ -210,7 +210,7 @@ class U19Etl(GenericEtl[JobSettings]):
 
         shield_on_date = row["Fixation"]["SHIELD ON"]["Date(s)"].iloc[0]
         if not pd.isna(shield_on_date):
-            shield_on_date = strings_to_dates(get_dates(shield_on_date))
+            shield_on_start_date, shield_on_end_date = strings_to_dates(get_dates(shield_on_date))
         shield_on_lot = row["Fixation"]["SHIELD ON"]["Lot#"].iloc[0]
         if pd.isna(shield_on_lot):
             shield_on_lot = "unknown"
@@ -226,7 +226,7 @@ class U19Etl(GenericEtl[JobSettings]):
             "24 Hr Delipidation "
         ]["Date(s)"].iloc[0]
         if not pd.isna(passive_delipidation_dates):
-            passive_delipidation_dates = strings_to_dates(
+            passive_delipidation_start_date, passive_delipidation_end_date = strings_to_dates(
                 get_dates(passive_delipidation_dates)
             )
         passive_conduction_buffer_lot = row["Passive delipidation"][
@@ -257,7 +257,7 @@ class U19Etl(GenericEtl[JobSettings]):
             "Active Delipidation"
         ]["Date(s)"].iloc[0]
         if not pd.isna(active_delipidation_dates):
-            active_delipidation_dates = strings_to_dates(
+            active_delip_start_date, active_delip_end_date = strings_to_dates(
                 get_dates(active_delipidation_dates)
             )
         active_conduction_buffer_lot = row["Active Delipidation"][
@@ -282,7 +282,7 @@ class U19Etl(GenericEtl[JobSettings]):
             "Date(s)"
         ].iloc[0]
         if not pd.isna(easyindex_50_date):
-            easyindex_50_date = strings_to_dates(get_dates(easyindex_50_date))
+            easyindex_50_start_date, easyindex_50_end_date = strings_to_dates(get_dates(easyindex_50_date))
         easyindex_50_lot = row["Index matching"]["EasyIndex"]["Lot#"].iloc[0]
         if pd.isna(easyindex_50_lot):
             easyindex_50_lot = "unknown"
@@ -290,7 +290,7 @@ class U19Etl(GenericEtl[JobSettings]):
             "Date(s)"
         ].iloc[0]
         if not pd.isna(easyindex_100_date):
-            easyindex_100_date = strings_to_dates(
+            easyindex_100_start_date, easyindex_100_end_date = strings_to_dates(
                 get_dates(easyindex_100_date)
             )
         easyindex_100_lot = row["Index matching"]["EasyIndex"]["Lot#"].iloc[0]
@@ -327,8 +327,8 @@ class U19Etl(GenericEtl[JobSettings]):
                 specimen_id=subj_id,
                 procedure_type=SpecimenProcedureType.FIXATION,
                 procedure_name="SHIELD OFF",
-                start_date=shield_off_date[0],
-                end_date=shield_off_date[1],
+                start_date=shield_off_start_date,
+                end_date=shield_off_end_date,
                 experimenter_full_name=experimenter,
                 protocol_id=["none"],
                 reagents=[shield_epoxy_reagent, shield_buffer_reagent],
@@ -341,8 +341,8 @@ class U19Etl(GenericEtl[JobSettings]):
                 specimen_id=subj_id,
                 procedure_type=SpecimenProcedureType.FIXATION,
                 procedure_name="SHIELD ON",
-                start_date=shield_on_date[0],
-                end_date=shield_on_date[1],
+                start_date=shield_on_start_date,
+                end_date=shield_on_end_date,
                 experimenter_full_name=experimenter,
                 protocol_id=["none"],
                 reagents=[shield_on_reagent],
@@ -355,8 +355,8 @@ class U19Etl(GenericEtl[JobSettings]):
                 specimen_id=subj_id,
                 procedure_type=SpecimenProcedureType.DELIPIDATION,
                 procedure_name="24h Delipidation",
-                start_date=passive_delipidation_dates[0],
-                end_date=passive_delipidation_dates[1],
+                start_date=passive_delipidation_start_date,
+                end_date=passive_delipidation_end_date,
                 experimenter_full_name=experimenter,
                 protocol_id=["none"],
                 reagents=[passive_delip_reagent],
@@ -369,8 +369,8 @@ class U19Etl(GenericEtl[JobSettings]):
                 specimen_id=subj_id,
                 procedure_type=SpecimenProcedureType.DELIPIDATION,
                 procedure_name="Active Delipidation",
-                start_date=active_delipidation_dates[0],
-                end_date=active_delipidation_dates[1],
+                start_date=active_delip_start_date,
+                end_date=active_delip_end_date,
                 experimenter_full_name=experimenter,
                 protocol_id=["none"],
                 reagents=[active_delip_reagent],
@@ -383,8 +383,8 @@ class U19Etl(GenericEtl[JobSettings]):
                 specimen_id=subj_id,
                 procedure_type=SpecimenProcedureType.REFRACTIVE_INDEX_MATCHING,
                 procedure_name="50% EasyIndex",
-                start_date=easyindex_50_date[0],
-                end_date=easyindex_50_date[1],
+                start_date=easyindex_50_start_date,
+                end_date=easyindex_50_end_date,
                 experimenter_full_name=experimenter,
                 protocol_id=["none"],
                 reagents=[easyindex_50_reagent],
@@ -397,8 +397,8 @@ class U19Etl(GenericEtl[JobSettings]):
                 specimen_id=subj_id,
                 procedure_type=SpecimenProcedureType.REFRACTIVE_INDEX_MATCHING,
                 procedure_name="100% EasyIndex",
-                start_date=easyindex_100_date[0],
-                end_date=easyindex_100_date[1],
+                start_date=easyindex_100_start_date,
+                end_date=easyindex_100_end_date,
                 experimenter_full_name=experimenter,
                 protocol_id=["none"],
                 reagents=[easyindex_100_reagent],
