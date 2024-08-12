@@ -17,12 +17,12 @@ from aind_data_schema.core.procedures import (
 from aind_data_schema_models.organizations import Organization
 
 from aind_metadata_mapper.U19.procedures import (
-    JobSettings,
     U19Etl,
     get_dates,
     strings_to_dates,
 )
 from aind_metadata_mapper.U19.utils import construct_new_model
+from aind_metadata_mapper.U19.models import JobSettings
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
