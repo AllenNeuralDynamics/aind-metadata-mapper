@@ -71,7 +71,7 @@ class TestU19Writer(unittest.TestCase):
         self.assertEqual(etl1.job_settings, etl0.job_settings)
 
     @patch(
-        "aind_metadata_mapper.U19.procedures.U19Etl.download_procedure_file"
+        "aind_metadata_mapper.u19.procedures.U19Etl.download_procedure_file"
     )
     def test_run_job(self, mock_download_procedure):
         """Test run_job method."""
@@ -87,7 +87,7 @@ class TestU19Writer(unittest.TestCase):
         self.assertEqual(self.example_output, actual_output)
 
     @patch(
-        "aind_metadata_mapper.U19.procedures.U19Etl.download_procedure_file"
+        "aind_metadata_mapper.u19.procedures.U19Etl.download_procedure_file"
     )
     def test_extract(self, mock_download_procedure):
         """Test extract method."""
@@ -125,7 +125,7 @@ class TestU19Writer(unittest.TestCase):
             ),
         )
 
-    @patch("aind_metadata_mapper.U19.procedures.U19Etl._transform")
+    @patch("aind_metadata_mapper.u19.procedures.U19Etl._transform")
     def test_load(self, mock_transform):
         """Test load method."""
 
