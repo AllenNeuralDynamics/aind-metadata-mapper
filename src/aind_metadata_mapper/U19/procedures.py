@@ -69,7 +69,7 @@ class U19Etl(GenericEtl[JobSettings]):
         """Extract the data from the U19 server."""
         self.load_specimen_procedure_file()
 
-        logging.info(f"subj: {subj}")
+        logging.info(f"Extracting subj: {subj}")
         existing_procedure = self.download_procedure_file(subj)
 
         return existing_procedure
@@ -111,11 +111,9 @@ class U19Etl(GenericEtl[JobSettings]):
             f"{self.job_settings.procedures_download_link}/{subj_id}"
         )
 
-        print(f"REQUEST: {request}")
-
         logging.info(
             f"Downloaded {subj_id} model with "
-            "status code: {request.status_code}"
+            f"status code: {request.status_code}"
         )
 
         if request.status_code in [404, 500, 503, 422]:
@@ -136,15 +134,11 @@ class U19Etl(GenericEtl[JobSettings]):
                 data=request,
             )
 
-        logging.info(f"Downloaded {subj_id} model: {item}")
-
         if request.status_code == 200:
             return item["data"]
         elif request.status_code in [207, 406]:
             logging.warning(f"Validation errors for {subj_id}")
             return item["data"]
-
-        print(f"ERROR: {request.status_code}")
 
         logging.error(
             f"Unknown error while downloading procedures for {subj_id}"
@@ -167,7 +161,6 @@ class U19Etl(GenericEtl[JobSettings]):
                 sheet_name=sheet_name,
                 header=[0, 1, 2],
             )
-            logging.info("Sheet: ", df)
             self.tissue_sheets.append(df)
 
     def extract_spec_procedures(self, subj_id, row):  # noqa: C901
