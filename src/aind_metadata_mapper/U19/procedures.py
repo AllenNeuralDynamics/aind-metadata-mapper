@@ -136,7 +136,7 @@ class U19Etl(GenericEtl[JobSettings]):
 
         logging.info(f"Downloaded {subj_id} model: {item}")
 
-        if request.status_code in [200]:
+        if request.status_code == 200:
             return item["data"]
         elif request.status_code in [207, 406]:
             logging.warning(f"Validation errors for {subj_id}")

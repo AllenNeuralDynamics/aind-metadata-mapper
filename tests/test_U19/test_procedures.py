@@ -169,6 +169,9 @@ class TestU19Writer(unittest.TestCase):
             self.example_job_settings.subject_to_ingest
         )
 
+        print(f"TEST DATA: {response}")
+        print(f"EXAMPLE DATA: {example_download_response['data']}")
+
         self.assertEqual(response, example_download_response["data"])
 
     def test_load_specimen_procedure_file(self):
