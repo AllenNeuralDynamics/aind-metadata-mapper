@@ -1,4 +1,5 @@
 """Module defining JobSettings for Bergamo ETL"""
+
 from decimal import Decimal
 from pathlib import Path
 from typing import List, Literal, Optional

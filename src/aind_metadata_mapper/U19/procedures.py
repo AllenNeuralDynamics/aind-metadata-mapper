@@ -82,9 +82,9 @@ class U19Etl(GenericEtl[JobSettings]):
             if row is None:
                 logging.warning(f"Could not find row for {subj_id}")
                 return
-            existing_procedure[
-                "specimen_procedures"
-            ] = self.extract_spec_procedures(subj_id, row)
+            existing_procedure["specimen_procedures"] = (
+                self.extract_spec_procedures(subj_id, row)
+            )
 
             return construct_new_model(
                 existing_procedure,
@@ -111,7 +111,10 @@ class U19Etl(GenericEtl[JobSettings]):
             f"{self.job_settings.procedures_download_link}/{subj_id}"
         )
 
-        logging.info(f"Downloaded {subj_id} model with status code: {request.status_code}")
+        logging.info(
+            f"Downloaded {subj_id} model with "
+            "status code: {request.status_code}"
+        )
 
         if request.status_code in [404, 500, 503, 422]:
             logging.error(f"{subj_id} model not found")
@@ -140,7 +143,8 @@ class U19Etl(GenericEtl[JobSettings]):
             return item["data"]
         return JobResponse(
             status_code=request.status_code,
-            message=f"Unknown error while downloading procedures for {subj_id}",
+            message="Unknown error while downloading "
+            f"procedures for {subj_id}",
             data=None,
         )
 
