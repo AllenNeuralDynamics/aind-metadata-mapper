@@ -141,10 +141,12 @@ class U19Etl(GenericEtl[JobSettings]):
         elif request.status_code in [207, 406]:
             logging.warning(f"Validation errors for {subj_id}")
             return item["data"]
-        
+
         print(f"ERROR: {request.status_code}")
-        
-        logging.error(f"Unknown error while downloading procedures for {subj_id}")
+
+        logging.error(
+            f"Unknown error while downloading procedures for {subj_id}"
+        )
         return JobResponse(
             status_code=request.status_code,
             message="Unknown error while downloading "
