@@ -160,9 +160,10 @@ class TestU19Writer(unittest.TestCase):
 
         with open(EXAMPLE_DOWNLOAD_RESPONSE, "r") as f:
             example_download_response = json.load(f)
-            mock_requests.return_value = (
+            mock_requests.return_value.json.return_value = (
                 example_download_response
             )
+            mock_requests.return_value.status_code = 200
 
         etl = U19Etl(self.example_job_settings)
         response = etl.download_procedure_file(
