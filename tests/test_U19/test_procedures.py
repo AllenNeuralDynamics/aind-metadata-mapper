@@ -16,13 +16,13 @@ from aind_data_schema.core.procedures import (
 )
 from aind_data_schema_models.organizations import Organization
 
-from aind_metadata_mapper.U19.models import JobSettings
-from aind_metadata_mapper.U19.procedures import (
+from aind_metadata_mapper.u19.models import JobSettings
+from aind_metadata_mapper.u19.procedures import (
     U19Etl,
     get_dates,
     strings_to_dates,
 )
-from aind_metadata_mapper.U19.utils import construct_new_model
+from aind_metadata_mapper.u19.utils import construct_new_model
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
@@ -56,6 +56,7 @@ class TestU19Writer(unittest.TestCase):
                 "extra sheet",
             ],
             experimenter_full_name=["Some Fella"],
+            procedures_download_link="fake_download_link",
             subject_to_ingest="721832",
             allow_validation_errors=True,
         )

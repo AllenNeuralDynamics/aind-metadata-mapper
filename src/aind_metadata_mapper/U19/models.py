@@ -29,7 +29,6 @@ class JobSettings(BaseSettings):
         ),
     )
     procedures_download_link: str = Field(
-        default="http://aind-metadata-service/procedures",
         description="Link to download the relevant procedures "
         "from metadata service",
     )
