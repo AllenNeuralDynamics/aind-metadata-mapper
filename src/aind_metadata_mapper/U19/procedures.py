@@ -54,6 +54,8 @@ class U19Etl(GenericEtl[JobSettings]):
         """Run the job and return the response."""
 
         extracted = self._extract(self.job_settings.subject_to_ingest)
+        if type(extracted) is JobResponse:
+            return extracted
         transformed = self._transform(
             extracted, self.job_settings.subject_to_ingest
         )
@@ -67,6 +69,7 @@ class U19Etl(GenericEtl[JobSettings]):
         """Extract the data from the U19 server."""
         self.load_specimen_procedure_file()
 
+        logging.info(f"subj: {subj}")
         existing_procedure = self.download_procedure_file(subj)
 
         return existing_procedure
@@ -108,22 +111,38 @@ class U19Etl(GenericEtl[JobSettings]):
             f"{self.job_settings.procedures_download_link}/{subj_id}"
         )
 
-        if request.status_code == 404:
+        logging.info(f"Downloaded {subj_id} model with status code: {request.status_code}")
+
+        if request.status_code in [404, 500, 503, 422]:
             logging.error(f"{subj_id} model not found")
-            return None
+            return JobResponse(
+                status_code=request.status_code,
+                message=f"Procedures model not found for {subj_id}",
+                data=None,
+            )
 
         try:
             item = request.json()
         except json.JSONDecodeError:
             logging.error(f"Error decoding json for {subj_id}: {request.text}")
-            return None
+            return JobResponse(
+                status_code=request.status_code,
+                message=f"Error decoding json for {subj_id}",
+                data=None,
+            )
 
-        if item["message"] == "Valid Model.":
+        logging.info(f"Downloaded {subj_id} model: {item}")
+
+        if request.status_code in [200]:
             return item["data"]
-        elif "Validation Errors:" in item["message"]:
+        elif request.status_code in [207, 406]:
             logging.warning(f"Validation errors for {subj_id}")
             return item["data"]
-        return None
+        return JobResponse(
+            status_code=request.status_code,
+            message=f"Unknown error while downloading procedures for {subj_id}",
+            data=None,
+        )
 
     def load_specimen_procedure_file(self):
         """Load the specimen procedure file."""
@@ -136,6 +155,7 @@ class U19Etl(GenericEtl[JobSettings]):
                 sheet_name=sheet_name,
                 header=[0, 1, 2],
             )
+            logging.info("Sheet: ", df)
             self.tissue_sheets.append(df)
 
     def extract_spec_procedures(self, subj_id, row):  # noqa: C901
