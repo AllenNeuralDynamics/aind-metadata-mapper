@@ -111,6 +111,8 @@ class U19Etl(GenericEtl[JobSettings]):
             f"{self.job_settings.procedures_download_link}/{subj_id}"
         )
 
+        print(f"REQUEST: {request}")
+
         logging.info(
             f"Downloaded {subj_id} model with "
             "status code: {request.status_code}"
