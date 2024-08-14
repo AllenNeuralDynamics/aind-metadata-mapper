@@ -28,7 +28,7 @@ RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
     / ".."
     / "resources"
-    / "U19"
+    / "u19"
 )
 
 EXAMPLE_TISSUE_SHEET = RESOURCES_DIR / "example_tissue_subject.xlsx"
