@@ -27,9 +27,8 @@ from aind_metadata_mapper.fip.models import (
     JobSettings as FipSessionJobSettings,
 )
 from aind_metadata_mapper.fip.session import FIBEtl
-from aind_metadata_mapper.gather_metadata import (
+from aind_metadata_mapper.models import (
     AcquisitionSettings,
-    GatherMetadataJob,
     JobSettings,
     MetadataSettings,
     ProceduresSettings,
@@ -38,6 +37,7 @@ from aind_metadata_mapper.gather_metadata import (
     SessionSettings,
     SubjectSettings,
 )
+from aind_metadata_mapper.gather_metadata import GatherMetadataJob
 from aind_metadata_mapper.mesoscope.models import (
     JobSettings as MesoscopeSessionJobSettings,
 )

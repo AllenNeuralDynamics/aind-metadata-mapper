@@ -8,19 +8,11 @@ from pathlib import Path
 from typing import Any, Generic, Optional, TypeVar, Union
 
 from aind_data_schema.base import AindCoreModel
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import ValidationError
 from pydantic_settings import BaseSettings
+from aind_metadata_mapper.models import JobResponse
 
 _T = TypeVar("_T", bound=BaseSettings)
-
-
-class JobResponse(BaseModel):
-    """Standard model of a JobResponse."""
-
-    model_config = ConfigDict(extra="forbid")
-    status_code: int
-    message: Optional[str] = Field(None)
-    data: Optional[str] = Field(None)
 
 
 class GenericEtl(ABC, Generic[_T]):
