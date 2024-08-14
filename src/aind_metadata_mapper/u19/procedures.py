@@ -121,7 +121,7 @@ class U19Etl(GenericEtl[JobSettings]):
             return JobResponse(
                 status_code=request.status_code,
                 message=f"Procedures model not found for {subj_id}",
-                data=request,
+                data=None,
             )
 
         try:
@@ -131,7 +131,7 @@ class U19Etl(GenericEtl[JobSettings]):
             return JobResponse(
                 status_code=request.status_code,
                 message=f"Error decoding json for {subj_id}",
-                data=request,
+                data=None,
             )
 
         if request.status_code == 200:
@@ -147,7 +147,7 @@ class U19Etl(GenericEtl[JobSettings]):
             status_code=request.status_code,
             message="Unknown error while downloading "
             f"procedures for {subj_id}",
-            data=request,
+            data=None,
         )
 
     def load_specimen_procedure_file(self):
