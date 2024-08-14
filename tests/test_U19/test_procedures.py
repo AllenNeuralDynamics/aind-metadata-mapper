@@ -16,13 +16,13 @@ from aind_data_schema.core.procedures import (
 )
 from aind_data_schema_models.organizations import Organization
 
-from aind_metadata_mapper.u_19.models import JobSettings
-from aind_metadata_mapper.u_19.procedures import (
+from aind_metadata_mapper.u19.models import JobSettings
+from aind_metadata_mapper.u19.procedures import (
     U19Etl,
     get_dates,
     strings_to_dates,
 )
-from aind_metadata_mapper.u_19.utils import construct_new_model
+from aind_metadata_mapper.u19.utils import construct_new_model
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
@@ -71,7 +71,7 @@ class TestU19Writer(unittest.TestCase):
         self.assertEqual(etl1.job_settings, etl0.job_settings)
 
     @patch(
-        "aind_metadata_mapper.u_19.procedures.U19Etl.download_procedure_file"
+        "aind_metadata_mapper.u19.procedures.U19Etl.download_procedure_file"
     )
     def test_run_job(self, mock_download_procedure):
         """Test run_job method."""
@@ -87,7 +87,7 @@ class TestU19Writer(unittest.TestCase):
         self.assertEqual(self.example_output, actual_output)
 
     @patch(
-        "aind_metadata_mapper.u_19.procedures.U19Etl.download_procedure_file"
+        "aind_metadata_mapper.u19.procedures.U19Etl.download_procedure_file"
     )
     def test_extract(self, mock_download_procedure):
         """Test extract method."""
@@ -125,7 +125,7 @@ class TestU19Writer(unittest.TestCase):
             ),
         )
 
-    @patch("aind_metadata_mapper.u_19.procedures.U19Etl._transform")
+    @patch("aind_metadata_mapper.u19.procedures.U19Etl._transform")
     def test_load(self, mock_transform):
         """Test load method."""
 
