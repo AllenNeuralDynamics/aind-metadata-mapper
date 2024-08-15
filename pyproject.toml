@@ -55,7 +55,7 @@ mesoscope = [
     "aind-metadata-mapper[bergamo]",
     "pillow",
     "tifffile==2024.2.12",
-    "mesoscope ; python_version >= '3.10'"
+    "mesoscope ; python_version >= '3.10'",
 ]
 
 openephys = [
@@ -65,7 +65,6 @@ openephys = [
     "scipy",
     "pandas",
     "numpy",
-    "openephys ; python_version >= '3.10'"
 ]
 
 [tool.setuptools.packages.find]
