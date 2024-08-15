@@ -24,7 +24,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "aind-metadata-mapper[all]",
+    "aind-metadata-mapper[all] ; python_version >= '3.9'",
     "black",
     "coverage",
     "flake8",
@@ -39,7 +39,7 @@ all = [
     "aind-metadata-mapper[bruker]",
     "aind-metadata-mapper[mesoscope]",
     "aind-metadata-mapper[openephys]",
-    "aind-metadata-mapper[dynamicrouting]"
+    "aind-metadata-mapper[dynamicrouting]",
 ]
 
 bergamo = [
@@ -55,7 +55,6 @@ mesoscope = [
     "aind-metadata-mapper[bergamo]",
     "pillow",
     "tifffile==2024.2.12",
-    "mesoscope ; python_version >= '3.9'",
 ]
 
 openephys = [
