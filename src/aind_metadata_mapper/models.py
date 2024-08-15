@@ -1,7 +1,8 @@
 """Module to define models for Gather Metadata Job"""
 
 from pathlib import Path
-from typing import Annotated, List, Optional, Union
+from typing import List, Optional, Union
+from typing_extensions import Annotated
 
 from aind_data_schema.core.processing import PipelineProcess
 from aind_data_schema_models.modalities import Modality

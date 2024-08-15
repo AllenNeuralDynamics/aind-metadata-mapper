@@ -59,7 +59,7 @@ class JobSettings(BaseSettings):
     fov_coordinate_ap: float = Decimal("1.5")
     fov_reference: str = "Bregma"
 
-    starting_lickport_position: list[float] = [
+    starting_lickport_position: List[float] = [
         0,
         -6,
         0,
