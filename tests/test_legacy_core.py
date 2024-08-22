@@ -6,13 +6,15 @@ from pathlib import Path
 from typing import Any
 from unittest import TestCase
 from unittest import main as unittest_main
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, mock_open
 
 from aind_data_schema.core.subject import BreedingInfo, Housing, Sex, Subject
 from aind_data_schema_models.organizations import Organization
 from aind_data_schema_models.species import Species
 
-from aind_metadata_mapper.core import BaseEtl
+from aind_metadata_mapper.core import BaseEtl, BaseJobSettings
+import json
+from pydantic import ValidationError
 
 
 class TestBaseEtl(TestCase):
@@ -86,6 +88,42 @@ class TestBaseEtl(TestCase):
             "No validation errors detected."
         )
         mock_write.assert_called_once_with(output_directory=Path("out"))
+
+
+class MockJobSettings(BaseJobSettings):
+    """Mock subclass for testing"""
+
+    name: str
+    value: int
+
+
+class TestBaseJobSettings(TestCase):
+    """Tests BaseJobSettings"""
+
+    def test_from_config_file_success(self):
+        """Tests that JobSettings can be parsed from config file"""
+        mock_json_content = json.dumps({"name": "TestJob", "value": 42})
+
+        with patch("builtins.open", mock_open(read_data=mock_json_content)):
+            config_path = Path("mock_config.json")
+            job_settings = MockJobSettings.from_config_file(config_path)
+
+        self.assertEqual(job_settings.name, "TestJob")
+        self.assertEqual(job_settings.value, 42)
+
+    def test_from_config_file_validation_error(self):
+        """Tests that error is raised if unable to parse settings."""
+        mock_json_content = json.dumps(
+            {
+                "name": "TestJob",
+                # Missing "value" field required by MockJobSettings
+            }
+        )
+
+        with patch("builtins.open", mock_open(read_data=mock_json_content)):
+            config_path = Path("mock_config.json")
+            with self.assertRaises(ValidationError):
+                MockJobSettings.from_config_file(config_path)
 
 
 if __name__ == "__main__":

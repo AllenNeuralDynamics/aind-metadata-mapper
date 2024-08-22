@@ -30,6 +30,7 @@ class BaseJobSettings(BaseSettings):
 
     @classmethod
     def from_config_file(cls: Type[_T], config_path: Path) -> _T:
+        """Parses settings from json file"""
         try:
             with open(config_path, "r") as f:
                 config_data = json.load(f)
