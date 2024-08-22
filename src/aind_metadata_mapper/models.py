@@ -104,7 +104,7 @@ class MetadataSettings(BaseJobSettings):
     instrument_filepath: Optional[Path] = None
 
 
-class GatherMetadataJobSettings(BaseJobSettings):
+class JobSettings(BaseJobSettings):
     """Fields needed to gather all metadata"""
 
     metadata_service_domain: Optional[str] = None
