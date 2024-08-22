@@ -3,10 +3,10 @@
 from pathlib import Path
 from typing import Literal, Optional
 
-from pydantic_settings import BaseSettings
+from aind_metadata_mapper.core import BaseJobSettings
 
 
-class JobSettings(BaseSettings):
+class JobSettings(BaseJobSettings):
     """Data to be entered by the user."""
 
     # Field can be used to switch between different acquisition etl jobs

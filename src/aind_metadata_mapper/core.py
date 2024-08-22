@@ -2,17 +2,41 @@
 
 import argparse
 import logging
+import json
 from abc import ABC, abstractmethod
 from os import PathLike
 from pathlib import Path
-from typing import Any, Generic, Optional, TypeVar, Union
+from typing import Any, Generic, Optional, TypeVar, Union, Type
 
 from aind_data_schema.base import AindCoreModel
-from pydantic import ValidationError
+from pydantic import ValidationError, BaseModel, ConfigDict, Field
 from pydantic_settings import BaseSettings
-from aind_metadata_mapper.models import JobResponse
+
 
 _T = TypeVar("_T", bound=BaseSettings)
+
+
+class JobResponse(BaseModel):
+    """Standard model of a JobResponse."""
+
+    model_config = ConfigDict(extra="forbid")
+    status_code: int
+    message: Optional[str] = Field(None)
+    data: Optional[str] = Field(None)
+
+
+class BaseJobSettings(BaseSettings):
+    """Parent class for generating settings from a config file."""
+
+    @classmethod
+    def from_config_file(cls: Type[_T], config_path: Path) -> _T:
+        try:
+            with open(config_path, "r") as f:
+                config_data = json.load(f)
+            return cls.model_validate(config_data)
+        except (ValidationError, json.JSONDecodeError) as e:
+            logging.warning(f"Error parsing {config_path}: {e}")
+            raise e
 
 
 class GenericEtl(ABC, Generic[_T]):

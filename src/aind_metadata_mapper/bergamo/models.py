@@ -1,13 +1,14 @@
 """Module defining JobSettings for Bergamo ETL"""
+
 from decimal import Decimal
 from pathlib import Path
 from typing import List, Literal, Optional
 
 from pydantic import Field
-from pydantic_settings import BaseSettings
+from aind_metadata_mapper.core import BaseJobSettings
 
 
-class JobSettings(BaseSettings):
+class JobSettings(BaseJobSettings):
     """Data that needs to be input by user. Can be pulled from env vars with
     BERGAMO prefix or set explicitly."""
 
