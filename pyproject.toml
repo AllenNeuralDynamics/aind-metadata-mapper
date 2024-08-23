@@ -45,16 +45,19 @@ all = [
 bergamo = [
     "scanimage-tiff-reader==1.4.1.4",
     "numpy",
+    "aind_metadata_mapper[bergamo] ; python_version >= '3.9'",
 ]
 
 bruker = [
-    "bruker2nifti==1.0.4"
+    "bruker2nifti==1.0.4",
+    "aind_metadata_mapper[bruker] ; python_version >= '3.9'",
 ]
 
 mesoscope = [
     "aind-metadata-mapper[bergamo]",
     "pillow",
     "tifffile==2024.2.12",
+    "aind_metadata_mapper[mesoscope] ; python_version >= '3.9'",
 ]
 
 openephys = [
@@ -64,10 +67,12 @@ openephys = [
     "scipy",
     "pandas",
     "numpy",
+    "aind_metadata_mapper[openephys] ; python_version >= '3.9'",
 ]
 
 dynamicrouting = [
     "pyyaml>=6.0.0",
+    "aind_metadata_mapper[dynamicrouting] ; python_version >= '3.9'",
 ]
 
 [tool.setuptools.packages.find]
