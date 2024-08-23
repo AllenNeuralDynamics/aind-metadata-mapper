@@ -2,16 +2,22 @@
 
 import argparse
 import logging
-import json
+import os
+
 from abc import ABC, abstractmethod
 from os import PathLike
 from pathlib import Path
-from typing import Any, Generic, Optional, TypeVar, Union, Type
+from typing import Any, Generic, Optional, TypeVar, Union, Type, Tuple, Dict
 
 from aind_data_schema.base import AindCoreModel
 from pydantic import ValidationError, BaseModel, ConfigDict, Field
-from pydantic_settings import BaseSettings
-
+from pydantic_settings import (
+    BaseSettings,
+    EnvSettingsSource,
+    InitSettingsSource,
+    PydanticBaseSettingsSource,
+)
+import json
 
 _T = TypeVar("_T", bound=BaseSettings)
 
@@ -25,19 +31,59 @@ class JobResponse(BaseModel):
     data: Optional[str] = Field(None)
 
 
+class JsonConfigSettingsSource(PydanticBaseSettingsSource, ABC):
+    """Base class for settings that parse JSON from various sources."""
+
+    def __init__(self, settings_cls, config_file_location: Path):
+        self.config_file_location = config_file_location
+        super().__init__(settings_cls)
+
+    def _retrieve_contents(self) -> Dict[str, Any]:
+        """Retrieve and parse the JSON contents from the config file."""
+        try:
+            with open(self.config_file_location, "r") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            logging.warning(f"Error loading config from {self.config_file_location}: {e}")
+            raise e
+
+    def __call__(self) -> Dict[str, Any]:
+        """Return the settings parsed from the JSON file."""
+        return self._retrieve_contents()
+
+
+class ConfigFileSettingsSource(JsonConfigSettingsSource):
+    """Class that parses settings from a local JSON file."""
+    pass
+
+
 class BaseJobSettings(BaseSettings):
     """Parent class for generating settings from a config file."""
 
+    config_file: Optional[Path] = Field(
+        default_factory=lambda: Path(os.path.expanduser("~")) / ".metadata" / "job_settings.json",
+        repr=False,
+        description="Optionally pull settings from a local config file."
+    )
+
     @classmethod
-    def from_config_file(cls: Type[_T], config_path: Path) -> _T:
-        """Parses settings from json file"""
-        try:
-            with open(config_path, "r") as f:
-                config_data = json.load(f)
-            return cls.model_validate(config_data)
-        except (ValidationError, json.JSONDecodeError) as e:
-            logging.warning(f"Error parsing {config_path}: {e}")
-            raise e
+    def settings_customise_sources(
+            cls,
+            settings_cls: Type[BaseSettings],
+            init_settings: InitSettingsSource,
+            env_settings: EnvSettingsSource,
+            *args
+    ) -> Tuple[PydanticBaseSettingsSource, ...]:
+        """
+        Customize the order of settings sources, including JSON file.
+        """
+        config_file = init_settings.init_kwargs.get("config_file") or cls().config_file
+        sources = [init_settings, env_settings]
+
+        if config_file and config_file.is_file():
+            sources.append(ConfigFileSettingsSource(settings_cls, config_file))
+
+        return tuple(sources)
 
 
 class GenericEtl(ABC, Generic[_T]):
