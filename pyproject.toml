@@ -24,7 +24,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "aind-metadata-mapper[all] ; python_version >= '3.9'",
+    "aind-metadata-mapper[all]",
     "black",
     "coverage",
     "flake8",
@@ -48,19 +48,19 @@ bergamo = [
 ]
 
 bruker = [
-    "bruker2nifti==1.0.4"
+    "bruker2nifti==1.0.4",
 ]
 
 mesoscope = [
     "aind-metadata-mapper[bergamo]",
     "pillow",
-    "tifffile==2024.2.12",
+    "tifffile==2024.2.12 ; python_version >= '3.9'",
 ]
 
 openephys = [
     "h5py",
     "np_session",
-    "npc_ephys",
+    "npc_ephys ; python_version >= '3.9'",
     "scipy",
     "pandas",
     "numpy",
