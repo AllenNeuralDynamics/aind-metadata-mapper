@@ -98,7 +98,7 @@ exclude = '''
 '''
 
 [tool.coverage.run]
-omit = ["*__init__*"]
+omit = ["*__init__*", "tests/integration/*"]
 source = ["aind_metadata_mapper", "tests"]
 
 [tool.coverage.report]

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Literal
 
 from pydantic import Field
+
 from aind_metadata_mapper.core import BaseJobSettings
 
 

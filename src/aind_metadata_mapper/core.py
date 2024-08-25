@@ -1,23 +1,23 @@
 """Core abstract class that can be used as a template for etl jobs."""
 
 import argparse
+import json
 import logging
-import os
-
 from abc import ABC, abstractmethod
+from functools import cached_property
 from os import PathLike
 from pathlib import Path
-from typing import Any, Generic, Optional, TypeVar, Union, Type, Tuple, Dict
+from typing import Any, Dict, Generic, Optional, Tuple, Type, TypeVar, Union
 
 from aind_data_schema.base import AindCoreModel
-from pydantic import ValidationError, BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
     EnvSettingsSource,
     InitSettingsSource,
     PydanticBaseSettingsSource,
 )
-import json
 
 _T = TypeVar("_T", bound=BaseSettings)
 
@@ -31,10 +31,11 @@ class JobResponse(BaseModel):
     data: Optional[str] = Field(None)
 
 
-class JsonConfigSettingsSource(PydanticBaseSettingsSource, ABC):
+class JsonConfigSettingsSource(PydanticBaseSettingsSource):
     """Base class for settings that parse JSON from various sources."""
 
     def __init__(self, settings_cls, config_file_location: Path):
+        """Class constructor."""
         self.config_file_location = config_file_location
         super().__init__(settings_cls)
 
@@ -44,44 +45,130 @@ class JsonConfigSettingsSource(PydanticBaseSettingsSource, ABC):
             with open(self.config_file_location, "r") as f:
                 return json.load(f)
         except (json.JSONDecodeError, IOError) as e:
-            logging.warning(f"Error loading config from {self.config_file_location}: {e}")
+            logging.warning(
+                f"Error loading config from {self.config_file_location}: {e}"
+            )
             raise e
 
+    @cached_property
+    def _json_contents(self):
+        """Cache contents to a property to avoid re-downloading."""
+        contents = self._retrieve_contents()
+        return contents
+
+    def get_field_value(
+        self, field: FieldInfo, field_name: str
+    ) -> Tuple[Any, str, bool]:
+        """
+        Gets the value, the key for model creation, and a flag to determine
+        whether value is complex.
+        Parameters
+        ----------
+        field : FieldInfo
+          The field
+        field_name : str
+          The field name
+
+        Returns
+        -------
+        Tuple[Any, str, bool]
+          A tuple contains the key, value and a flag to determine whether
+          value is complex.
+
+        """
+        file_content_json = self._json_contents
+        field_value = file_content_json.get(field_name)
+        return field_value, field_name, False
+
+    def prepare_field_value(
+        self,
+        field_name: str,
+        field: FieldInfo,
+        value: Any,
+        value_is_complex: bool,
+    ) -> Any:
+        """
+        Prepares the value of a field.
+        Parameters
+        ----------
+        field_name : str
+          The field name
+        field : FieldInfo
+          The field
+        value : Any
+          The value of the field that has to be prepared
+        value_is_complex : bool
+          A flag to determine whether value is complex
+
+        Returns
+        -------
+        Any
+          The prepared value
+
+        """
+        return value
+
     def __call__(self) -> Dict[str, Any]:
-        """Return the settings parsed from the JSON file."""
-        return self._retrieve_contents()
+        """
+        Run this when this class is called. Required to be implemented.
 
+        Returns
+        -------
+        Dict[str, Any]
+          The fields for the settings defined as a dict object.
 
-class ConfigFileSettingsSource(JsonConfigSettingsSource):
-    """Class that parses settings from a local JSON file."""
-    pass
+        """
+        d: Dict[str, Any] = {}
+
+        for field_name, field in self.settings_cls.model_fields.items():
+            field_value, field_key, value_is_complex = self.get_field_value(
+                field, field_name
+            )
+            field_value = self.prepare_field_value(
+                field_name, field, field_value, value_is_complex
+            )
+            if field_value is not None:
+                d[field_key] = field_value
+
+        return d
 
 
 class BaseJobSettings(BaseSettings):
     """Parent class for generating settings from a config file."""
 
-    config_file: Optional[Path] = Field(
-        default_factory=lambda: Path(os.path.expanduser("~")) / ".metadata" / "job_settings.json",
+    user_settings_config_file: Optional[Path] = Field(
+        default=None,
         repr=False,
-        description="Optionally pull settings from a local config file."
+        description="Optionally pull settings from a local config file.",
     )
+
+    class Config:
+        """Pydantic config to exclude field from displaying"""
+
+        exclude = {"user_settings_config_file"}
 
     @classmethod
     def settings_customise_sources(
-            cls,
-            settings_cls: Type[BaseSettings],
-            init_settings: InitSettingsSource,
-            env_settings: EnvSettingsSource,
-            *args
+        cls,
+        settings_cls: Type[BaseSettings],
+        init_settings: InitSettingsSource,
+        env_settings: EnvSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
     ) -> Tuple[PydanticBaseSettingsSource, ...]:
         """
         Customize the order of settings sources, including JSON file.
         """
-        config_file = init_settings.init_kwargs.get("config_file") or cls().config_file
+        config_file = init_settings.init_kwargs.get(
+            "user_settings_config_file"
+        )
         sources = [init_settings, env_settings]
 
+        if isinstance(config_file, str):
+            config_file = Path(config_file)
+
         if config_file and config_file.is_file():
-            sources.append(ConfigFileSettingsSource(settings_cls, config_file))
+            sources.append(JsonConfigSettingsSource(settings_cls, config_file))
 
         return tuple(sources)
 

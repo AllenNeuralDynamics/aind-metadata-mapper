@@ -2,13 +2,12 @@
 
 from pathlib import Path
 from typing import List, Optional, Union
-from typing_extensions import Annotated
 
 from aind_data_schema.core.processing import PipelineProcess
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
-
-from pydantic import Field, BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
+from typing_extensions import Annotated
 
 from aind_metadata_mapper.bergamo.models import (
     JobSettings as BergamoSessionJobSettings,
@@ -16,6 +15,7 @@ from aind_metadata_mapper.bergamo.models import (
 from aind_metadata_mapper.bruker.models import (
     JobSettings as BrukerSessionJobSettings,
 )
+from aind_metadata_mapper.core import BaseJobSettings
 from aind_metadata_mapper.fip.models import (
     JobSettings as FipSessionJobSettings,
 )
@@ -25,7 +25,6 @@ from aind_metadata_mapper.mesoscope.models import (
 from aind_metadata_mapper.smartspim.models import (
     JobSettings as SmartSpimAcquisitionJobSettings,
 )
-from aind_metadata_mapper.core import BaseJobSettings
 
 
 class JobResponse(BaseModel):

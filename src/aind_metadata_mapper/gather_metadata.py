@@ -37,8 +37,8 @@ from aind_metadata_mapper.fip.models import (
 )
 from aind_metadata_mapper.fip.session import FIBEtl
 from aind_metadata_mapper.mesoscope.session import MesoscopeEtl
-from aind_metadata_mapper.smartspim.acquisition import SmartspimETL
 from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.smartspim.acquisition import SmartspimETL
 
 
 class GatherMetadataJob:

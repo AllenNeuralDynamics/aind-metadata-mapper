@@ -8,6 +8,7 @@ from aind_data_schema.components.devices import (
     ScannerLocation,
 )
 from pydantic import Field
+
 from aind_metadata_mapper.core import BaseJobSettings
 
 

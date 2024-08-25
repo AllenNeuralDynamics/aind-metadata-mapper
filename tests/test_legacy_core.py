@@ -6,15 +6,13 @@ from pathlib import Path
 from typing import Any
 from unittest import TestCase
 from unittest import main as unittest_main
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import MagicMock, patch
 
 from aind_data_schema.core.subject import BreedingInfo, Housing, Sex, Subject
 from aind_data_schema_models.organizations import Organization
 from aind_data_schema_models.species import Species
 
-from aind_metadata_mapper.core import BaseEtl, BaseJobSettings
-import json
-from pydantic import ValidationError
+from aind_metadata_mapper.core import BaseEtl
 
 
 class TestBaseEtl(TestCase):
@@ -88,55 +86,6 @@ class TestBaseEtl(TestCase):
             "No validation errors detected."
         )
         mock_write.assert_called_once_with(output_directory=Path("out"))
-
-
-class MockJobSettings(BaseJobSettings):
-    """Mock subclass for testing"""
-
-    name: str
-    value: int
-
-
-class TestBaseJobSettings(TestCase):
-    """Tests BaseJobSettings"""
-
-    @patch("builtins.input")
-    @patch("builtins.open", new_callable=mock_open)
-    @patch("pathlib.Path.mkdir")
-    def test_with_config_file(
-            self,
-            mock_mkdir: MagicMock,
-            mock_file: MagicMock,
-            mock_input: MagicMock,
-    ):
-        """Tests that a user-defined config file path will be used"""
-
-        mock_inputs = [
-            "some_output_path/my_configs.json",
-            "http://domain",
-            "abc-123",
-        ]
-        mock_input.side_effect = mock_inputs
-        create_config_file()
-        mock_input.assert_called()
-        mock_mkdir.assert_called_once_with(parents=True, exist_ok=True)
-        mock_file.assert_called_once_with(
-            Path("some_output_path/my_configs.json"), "w+"
-        )
-
-    def test_from_config_file_validation_error(self):
-        """Tests that error is raised if unable to parse settings."""
-        mock_json_content = json.dumps(
-            {
-                "name": "TestJob",
-                # Missing "value" field required by MockJobSettings
-            }
-        )
-
-        with patch("builtins.open", mock_open(read_data=mock_json_content)):
-            config_path = Path("mock_config.json")
-            with self.assertRaises(ValidationError):
-                MockJobSettings.from_config_file(config_path)
 
 
 if __name__ == "__main__":
