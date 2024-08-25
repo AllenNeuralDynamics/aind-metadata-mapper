@@ -1,7 +1,7 @@
 {
    "user_settings_config_file": null,
    "job_settings_name": "Bergamo",
-   "input_source": "/home/jon.young/Projects/aind-metadata-mapper/tests/resources/bergamo",
+   "input_source": "tests/resources/bergamo",
    "output_directory": null,
    "experimenter_full_name": [
       "John Apple"
