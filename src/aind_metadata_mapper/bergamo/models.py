@@ -5,10 +5,11 @@ from pathlib import Path
 from typing import List, Literal, Optional
 
 from pydantic import Field
-from pydantic_settings import BaseSettings
+
+from aind_metadata_mapper.core import BaseJobSettings
 
 
-class JobSettings(BaseSettings):
+class JobSettings(BaseJobSettings):
     """Data that needs to be input by user. Can be pulled from env vars with
     BERGAMO prefix or set explicitly."""
 
@@ -60,7 +61,7 @@ class JobSettings(BaseSettings):
     fov_coordinate_ap: float = Decimal("1.5")
     fov_reference: str = "Bregma"
 
-    starting_lickport_position: list[float] = [
+    starting_lickport_position: List[float] = [
         0,
         -6,
         0,

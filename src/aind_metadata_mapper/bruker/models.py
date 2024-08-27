@@ -8,10 +8,11 @@ from aind_data_schema.components.devices import (
     ScannerLocation,
 )
 from pydantic import Field
-from pydantic_settings import BaseSettings
+
+from aind_metadata_mapper.core import BaseJobSettings
 
 
-class JobSettings(BaseSettings):
+class JobSettings(BaseJobSettings):
     """Data that needs to be input by user."""
 
     job_settings_name: Literal["Bruker"] = "Bruker"

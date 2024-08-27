@@ -17,16 +17,17 @@ from requests import Response
 from aind_metadata_mapper.bergamo.models import (
     JobSettings as BergamoSessionJobSettings,
 )
-from aind_metadata_mapper.bergamo.session import BergamoEtl
 from aind_metadata_mapper.bruker.models import (
     JobSettings as BrukerSessionJobSettings,
 )
-from aind_metadata_mapper.bruker.session import MRIEtl
 from aind_metadata_mapper.core import JobResponse
 from aind_metadata_mapper.fip.models import (
     JobSettings as FipSessionJobSettings,
 )
-from aind_metadata_mapper.fip.session import FIBEtl
+from aind_metadata_mapper.gather_metadata import GatherMetadataJob
+from aind_metadata_mapper.mesoscope.models import (
+    JobSettings as MesoscopeSessionJobSettings,
+)
 from aind_metadata_mapper.models import (
     AcquisitionSettings,
     JobSettings,
@@ -37,11 +38,6 @@ from aind_metadata_mapper.models import (
     SessionSettings,
     SubjectSettings,
 )
-from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-from aind_metadata_mapper.mesoscope.models import (
-    JobSettings as MesoscopeSessionJobSettings,
-)
-from aind_metadata_mapper.mesoscope.session import MesoscopeEtl
 from aind_metadata_mapper.smartspim.acquisition import (
     JobSettings as SmartSpimAcquisitionJobSettings,
 )
@@ -52,6 +48,7 @@ RESOURCES_DIR = (
     / "gather_metadata_job"
 )
 METADATA_DIR = RESOURCES_DIR / "metadata_files"
+EXAMPLE_BERGAMO_CONFIGS = RESOURCES_DIR / "test_bergamo_configs.json"
 
 
 class TestGatherMetadataJob(unittest.TestCase):
@@ -513,9 +510,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_session_metadata()
         self.assertEqual({"some_key": "some_value"}, contents)
-        BergamoEtl(
-            job_settings=bergamo_session_settings
-        ).run_job.assert_called_once()
+        mock_run_job.assert_called_once()
 
     @patch("aind_metadata_mapper.bruker.session.MRIEtl.run_job")
     def test_get_session_metadata_bruker_success(
@@ -535,9 +530,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_session_metadata()
         self.assertEqual({"some_key": "some_value"}, contents)
-        MRIEtl(
-            job_settings=bruker_session_settings
-        ).run_job.assert_called_once()
+        mock_run_job.assert_called_once()
 
     @patch("aind_metadata_mapper.fip.session.FIBEtl.run_job")
     def test_get_session_metadata_fip_success(self, mock_run_job: MagicMock):
@@ -555,7 +548,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_session_metadata()
         self.assertEqual({"some_key": "some_value"}, contents)
-        FIBEtl(job_settings=fip_session_settings).run_job.assert_called_once()
+        mock_run_job.assert_called_once()
 
     @patch("aind_metadata_mapper.mesoscope.session.MesoscopeEtl.run_job")
     def test_get_session_metadata_mesoscope_success(
@@ -577,9 +570,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_session_metadata()
         self.assertEqual({"some_key": "some_value"}, contents)
-        MesoscopeEtl(
-            job_settings=mesoscope_session_settings
-        ).run_job.assert_called_once()
+        mock_run_job.assert_called_once()
 
     def test_session_settings_error(self):
         """Tests SessionSettings raises error if JobSettings is not expected"""
@@ -975,6 +966,27 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_write_file.assert_called()
         self.assertIsNotNone(json_contents.get("_id"))
         self.assertIsNone(json_contents.get("id"))
+
+    def test_from_job_settings_file(self):
+        """Tests that users can set a session config file when requesting
+        GatherMetadataJob"""
+
+        test_configs = {
+            "directory_to_write_to": RESOURCES_DIR,
+            "session_settings": {
+                "job_settings": {
+                    "job_settings_name": "Bergamo",
+                    "user_settings_config_file": EXAMPLE_BERGAMO_CONFIGS,
+                }
+            },
+        }
+        job_settings = JobSettings.model_validate_json(
+            json.dumps(test_configs, default=str)
+        )
+        self.assertEqual(
+            ["John Apple"],
+            job_settings.session_settings.job_settings.experimenter_full_name,
+        )
 
 
 if __name__ == "__main__":
