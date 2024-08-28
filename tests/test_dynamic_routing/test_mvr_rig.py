@@ -4,11 +4,11 @@ import os
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-
+from aind_data_schema.core.rig import Rig 
 from aind_metadata_mapper.dynamic_routing.mvr_rig import (  # type: ignore
     MvrRigEtl,
 )
-from tests.test_dynamic_routing import test_utils as test_utils
+from typing import Tuple
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
@@ -17,6 +17,36 @@ RESOURCES_DIR = (
     / "dynamic_routing"
 )
 
+FORWARD_CAMERA_ASSEMBLY_NAME = "Forward"
+FORWARD_CAMERA_NAME = f"{FORWARD_CAMERA_ASSEMBLY_NAME} camera"
+EYE_CAMERA_ASSEMBLY_NAME = "Eye"
+EYE_CAMERA_NAME = f"{EYE_CAMERA_ASSEMBLY_NAME} camera"
+SIDE_CAMERA_ASSEMBLY_NAME = "Side"
+SIDE_CAMERA_NAME = f"{SIDE_CAMERA_ASSEMBLY_NAME} camera"
+
+
+def setup_neuropixels_etl_resources(
+    expected_json: Path,
+) -> Tuple[Path, Path, Rig]:
+    """Sets test resources dynamic_routing etl.
+
+    Parameters
+    ----------
+    expected_json: Path
+      paths to etl resources to move to input dir
+
+    Returns
+    -------
+    Tuple[Path, Path, Rig]
+      input_source: path to etl base rig input source
+      output_dir: path to etl output directory
+      expected_rig: rig model to compare to output
+    """
+    return (
+        RESOURCES_DIR / "base_rig.json",
+        Path("abc"),  # hopefully file writes are mocked
+        Rig.model_validate_json(expected_json.read_text()),
+    )
 
 class TestMvrRigEtl(unittest.TestCase):
     """Tests dxdiag utilities in for the dynamic_routing project."""
@@ -28,9 +58,9 @@ class TestMvrRigEtl(unittest.TestCase):
             self.output_dir,
             RESOURCES_DIR / "mvr.ini",
             mvr_mapping={
-                "Camera 1": test_utils.SIDE_CAMERA_ASSEMBLY_NAME,
-                "Camera 2": test_utils.EYE_CAMERA_ASSEMBLY_NAME,
-                "Camera 3": test_utils.FORWARD_CAMERA_ASSEMBLY_NAME,
+                "Camera 1": SIDE_CAMERA_ASSEMBLY_NAME,
+                "Camera 2": EYE_CAMERA_ASSEMBLY_NAME,
+                "Camera 3": FORWARD_CAMERA_ASSEMBLY_NAME,
             },
             modification_date=self.expected.modification_date,
         )
@@ -46,9 +76,9 @@ class TestMvrRigEtl(unittest.TestCase):
             self.output_dir,
             RESOURCES_DIR / "mvr.ini",
             mvr_mapping={
-                "Camera 1": test_utils.SIDE_CAMERA_ASSEMBLY_NAME,
-                "Camera 2": test_utils.EYE_CAMERA_ASSEMBLY_NAME,
-                "Camera 3": test_utils.FORWARD_CAMERA_ASSEMBLY_NAME,
+                "Camera 1": SIDE_CAMERA_ASSEMBLY_NAME,
+                "Camera 2": EYE_CAMERA_ASSEMBLY_NAME,
+                "Camera 3": FORWARD_CAMERA_ASSEMBLY_NAME,
             },
         )
         etl.run_job()
@@ -64,9 +94,9 @@ class TestMvrRigEtl(unittest.TestCase):
             self.output_dir,
             RESOURCES_DIR / "mvr.ini",
             mvr_mapping={
-                "Camera 1": test_utils.SIDE_CAMERA_ASSEMBLY_NAME,
-                "Camera 2": test_utils.EYE_CAMERA_ASSEMBLY_NAME,
-                "Not a camera name": test_utils.FORWARD_CAMERA_ASSEMBLY_NAME,
+                "Camera 1": SIDE_CAMERA_ASSEMBLY_NAME,
+                "Camera 2": EYE_CAMERA_ASSEMBLY_NAME,
+                "Not a camera name": FORWARD_CAMERA_ASSEMBLY_NAME,
             },
         )
         etl.run_job()
@@ -80,7 +110,7 @@ class TestMvrRigEtl(unittest.TestCase):
             self.input_source,
             self.output_dir,
             self.expected,
-        ) = test_utils.setup_neuropixels_etl_resources(
+        ) = setup_neuropixels_etl_resources(
             RESOURCES_DIR / "mvr_rig.json",
         )
 
