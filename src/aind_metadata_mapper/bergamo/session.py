@@ -1069,7 +1069,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
                     )
                 ),
             )  # from Jon's script - seconds
-
+            wavelength = self.job_settings.photostim_laser_wavelength
             stim_epoch_photostim = StimulusEpoch(
                 stimulus_start_time=stream_start_time,
                 stimulus_end_time=stream_end_time,  # datetime,
@@ -1083,13 +1083,13 @@ class BergamoEtl(GenericEtl[JobSettings]):
                     LaserConfig(
                         # from rig json
                         name=self.job_settings.photostim_laser_name,
-                        wavelength=self.job_settings.photostim_laser_wavelength,
+                        wavelength=wavelength,
                         # user set value
                         excitation_power=np.nanmean(group_powers),
                         # from tiff header,
                         excitation_power_unit=PowerUnit.PERCENT,
-                        )
-                    ],
+                    )
+                ],
                 output_parameters={
                     "tiff_files": tiff_list,
                     "tiff_stem": tiff_stem,
