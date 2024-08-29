@@ -81,7 +81,9 @@ class TestSchemaWriter(unittest.TestCase):
             active_mouse_platform=False,
         )
 
-        cls.expected_session = Session.model_validate_json(json.dumps(expected_session_contents))
+        cls.expected_session = Session.model_validate_json(
+            json.dumps(expected_session_contents)
+        )
 
     def test_constructor_from_string(self) -> None:
         """Tests that the settings can be constructed from a json string"""
