@@ -767,11 +767,13 @@ class TestGatherMetadataJob(unittest.TestCase):
             "Pydantic serializer warnings:\n"
             "  Expected `date` but got `str`"
             " - serialized value may not be as expected\n"
-            "  Expected `Union[CALLITHRIX_JACCHUS, HOMO_SAPIENS, MACACA_MULATTA, MUS_MUSCULUS, RATTUS_NORVEGICUS]` but got `dict`"
+            "  Expected `Union[CALLITHRIX_JACCHUS, HOMO_SAPIENS, "
+            "MACACA_MULATTA, MUS_MUSCULUS, RATTUS_NORVEGICUS]` but got `dict`"
             " - serialized value may not be as expected\n"
             "  Expected `BreedingInfo` but got `dict`"
             " - serialized value may not be as expected\n"
-            "  Expected `Union[AI, COLUMBIA, HUST, JANELIA, JAX, NYU, OTHER]` but got `dict`"
+            "  Expected `Union[AI, COLUMBIA, HUST, JANELIA, JAX, NYU, OTHER]`"
+            " but got `dict`"
             " - serialized value may not be as expected"
         )
         self.assertEqual(expected_warnings, str(w.warning))
