@@ -1,0 +1,351 @@
+{
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/procedures.py",
+   "schema_version": "0.13.3",
+   "subject_id": "721832",
+   "subject_procedures": [
+      {
+         "procedure_type": "Surgery",
+         "start_date": "2024-03-08",
+         "experimenter_full_name": "30509",
+         "iacuc_protocol": "2109",
+         "animal_weight_prior": null,
+         "animal_weight_post": null,
+         "weight_unit": "gram",
+         "anaesthesia": null,
+         "workstation_id": null,
+         "procedures": [
+            {
+               "procedure_type": "Perfusion",
+               "output_specimen_ids": [
+                  "721832"
+               ],
+               "protocol_id": "dx.doi.org/10.17504/protocols.io.bg5vjy66"
+            }
+         ],
+         "notes": null,
+         "protocol_id": "dx.doi.org/10.17504/protocols.io.kqdg392o7g25/v2"
+      },
+      {
+         "procedure_type": "Surgery",
+         "start_date": "2024-02-09",
+         "experimenter_full_name": "NSB-5756",
+         "iacuc_protocol": "2109",
+         "animal_weight_prior": "15.8",
+         "animal_weight_post": "15.7",
+         "weight_unit": "gram",
+         "anaesthesia": {
+            "type": "isoflurane",
+            "duration": "120.0",
+            "duration_unit": "minute",
+            "level": "1.5"
+         },
+         "workstation_id": "SWS 2",
+         "procedures": [
+            {
+               "injection_materials": [
+                  {
+                     "material_type": "Virus",
+                     "name": "AAV-Syn-H2B-tdTomato",
+                     "tars_identifiers": {
+                        "virus_tars_id": "AiV300046",
+                        "plasmid_tars_alias": null,
+                        "prep_lot_number": "221111-23",
+                        "prep_date": "2022-11-28",
+                        "prep_type": null,
+                        "prep_protocol": null
+                     },
+                     "addgene_id": null,
+                     "titer": 51000000000000,
+                     "titer_unit": "gc/mL"
+                  }
+               ],
+               "recovery_time": "23.0",
+               "recovery_time_unit": "minute",
+               "injection_duration": null,
+               "injection_duration_unit": "minute",
+               "instrument_id": null,
+               "injection_coordinate_ml": "1.8",
+               "injection_coordinate_ap": "2.8",
+               "injection_coordinate_depth": [
+                  "1.5"
+               ],
+               "injection_coordinate_unit": "millimeter",
+               "injection_coordinate_reference": "Bregma",
+               "bregma_to_lambda_distance": null,
+               "bregma_to_lambda_unit": "millimeter",
+               "injection_angle": "0.0",
+               "injection_angle_unit": "degrees",
+               "targeted_structure": null,
+               "injection_hemisphere": "Right",
+               "procedure_type": "Nanoject injection",
+               "injection_volume": [
+                  "50.0"
+               ],
+               "injection_volume_unit": "nanoliter",
+               "protocol_id": "dx.doi.org/10.17504/protocols.io.bp2l6nr7kgqe/v4"
+            },
+            {
+               "injection_materials": [
+                  {
+                     "material_type": "Virus",
+                     "name": "AAV-Syn-H2B-GFP",
+                     "tars_identifiers": {
+                        "virus_tars_id": "AiV300047",
+                        "plasmid_tars_alias": null,
+                        "prep_lot_number": "221104-8",
+                        "prep_date": "2022-11-28",
+                        "prep_type": null,
+                        "prep_protocol": null
+                     },
+                     "addgene_id": null,
+                     "titer": 136000000000000,
+                     "titer_unit": "gc/mL"
+                  }
+               ],
+               "recovery_time": "23.0",
+               "recovery_time_unit": "minute",
+               "injection_duration": null,
+               "injection_duration_unit": "minute",
+               "instrument_id": null,
+               "injection_coordinate_ml": "1.8",
+               "injection_coordinate_ap": "2.4",
+               "injection_coordinate_depth": [
+                  "1.8"
+               ],
+               "injection_coordinate_unit": "millimeter",
+               "injection_coordinate_reference": "Bregma",
+               "bregma_to_lambda_distance": null,
+               "bregma_to_lambda_unit": "millimeter",
+               "injection_angle": "0.0",
+               "injection_angle_unit": "degrees",
+               "targeted_structure": null,
+               "injection_hemisphere": "Right",
+               "procedure_type": "Nanoject injection",
+               "injection_volume": [
+                  "50.0"
+               ],
+               "injection_volume_unit": "nanoliter",
+               "protocol_id": "dx.doi.org/10.17504/protocols.io.bp2l6nr7kgqe/v4"
+            },
+            {
+               "injection_materials": [],
+               "recovery_time": "23.0",
+               "recovery_time_unit": "minute",
+               "injection_duration": null,
+               "injection_duration_unit": "minute",
+               "instrument_id": null,
+               "injection_coordinate_ml": "0.2",
+               "injection_coordinate_ap": "2.0",
+               "injection_coordinate_depth": [
+                  "1.0"
+               ],
+               "injection_coordinate_unit": "millimeter",
+               "injection_coordinate_reference": "Bregma",
+               "bregma_to_lambda_distance": null,
+               "bregma_to_lambda_unit": "millimeter",
+               "injection_angle": "0.0",
+               "injection_angle_unit": "degrees",
+               "targeted_structure": null,
+               "injection_hemisphere": "Right",
+               "procedure_type": "Nanoject injection",
+               "injection_volume": [
+                  "50.0"
+               ],
+               "injection_volume_unit": "nanoliter",
+               "protocol_id": "dx.doi.org/10.17504/protocols.io.bp2l6nr7kgqe/v4"
+            }
+         ],
+         "notes": null,
+         "protocol_id": "dx.doi.org/10.17504/protocols.io.kqdg392o7g25/v2"
+      }
+   ],
+   "specimen_procedures": [
+      {
+         "procedure_type": "Fixation",
+         "procedure_name": "SHIELD OFF",
+         "specimen_id": "721832",
+         "start_date": "2024-03-11",
+         "end_date": "2024-03-14",
+         "experimenter_full_name": "Some Fella",
+         "protocol_id": [
+            "none"
+         ],
+         "reagents": [
+            {
+               "name": "SHIELD Epoxy",
+               "source": {
+                  "name": "LifeCanvas",
+                  "abbreviation": null,
+                  "registry": null,
+                  "registry_identifier": null
+               },
+               "rrid": null,
+               "lot_number": "ex43",
+               "expiration_date": null
+            },
+            {
+               "name": "SHIELD Buffer",
+               "source": {
+                  "name": "LifeCanvas",
+                  "abbreviation": null,
+                  "registry": null,
+                  "registry_identifier": null
+               },
+               "rrid": null,
+               "lot_number": "bu17",
+               "expiration_date": null
+            }
+         ],
+         "hcr_series": null,
+         "antibodies": null,
+         "sectioning": null,
+         "notes": "3/15/24 - 3/18/24 in 4c"
+      },
+      {
+         "procedure_type": "Fixation",
+         "procedure_name": "SHIELD ON",
+         "specimen_id": "721832",
+         "start_date": "2024-03-14",
+         "end_date": "2024-03-18",
+         "experimenter_full_name": "Some Fella",
+         "protocol_id": [
+            "none"
+         ],
+         "reagents": [
+            {
+               "name": "SHIELD ON",
+               "source": {
+                  "name": "LifeCanvas",
+                  "abbreviation": null,
+                  "registry": null,
+                  "registry_identifier": null
+               },
+               "rrid": null,
+               "lot_number": "on22",
+               "expiration_date": null
+            }
+         ],
+         "hcr_series": null,
+         "antibodies": null,
+         "sectioning": null,
+         "notes": "3/15/24 - 3/18/24 in 4c"
+      },
+      {
+         "procedure_type": "Delipidation",
+         "procedure_name": "24h Delipidation",
+         "specimen_id": "721832",
+         "start_date": "2024-03-18",
+         "end_date": "2024-03-19",
+         "experimenter_full_name": "Some Fella",
+         "protocol_id": [
+            "none"
+         ],
+         "reagents": [
+            {
+               "name": "Delipidation Buffer",
+               "source": {
+                  "name": "LifeCanvas",
+                  "abbreviation": null,
+                  "registry": null,
+                  "registry_identifier": null
+               },
+               "rrid": null,
+               "lot_number": "d19",
+               "expiration_date": null
+            }
+         ],
+         "hcr_series": null,
+         "antibodies": null,
+         "sectioning": null,
+         "notes": "None"
+      },
+      {
+         "procedure_type": "Delipidation",
+         "procedure_name": "Active Delipidation",
+         "specimen_id": "721832",
+         "start_date": "2024-03-19",
+         "end_date": "2024-03-21",
+         "experimenter_full_name": "Some Fella",
+         "protocol_id": [
+            "none"
+         ],
+         "reagents": [
+            {
+               "name": "Conduction Buffer",
+               "source": {
+                  "name": "LifeCanvas",
+                  "abbreviation": null,
+                  "registry": null,
+                  "registry_identifier": null
+               },
+               "rrid": null,
+               "lot_number": "d19",
+               "expiration_date": null
+            }
+         ],
+         "hcr_series": null,
+         "antibodies": null,
+         "sectioning": null,
+         "notes": "None"
+      },
+      {
+         "procedure_type": "Refractive index matching",
+         "procedure_name": "50% EasyIndex",
+         "specimen_id": "721832",
+         "start_date": "2024-03-21",
+         "end_date": "2024-03-22",
+         "experimenter_full_name": "Some Fella",
+         "protocol_id": [
+            "none"
+         ],
+         "reagents": [
+            {
+               "name": "EasyIndex",
+               "source": {
+                  "name": "LifeCanvas",
+                  "abbreviation": null,
+                  "registry": null,
+                  "registry_identifier": null
+               },
+               "rrid": null,
+               "lot_number": "EI51",
+               "expiration_date": null
+            }
+         ],
+         "hcr_series": null,
+         "antibodies": null,
+         "sectioning": null,
+         "notes": "None"
+      },
+      {
+         "procedure_type": "Refractive index matching",
+         "procedure_name": "100% EasyIndex",
+         "specimen_id": "721832",
+         "start_date": "2024-03-22",
+         "end_date": "2024-03-25",
+         "experimenter_full_name": "Some Fella",
+         "protocol_id": [
+            "none"
+         ],
+         "reagents": [
+            {
+               "name": "EasyIndex",
+               "source": {
+                  "name": "LifeCanvas",
+                  "abbreviation": null,
+                  "registry": null,
+                  "registry_identifier": null
+               },
+               "rrid": null,
+               "lot_number": "EI51",
+               "expiration_date": null
+            }
+         ],
+         "hcr_series": null,
+         "antibodies": null,
+         "sectioning": null,
+         "notes": "None"
+      }
+   ],
+   "notes": null
+}
