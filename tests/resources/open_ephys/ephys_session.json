@@ -3,7 +3,7 @@
    "schema_version": "0.2.6",
    "protocol_id": [],
    "experimenter_full_name": [
-       "Al Dente"
+      "Al Dente"
    ],
    "session_start_time": "2023-04-04T10:37:28Z",
    "session_end_time": "2023-04-06T13:47:57.558000Z",
@@ -17,272 +17,272 @@
    "animal_weight_post": null,
    "weight_unit": "gram",
    "data_streams": [
-       {
-           "stream_start_time": "2023-04-04T10:37:28.815000Z",
-           "stream_end_time": "2023-04-06T11:47:57.558000Z",
-           "daq_names": [
-               "Basestation"
-           ],
-           "camera_names": [],
-           "light_sources": [],
-           "ephys_modules": [
-               {
-                   "assembly_name": "46121",
-                   "arc_angle": "5.3",
-                   "module_angle": "-27.1",
-                   "angle_unit": "degrees",
-                   "rotation_angle": null,
-                   "coordinate_transform": "behavior/calibration_info_np2_2024_01_17T15_04_00.npy",
-                   "calibration_date": "2024-01-17T15:04:00Z",
-                   "notes": "Easy insertion. Recorded 8 minutes, serially, so separate from prior insertion.",
-                   "primary_targeted_structure": "AntComMid",
-                   "targeted_ccf_coordinates": [
-                       {
-                           "ml": "5700.0",
-                           "ap": "5160.0",
-                           "dv": "5260.0",
-                           "unit": "micrometer",
-                           "ccf_version": "CCFv3"
-                       }
-                   ],
-                   "manipulator_coordinates": {
-                       "x": "7520.0",
-                       "y": "7505.0",
-                       "z": "7493.0",
-                       "unit": "micrometer"
-                   },
-                   "implant_hole_number": null,
-                   "ephys_probes": [
-                       {
-                           "name": "46121",
-                           "other_targeted_structures": []
-                       }
-                   ]
+      {
+         "stream_start_time": "2023-04-04T10:37:28.815000Z",
+         "stream_end_time": "2023-04-06T11:47:57.558000Z",
+         "daq_names": [
+            "Basestation"
+         ],
+         "camera_names": [],
+         "light_sources": [],
+         "ephys_modules": [
+            {
+               "assembly_name": "46121",
+               "arc_angle": "5.3",
+               "module_angle": "-27.1",
+               "angle_unit": "degrees",
+               "rotation_angle": null,
+               "coordinate_transform": "behavior/calibration_info_np2_2024_01_17T15_04_00.npy",
+               "calibration_date": "2024-01-17T15:04:00Z",
+               "notes": "Easy insertion. Recorded 8 minutes, serially, so separate from prior insertion.",
+               "primary_targeted_structure": "AntComMid",
+               "targeted_ccf_coordinates": [
+                  {
+                     "ml": "5700.0",
+                     "ap": "5160.0",
+                     "dv": "5260.0",
+                     "unit": "micrometer",
+                     "ccf_version": "CCFv3"
+                  }
+               ],
+               "manipulator_coordinates": {
+                  "x": "7520.0",
+                  "y": "7505.0",
+                  "z": "7493.0",
+                  "unit": "micrometer"
                },
-               {
-                   "assembly_name": "46118",
-                   "arc_angle": "14",
-                   "module_angle": "20",
-                   "angle_unit": "degrees",
-                   "rotation_angle": null,
-                   "coordinate_transform": "behavior/calibration_info_np2_2024_01_17T15_04_00.npy",
-                   "calibration_date": "2024-01-17T15:04:00Z",
-                   "notes": "Easy insertion. Recorded 8 minutes, serially, so separate from prior insertion.",
-                   "primary_targeted_structure": "VISp",
-                   "targeted_ccf_coordinates": [
-                       {
-                           "ml": "5700.0",
-                           "ap": "5160.0",
-                           "dv": "5260.0",
-                           "unit": "micrometer",
-                           "ccf_version": "CCFv3"
-                       }
-                   ],
-                   "manipulator_coordinates": {
-                       "x": "7500.0",
-                       "y": "7499.5",
-                       "z": "7600.0",
-                       "unit": "micrometer"
-                   },
-                   "implant_hole_number": null,
-                   "ephys_probes": [
-                       {
-                           "name": "46118",
-                           "other_targeted_structures": []
-                       }
-                   ]
-               }
-           ],
-           "stick_microscopes": [
-               {
-                   "assembly_name": "20516338",
-                   "arc_angle": "-180.0",
-                   "module_angle": "-180.0",
-                   "angle_unit": "degrees",
-                   "rotation_angle": null,
-                   "coordinate_transform": null,
-                   "calibration_date": null,
-                   "notes": "Did not record arc or module angles, did not calibrate"
+               "implant_hole_number": null,
+               "ephys_probes": [
+                  {
+                     "name": "46121",
+                     "other_targeted_structures": []
+                  }
+               ]
+            },
+            {
+               "assembly_name": "46118",
+               "arc_angle": "14",
+               "module_angle": "20",
+               "angle_unit": "degrees",
+               "rotation_angle": null,
+               "coordinate_transform": "behavior/calibration_info_np2_2024_01_17T15_04_00.npy",
+               "calibration_date": "2024-01-17T15:04:00Z",
+               "notes": "Easy insertion. Recorded 8 minutes, serially, so separate from prior insertion.",
+               "primary_targeted_structure": "VISp",
+               "targeted_ccf_coordinates": [
+                  {
+                     "ml": "5700.0",
+                     "ap": "5160.0",
+                     "dv": "5260.0",
+                     "unit": "micrometer",
+                     "ccf_version": "CCFv3"
+                  }
+               ],
+               "manipulator_coordinates": {
+                  "x": "7500.0",
+                  "y": "7499.5",
+                  "z": "7600.0",
+                  "unit": "micrometer"
                },
-               {
-                   "assembly_name": "22437106",
-                   "arc_angle": "-180.0",
-                   "module_angle": "-180.0",
-                   "angle_unit": "degrees",
-                   "rotation_angle": null,
-                   "coordinate_transform": null,
-                   "calibration_date": null,
-                   "notes": "Did not record arc or module angles, did not calibrate"
+               "implant_hole_number": null,
+               "ephys_probes": [
+                  {
+                     "name": "46118",
+                     "other_targeted_structures": []
+                  }
+               ]
+            }
+         ],
+         "stick_microscopes": [
+            {
+               "assembly_name": "20516338",
+               "arc_angle": "-180.0",
+               "module_angle": "-180.0",
+               "angle_unit": "degrees",
+               "rotation_angle": null,
+               "coordinate_transform": null,
+               "calibration_date": null,
+               "notes": "Did not record arc or module angles, did not calibrate"
+            },
+            {
+               "assembly_name": "22437106",
+               "arc_angle": "-180.0",
+               "module_angle": "-180.0",
+               "angle_unit": "degrees",
+               "rotation_angle": null,
+               "coordinate_transform": null,
+               "calibration_date": null,
+               "notes": "Did not record arc or module angles, did not calibrate"
+            },
+            {
+               "assembly_name": "22437107",
+               "arc_angle": "-180.0",
+               "module_angle": "-180.0",
+               "angle_unit": "degrees",
+               "rotation_angle": null,
+               "coordinate_transform": null,
+               "calibration_date": null,
+               "notes": "Did not record arc or module angles, did not calibrate"
+            },
+            {
+               "assembly_name": "22438379",
+               "arc_angle": "-180.0",
+               "module_angle": "-180.0",
+               "angle_unit": "degrees",
+               "rotation_angle": null,
+               "coordinate_transform": null,
+               "calibration_date": null,
+               "notes": "Did not record arc or module angles, did not calibrate"
+            }
+         ],
+         "manipulator_modules": [],
+         "detectors": [],
+         "fiber_connections": [],
+         "fiber_modules": [],
+         "ophys_fovs": [],
+         "slap_fovs": null,
+         "stack_parameters": null,
+         "stream_modalities": [
+            {
+               "name": "Extracellular electrophysiology",
+               "abbreviation": "ecephys"
+            }
+         ],
+         "notes": null
+      },
+      {
+         "stream_start_time": "2023-04-04T12:37:28.815000Z",
+         "stream_end_time": "2023-04-06T13:47:57.558000Z",
+         "daq_names": [
+            "Basestation"
+         ],
+         "camera_names": [],
+         "light_sources": [],
+         "ephys_modules": [
+            {
+               "assembly_name": "46121",
+               "arc_angle": "5.3",
+               "module_angle": "-27.1",
+               "angle_unit": "degrees",
+               "rotation_angle": null,
+               "coordinate_transform": "behavior/calibration_info_np2_2024_01_17T15_04_00.npy",
+               "calibration_date": "2024-01-17T15:04:00Z",
+               "notes": "Easy insertion. Recorded 8 minutes, serially, so separate from prior insertion.",
+               "primary_targeted_structure": "AntComMid",
+               "targeted_ccf_coordinates": [
+                  {
+                     "ml": "5700.0",
+                     "ap": "5160.0",
+                     "dv": "5260.0",
+                     "unit": "micrometer",
+                     "ccf_version": "CCFv3"
+                  }
+               ],
+               "manipulator_coordinates": {
+                  "x": "7520.0",
+                  "y": "7505.0",
+                  "z": "7493.0",
+                  "unit": "micrometer"
                },
-               {
-                   "assembly_name": "22437107",
-                   "arc_angle": "-180.0",
-                   "module_angle": "-180.0",
-                   "angle_unit": "degrees",
-                   "rotation_angle": null,
-                   "coordinate_transform": null,
-                   "calibration_date": null,
-                   "notes": "Did not record arc or module angles, did not calibrate"
+               "implant_hole_number": null,
+               "ephys_probes": [
+                  {
+                     "name": "46121",
+                     "other_targeted_structures": []
+                  }
+               ]
+            },
+            {
+               "assembly_name": "46118",
+               "arc_angle": "14",
+               "module_angle": "20",
+               "angle_unit": "degrees",
+               "rotation_angle": null,
+               "coordinate_transform": "behavior/calibration_info_np2_2024_01_17T15_04_00.npy",
+               "calibration_date": "2024-01-17T15:04:00Z",
+               "notes": "Easy insertion. Recorded 8 minutes, serially, so separate from prior insertion.",
+               "primary_targeted_structure": "VISp",
+               "targeted_ccf_coordinates": [
+                  {
+                     "ml": "5700.0",
+                     "ap": "5160.0",
+                     "dv": "5260.0",
+                     "unit": "micrometer",
+                     "ccf_version": "CCFv3"
+                  }
+               ],
+               "manipulator_coordinates": {
+                  "x": "7500.0",
+                  "y": "7499.5",
+                  "z": "7600.0",
+                  "unit": "micrometer"
                },
-               {
-                   "assembly_name": "22438379",
-                   "arc_angle": "-180.0",
-                   "module_angle": "-180.0",
-                   "angle_unit": "degrees",
-                   "rotation_angle": null,
-                   "coordinate_transform": null,
-                   "calibration_date": null,
-                   "notes": "Did not record arc or module angles, did not calibrate"
-               }
-           ],
-           "manipulator_modules": [],
-           "detectors": [],
-           "fiber_connections": [],
-           "fiber_modules": [],
-           "ophys_fovs": [],
-           "slap_fovs": null,
-           "stack_parameters": null,
-           "stream_modalities": [
-               {
-                   "name": "Extracellular electrophysiology",
-                   "abbreviation": "ecephys"
-               }
-           ],
-           "notes": null
-       },
-       {
-           "stream_start_time": "2023-04-04T12:37:28.815000Z",
-           "stream_end_time": "2023-04-06T13:47:57.558000Z",
-           "daq_names": [
-               "Basestation"
-           ],
-           "camera_names": [],
-           "light_sources": [],
-           "ephys_modules": [
-               {
-                   "assembly_name": "46121",
-                   "arc_angle": "5.3",
-                   "module_angle": "-27.1",
-                   "angle_unit": "degrees",
-                   "rotation_angle": null,
-                   "coordinate_transform": "behavior/calibration_info_np2_2024_01_17T15_04_00.npy",
-                   "calibration_date": "2024-01-17T15:04:00Z",
-                   "notes": "Easy insertion. Recorded 8 minutes, serially, so separate from prior insertion.",
-                   "primary_targeted_structure": "AntComMid",
-                   "targeted_ccf_coordinates": [
-                       {
-                           "ml": "5700.0",
-                           "ap": "5160.0",
-                           "dv": "5260.0",
-                           "unit": "micrometer",
-                           "ccf_version": "CCFv3"
-                       }
-                   ],
-                   "manipulator_coordinates": {
-                       "x": "7520.0",
-                       "y": "7505.0",
-                       "z": "7493.0",
-                       "unit": "micrometer"
-                   },
-                   "implant_hole_number": null,
-                   "ephys_probes": [
-                       {
-                           "name": "46121",
-                           "other_targeted_structures": []
-                       }
-                   ]
-               },
-               {
-                   "assembly_name": "46118",
-                   "arc_angle": "14",
-                   "module_angle": "20",
-                   "angle_unit": "degrees",
-                   "rotation_angle": null,
-                   "coordinate_transform": "behavior/calibration_info_np2_2024_01_17T15_04_00.npy",
-                   "calibration_date": "2024-01-17T15:04:00Z",
-                   "notes": "Easy insertion. Recorded 8 minutes, serially, so separate from prior insertion.",
-                   "primary_targeted_structure": "VISp",
-                   "targeted_ccf_coordinates": [
-                       {
-                           "ml": "5700.0",
-                           "ap": "5160.0",
-                           "dv": "5260.0",
-                           "unit": "micrometer",
-                           "ccf_version": "CCFv3"
-                       }
-                   ],
-                   "manipulator_coordinates": {
-                       "x": "7500.0",
-                       "y": "7499.5",
-                       "z": "7600.0",
-                       "unit": "micrometer"
-                   },
-                   "implant_hole_number": null,
-                   "ephys_probes": [
-                       {
-                           "name": "46118",
-                           "other_targeted_structures": []
-                       }
-                   ]
-               }
-           ],
-           "stick_microscopes": [
-               {
-                   "assembly_name": "20516338",
-                   "arc_angle": "-180.0",
-                   "module_angle": "-180.0",
-                   "angle_unit": "degrees",
-                   "rotation_angle": null,
-                   "coordinate_transform": null,
-                   "calibration_date": null,
-                   "notes": "Did not record arc or module angles, did not calibrate"
-               },
-               {
-                   "assembly_name": "22437106",
-                   "arc_angle": "-180.0",
-                   "module_angle": "-180.0",
-                   "angle_unit": "degrees",
-                   "rotation_angle": null,
-                   "coordinate_transform": null,
-                   "calibration_date": null,
-                   "notes": "Did not record arc or module angles, did not calibrate"
-               },
-               {
-                   "assembly_name": "22437107",
-                   "arc_angle": "-180.0",
-                   "module_angle": "-180.0",
-                   "angle_unit": "degrees",
-                   "rotation_angle": null,
-                   "coordinate_transform": null,
-                   "calibration_date": null,
-                   "notes": "Did not record arc or module angles, did not calibrate"
-               },
-               {
-                   "assembly_name": "22438379",
-                   "arc_angle": "-180.0",
-                   "module_angle": "-180.0",
-                   "angle_unit": "degrees",
-                   "rotation_angle": null,
-                   "coordinate_transform": null,
-                   "calibration_date": null,
-                   "notes": "Did not record arc or module angles, did not calibrate"
-               }
-           ],
-           "manipulator_modules": [],
-           "detectors": [],
-           "fiber_connections": [],
-           "fiber_modules": [],
-           "ophys_fovs": [],
-           "slap_fovs": null,
-           "stack_parameters": null,
-           "stream_modalities": [
-               {
-                   "name": "Extracellular electrophysiology",
-                   "abbreviation": "ecephys"
-               }
-           ],
-           "notes": null
-       }
+               "implant_hole_number": null,
+               "ephys_probes": [
+                  {
+                     "name": "46118",
+                     "other_targeted_structures": []
+                  }
+               ]
+            }
+         ],
+         "stick_microscopes": [
+            {
+               "assembly_name": "20516338",
+               "arc_angle": "-180.0",
+               "module_angle": "-180.0",
+               "angle_unit": "degrees",
+               "rotation_angle": null,
+               "coordinate_transform": null,
+               "calibration_date": null,
+               "notes": "Did not record arc or module angles, did not calibrate"
+            },
+            {
+               "assembly_name": "22437106",
+               "arc_angle": "-180.0",
+               "module_angle": "-180.0",
+               "angle_unit": "degrees",
+               "rotation_angle": null,
+               "coordinate_transform": null,
+               "calibration_date": null,
+               "notes": "Did not record arc or module angles, did not calibrate"
+            },
+            {
+               "assembly_name": "22437107",
+               "arc_angle": "-180.0",
+               "module_angle": "-180.0",
+               "angle_unit": "degrees",
+               "rotation_angle": null,
+               "coordinate_transform": null,
+               "calibration_date": null,
+               "notes": "Did not record arc or module angles, did not calibrate"
+            },
+            {
+               "assembly_name": "22438379",
+               "arc_angle": "-180.0",
+               "module_angle": "-180.0",
+               "angle_unit": "degrees",
+               "rotation_angle": null,
+               "coordinate_transform": null,
+               "calibration_date": null,
+               "notes": "Did not record arc or module angles, did not calibrate"
+            }
+         ],
+         "manipulator_modules": [],
+         "detectors": [],
+         "fiber_connections": [],
+         "fiber_modules": [],
+         "ophys_fovs": [],
+         "slap_fovs": null,
+         "stack_parameters": null,
+         "stream_modalities": [
+            {
+               "name": "Extracellular electrophysiology",
+               "abbreviation": "ecephys"
+            }
+         ],
+         "notes": null
+      }
    ],
    "stimulus_epochs": [],
    "mouse_platform_name": "Running Wheel",
