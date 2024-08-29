@@ -71,6 +71,10 @@ dynamicrouting = [
     "pyyaml >= 6.0.0",
 ]
 
+u19 = [
+    "pandas >= 2.2.2",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
