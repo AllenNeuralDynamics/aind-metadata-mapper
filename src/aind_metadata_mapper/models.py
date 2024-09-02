@@ -1,7 +1,7 @@
 """Module to define models for Gather Metadata Job"""
 
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from aind_data_schema.core.processing import PipelineProcess
 from aind_data_schema_models.modalities import Modality
@@ -106,6 +106,7 @@ class MetadataSettings(BaseJobSettings):
 class JobSettings(BaseJobSettings):
     """Fields needed to gather all metadata"""
 
+    job_settings_name: Literal["GatherMetadata"] = "GatherMetadata"
     metadata_service_domain: Optional[str] = None
     subject_settings: Optional[SubjectSettings] = None
     session_settings: Optional[SessionSettings] = None
