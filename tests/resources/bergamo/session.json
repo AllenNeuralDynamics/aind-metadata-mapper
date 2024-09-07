@@ -1,6 +1,6 @@
 {
    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/session.py",
-   "schema_version": "0.2.6",
+   "schema_version": "1.0.0",
    "protocol_id": [],
    "experimenter_full_name": [
       "Jane Doe"
@@ -76,13 +76,13 @@
                "notes": null
             }
          ],
-         "slap_fovs": null,
+         "slap_fovs": [],
          "stack_parameters": null,
          "mri_scans": [],
          "stream_modalities": [
             {
                "name": "Planar optical physiology",
-               "abbreviation": "ophys"
+               "abbreviation": "pophys"
             }
          ],
          "software": [],
@@ -146,13 +146,13 @@
                "notes": null
             }
          ],
-         "slap_fovs": null,
+         "slap_fovs": [],
          "stack_parameters": null,
          "mri_scans": [],
          "stream_modalities": [
             {
                "name": "Planar optical physiology",
-               "abbreviation": "ophys"
+               "abbreviation": "pophys"
             }
          ],
          "software": [],
@@ -216,13 +216,13 @@
                "notes": null
             }
          ],
-         "slap_fovs": null,
+         "slap_fovs": [],
          "stack_parameters": null,
          "mri_scans": [],
          "stream_modalities": [
             {
                "name": "Planar optical physiology",
-               "abbreviation": "ophys"
+               "abbreviation": "pophys"
             }
          ],
          "software": [],
@@ -289,13 +289,13 @@
                "notes": null
             }
          ],
-         "slap_fovs": null,
+         "slap_fovs": [],
          "stack_parameters": null,
          "mri_scans": [],
          "stream_modalities": [
             {
                "name": "Planar optical physiology",
-               "abbreviation": "ophys"
+               "abbreviation": "pophys"
             },
             {
                "name": "Behavior",
@@ -324,7 +324,7 @@
          "stimulus_parameters": null,
          "stimulus_device_names": [],
          "speaker_config": null,
-         "light_source_config": null,
+         "light_source_config": [],
          "output_parameters": {
             "tiff_files": [
                "spont2_00001.tif",
@@ -353,7 +353,7 @@
          "stimulus_parameters": null,
          "stimulus_device_names": [],
          "speaker_config": null,
-         "light_source_config": null,
+         "light_source_config": [],
          "output_parameters": {
             "tiff_files": [
                "spont3_00001.tif",
@@ -383,7 +383,7 @@
          "stimulus_parameters": null,
          "stimulus_device_names": [],
          "speaker_config": null,
-         "light_source_config": null,
+         "light_source_config": [],
          "output_parameters": {
             "tiff_files": [
                "spont_00001.tif"
@@ -425,7 +425,7 @@
             "lickport"
          ],
          "speaker_config": null,
-         "light_source_config": null,
+         "light_source_config": [],
          "output_parameters": {
             "tiff_files": [
                "pair3_7vs29_00001.tif",
@@ -449,6 +449,7 @@
    ],
    "mouse_platform_name": "Standard Mouse Tube",
    "active_mouse_platform": false,
+   "headframe_registration": null,
    "reward_delivery": {
       "reward_solution": "Water",
       "reward_spouts": [
@@ -502,6 +503,6 @@
       "notes": null
    },
    "reward_consumed_total": null,
-   "reward_consumed_unit": "microliter",
+   "reward_consumed_unit": "milliliter",
    "notes": null
 }
