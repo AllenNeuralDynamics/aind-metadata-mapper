@@ -7,8 +7,7 @@ import sys
 import traceback
 from datetime import datetime, timedelta
 from decimal import Decimal
-from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Union
 from zoneinfo import ZoneInfo
 
 from aind_data_schema.components.coordinates import (
@@ -16,11 +15,7 @@ from aind_data_schema.components.coordinates import (
     Scale3dTransform,
     Translation3dTransform,
 )
-from aind_data_schema.components.devices import (
-    MagneticStrength,
-    Scanner,
-    ScannerLocation,
-)
+from aind_data_schema.components.devices import Scanner
 from aind_data_schema.core.session import (
     MRIScan,
     MriScanSequence,
@@ -32,39 +27,9 @@ from aind_data_schema.core.session import (
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import TimeUnit
 from bruker2nifti._metadata import BrukerMetadata
-from pydantic import Field
-from pydantic_settings import BaseSettings
 
+from aind_metadata_mapper.bruker.models import JobSettings
 from aind_metadata_mapper.core import GenericEtl, JobResponse
-
-
-class JobSettings(BaseSettings):
-    """Data that needs to be input by user."""
-
-    data_path: Path
-    output_directory: Optional[Path] = Field(
-        default=None,
-        description=(
-            "Directory where to save the json file to. If None, then json"
-            " contents will be returned in the Response message."
-        ),
-    )
-    experimenter_full_name: List[str]
-    protocol_id: str = Field(default="", description="Protocol ID")
-    collection_tz: str = Field(
-        default="America/Los_Angeles",
-        description="Timezone string of the collection site",
-    )
-    session_type: str
-    primary_scan_number: int
-    setup_scan_number: int
-    scanner_name: str
-    scan_location: ScannerLocation
-    magnetic_strength: MagneticStrength
-    subject_id: str
-    iacuc_protocol: str
-    session_notes: str
-
 
 DATETIME_FORMAT = "%H:%M:%S %d %b %Y"
 LENGTH_FORMAT = "%Hh%Mm%Ss%fms"
