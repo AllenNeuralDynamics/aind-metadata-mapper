@@ -316,11 +316,11 @@ class Camstim:
 
             # if this row is a movie or image set, record it's stim name in
             # the epoch's templates entry
-            stim_type = row.get("stim_type", "")
-            if pd.isnull(stim_type):
-                stim_type = ""
+            stim_name = row.get("stim_name", "")
+            if pd.isnull(stim_name):
+                stim_name = ""
 
-            if "image" in stim_type.lower() or "movie" in stim_type.lower():
+            if "image" in stim_name.lower() or "movie" in stim_name.lower():
                 current_epoch[4].add(row["stim_name"])
 
         # slice off dummy epoch from beginning

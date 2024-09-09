@@ -77,6 +77,6 @@ class NeuropixelsRigEtl(BaseEtl):
             modification_date = date.today()
 
         extracted_source.rig_id = (
-            f"{room_id}_{rig_name}_{modification_date.strftime('%y%m%d')}"
+            f"{room_id}_{rig_name}_{modification_date.strftime('%Y%m%d')}"
         )
         extracted_source.modification_date = modification_date

@@ -5,7 +5,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import List, Optional, Type
+from typing import Optional, Type
 
 import requests
 from aind_data_schema.base import AindCoreModel
@@ -17,83 +17,28 @@ from aind_data_schema.core.data_description import (
 from aind_data_schema.core.instrument import Instrument
 from aind_data_schema.core.metadata import Metadata
 from aind_data_schema.core.procedures import Procedures
-from aind_data_schema.core.processing import PipelineProcess, Processing
+from aind_data_schema.core.processing import Processing
 from aind_data_schema.core.rig import Rig
 from aind_data_schema.core.session import Session
 from aind_data_schema.core.subject import Subject
-from aind_data_schema_models.modalities import Modality
-from aind_data_schema_models.organizations import Organization
 from aind_data_schema_models.pid_names import PIDName
-from pydantic import Field, ValidationError
-from pydantic_settings import BaseSettings
+from pydantic import ValidationError
 
-
-class SubjectSettings(BaseSettings):
-    """Fields needed to retrieve subject metadata"""
-
-    subject_id: str
-    metadata_service_path: str = "subject"
-
-
-class ProceduresSettings(BaseSettings):
-    """Fields needed to retrieve procedures metadata"""
-
-    subject_id: str
-    metadata_service_path: str = "procedures"
-
-
-class RawDataDescriptionSettings(BaseSettings):
-    """Fields needed to retrieve data description metadata"""
-
-    name: str
-    project_name: str
-    modality: List[Modality.ONE_OF]
-    institution: Optional[Organization.ONE_OF] = Organization.AIND
-    metadata_service_path: str = "funding"
-
-
-class ProcessingSettings(BaseSettings):
-    """Fields needed to retrieve processing metadata"""
-
-    pipeline_process: PipelineProcess
-
-
-class MetadataSettings(BaseSettings):
-    """Fields needed to retrieve main Metadata"""
-
-    name: str
-    location: str
-    subject_filepath: Optional[Path] = None
-    data_description_filepath: Optional[Path] = None
-    procedures_filepath: Optional[Path] = None
-    session_filepath: Optional[Path] = None
-    rig_filepath: Optional[Path] = None
-    processing_filepath: Optional[Path] = None
-    acquisition_filepath: Optional[Path] = None
-    instrument_filepath: Optional[Path] = None
-
-
-class JobSettings(BaseSettings):
-    """Fields needed to gather all metadata"""
-
-    metadata_service_domain: Optional[str] = None
-    subject_settings: Optional[SubjectSettings] = None
-    raw_data_description_settings: Optional[RawDataDescriptionSettings] = None
-    procedures_settings: Optional[ProceduresSettings] = None
-    processing_settings: Optional[ProcessingSettings] = None
-    metadata_settings: Optional[MetadataSettings] = None
-    directory_to_write_to: Path
-    metadata_dir: Optional[Path] = Field(
-        default=None,
-        description="Optional path where user defined metadata files might be",
-    )
-    metadata_dir_force: bool = Field(
-        default=False,
-        description=(
-            "Whether to override the user defined files in metadata_dir with "
-            "those pulled from metadata service"
-        ),
-    )
+from aind_metadata_mapper.bergamo.models import (
+    JobSettings as BergamoSessionJobSettings,
+)
+from aind_metadata_mapper.bergamo.session import BergamoEtl
+from aind_metadata_mapper.bruker.models import (
+    JobSettings as BrukerSessionJobSettings,
+)
+from aind_metadata_mapper.bruker.session import MRIEtl
+from aind_metadata_mapper.fip.models import (
+    JobSettings as FipSessionJobSettings,
+)
+from aind_metadata_mapper.fip.session import FIBEtl
+from aind_metadata_mapper.mesoscope.session import MesoscopeEtl
+from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.smartspim.acquisition import SmartspimETL
 
 
 class GatherMetadataJob:
@@ -107,6 +52,9 @@ class GatherMetadataJob:
         settings : JobSettings
         """
         self.settings = settings
+        # convert metadata_str to Path object
+        if isinstance(self.settings.metadata_dir, str):
+            self.settings.metadata_dir = Path(self.settings.metadata_dir)
 
     def _does_file_exist_in_user_defined_dir(self, file_name: str) -> bool:
         """
@@ -324,6 +272,21 @@ class GatherMetadataJob:
                 file_name=file_name
             )
             return contents
+        elif self.settings.session_settings is not None:
+            session_settings = self.settings.session_settings.job_settings
+            if isinstance(session_settings, BergamoSessionJobSettings):
+                session_job = BergamoEtl(job_settings=session_settings)
+            elif isinstance(session_settings, BrukerSessionJobSettings):
+                session_job = MRIEtl(job_settings=session_settings)
+            elif isinstance(session_settings, FipSessionJobSettings):
+                session_job = FIBEtl(job_settings=session_settings)
+            else:
+                session_job = MesoscopeEtl(job_settings=session_settings)
+            job_response = session_job.run_job()
+            if job_response.status_code != 500:
+                return json.loads(job_response.data)
+            else:
+                return None
         else:
             return None
 
@@ -346,6 +309,15 @@ class GatherMetadataJob:
                 file_name=file_name
             )
             return contents
+        elif self.settings.acquisition_settings is not None:
+            acquisition_job = SmartspimETL(
+                job_settings=(self.settings.acquisition_settings.job_settings)
+            )
+            job_response = acquisition_job.run_job()
+            if job_response.status_code != 500:
+                return json.loads(job_response.data)
+            else:
+                return None
         else:
             return None
 

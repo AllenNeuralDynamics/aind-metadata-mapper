@@ -3,16 +3,15 @@
 import os
 import re
 from datetime import datetime
-from pathlib import Path
-from typing import Dict
+from typing import Dict, Union
 
 from aind_data_schema.components.coordinates import ImageAxis
 from aind_data_schema.core import acquisition
 from pydantic_settings import BaseSettings
 
 from aind_metadata_mapper.core import GenericEtl, JobResponse
-
-from .utils import (
+from aind_metadata_mapper.smartspim.models import JobSettings
+from aind_metadata_mapper.smartspim.utils import (
     get_anatomical_direction,
     get_excitation_emission_waves,
     get_session_end,
@@ -21,28 +20,13 @@ from .utils import (
 )
 
 
-class JobSettings(BaseSettings):
-    """Data to be entered by the user."""
-
-    subject_id: str
-    raw_dataset_path: Path
-    output_directory: Path
-
-    # Metadata names
-    asi_filename: str = "derivatives/ASI_logging.txt"
-    mdata_filename_json: str = "derivatives/metadata.json"
-
-    # Metadata provided by microscope operators
-    processing_manifest_path: str = "derivatives/processing_manifest.json"
-
-
 class SmartspimETL(GenericEtl):
     """
     This class contains the methods to write the metadata
     for a SmartSPIM session
     """
 
-    def __init__(self, job_settings: BaseSettings):
+    def __init__(self, job_settings: Union[BaseSettings, str]):
         """
         Constructor method
 

@@ -11,16 +11,35 @@ from aind_data_schema.core.metadata import Metadata
 from aind_data_schema.core.processing import DataProcess, PipelineProcess
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.process_names import ProcessName
+from pydantic import ValidationError
 from requests import Response
 
-from aind_metadata_mapper.gather_metadata import (
-    GatherMetadataJob,
+from aind_metadata_mapper.bergamo.models import (
+    JobSettings as BergamoSessionJobSettings,
+)
+from aind_metadata_mapper.bruker.models import (
+    JobSettings as BrukerSessionJobSettings,
+)
+from aind_metadata_mapper.core import JobResponse
+from aind_metadata_mapper.fip.models import (
+    JobSettings as FipSessionJobSettings,
+)
+from aind_metadata_mapper.gather_metadata import GatherMetadataJob
+from aind_metadata_mapper.mesoscope.models import (
+    JobSettings as MesoscopeSessionJobSettings,
+)
+from aind_metadata_mapper.models import (
+    AcquisitionSettings,
     JobSettings,
     MetadataSettings,
     ProceduresSettings,
     ProcessingSettings,
     RawDataDescriptionSettings,
+    SessionSettings,
     SubjectSettings,
+)
+from aind_metadata_mapper.smartspim.acquisition import (
+    JobSettings as SmartSpimAcquisitionJobSettings,
 )
 
 RESOURCES_DIR = (
@@ -29,6 +48,7 @@ RESOURCES_DIR = (
     / "gather_metadata_job"
 )
 METADATA_DIR = RESOURCES_DIR / "metadata_files"
+EXAMPLE_BERGAMO_CONFIGS = RESOURCES_DIR / "test_bergamo_configs.json"
 
 
 class TestGatherMetadataJob(unittest.TestCase):
@@ -472,6 +492,112 @@ class TestGatherMetadataJob(unittest.TestCase):
         contents = metadata_job.get_session_metadata()
         self.assertIsNotNone(contents)
 
+    @patch("aind_metadata_mapper.bergamo.session.BergamoEtl.run_job")
+    def test_get_session_metadata_bergamo_success(
+        self, mock_run_job: MagicMock
+    ):
+        """Tests get_session_metadata bergamo"""
+        mock_run_job.return_value = JobResponse(
+            status_code=200, data=json.dumps({"some_key": "some_value"})
+        )
+        bergamo_session_settings = BergamoSessionJobSettings.model_construct()
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            session_settings=SessionSettings(
+                job_settings=bergamo_session_settings
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_session_metadata()
+        self.assertEqual({"some_key": "some_value"}, contents)
+        mock_run_job.assert_called_once()
+
+    @patch("aind_metadata_mapper.bruker.session.MRIEtl.run_job")
+    def test_get_session_metadata_bruker_success(
+        self, mock_run_job: MagicMock
+    ):
+        """Tests get_session_metadata bruker creates MRIEtl"""
+        mock_run_job.return_value = JobResponse(
+            status_code=200, data=json.dumps({"some_key": "some_value"})
+        )
+        bruker_session_settings = BrukerSessionJobSettings.model_construct()
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            session_settings=SessionSettings(
+                job_settings=bruker_session_settings,
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_session_metadata()
+        self.assertEqual({"some_key": "some_value"}, contents)
+        mock_run_job.assert_called_once()
+
+    @patch("aind_metadata_mapper.fip.session.FIBEtl.run_job")
+    def test_get_session_metadata_fip_success(self, mock_run_job: MagicMock):
+        """Tests get_session_metadata bruker creates FibEtl"""
+        mock_run_job.return_value = JobResponse(
+            status_code=200, data=json.dumps({"some_key": "some_value"})
+        )
+        fip_session_settings = FipSessionJobSettings.model_construct()
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            session_settings=SessionSettings(
+                job_settings=fip_session_settings,
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_session_metadata()
+        self.assertEqual({"some_key": "some_value"}, contents)
+        mock_run_job.assert_called_once()
+
+    @patch("aind_metadata_mapper.mesoscope.session.MesoscopeEtl.run_job")
+    def test_get_session_metadata_mesoscope_success(
+        self, mock_run_job: MagicMock
+    ):
+        """Tests get_session_metadata bruker creates MRIEtl"""
+        mock_run_job.return_value = JobResponse(
+            status_code=200, data=json.dumps({"some_key": "some_value"})
+        )
+        mesoscope_session_settings = (
+            MesoscopeSessionJobSettings.model_construct()
+        )
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            session_settings=SessionSettings(
+                job_settings=mesoscope_session_settings,
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_session_metadata()
+        self.assertEqual({"some_key": "some_value"}, contents)
+        mock_run_job.assert_called_once()
+
+    def test_session_settings_error(self):
+        """Tests SessionSettings raises error if JobSettings is not expected"""
+        session_settings = SmartSpimAcquisitionJobSettings.model_construct()
+        with self.assertRaises(ValidationError):
+            JobSettings(
+                directory_to_write_to=RESOURCES_DIR,
+                session_settings=SessionSettings(
+                    job_settings=session_settings,
+                ),
+            )
+
+    @patch("aind_metadata_mapper.bergamo.session.BergamoEtl.run_job")
+    def test_get_session_metadata_error(self, mock_run_job: MagicMock):
+        """Tests get_session_metadata returns None when requesting
+        Bergamo metadata and a 500 response is returned."""
+        mock_run_job.return_value = JobResponse(status_code=500, data=None)
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            session_settings=SessionSettings(
+                job_settings=BergamoSessionJobSettings.model_construct()
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_session_metadata()
+        self.assertIsNone(contents)
+
     def test_get_session_metadata_none(self):
         """Tests get_session_metadata returns none"""
 
@@ -521,6 +647,56 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_acquisition_metadata()
+        self.assertIsNone(contents)
+
+    @patch("aind_metadata_mapper.smartspim.acquisition.SmartspimETL.run_job")
+    def test_get_acquisition_metadata_smartspim_success(
+        self, mock_run_job: MagicMock
+    ):
+        """Tests get_acquisition_metadata returns something when requesting
+        SmartSPIM metadata"""
+
+        mock_run_job.return_value = JobResponse(
+            status_code=200, data=json.dumps({"some_key": "some_value"})
+        )
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            acquisition_settings=AcquisitionSettings(
+                job_settings=SmartSpimAcquisitionJobSettings(
+                    subject_id="695464",
+                    raw_dataset_path=Path(
+                        "SmartSPIM_695464_2023-10-18_20-30-30"
+                    ),
+                )
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_acquisition_metadata()
+        self.assertEqual({"some_key": "some_value"}, contents)
+
+    @patch("aind_metadata_mapper.smartspim.acquisition.SmartspimETL.run_job")
+    def test_get_acquisition_metadata_smartspim_error(
+        self, mock_run_job: MagicMock
+    ):
+        """Tests get_acquisition_metadata returns None when requesting
+        SmartSPIM metadata and a 500 response is returned."""
+
+        mock_run_job.return_value = JobResponse(status_code=500, data=None)
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            acquisition_settings=AcquisitionSettings(
+                job_settings=SmartSpimAcquisitionJobSettings(
+                    subject_id="695464",
+                    raw_dataset_path=Path(
+                        "SmartSPIM_695464_2023-10-18_20-30-30"
+                    ),
+                )
+            ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_acquisition_metadata()
@@ -591,17 +767,15 @@ class TestGatherMetadataJob(unittest.TestCase):
             "Pydantic serializer warnings:\n"
             "  Expected `date` but got `str`"
             " - serialized value may not be as expected\n"
-            "  Expected `Union[CallithrixJacchus, HomoSapiens, MacacaMulatta, "
-            "MusMusculus, RattusNorvegicus]` but got `dict`"
+            "  Expected `Union[CALLITHRIX_JACCHUS, HOMO_SAPIENS, "
+            "MACACA_MULATTA, MUS_MUSCULUS, RATTUS_NORVEGICUS]` but got `dict`"
             " - serialized value may not be as expected\n"
             "  Expected `BreedingInfo` but got `dict`"
             " - serialized value may not be as expected\n"
-            "  Expected `Union[AllenInstitute, ColumbiaUniversity,"
-            " HuazhongUniversityOfScienceAndTechnology, JaneliaResearchCampus,"
-            " JacksonLaboratory, NewYorkUniversity, Other]` but got `dict`"
+            "  Expected `Union[AI, COLUMBIA, HUST, JANELIA, JAX, NYU, OTHER]`"
+            " but got `dict`"
             " - serialized value may not be as expected"
         )
-
         self.assertEqual(expected_warnings, str(w.warning))
         self.assertEqual(
             "s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
@@ -791,6 +965,27 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_write_file.assert_called()
         self.assertIsNotNone(json_contents.get("_id"))
         self.assertIsNone(json_contents.get("id"))
+
+    def test_from_job_settings_file(self):
+        """Tests that users can set a session config file when requesting
+        GatherMetadataJob"""
+
+        test_configs = {
+            "directory_to_write_to": RESOURCES_DIR,
+            "session_settings": {
+                "job_settings": {
+                    "job_settings_name": "Bergamo",
+                    "user_settings_config_file": EXAMPLE_BERGAMO_CONFIGS,
+                }
+            },
+        }
+        job_settings = JobSettings.model_validate_json(
+            json.dumps(test_configs, default=str)
+        )
+        self.assertEqual(
+            ["John Apple"],
+            job_settings.session_settings.job_settings.experimenter_full_name,
+        )
 
 
 if __name__ == "__main__":
