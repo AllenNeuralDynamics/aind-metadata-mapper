@@ -68,7 +68,7 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
             self.recording_dir = npc_ephys.get_single_oebin_path(
                 session_inst.lims_path
             ).parent
-        except FileNotFoundError:
+        except:
             self.recording_dir = npc_ephys.get_single_oebin_path(
                 session_inst.npexp_path
             ).parent
