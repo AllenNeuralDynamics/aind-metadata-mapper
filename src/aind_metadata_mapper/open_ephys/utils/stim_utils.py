@@ -579,12 +579,12 @@ def read_stimulus_name_from_path(stimulus):
     """
 
     stim_name = stimulus["stim_path"].split("\\")[-1].split(".")[0]
-
-    if len(stim_name) == 0:
-        stim_name = stimulus["stim_path"].split("\\\\")[-2]
-
+ 
+    if stimulus["stim_path"] == "":
+        stim_name = stimulus["movie_local_path"].split("\\")[-1].split(".")[0]
+    else:
+        stim_name = stimulus["stim_path"].split("\\")[-1].split(".")[0]
     return stim_name
-
 
 def get_stimulus_type(stimulus):
     """
