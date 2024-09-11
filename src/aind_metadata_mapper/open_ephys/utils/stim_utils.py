@@ -610,6 +610,7 @@ def read_stimulus_name_from_path(stimulus):
         stim_name = stimulus["stim_path"].split("\\")[-1].split(".")[0]
     return stim_name
 
+
 def get_stimulus_type(stimulus):
     """
     Obtains the stimulus type from the stimulus dictionary.
@@ -637,6 +638,7 @@ def get_stimulus_type(stimulus):
         return stim_type
     else:
         return "None or Blank"
+
 
 def build_stimuluswise_table(
     pickle_file,
