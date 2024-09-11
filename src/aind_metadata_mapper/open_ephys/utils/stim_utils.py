@@ -638,7 +638,6 @@ def get_stimulus_type(stimulus):
     else:
         return "None or Blank"
 
-
 def build_stimuluswise_table(
     pickle_file,
     stimulus,
