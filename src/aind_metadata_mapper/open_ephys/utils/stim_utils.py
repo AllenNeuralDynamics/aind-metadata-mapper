@@ -352,6 +352,30 @@ def make_spontaneous_activity_tables(
     return [spon_sweeps]
 
 
+def extract_blocks_from_stim(stims):
+    """
+    Extracts the blocks from a stim with multiple blocks
+
+    Parameters
+    ----------
+    stims: List[dict]
+        A list of stimuli dictionaries
+
+    Returns
+    -------
+    stim_chunked_blocks: List[dict]
+        A list of stimuli dictionaries with the blocks extracted
+    """
+    stim_chunked_blocks = []
+    for stimulus in stims:
+        if 'stimuli' in stimulus:
+            for stimulus_block in stimulus['stimuli']:
+                stim_chunked_blocks.append(stimulus_block)
+        else:
+            stim_chunked_blocks.append(stimulus)
+    return stim_chunked_blocks
+
+
 def extract_frame_times_from_photodiode(
     sync_file,
     photodiode_cycle=60,
