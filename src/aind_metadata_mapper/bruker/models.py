@@ -15,14 +15,6 @@ class JobSettings(BaseJobSettings):
     """Data that needs to be input by user."""
 
     job_settings_name: Literal["Bruker"] = "Bruker"
-    # data_path: Path
-    # output_directory: Optional[Path] = Field(
-    #     default=None,
-    #     description=(
-    #         "Directory where to save the json file to. If None, then json"
-    #         " contents will be returned in the Response message."
-    #     ),
-    # )
     experimenter_full_name: List[str]
     protocol_id: str = Field(default="", description="Protocol ID")
     collection_tz: str = Field(

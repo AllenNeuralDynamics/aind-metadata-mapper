@@ -13,10 +13,8 @@ class JobSettings(BaseJobSettings):
     """Data to be entered by the user."""
 
     job_settings_name: Literal["Mesoscope"] = "Mesoscope"
-    # input_source: Path
     # TODO: Can probably put this as part of input_source
     behavior_source: Union[Path, str]
-    # output_directory: Path
     session_start_time: datetime
     session_end_time: datetime
     subject_id: str

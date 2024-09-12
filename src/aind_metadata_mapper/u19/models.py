@@ -11,7 +11,6 @@ class JobSettings(BaseJobSettings):
     """Data that needs to be input by user."""
 
     job_settings_name: Literal["U19"] = "U19"
-    # tissue_sheet_path: Path
     tissue_sheet_names: List[str]
     experimenter_full_name: List[str]
     subject_to_ingest: str = Field(

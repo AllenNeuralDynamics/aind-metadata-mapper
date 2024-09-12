@@ -12,7 +12,6 @@ class JobSettings(BaseJobSettings):
     job_settings_name: Literal["SmartSPIM"] = "SmartSPIM"
 
     subject_id: str
-    # raw_dataset_path: Path
 
     # Metadata names
     asi_filename: str = "derivatives/ASI_logging.txt"
