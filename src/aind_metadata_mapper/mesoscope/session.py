@@ -1,11 +1,9 @@
 """Mesoscope ETL"""
 
-import argparse
 import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Union
 
 import tifffile
 from aind_data_schema.core.session import FieldOfView, Session, Stream
@@ -31,18 +29,8 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         312782574: "VISli",
     }
 
-    def __init__(
-        self,
-        job_settings: Union[JobSettings, str],
-    ):
-        """Class constructor for Mesoscope etl job"""
-        if isinstance(job_settings, str):
-            job_settings_model = JobSettings.model_validate_json(job_settings)
-        else:
-            job_settings_model = job_settings
-        super().__init__(job_settings=job_settings_model)
-
-    def _read_metadata(self, tiff_path: Path):
+    @staticmethod
+    def _read_metadata(tiff_path: Path):
         """
         Calls tifffile.read_scanimage_metadata on the specified
         path and returns teh result. This method was factored
@@ -72,7 +60,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         # The pydantic models will validate that the user inputs a Path.
         # We can add validators there if we want to coerce strings to Paths.
         input_source = self.job_settings.input_source
-        behavior_source = self.job_settings.behavior_source
+        behavior_source = Path(self.job_settings.behavior_source)
         session_metadata = {}
         if behavior_source.is_dir():
             # deterministic order
@@ -218,42 +206,9 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
             output_directory=self.job_settings.output_directory
         )
 
-    @classmethod
-    def from_args(cls, args: list):
-        """
-        Adds ability to construct settings from a list of arguments.
-        Parameters
-        ----------
-        args : list
-        A list of command line arguments to parse.
-        """
-
-        parser = argparse.ArgumentParser()
-        parser.add_argument(
-            "-u",
-            "--job-settings",
-            required=True,
-            type=json.loads,
-            help=(
-                r"""
-                Custom settings defined by the user defined as a json
-                 string. For example: -u
-                 '{"experimenter_full_name":["John Smith","Jane Smith"],
-                 "subject_id":"12345",
-                 "session_start_time":"2023-10-10T10:10:10",
-                 "session_end_time":"2023-10-10T18:10:10",
-                 "project":"my_project"}
-                """
-            ),
-        )
-        job_args = parser.parse_args(args)
-        job_settings_from_args = JobSettings(**job_args.job_settings)
-        return cls(
-            job_settings=job_settings_from_args,
-        )
-
 
 if __name__ == "__main__":
     sys_args = sys.argv[1:]
-    metl = MesoscopeEtl.from_args(sys_args)
+    job_settings = JobSettings.from_args(sys_args)
+    metl = MesoscopeEtl(job_settings=job_settings)
     metl.run_job()

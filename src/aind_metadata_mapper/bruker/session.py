@@ -1,13 +1,11 @@
 """Sets up the MRI ingest ETL"""
 
-import argparse
-import json
 import logging
 import sys
 import traceback
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import List, Union
+from typing import List
 from zoneinfo import ZoneInfo
 
 from aind_data_schema.components.coordinates import (
@@ -38,59 +36,10 @@ LENGTH_FORMAT = "%Hh%Mm%Ss%fms"
 class MRIEtl(GenericEtl[JobSettings]):
     """Class for MRI ETL process."""
 
-    def __init__(self, job_settings: Union[JobSettings, str]):
-        """
-        Class constructor for Base etl class.
-        Parameters
-        ----------
-        job_settings: Union[JobSettings, str]
-          Variables for a particular session
-        """
-
-        if isinstance(job_settings, str):
-            job_settings_model = JobSettings.model_validate_json(job_settings)
-        else:
-            job_settings_model = job_settings
-        super().__init__(job_settings=job_settings_model)
-
-    @classmethod
-    def from_args(cls, args: list):
-        """
-        Adds ability to construct settings from a list of arguments.
-        Parameters
-        ----------
-        args : list
-        A list of command line arguments to parse.
-        """
-
-        parser = argparse.ArgumentParser()
-        parser.add_argument(
-            "-u",
-            "--job-settings",
-            required=True,
-            type=json.loads,
-            help=(
-                r"""
-                Custom settings defined by the user defined as a json
-                 string. For example: -u
-                 '{"experimenter_full_name":["John Smith","Jane Smith"],
-                 "subject_id":"12345",
-                 "session_start_time":"2023-10-10T10:10:10",
-                 "session_end_time":"2023-10-10T18:10:10",
-                 "project":"my_project"}
-                """
-            ),
-        )
-        job_args = parser.parse_args(args)
-        job_settings_from_args = JobSettings(**job_args.job_settings)
-        return cls(
-            job_settings=job_settings_from_args,
-        )
-
     def _extract(self) -> BrukerMetadata:
         """Extract the data from the bruker files."""
 
-        metadata = BrukerMetadata(self.job_settings.data_path)
+        metadata = BrukerMetadata(self.job_settings.input_source)
         metadata.parse_scans()
         metadata.parse_subject()
 
@@ -306,5 +255,6 @@ class MRIEtl(GenericEtl[JobSettings]):
 
 if __name__ == "__main__":
     sys_args = sys.argv[1:]
-    etl = MRIEtl.from_args(sys_args)
+    job_settings = JobSettings.from_args(sys_args)
+    etl = MRIEtl(job_settings=job_settings)
     etl.run_job()

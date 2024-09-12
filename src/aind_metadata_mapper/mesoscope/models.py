@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import List, Literal
+from typing import List, Literal, Union
 
 from pydantic import Field
 
@@ -13,9 +13,10 @@ class JobSettings(BaseJobSettings):
     """Data to be entered by the user."""
 
     job_settings_name: Literal["Mesoscope"] = "Mesoscope"
-    input_source: Path
-    behavior_source: Path
-    output_directory: Path
+    # input_source: Path
+    # TODO: Can probably put this as part of input_source
+    behavior_source: Union[Path, str]
+    # output_directory: Path
     session_start_time: datetime
     session_end_time: datetime
     subject_id: str

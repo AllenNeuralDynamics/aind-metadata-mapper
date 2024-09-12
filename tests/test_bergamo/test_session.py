@@ -52,15 +52,6 @@ class TestBergamoEtl(unittest.TestCase):
         }
         self.assertEqual(expected_paths, locations)
 
-    def test_class_constructor(self):
-        """Tests that the class can be constructed from a json string"""
-        settings1 = self.example_job_settings.model_copy(deep=True)
-        json_str = settings1.model_dump_json()
-        etl_job1 = BergamoEtl(
-            job_settings=json_str,
-        )
-        self.assertEqual(settings1, etl_job1.job_settings)
-
     def test_flat_dict_to_nested(self):
         """Test util method to convert dictionaries from flat to nested."""
         original_input = {

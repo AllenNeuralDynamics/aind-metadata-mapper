@@ -85,17 +85,6 @@ class TestSchemaWriter(unittest.TestCase):
             json.dumps(expected_session_contents)
         )
 
-    def test_constructor_from_string(self) -> None:
-        """Tests that the settings can be constructed from a json string"""
-        job_settings_str = self.example_job_settings.model_dump_json()
-        etl0 = FIBEtl(
-            job_settings=job_settings_str,
-        )
-        etl1 = FIBEtl(
-            job_settings=self.example_job_settings,
-        )
-        self.assertEqual(etl1.job_settings, etl0.job_settings)
-
     def test_extract(self):
         """Tests that the teensy response and experiment
         data is extracted correctly"""

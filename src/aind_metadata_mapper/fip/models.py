@@ -1,10 +1,7 @@
 """Module defining JobSettings for FIP ETL"""
 
 from datetime import datetime
-from pathlib import Path
-from typing import List, Literal, Optional
-
-from pydantic import Field
+from typing import List, Literal
 
 from aind_metadata_mapper.core import BaseJobSettings
 
@@ -13,13 +10,6 @@ class JobSettings(BaseJobSettings):
     """Data that needs to be input by user."""
 
     job_settings_name: Literal["FIP"] = "FIP"
-    output_directory: Optional[Path] = Field(
-        default=None,
-        description=(
-            "Directory where to save the json file to. If None, then json"
-            " contents will be returned in the Response message."
-        ),
-    )
 
     string_to_parse: str
     experimenter_full_name: List[str]

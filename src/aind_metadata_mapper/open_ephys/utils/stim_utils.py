@@ -368,8 +368,8 @@ def extract_blocks_from_stim(stims):
     """
     stim_chunked_blocks = []
     for stimulus in stims:
-        if 'stimuli' in stimulus:
-            for stimulus_block in stimulus['stimuli']:
+        if "stimuli" in stimulus:
+            for stimulus_block in stimulus["stimuli"]:
                 stim_chunked_blocks.append(stimulus_block)
         else:
             stim_chunked_blocks.append(stimulus)

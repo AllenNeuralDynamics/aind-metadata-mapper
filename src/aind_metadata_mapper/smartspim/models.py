@@ -1,7 +1,6 @@
 """Module defining JobSettings for SmartSPIM ETL"""
 
-from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 from aind_metadata_mapper.core import BaseJobSettings
 
@@ -13,8 +12,7 @@ class JobSettings(BaseJobSettings):
     job_settings_name: Literal["SmartSPIM"] = "SmartSPIM"
 
     subject_id: str
-    raw_dataset_path: Path
-    output_directory: Optional[Path] = None
+    # raw_dataset_path: Path
 
     # Metadata names
     asi_filename: str = "derivatives/ASI_logging.txt"

@@ -1,9 +1,9 @@
 """Module to write valid OptoStim and Subject schemas"""
 
 import re
+import sys
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Union
 
 from aind_data_schema.components.stimulus import OptoStimulation, PulseShape
 from aind_data_schema.core.session import (
@@ -45,23 +45,6 @@ class FIBEtl(GenericEtl[JobSettings]):
     duration_regex = re.compile(r"OptoDuration\(s\):\s*([0-9.]+)")
     interval_regex = re.compile(r"OptoInterval\(s\):\s*([0-9.]+)")
     base_regex = re.compile(r"OptoBase\(s\):\s*([0-9.]+)")
-
-    def __init__(
-        self,
-        job_settings: Union[JobSettings, str],
-    ):
-        """
-        Class constructor for Base etl class.
-        Parameters
-        ----------
-        job_settings: Union[JobSettings, str]
-          Variables for a particular session
-        """
-        if isinstance(job_settings, str):
-            job_settings_model = JobSettings.model_validate_json(job_settings)
-        else:
-            job_settings_model = job_settings
-        super().__init__(job_settings=job_settings_model)
 
     def _transform(self, extracted_source: ParsedMetadata) -> Session:
         """
@@ -213,3 +196,10 @@ class FIBEtl(GenericEtl[JobSettings]):
             transformed, self.job_settings.output_directory
         )
         return job_response
+
+
+if __name__ == "__main__":
+    sys_args = sys.argv[1:]
+    job_settings = JobSettings.from_args(sys_args)
+    etl = FIBEtl(job_settings=job_settings)
+    etl.run_job()

@@ -7,7 +7,17 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from os import PathLike
 from pathlib import Path
-from typing import Any, Dict, Generic, Optional, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from aind_data_schema.base import AindCoreModel
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -18,8 +28,6 @@ from pydantic_settings import (
     InitSettingsSource,
     PydanticBaseSettingsSource,
 )
-
-_T = TypeVar("_T", bound=BaseSettings)
 
 
 class JobResponse(BaseModel):
@@ -136,6 +144,25 @@ class JsonConfigSettingsSource(PydanticBaseSettingsSource):
 class BaseJobSettings(BaseSettings):
     """Parent class for generating settings from a config file."""
 
+    job_settings_name: str = Field(
+        ...,
+        description=(
+            "Literal name for job settings to make serialized class distinct."
+        ),
+    )
+    input_source: Optional[Union[Path, str, List[str], List[Path]]] = Field(
+        default=None,
+        description=(
+            "Location or locations of data sources to parse for metadata."
+        ),
+    )
+    output_directory: Optional[Union[Path, str]] = Field(
+        default=None,
+        description=(
+            "Location to metadata file data to. None to return object."
+        ),
+    )
+
     user_settings_config_file: Optional[Union[Path, str]] = Field(
         default=None,
         repr=False,
@@ -172,6 +199,43 @@ class BaseJobSettings(BaseSettings):
 
         return tuple(sources)
 
+    # TODO: The following can probably be abstracted
+    @classmethod
+    def from_args(cls, args: list):
+        """
+        Adds ability to construct settings from a list of arguments.
+        Parameters
+        ----------
+        args : list
+        A list of command line arguments to parse.
+        """
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "-j",
+            "--job-settings",
+            required=True,
+            type=str,
+            help=(
+                r"""
+                Custom settings defined by the user defined as a json
+                 string. For example: -j
+                 '{
+                 "input_source":"/directory/to/read/from",
+                 "output_directory":"/directory/to/write/to",
+                 "job_settings_name": "Bergamo"}'
+                """
+            ),
+        )
+        job_args = parser.parse_args(args)
+        job_settings_from_args = cls.model_validate_json(job_args.job_settings)
+        return cls(
+            job_settings=job_settings_from_args,
+        )
+
+
+_T = TypeVar("_T", bound=BaseJobSettings)
+
 
 class GenericEtl(ABC, Generic[_T]):
     """A generic etl class. Child classes will need to create a JobSettings
@@ -187,6 +251,18 @@ class GenericEtl(ABC, Generic[_T]):
           Generic type that is bound by the BaseSettings class.
         """
         self.job_settings = job_settings
+        if isinstance(self.job_settings.input_source, str):
+            self.job_settings.input_source = Path(
+                self.job_settings.input_source
+            )
+        elif isinstance(self.job_settings.input_source, list):
+            self.job_settings.input_source = [
+                Path(p) for p in self.job_settings.input_source
+            ]
+        if isinstance(self.job_settings.output_directory, str):
+            self.job_settings.output_directory = Path(
+                self.job_settings.output_directory
+            )
 
     @staticmethod
     def _run_validation_check(

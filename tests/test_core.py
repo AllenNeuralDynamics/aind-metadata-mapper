@@ -4,6 +4,7 @@ import json
 import os
 import unittest
 from pathlib import Path
+from typing import Literal
 from unittest.mock import MagicMock, patch
 
 from aind_metadata_mapper.core import BaseJobSettings
@@ -19,6 +20,7 @@ class TestJobSettings(unittest.TestCase):
     class MockJobSettings(BaseJobSettings):
         """Mock class for testing purposes"""
 
+        job_settings_name: Literal["mock_job"] = "mock_job"
         name: str
         id: int
 
@@ -26,10 +28,12 @@ class TestJobSettings(unittest.TestCase):
         """Test job settings can be loaded from config file."""
 
         job_settings = self.MockJobSettings(
-            user_settings_config_file=CONFIG_FILE_PATH
+            job_settings_name="mock_job",
+            user_settings_config_file=CONFIG_FILE_PATH,
         )
         expected_settings_json = json.dumps(
             {
+                "job_settings_name": "mock_job",
                 "user_settings_config_file": str(CONFIG_FILE_PATH),
                 "name": "Anna Apple",
                 "id": 12345,

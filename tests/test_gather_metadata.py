@@ -668,9 +668,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             acquisition_settings=AcquisitionSettings(
                 job_settings=SmartSpimAcquisitionJobSettings(
                     subject_id="695464",
-                    raw_dataset_path=Path(
-                        "SmartSPIM_695464_2023-10-18_20-30-30"
-                    ),
+                    input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
                 )
             ),
         )
@@ -692,9 +690,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             acquisition_settings=AcquisitionSettings(
                 job_settings=SmartSpimAcquisitionJobSettings(
                     subject_id="695464",
-                    raw_dataset_path=Path(
-                        "SmartSPIM_695464_2023-10-18_20-30-30"
-                    ),
+                    input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
                 )
             ),
         )

@@ -2,12 +2,12 @@
 
 import os
 import re
+import sys
 from datetime import datetime
-from typing import Dict, Union
+from typing import Dict
 
 from aind_data_schema.components.coordinates import ImageAxis
 from aind_data_schema.core import acquisition
-from pydantic_settings import BaseSettings
 
 from aind_metadata_mapper.core import GenericEtl, JobResponse
 from aind_metadata_mapper.smartspim.models import JobSettings
@@ -20,35 +20,17 @@ from aind_metadata_mapper.smartspim.utils import (
 )
 
 
-class SmartspimETL(GenericEtl):
+class SmartspimETL(GenericEtl[JobSettings]):
     """
     This class contains the methods to write the metadata
     for a SmartSPIM session
     """
 
-    def __init__(self, job_settings: Union[BaseSettings, str]):
-        """
-        Constructor method
-
-        Parameters
-        ----------
-        job_settings: BaseSettings
-            Job settings for the SmartSPIM ETL
-
-        """
-        if isinstance(job_settings, str):
-            job_settings_model = JobSettings.model_validate_json(job_settings)
-
-        else:
-            job_settings_model = job_settings
-
-        self.regex_date = (
-            r"(20[0-9]{2})-([0-9]{2})-([0-9]{2})_([0-9]{2})-"
-            r"([0-9]{2})-([0-9]{2})"
-        )
-        self.regex_mouse_id = r"([0-9]{6})"
-
-        super().__init__(job_settings=job_settings_model)
+    REGEX_DATE = (
+        r"(20[0-9]{2})-([0-9]{2})-([0-9]{2})_([0-9]{2})-"
+        r"([0-9]{2})-([0-9]{2})"
+    )
+    REGEX_MOUSE_ID = r"([0-9]{6})"
 
     def _extract(self) -> Dict:
         """
@@ -62,7 +44,7 @@ class SmartspimETL(GenericEtl):
             is needed to build the acquisition.json.
         """
         # Path where the channels are stored
-        smartspim_channel_root = self.job_settings.raw_dataset_path.joinpath(
+        smartspim_channel_root = self.job_settings.input_source.joinpath(
             "SmartSPIM"
         )
 
@@ -74,15 +56,15 @@ class SmartspimETL(GenericEtl):
         ]
 
         # Path to metadata files
-        asi_file_path_txt = self.job_settings.raw_dataset_path.joinpath(
+        asi_file_path_txt = self.job_settings.input_source.joinpath(
             self.job_settings.asi_filename
         )
 
-        mdata_path_json = self.job_settings.raw_dataset_path.joinpath(
+        mdata_path_json = self.job_settings.input_source.joinpath(
             self.job_settings.mdata_filename_json
         )
 
-        processing_manifest_path = self.job_settings.raw_dataset_path.joinpath(
+        processing_manifest_path = self.job_settings.input_source.joinpath(
             self.job_settings.processing_manifest_path
         )
 
@@ -143,10 +125,10 @@ class SmartspimETL(GenericEtl):
         """
 
         mouse_date = re.search(
-            self.regex_date, self.job_settings.raw_dataset_path.stem
+            self.REGEX_DATE, self.job_settings.input_source.stem
         )
         mouse_id = re.search(
-            self.regex_mouse_id, self.job_settings.raw_dataset_path.stem
+            self.REGEX_MOUSE_ID, self.job_settings.input_source.stem
         )
 
         # Converting to date and mouse ID
@@ -256,3 +238,10 @@ class SmartspimETL(GenericEtl):
             acquisition_model, self.job_settings.output_directory
         )
         return job_response
+
+
+if __name__ == "__main__":
+    sys_args = sys.argv[1:]
+    job_settings = JobSettings.from_args(sys_args)
+    etl = SmartspimETL(job_settings=job_settings)
+    etl.run_job()

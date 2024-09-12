@@ -3,7 +3,6 @@
 import json
 import logging
 from datetime import datetime
-from typing import Union
 
 import pandas as pd
 import requests
@@ -34,21 +33,6 @@ def strings_to_dates(strings):
 
 class U19Etl(GenericEtl[JobSettings]):
     """U19 ETL class."""
-
-    def __init__(self, job_settings: Union[JobSettings, str]):
-        """
-        Class constructor for Base etl class.
-        Parameters
-        ----------
-        job_settings: Union[JobSettings, str]
-          Variables for a particular session
-        """
-
-        if isinstance(job_settings, str):
-            job_settings_model = JobSettings.model_validate_json(job_settings)
-        else:
-            job_settings_model = job_settings
-        super().__init__(job_settings=job_settings_model)
 
     def run_job(self) -> JobResponse:
         """Run the job and return the response."""
@@ -82,9 +66,9 @@ class U19Etl(GenericEtl[JobSettings]):
             if row is None:
                 logging.warning(f"Could not find row for {subj_id}")
                 return
-            existing_procedure["specimen_procedures"] = (
-                self.extract_spec_procedures(subj_id, row)
-            )
+            existing_procedure[
+                "specimen_procedures"
+            ] = self.extract_spec_procedures(subj_id, row)
 
             return construct_new_model(
                 existing_procedure,
@@ -157,7 +141,7 @@ class U19Etl(GenericEtl[JobSettings]):
 
         for sheet_name in self.job_settings.tissue_sheet_names:
             df = pd.read_excel(
-                self.job_settings.tissue_sheet_path,
+                self.job_settings.input_source,
                 sheet_name=sheet_name,
                 header=[0, 1, 2],
             )

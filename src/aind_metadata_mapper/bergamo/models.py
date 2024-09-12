@@ -1,10 +1,7 @@
 """Module defining JobSettings for Bergamo ETL"""
 
 from decimal import Decimal
-from pathlib import Path
 from typing import List, Literal, Optional
-
-from pydantic import Field
 
 from aind_metadata_mapper.core import BaseJobSettings
 
@@ -14,16 +11,6 @@ class JobSettings(BaseJobSettings):
     BERGAMO prefix or set explicitly."""
 
     job_settings_name: Literal["Bergamo"] = "Bergamo"
-    input_source: Path = Field(
-        ..., description="Directory of files that need to be parsed."
-    )
-    output_directory: Optional[Path] = Field(
-        default=None,
-        description=(
-            "Directory where to save the json file to. If None, then json"
-            " contents will be returned in the Response message."
-        ),
-    )
     # mandatory fields:
     experimenter_full_name: List[str]
     subject_id: str

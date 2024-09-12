@@ -16,11 +16,7 @@ import npc_sessions
 import numpy as np
 import pandas as pd
 from aind_data_schema.components.coordinates import Coordinates3d
-from aind_data_schema.core.session import (
-    ManipulatorModule,
-    Session,
-    Stream,
-)
+from aind_data_schema.core.session import ManipulatorModule, Session, Stream
 from aind_data_schema_models.modalities import Modality
 
 import aind_metadata_mapper.open_ephys.utils.constants as constants

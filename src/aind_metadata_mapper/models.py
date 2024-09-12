@@ -7,6 +7,7 @@ from aind_data_schema.core.processing import PipelineProcess
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic_settings import BaseSettings
 from typing_extensions import Annotated
 
 from aind_metadata_mapper.bergamo.models import (
@@ -15,7 +16,6 @@ from aind_metadata_mapper.bergamo.models import (
 from aind_metadata_mapper.bruker.models import (
     JobSettings as BrukerSessionJobSettings,
 )
-from aind_metadata_mapper.core import BaseJobSettings
 from aind_metadata_mapper.fip.models import (
     JobSettings as FipSessionJobSettings,
 )
@@ -36,7 +36,7 @@ class JobResponse(BaseModel):
     data: Optional[str] = Field(None)
 
 
-class SessionSettings(BaseJobSettings):
+class SessionSettings(BaseSettings):
     """Settings needed to retrieve session metadata"""
 
     job_settings: Annotated[
@@ -50,7 +50,7 @@ class SessionSettings(BaseJobSettings):
     ]
 
 
-class AcquisitionSettings(BaseJobSettings):
+class AcquisitionSettings(BaseSettings):
     """Fields needed to retrieve acquisition metadata"""
 
     # TODO: we can change this to a tagged union once more acquisition settings
@@ -58,21 +58,21 @@ class AcquisitionSettings(BaseJobSettings):
     job_settings: SmartSpimAcquisitionJobSettings
 
 
-class SubjectSettings(BaseJobSettings):
+class SubjectSettings(BaseSettings):
     """Fields needed to retrieve subject metadata"""
 
     subject_id: str
     metadata_service_path: str = "subject"
 
 
-class ProceduresSettings(BaseJobSettings):
+class ProceduresSettings(BaseSettings):
     """Fields needed to retrieve procedures metadata"""
 
     subject_id: str
     metadata_service_path: str = "procedures"
 
 
-class RawDataDescriptionSettings(BaseJobSettings):
+class RawDataDescriptionSettings(BaseSettings):
     """Fields needed to retrieve data description metadata"""
 
     name: str
@@ -82,13 +82,13 @@ class RawDataDescriptionSettings(BaseJobSettings):
     metadata_service_path: str = "funding"
 
 
-class ProcessingSettings(BaseJobSettings):
+class ProcessingSettings(BaseSettings):
     """Fields needed to retrieve processing metadata"""
 
     pipeline_process: PipelineProcess
 
 
-class MetadataSettings(BaseJobSettings):
+class MetadataSettings(BaseSettings):
     """Fields needed to retrieve main Metadata"""
 
     name: str
@@ -103,7 +103,7 @@ class MetadataSettings(BaseJobSettings):
     instrument_filepath: Optional[Path] = None
 
 
-class JobSettings(BaseJobSettings):
+class JobSettings(BaseSettings):
     """Fields needed to gather all metadata"""
 
     job_settings_name: Literal["GatherMetadata"] = "GatherMetadata"

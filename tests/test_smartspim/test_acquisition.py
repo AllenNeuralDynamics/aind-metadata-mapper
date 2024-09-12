@@ -27,8 +27,8 @@ class TestSmartspimETL(unittest.TestCase):
         """Setting up temporary folder directory"""
         self.example_job_settings_success = JobSettings(
             subject_id="000000",
-            raw_dataset_path="/SmartSPIM_000000_2024-10-10_10-10-10",
-            output_directory="/output_folder",
+            input_source="/SmartSPIM_000000_2024-10-10_10-10-10",
+            output_directory="output_folder",
             asi_filename="derivatives/ASI_logging.txt",
             mdata_filename_json="derivatives/metadata.json",
             processing_manifest_path="derivatives/processing_manifest.json",
@@ -39,8 +39,8 @@ class TestSmartspimETL(unittest.TestCase):
 
         self.example_job_settings_fail_mouseid = JobSettings(
             subject_id="00000",
-            raw_dataset_path="/SmartSPIM_00000_2024-10-10_10-10-10",
-            output_directory="/output_folder",
+            input_source="/SmartSPIM_00000_2024-10-10_10-10-10",
+            output_directory="output_folder",
             asi_filename="derivatives/ASI_logging.txt",
             mdata_filename_json="derivatives/metadata.json",
             processing_manifest_path="derivatives/processing_manifest.json",
@@ -48,15 +48,6 @@ class TestSmartspimETL(unittest.TestCase):
         self.example_smartspim_etl_fail_mouseid = SmartspimETL(
             job_settings=self.example_job_settings_fail_mouseid
         )
-
-    def test_class_constructor(self):
-        """Tests that the class can be constructed from a json string"""
-        settings1 = self.example_job_settings_success.model_copy(deep=True)
-        json_str = settings1.model_dump_json()
-        etl_job1 = SmartspimETL(
-            job_settings=json_str,
-        )
-        self.assertEqual(settings1, etl_job1.job_settings)
 
     @patch("aind_metadata_mapper.smartspim.acquisition.SmartspimETL._extract")
     def test_extract(self, mock_extract: MagicMock):
