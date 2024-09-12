@@ -199,7 +199,6 @@ class BaseJobSettings(BaseSettings):
 
         return tuple(sources)
 
-    # TODO: The following can probably be abstracted
     @classmethod
     def from_args(cls, args: list):
         """
