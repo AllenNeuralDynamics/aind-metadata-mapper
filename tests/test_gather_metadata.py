@@ -20,7 +20,7 @@ from aind_metadata_mapper.bergamo.models import (
 from aind_metadata_mapper.bruker.models import (
     JobSettings as BrukerSessionJobSettings,
 )
-from aind_metadata_mapper.core import JobResponse
+from aind_metadata_mapper.core_models import JobResponse
 from aind_metadata_mapper.fip.models import (
     JobSettings as FipSessionJobSettings,
 )

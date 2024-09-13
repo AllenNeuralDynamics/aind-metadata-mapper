@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Literal
 from unittest.mock import MagicMock, patch
 
-from aind_metadata_mapper.core import BaseJobSettings
+from aind_metadata_mapper.core_models import BaseJobSettings
 
 RESOURCES_DIR = Path(os.path.dirname(os.path.realpath(__file__))) / "resources"
 CONFIG_FILE_PATH = RESOURCES_DIR / "job_settings.json"

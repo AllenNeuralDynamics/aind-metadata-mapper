@@ -49,7 +49,8 @@ from aind_data_schema_models.units import PowerUnit
 from ScanImageTiffReader import ScanImageTiffReader
 
 from aind_metadata_mapper.bergamo.models import JobSettings
-from aind_metadata_mapper.core import GenericEtl, JobResponse
+from aind_metadata_mapper.core import GenericEtl
+from aind_metadata_mapper.core_models import JobResponse
 
 
 # This class makes it easier to flag which tif files are which expected type

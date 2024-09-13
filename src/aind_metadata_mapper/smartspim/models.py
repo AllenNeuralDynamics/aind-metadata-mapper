@@ -4,7 +4,7 @@ from typing import Literal, Optional, Union
 
 from pydantic import Field
 
-from aind_metadata_mapper.core import BaseJobSettings
+from aind_metadata_mapper.core_models import BaseJobSettings
 
 
 class JobSettings(BaseJobSettings):

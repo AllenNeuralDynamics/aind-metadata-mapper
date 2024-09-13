@@ -9,7 +9,8 @@ from typing import Dict, Union
 from aind_data_schema.components.coordinates import ImageAxis
 from aind_data_schema.core import acquisition
 
-from aind_metadata_mapper.core import GenericEtl, JobResponse
+from aind_metadata_mapper.core import GenericEtl
+from aind_metadata_mapper.core_models import JobResponse
 from aind_metadata_mapper.smartspim.models import JobSettings
 from aind_metadata_mapper.smartspim.utils import (
     get_anatomical_direction,

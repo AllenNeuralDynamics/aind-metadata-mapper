@@ -18,7 +18,8 @@ from aind_data_schema.core.session import (
 )
 from aind_data_schema_models.modalities import Modality
 
-from aind_metadata_mapper.core import GenericEtl, JobResponse
+from aind_metadata_mapper.core import GenericEtl
+from aind_metadata_mapper.core_models import JobResponse
 from aind_metadata_mapper.fip.models import JobSettings
 
 
