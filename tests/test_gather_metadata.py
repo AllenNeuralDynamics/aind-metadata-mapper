@@ -559,7 +559,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             status_code=200, data=json.dumps({"some_key": "some_value"})
         )
         mesoscope_session_settings = (
-            MesoscopeSessionJobSettings.model_construct()
+            MesoscopeSessionJobSettings.model_construct(behavior_source="abc")
         )
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,

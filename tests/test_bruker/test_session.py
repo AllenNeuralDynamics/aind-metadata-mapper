@@ -95,6 +95,15 @@ class TestMRIWriter(unittest.TestCase):
         cls.example_etl = example_etl
         cls.example_model = example_model
 
+    def test_constructor_from_string(self) -> None:
+        """Test constructor from string."""
+
+        job_settings_string = self.example_job_settings.model_dump_json()
+        etl0 = MRIEtl(self.example_job_settings)
+        etl1 = MRIEtl(job_settings_string)
+
+        self.assertEqual(etl1.job_settings, etl0.job_settings)
+
     @patch(
         "aind_metadata_mapper.bruker.session.BrukerMetadata",
         new=MockBrukerMetadata,

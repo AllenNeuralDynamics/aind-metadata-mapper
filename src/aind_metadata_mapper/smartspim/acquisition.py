@@ -4,7 +4,7 @@ import os
 import re
 import sys
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Union
 
 from aind_data_schema.components.coordinates import ImageAxis
 from aind_data_schema.core import acquisition
@@ -25,6 +25,29 @@ class SmartspimETL(GenericEtl[JobSettings]):
     This class contains the methods to write the metadata
     for a SmartSPIM session
     """
+
+    # TODO: Deprecate this constructor. Use GenericEtl constructor instead
+    def __init__(self, job_settings: Union[JobSettings, str]):
+        """
+        Class constructor for Base etl class.
+        Parameters
+        ----------
+        job_settings: Union[JobSettings, str]
+          Variables for a particular session
+        """
+
+        if isinstance(job_settings, str):
+            job_settings_model = JobSettings.model_validate_json(job_settings)
+        else:
+            job_settings_model = job_settings
+        if (
+            job_settings_model.raw_dataset_path is not None
+            and job_settings_model.input_source is None
+        ):
+            job_settings_model.input_source = (
+                job_settings_model.raw_dataset_path
+            )
+        super().__init__(job_settings=job_settings_model)
 
     REGEX_DATE = (
         r"(20[0-9]{2})-([0-9]{2})-([0-9]{2})_([0-9]{2})-"
@@ -242,6 +265,6 @@ class SmartspimETL(GenericEtl[JobSettings]):
 
 if __name__ == "__main__":
     sys_args = sys.argv[1:]
-    job_settings = JobSettings.from_args(sys_args)
-    etl = SmartspimETL(job_settings=job_settings)
+    main_job_settings = JobSettings.from_args(sys_args)
+    etl = SmartspimETL(job_settings=main_job_settings)
     etl.run_job()

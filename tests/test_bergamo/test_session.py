@@ -43,6 +43,15 @@ class TestBergamoEtl(unittest.TestCase):
         )
         cls.expected_session = expected_session_contents
 
+    def test_class_constructor(self):
+        """Tests that the class can be constructed from a json string"""
+        settings1 = self.example_job_settings.model_copy(deep=True)
+        json_str = settings1.model_dump_json()
+        etl_job1 = BergamoEtl(
+            job_settings=json_str,
+        )
+        self.assertEqual(settings1, etl_job1.job_settings)
+
     def test_get_tif_file_locations(self):
         """Tests _get_tif_file_locations method"""
         etl = BergamoEtl(job_settings=self.example_job_settings)
