@@ -429,7 +429,9 @@ class TestGatherMetadataJob(unittest.TestCase):
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             processing_settings=ProcessingSettings(
-                pipeline_process=processing_pipeline
+                pipeline_process=json.loads(
+                    processing_pipeline.model_dump_json()
+                )
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
@@ -468,7 +470,9 @@ class TestGatherMetadataJob(unittest.TestCase):
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             processing_settings=ProcessingSettings(
-                pipeline_process=processing_pipeline
+                pipeline_process=json.loads(
+                    processing_pipeline.model_dump_json()
+                )
             ),
             metadata_dir=metadata_dir,
             metadata_dir_force=True,
@@ -907,7 +911,9 @@ class TestGatherMetadataJob(unittest.TestCase):
                 modality=[Modality.ECEPHYS, Modality.BEHAVIOR_VIDEOS],
             ),
             processing_settings=ProcessingSettings(
-                pipeline_process=processing_pipeline
+                pipeline_process=json.loads(
+                    processing_pipeline.model_dump_json()
+                )
             ),
             metadata_settings=MetadataSettings(
                 name="ecephys_632269_2023-10-10_10-10-10",

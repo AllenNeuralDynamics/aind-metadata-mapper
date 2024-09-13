@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aind-metadata-mapper"
-description = "Generated from aind-library-template"
+description = "Package to manage mapping of source data into aind-data-schema metadata files."
 license = {text = "MIT"}
 requires-python = ">=3.8"
 authors = [
@@ -17,10 +17,8 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
-    "aind-data-schema>=1.0.0,<2.0",
     "aind-data-schema-models>=0.3.2",
-    "pydantic-settings>=2.0",
-    "pydantic<2.9"
+    "pydantic-settings>=2.0"
 ]
 
 [project.optional-dependencies]
@@ -44,12 +42,19 @@ all = [
     "aind-metadata-mapper[u19]",
 ]
 
+schema = [
+    "aind-data-schema>=1.0.0,<2.0",
+    "pydantic<2.9"
+]
+
 bergamo = [
+    "aind-metadata-mapper[schema]",
     "scanimage-tiff-reader==1.4.1.4",
     "numpy >= 1.26.4",
 ]
 
 bruker = [
+    "aind-metadata-mapper[schema]",
     "bruker2nifti==1.0.4",
 ]
 
@@ -60,6 +65,7 @@ mesoscope = [
 ]
 
 openephys = [
+    "aind-metadata-mapper[schema]",
     "h5py >= 3.11.0",
     "np_session >= 0.1.39",
     "npc_ephys >= 0.1.18 ; python_version >= '3.9'",
@@ -69,10 +75,12 @@ openephys = [
 ]
 
 dynamicrouting = [
+    "aind-metadata-mapper[schema]",
     "pyyaml >= 6.0.0",
 ]
 
 u19 = [
+    "aind-metadata-mapper[schema]",
     "pandas >= 2.2.2",
 ]
 

@@ -2,10 +2,6 @@
 from pathlib import Path
 from typing import List, Literal, Optional, Union
 
-from aind_data_schema.components.devices import (
-    MagneticStrength,
-    ScannerLocation,
-)
 from pydantic import Field
 
 from aind_metadata_mapper.core import BaseJobSettings
@@ -28,8 +24,8 @@ class JobSettings(BaseJobSettings):
     primary_scan_number: int
     setup_scan_number: int
     scanner_name: str
-    scan_location: ScannerLocation
-    magnetic_strength: MagneticStrength
+    scan_location: str
+    magnetic_strength: int
     subject_id: str
     iacuc_protocol: str
     session_notes: str

@@ -17,7 +17,7 @@ from aind_data_schema.core.data_description import (
 from aind_data_schema.core.instrument import Instrument
 from aind_data_schema.core.metadata import Metadata
 from aind_data_schema.core.procedures import Procedures
-from aind_data_schema.core.processing import Processing
+from aind_data_schema.core.processing import PipelineProcess, Processing
 from aind_data_schema.core.rig import Rig
 from aind_data_schema.core.session import Session
 from aind_data_schema.core.subject import Subject
@@ -252,11 +252,22 @@ class GatherMetadataJob:
             )
         )
         if should_use_service:
-            processing_instance = Processing(
-                processing_pipeline=(
-                    self.settings.processing_settings.pipeline_process
+            try:
+                processing_pipeline = PipelineProcess.model_validate_json(
+                    json.dumps(
+                        self.settings.processing_settings.pipeline_process
+                    )
                 )
-            )
+                processing_instance = Processing(
+                    processing_pipeline=processing_pipeline
+                )
+            except ValidationError:
+                processing_pipeline = PipelineProcess.model_construct(
+                    **self.settings.processing_settings.pipeline_process
+                )
+                processing_instance = Processing.model_construct(
+                    processing_pipeline=processing_pipeline
+                )
             return json.loads(processing_instance.model_dump_json())
         else:
             contents = self._get_file_from_user_defined_directory(
@@ -311,7 +322,7 @@ class GatherMetadataJob:
             return contents
         elif self.settings.acquisition_settings is not None:
             acquisition_job = SmartspimETL(
-                job_settings=(self.settings.acquisition_settings.job_settings)
+                job_settings=self.settings.acquisition_settings.job_settings
             )
             job_response = acquisition_job.run_job()
             if job_response.status_code != 500:

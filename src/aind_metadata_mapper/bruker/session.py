@@ -14,7 +14,11 @@ from aind_data_schema.components.coordinates import (
     Scale3dTransform,
     Translation3dTransform,
 )
-from aind_data_schema.components.devices import Scanner
+from aind_data_schema.components.devices import (
+    MagneticStrength,
+    Scanner,
+    ScannerLocation,
+)
 from aind_data_schema.core.session import (
     MRIScan,
     MriScanSequence,
@@ -282,6 +286,11 @@ class MRIEtl(GenericEtl[JobSettings]):
 
         scale = self.get_scale(cur_method)
 
+        scan_location = ScannerLocation(self.job_settings.scan_location)
+        magnetic_strength = MagneticStrength(
+            self.job_settings.magnetic_strength
+        )
+
         try:
             return MRIScan(
                 scan_index=scan_index,
@@ -289,8 +298,8 @@ class MRIEtl(GenericEtl[JobSettings]):
                 primary_scan=primary_scan,
                 mri_scanner=Scanner(
                     name=self.job_settings.scanner_name,
-                    scanner_location=self.job_settings.scan_location,
-                    magnetic_strength=self.job_settings.magnetic_strength,
+                    scanner_location=scan_location,
+                    magnetic_strength=magnetic_strength,
                     magnetic_strength_unit="T",
                 ),
                 scan_sequence_type=scan_sequence,
