@@ -20,7 +20,7 @@ from aind_metadata_mapper.bergamo.models import (
 from aind_metadata_mapper.bruker.models import (
     JobSettings as BrukerSessionJobSettings,
 )
-from aind_metadata_mapper.core import JobResponse
+from aind_metadata_mapper.core_models import JobResponse
 from aind_metadata_mapper.fip.models import (
     JobSettings as FipSessionJobSettings,
 )
@@ -429,7 +429,9 @@ class TestGatherMetadataJob(unittest.TestCase):
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             processing_settings=ProcessingSettings(
-                pipeline_process=processing_pipeline
+                pipeline_process=json.loads(
+                    processing_pipeline.model_dump_json()
+                )
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
@@ -468,7 +470,9 @@ class TestGatherMetadataJob(unittest.TestCase):
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             processing_settings=ProcessingSettings(
-                pipeline_process=processing_pipeline
+                pipeline_process=json.loads(
+                    processing_pipeline.model_dump_json()
+                )
             ),
             metadata_dir=metadata_dir,
             metadata_dir_force=True,
@@ -559,7 +563,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             status_code=200, data=json.dumps({"some_key": "some_value"})
         )
         mesoscope_session_settings = (
-            MesoscopeSessionJobSettings.model_construct()
+            MesoscopeSessionJobSettings.model_construct(behavior_source="abc")
         )
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
@@ -668,9 +672,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             acquisition_settings=AcquisitionSettings(
                 job_settings=SmartSpimAcquisitionJobSettings(
                     subject_id="695464",
-                    raw_dataset_path=Path(
-                        "SmartSPIM_695464_2023-10-18_20-30-30"
-                    ),
+                    input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
                 )
             ),
         )
@@ -692,9 +694,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             acquisition_settings=AcquisitionSettings(
                 job_settings=SmartSpimAcquisitionJobSettings(
                     subject_id="695464",
-                    raw_dataset_path=Path(
-                        "SmartSPIM_695464_2023-10-18_20-30-30"
-                    ),
+                    input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
                 )
             ),
         )
@@ -911,7 +911,9 @@ class TestGatherMetadataJob(unittest.TestCase):
                 modality=[Modality.ECEPHYS, Modality.BEHAVIOR_VIDEOS],
             ),
             processing_settings=ProcessingSettings(
-                pipeline_process=processing_pipeline
+                pipeline_process=json.loads(
+                    processing_pipeline.model_dump_json()
+                )
             ),
             metadata_settings=MetadataSettings(
                 name="ecephys_632269_2023-10-10_10-10-10",

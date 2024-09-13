@@ -134,8 +134,10 @@ class Camstim:
             duration_threshold=minimum_spontaneous_activity_duration,
         )
 
+        stimuli = pkl.get_stimuli(stim_file)
+        stimuli = stim.extract_blocks_from_stim(stimuli)
         stim_table_sweeps = stim.create_stim_table(
-            stim_file, pkl.get_stimuli(stim_file), stimulus_tabler, spon_tabler
+            stim_file, stimuli, stimulus_tabler, spon_tabler
         )
 
         stim_table_seconds = stim.convert_frames_to_seconds(
