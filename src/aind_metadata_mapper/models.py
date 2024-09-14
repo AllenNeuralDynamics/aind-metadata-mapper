@@ -25,7 +25,7 @@ from aind_metadata_mapper.smartspim.models import (
 )
 
 
-class SessionSettings(BaseSettings):
+class SessionSettings(BaseSettings, extra='allow'):
     """Settings needed to retrieve session metadata"""
 
     job_settings: Annotated[
@@ -39,7 +39,7 @@ class SessionSettings(BaseSettings):
     ]
 
 
-class AcquisitionSettings(BaseSettings):
+class AcquisitionSettings(BaseSettings, extra='allow'):
     """Fields needed to retrieve acquisition metadata"""
 
     # TODO: we can change this to a tagged union once more acquisition settings
@@ -47,21 +47,21 @@ class AcquisitionSettings(BaseSettings):
     job_settings: SmartSpimAcquisitionJobSettings
 
 
-class SubjectSettings(BaseSettings):
+class SubjectSettings(BaseSettings, extra='allow'):
     """Fields needed to retrieve subject metadata"""
 
     subject_id: str
     metadata_service_path: str = "subject"
 
 
-class ProceduresSettings(BaseSettings):
+class ProceduresSettings(BaseSettings, extra='allow'):
     """Fields needed to retrieve procedures metadata"""
 
     subject_id: str
     metadata_service_path: str = "procedures"
 
 
-class RawDataDescriptionSettings(BaseSettings):
+class RawDataDescriptionSettings(BaseSettings, extra='allow'):
     """Fields needed to retrieve data description metadata"""
 
     name: str
@@ -71,7 +71,7 @@ class RawDataDescriptionSettings(BaseSettings):
     metadata_service_path: str = "funding"
 
 
-class ProcessingSettings(BaseSettings):
+class ProcessingSettings(BaseSettings, extra='allow'):
     """Fields needed to retrieve processing metadata"""
 
     pipeline_process: dict = Field(
@@ -83,7 +83,7 @@ class ProcessingSettings(BaseSettings):
     )
 
 
-class MetadataSettings(BaseSettings):
+class MetadataSettings(BaseSettings, extra='allow'):
     """Fields needed to retrieve main Metadata"""
 
     name: str
@@ -98,7 +98,7 @@ class MetadataSettings(BaseSettings):
     instrument_filepath: Optional[Path] = None
 
 
-class JobSettings(BaseSettings):
+class JobSettings(BaseSettings, extra='allow'):
     """Fields needed to gather all metadata"""
 
     job_settings_name: Literal["GatherMetadata"] = "GatherMetadata"
