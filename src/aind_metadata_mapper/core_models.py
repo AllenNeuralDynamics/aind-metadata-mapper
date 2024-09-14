@@ -159,6 +159,7 @@ class BaseJobSettings(BaseSettings):
     class Config:
         """Pydantic config to exclude field from displaying"""
 
+        extra = "allow"
         exclude = {"user_settings_config_file"}
 
     @classmethod
