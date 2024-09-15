@@ -23,6 +23,7 @@ from aind_data_schema.core.session import Session
 from aind_data_schema.core.subject import Subject
 from aind_data_schema_models.pid_names import PIDName
 from pydantic import ValidationError
+from pydantic_core import PydanticSerializationError
 
 from aind_metadata_mapper.bergamo.models import (
     JobSettings as BergamoSessionJobSettings,
@@ -343,12 +344,12 @@ class GatherMetadataJob:
         else:
             return None
 
-    def get_main_metadata(self) -> Metadata:
-        """Get main Metadata model"""
+    def get_main_metadata(self) -> dict:
+        """Get serialized main Metadata model"""
 
         def load_model(
             filepath: Optional[Path], model: Type[AindCoreModel]
-        ) -> Optional[AindCoreModel]:
+        ) -> Optional[dict]:
             """
             Validates contents of file with an AindCoreModel
             Parameters
@@ -358,16 +359,25 @@ class GatherMetadataJob:
 
             Returns
             -------
-            Optional[AindCodeModel]
+            Optional[dict]
 
             """
             if filepath is not None and filepath.is_file():
                 with open(filepath, "r") as f:
                     contents = json.load(f)
                 try:
-                    output = model.model_validate_json(json.dumps(contents))
-                except (ValidationError, AttributeError, ValueError, KeyError):
-                    output = model.model_construct(**contents)
+                    valid_model = model.model_validate_json(
+                        json.dumps(contents)
+                    )
+                    output = json.loads(valid_model.model_dump_json())
+                except (
+                    ValidationError,
+                    AttributeError,
+                    ValueError,
+                    KeyError,
+                    PydanticSerializationError,
+                ):
+                    output = contents
 
                 return output
             else:
@@ -410,22 +420,26 @@ class GatherMetadataJob:
                 acquisition=acquisition,
                 instrument=instrument,
             )
-            return metadata
+            metadata_json = json.loads(metadata.model_dump_json(by_alias=True))
+            return metadata_json
         except Exception as e:
             logging.warning(f"Issue with metadata construction! {e.args}")
-            metadata = Metadata.model_construct(
+            # Set basic parameters
+            metadata = Metadata(
                 name=self.settings.metadata_settings.name,
                 location=self.settings.metadata_settings.location,
-                subject=subject,
-                data_description=data_description,
-                procedures=procedures,
-                session=session,
-                rig=rig,
-                processing=processing,
-                acquisition=acquisition,
-                instrument=instrument,
             )
-            return metadata
+            metadata_json = json.loads(metadata.model_dump_json(by_alias=True))
+            # Attach dict objects
+            metadata_json["subject"] = subject
+            metadata_json["data_description"] = data_description
+            metadata_json["procedures"] = procedures
+            metadata_json["session"] = session
+            metadata_json["rig"] = rig
+            metadata_json["processing"] = processing
+            metadata_json["acquisition"] = acquisition
+            metadata_json["instrument"] = instrument
+            return metadata_json
 
     def _write_json_file(self, filename: str, contents: dict) -> None:
         """
@@ -504,14 +518,13 @@ class GatherMetadataJob:
         self._gather_automated_metadata()
         self._gather_non_automated_metadata()
         if self.settings.metadata_settings is not None:
-            metadata = self.get_main_metadata()
+            contents = self.get_main_metadata()
             # TODO: may need to update aind-data-schema write standard file
             #  class
             output_path = (
                 self.settings.directory_to_write_to
                 / Metadata.default_filename()
             )
-            contents = json.loads(metadata.model_dump_json(by_alias=True))
             with open(output_path, "w") as f:
                 json.dump(
                     contents,
