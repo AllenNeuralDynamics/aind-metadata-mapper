@@ -812,10 +812,10 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual(expected_warnings, str(w.warning))
         self.assertEqual(
             "s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
-            main_metadata.location,
+            main_metadata["location"],
         )
-        self.assertEqual("Invalid", main_metadata.metadata_status.value)
-        self.assertEqual("632269", main_metadata.subject.subject_id)
+        self.assertEqual("Invalid", main_metadata["metadata_status"])
+        self.assertEqual("632269", main_metadata["subject"]["subject_id"])
 
     @patch("logging.warning")
     def test_get_main_metadata_with_ser_issues(self, mock_log: MagicMock):
@@ -840,9 +840,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         main_metadata = metadata_job.get_main_metadata()
-        json_obj = json.loads(main_metadata.model_dump_json())
         mock_log.assert_called_once()
-        self.assertIsNotNone(json_obj["rig"]["schema_version"])
+        self.assertIsNotNone(main_metadata["rig"]["schema_version"])
 
     @patch("logging.warning")
     def test_get_main_metadata_with_validation_errors(
@@ -868,14 +867,14 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         main_metadata = metadata_job.get_main_metadata()
-        self.assertIsNotNone(main_metadata.subject)
-        self.assertIsNotNone(main_metadata.procedures)
-        self.assertIsNotNone(main_metadata.data_description)
-        self.assertIsNotNone(main_metadata.session)
-        self.assertIsNotNone(main_metadata.rig)
-        self.assertIsNotNone(main_metadata.processing)
-        self.assertIsNotNone(main_metadata.acquisition)
-        self.assertIsNotNone(main_metadata.instrument)
+        self.assertIsNotNone(main_metadata["subject"])
+        self.assertIsNotNone(main_metadata["procedures"])
+        self.assertIsNotNone(main_metadata["data_description"])
+        self.assertIsNotNone(main_metadata["session"])
+        self.assertIsNotNone(main_metadata["rig"])
+        self.assertIsNotNone(main_metadata["processing"])
+        self.assertIsNotNone(main_metadata["acquisition"])
+        self.assertIsNotNone(main_metadata["instrument"])
         mock_warn.assert_called_once()
 
     @patch("builtins.open", new_callable=mock_open())
