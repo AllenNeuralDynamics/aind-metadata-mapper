@@ -48,6 +48,7 @@ RESOURCES_DIR = (
     / "gather_metadata_job"
 )
 METADATA_DIR = RESOURCES_DIR / "metadata_files"
+METADATA_DIR_WITH_RIG_ISSUE = RESOURCES_DIR / "schema_files_with_issues"
 EXAMPLE_BERGAMO_CONFIGS = RESOURCES_DIR / "test_bergamo_configs.json"
 
 
@@ -634,6 +635,19 @@ class TestGatherMetadataJob(unittest.TestCase):
         contents = metadata_job.get_rig_metadata()
         self.assertIsNone(contents)
 
+    def test_get_problematic_rig_metadata(self):
+        """Tests get_rig_metadata when there is a pydantic serialization
+        issue."""
+        metadata_dir = METADATA_DIR_WITH_RIG_ISSUE
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_dir=metadata_dir,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_rig_metadata()
+        self.assertIsNotNone(contents)
+
     def test_get_acquisition_metadata(self):
         """Tests get_acquisition_metadata"""
         metadata_dir = RESOURCES_DIR / "metadata_files"
@@ -740,6 +754,25 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job._gather_non_automated_metadata()
         mock_write_file.assert_called()
 
+    @patch(
+        "aind_metadata_mapper.gather_metadata.GatherMetadataJob."
+        "_write_json_file"
+    )
+    def test_gather_non_automated_metadata_with_ser_issues(
+        self, mock_write_file: MagicMock
+    ):
+        """Tests _gather_non_automated_metadata method when there are
+        serialization issues"""
+        metadata_dir = METADATA_DIR_WITH_RIG_ISSUE
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_dir=metadata_dir,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        metadata_job._gather_non_automated_metadata()
+        mock_write_file.assert_called()
+
     def test_get_main_metadata_with_warnings(self):
         """Tests get_main_metadata method raises validation warnings"""
         job_settings = JobSettings(
@@ -783,6 +816,33 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         self.assertEqual("Invalid", main_metadata.metadata_status.value)
         self.assertEqual("632269", main_metadata.subject.subject_id)
+
+    @patch("logging.warning")
+    def test_get_main_metadata_with_ser_issues(self, mock_log: MagicMock):
+        """Tests get_main_metadata method when rig.json file has
+        serialization issues."""
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_settings=MetadataSettings(
+                name="ecephys_632269_2023-10-10_10-10-10",
+                location="s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
+                subject_filepath=(METADATA_DIR / "subject.json"),
+                data_description_filepath=(
+                    METADATA_DIR / "data_description.json"
+                ),
+                procedures_filepath=(METADATA_DIR / "procedures.json"),
+                session_filepath=None,
+                rig_filepath=(METADATA_DIR_WITH_RIG_ISSUE / "rig.json"),
+                processing_filepath=(METADATA_DIR / "processing.json"),
+                acquisition_filepath=None,
+                instrument_filepath=None,
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        main_metadata = metadata_job.get_main_metadata()
+        json_obj = json.loads(main_metadata.model_dump_json())
+        mock_log.assert_called_once()
+        self.assertIsNotNone(json_obj["rig"]["schema_version"])
 
     @patch("logging.warning")
     def test_get_main_metadata_with_validation_errors(
