@@ -102,9 +102,7 @@ default_column_renames = {
 }
 
 
-GABOR_DIAMETER_RE = re.compile(
-    r"gabor_(\d*\.{0,1}\d*)_{0,1}deg(?:_\d+ms){0,1}"
-)
+GABOR_DIAMETER_RE = re.compile(r"gabor_(\d*\.{0,1}\d*)_{0,1}deg(?:_\d+ms){0,1}")
 
 GENERIC_MOVIE_RE = re.compile(
     r"natural_movie_"

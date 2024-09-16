@@ -45,9 +45,7 @@ class JsonConfigSettingsSource(PydanticBaseSettingsSource):
             with open(self.config_file_location, "r") as f:
                 return json.load(f)
         except (json.JSONDecodeError, IOError) as e:
-            logging.warning(
-                f"Error loading config from {self.config_file_location}: {e}"
-            )
+            logging.warning(f"Error loading config from {self.config_file_location}: {e}")
             raise e
 
     @cached_property
@@ -56,9 +54,7 @@ class JsonConfigSettingsSource(PydanticBaseSettingsSource):
         contents = self._retrieve_contents()
         return contents
 
-    def get_field_value(
-        self, field: FieldInfo, field_name: str
-    ) -> Tuple[Any, str, bool]:
+    def get_field_value(self, field: FieldInfo, field_name: str) -> Tuple[Any, str, bool]:
         """
         Gets the value, the key for model creation, and a flag to determine
         whether value is complex.
@@ -159,9 +155,7 @@ class BaseJobSettings(BaseSettings):
         """
         Customize the order of settings sources, including JSON file.
         """
-        config_file = init_settings.init_kwargs.get(
-            "user_settings_config_file"
-        )
+        config_file = init_settings.init_kwargs.get("user_settings_config_file")
         sources = [init_settings, env_settings]
 
         if isinstance(config_file, str):

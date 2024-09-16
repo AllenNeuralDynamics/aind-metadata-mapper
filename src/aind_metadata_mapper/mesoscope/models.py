@@ -26,8 +26,6 @@ class JobSettings(BaseJobSettings):
     fov_coordinate_ml: float = 1.5
     fov_coordinate_ap: float = 1.5
     fov_reference: str = "Bregma"
-    experimenter_full_name: List[str] = Field(
-        ..., title="Full name of the experimenter"
-    )
+    experimenter_full_name: List[str] = Field(..., title="Full name of the experimenter")
     mouse_platform_name: str = "disc"
     optional_output: Optional[Path] = None

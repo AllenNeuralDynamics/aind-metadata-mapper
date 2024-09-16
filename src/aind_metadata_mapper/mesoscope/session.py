@@ -19,7 +19,9 @@ from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.mesoscope.models import JobSettings
 
 
-class MesoscopeEtl(GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camstim.Camstim):
+class MesoscopeEtl(
+    GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camstim.Camstim
+):
     """Class to manage transforming mesoscope platform json and metadata into
     a Session model."""
 
@@ -43,15 +45,10 @@ class MesoscopeEtl(GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camsti
         else:
             job_settings_model = job_settings
         super().__init__(job_settings=job_settings_model)
-        with open(
-            "//allen/programs/mindscope/workgroups/openscope/ahad/medata-mapper/aind-metadata-mapper/tests/resources/open_ephys/camstim_ephys_session.json",
-            "r",
-        ) as file:
-            json_settings_camstim = json.load(file)
         Camstim.__init__(
             self,
             job_settings.session_id,
-            json_settings_camstim,
+            {},
             input_directory=job_settings_model.input_source,
             output_directory=job_settings_model.optional_output,
         )
@@ -118,7 +115,9 @@ class MesoscopeEtl(GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camsti
             raise ValueError("Behavior source must be a directory")
         if input_source.is_dir():
             input_source = next(input_source.glob("*platform.json"), "")
-            if (isinstance(input_source, str) and input_source == "") or not input_source.exists():
+            if (
+                isinstance(input_source, str) and input_source == ""
+            ) or not input_source.exists():
                 raise ValueError("No platform json file found in directory")
         with open(input_source, "r") as f:
             session_metadata["platform"] = json.load(f)
@@ -141,13 +140,18 @@ class MesoscopeEtl(GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camsti
         if timeseries:
             meta = self._read_metadata(timeseries)
         else:
-            experiment_dir = list(self.job_settings.input_source.glob("ophys_experiment*"))[0]
+            experiment_dir = list(
+                self.job_settings.input_source.glob("ophys_experiment*")
+            )[0]
             experiment_id = experiment_dir.name.split("_")[-1]
             timeseries = next(experiment_dir.glob(f"{experiment_id}.h5"))
             meta = self._read_h5_metadata(str(timeseries))
         fovs = []
         count = 0
         for group in imaging_plane_groups:
+            power_ratio = group.get("scanimage_split_percent", None)
+            if power_ratio:
+                power_ratio = float(power_ratio)
             for plane in group["imaging_planes"]:
                 fov = FieldOfView(
                     coupled_fov_index=int(group["local_z_stack_tif"].split(".")[0][-1]),
@@ -158,14 +162,18 @@ class MesoscopeEtl(GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camsti
                     magnification=self.job_settings.magnification,
                     fov_scale_factor=0.78,
                     imaging_depth=plane["targeted_depth"],
-                    targeted_structure=self._STRUCTURE_LOOKUP_DICT[plane["targeted_structure_id"]],
+                    targeted_structure=self._STRUCTURE_LOOKUP_DICT[
+                        plane["targeted_structure_id"]
+                    ],
                     scanimage_roi_index=plane["scanimage_roi_index"],
                     fov_width=meta[0]["SI.hRoiManager.pixelsPerLine"],
                     fov_height=meta[0]["SI.hRoiManager.linesPerFrame"],
                     frame_rate=group["acquisition_framerate_Hz"],
                     scanfield_z=plane["scanimage_scanfield_z"],
-                    power=float(group["scanimage_power_percent"]),
-                    power_ratio=float(group["scanimage_split_percent"]),
+                    power=float(plane.get("scanimage_power", ""))
+                    if not group.get("scanimage_power_percent", "")
+                    else float(group.get("scanimage_power_percent", "")),
+                    power_ratio=power_ratio
                 )
                 count += 1
                 fovs.append(fov)
@@ -192,7 +200,11 @@ class MesoscopeEtl(GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camsti
             )
         ]
         stimulus_data = BehaviorStimulusFile.from_file(
-            next(self.job_settings.input_source.glob(f"{self.job_settings.session_id}*.pkl"))
+            next(
+                self.job_settings.input_source.glob(
+                    f"{self.job_settings.session_id}*.pkl"
+                )
+            )
         )
         return Session(
             experimenter_full_name=self.job_settings.experimenter_full_name,
@@ -217,7 +229,9 @@ class MesoscopeEtl(GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camsti
         """
         extracted = self._extract()
         transformed = self._transform(extracted_source=extracted)
-        transformed.write_standard_file(output_directory=self.job_settings.output_directory)
+        transformed.write_standard_file(
+            output_directory=self.job_settings.output_directory
+        )
 
     @classmethod
     def from_args(cls, args: list):

@@ -95,9 +95,7 @@ class Camstim:
             self.pkl_path = next(self.npexp_path.glob("*.pkl"))
             stim_table_path = output_directory
             stim_table_path.mkdir(exist_ok=True)
-            self.stim_table_path = (
-                stim_table_path / f"{self.pkl_path.stem}_table.csv"
-            )
+            self.stim_table_path = stim_table_path / f"{self.pkl_path.stem}_table.csv"
             self.sync_path = next(
                 file
                 for file in self.npexp_path.glob("*.h5")
@@ -186,12 +184,8 @@ class Camstim:
 
         stim_table_seconds = names.collapse_columns(stim_table_seconds)
         stim_table_seconds = names.drop_empty_columns(stim_table_seconds)
-        stim_table_seconds = names.standardize_movie_numbers(
-            stim_table_seconds
-        )
-        stim_table_seconds = names.add_number_to_shuffled_movie(
-            stim_table_seconds
-        )
+        stim_table_seconds = names.standardize_movie_numbers(stim_table_seconds)
+        stim_table_seconds = names.add_number_to_shuffled_movie(stim_table_seconds)
         stim_table_seconds = names.map_stimulus_names(
             stim_table_seconds, stimulus_name_map
         )
@@ -239,9 +233,7 @@ class Camstim:
                 "level": levels,
             }
         )
-        optotagging_table = optotagging_table.sort_values(
-            by="start_time", axis=0
-        )
+        optotagging_table = optotagging_table.sort_values(by="start_time", axis=0)
 
         stop_times = []
         names = []
@@ -328,7 +320,7 @@ class Camstim:
             # if the stim name changes, summarize current epoch's parameters
             # and start a new epoch
             if current_idx == 0:
-                 current_epoch[0] = row["stim_name"]
+                current_epoch[0] = row["stim_name"]
             if row["stim_name"] != current_epoch[0]:
                 for column in stim_table:
                     if column not in (
@@ -342,9 +334,7 @@ class Camstim:
                         "frame",
                     ):
                         param_set = set(
-                            stim_table[column][
-                                epoch_start_idx:current_idx
-                            ].dropna()
+                            stim_table[column][epoch_start_idx:current_idx].dropna()
                         )
                         current_epoch[3][column] = param_set
 
@@ -379,6 +369,7 @@ class Camstim:
             return epochs[1:]
         else:
             return epochs
+
     def epochs_from_stim_table(self) -> list[session_schema.StimulusEpoch]:
         """
         From the stimulus epochs table, return a list of schema stimulus
