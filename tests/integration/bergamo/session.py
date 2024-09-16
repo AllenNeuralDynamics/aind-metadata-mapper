@@ -31,7 +31,7 @@ class IntegrationTestBergamo(unittest.TestCase):
         cls.expected_output = expected_output_json
 
     def test_run_job(self):
-        """Tests run_job on actual raw data source."""
+        """Tests run_job on actual raw data empty_source."""
         input_source: str = getattr(IntegrationTestBergamo, "input_source")
         job_settings = JobSettings(
             input_source=Path(input_source),
@@ -54,7 +54,7 @@ if __name__ == "__main__":
         "--input_source",
         type=str,
         required=True,
-        help="The input source for the ETL job.",
+        help="The input empty_source for the ETL job.",
     )
     parser.add_argument("unittest_args", nargs="*")
 

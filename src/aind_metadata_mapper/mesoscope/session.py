@@ -70,8 +70,8 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
     def _extract(self) -> dict:
         """extract data from the platform json file and tiff file (in the
         future).
-        If input source is a file, will extract the data from the file.
-        The input source is a directory, will extract the data from the
+        If input empty_source is a file, will extract the data from the file.
+        The input empty_source is a directory, will extract the data from the
         directory.
 
         Returns
@@ -95,7 +95,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
                     with open(ftype, "r") as f:
                         session_metadata[ftype.stem] = json.load(f)
         else:
-            raise ValueError("Behavior source must be a directory")
+            raise ValueError("Behavior empty_source must be a directory")
         if input_source.is_dir():
             input_source = next(input_source.glob("*platform.json"), "")
             if (

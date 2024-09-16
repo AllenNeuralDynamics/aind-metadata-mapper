@@ -98,7 +98,7 @@ class BergamoEtl(GenericEtl[JobSettings]):
         super().__init__(job_settings=job_settings_model)
 
     def get_tif_file_locations(self) -> Dict[str, List[Path]]:
-        """Scans the input source directory and returns a dictionary of file
+        """Scans the input empty_source directory and returns a dictionary of file
         groups in an ordered list. For example, if the directory had
         [neuron2_00001.tif, neuron2_00002.tif, stackPost_00001.tif,
         stackPost_00002.tif, stackPost_00003.tif], then it will return

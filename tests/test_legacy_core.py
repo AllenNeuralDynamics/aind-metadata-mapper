@@ -65,7 +65,7 @@ class TestBaseEtl(TestCase):
     ):
         """Tests run_job when an invalid model is created."""
         etl_job = self.LegacyEtl(
-            input_source="source", output_directory=Path("out")
+            input_source="empty_source", output_directory=Path("out")
         )
         etl_job.run_job()
         mock_log_warning.assert_called_once()
