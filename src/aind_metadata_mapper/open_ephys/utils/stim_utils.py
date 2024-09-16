@@ -368,8 +368,8 @@ def extract_blocks_from_stim(stims):
     """
     stim_chunked_blocks = []
     for stimulus in stims:
-        if 'stimuli' in stimulus:
-            for stimulus_block in stimulus['stimuli']:
+        if "stimuli" in stimulus:
+            for stimulus_block in stimulus["stimuli"]:
                 stim_chunked_blocks.append(stimulus_block)
         else:
             stim_chunked_blocks.append(stimulus)
@@ -604,9 +604,10 @@ def read_stimulus_name_from_path(stimulus):
 
     stim_name = stimulus["stim_path"].split("\\")[-1].split(".")[0]
 
-    if len(stim_name) == 0:
-        stim_name = stimulus["stim_path"].split("\\\\")[-2]
-
+    if stimulus["stim_path"] == "":
+        stim_name = stimulus["movie_local_path"].split("\\")[-1].split(".")[0]
+    else:
+        stim_name = stimulus["stim_path"].split("\\")[-1].split(".")[0]
     return stim_name
 
 

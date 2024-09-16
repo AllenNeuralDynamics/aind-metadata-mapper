@@ -1,9 +1,10 @@
 """Module defining JobSettings for SmartSPIM ETL"""
-
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
-from aind_metadata_mapper.core import BaseJobSettings
+from pydantic import Field
+
+from aind_metadata_mapper.core_models import BaseJobSettings
 
 
 class JobSettings(BaseJobSettings):
@@ -11,10 +12,10 @@ class JobSettings(BaseJobSettings):
 
     # Field can be used to switch between different acquisition etl jobs
     job_settings_name: Literal["SmartSPIM"] = "SmartSPIM"
-
+    raw_dataset_path: Optional[Union[Path, str]] = Field(
+        default=None, description=("Deprecated, use input_source instead.")
+    )
     subject_id: str
-    raw_dataset_path: Path
-    output_directory: Optional[Path] = None
 
     # Metadata names
     asi_filename: str = "derivatives/ASI_logging.txt"

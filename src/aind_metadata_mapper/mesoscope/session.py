@@ -1,7 +1,7 @@
 """Mesoscope ETL"""
-
 import argparse
 import json
+import logging
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -31,18 +31,28 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         312782574: "VISli",
     }
 
-    def __init__(
-        self,
-        job_settings: Union[JobSettings, str],
-    ):
-        """Class constructor for Mesoscope etl job"""
+    # TODO: Deprecate this constructor. Use GenericEtl constructor instead
+    def __init__(self, job_settings: Union[JobSettings, str]):
+        """
+        Class constructor for Base etl class.
+        Parameters
+        ----------
+        job_settings: Union[JobSettings, str]
+          Variables for a particular session
+        """
+
         if isinstance(job_settings, str):
             job_settings_model = JobSettings.model_validate_json(job_settings)
         else:
             job_settings_model = job_settings
+        if isinstance(job_settings_model.behavior_source, str):
+            job_settings_model.behavior_source = Path(
+                job_settings_model.behavior_source
+            )
         super().__init__(job_settings=job_settings_model)
 
-    def _read_metadata(self, tiff_path: Path):
+    @staticmethod
+    def _read_metadata(tiff_path: Path):
         """
         Calls tifffile.read_scanimage_metadata on the specified
         path and returns teh result. This method was factored
@@ -72,7 +82,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         # The pydantic models will validate that the user inputs a Path.
         # We can add validators there if we want to coerce strings to Paths.
         input_source = self.job_settings.input_source
-        behavior_source = self.job_settings.behavior_source
+        behavior_source = Path(self.job_settings.behavior_source)
         session_metadata = {}
         if behavior_source.is_dir():
             # deterministic order
@@ -228,6 +238,11 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         A list of command line arguments to parse.
         """
 
+        logging.warning(
+            "This method will be removed in future versions. "
+            "Please use JobSettings.from_args instead."
+        )
+
         parser = argparse.ArgumentParser()
         parser.add_argument(
             "-u",
@@ -255,5 +270,6 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
 
 if __name__ == "__main__":
     sys_args = sys.argv[1:]
-    metl = MesoscopeEtl.from_args(sys_args)
+    main_job_settings = JobSettings.from_args(sys_args)
+    metl = MesoscopeEtl(job_settings=main_job_settings)
     metl.run_job()

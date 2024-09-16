@@ -1,5 +1,4 @@
 """Sets up the MRI ingest ETL"""
-
 import argparse
 import json
 import logging
@@ -15,7 +14,11 @@ from aind_data_schema.components.coordinates import (
     Scale3dTransform,
     Translation3dTransform,
 )
-from aind_data_schema.components.devices import Scanner
+from aind_data_schema.components.devices import (
+    MagneticStrength,
+    Scanner,
+    ScannerLocation,
+)
 from aind_data_schema.core.session import (
     MRIScan,
     MriScanSequence,
@@ -29,7 +32,8 @@ from aind_data_schema_models.units import TimeUnit
 from bruker2nifti._metadata import BrukerMetadata
 
 from aind_metadata_mapper.bruker.models import JobSettings
-from aind_metadata_mapper.core import GenericEtl, JobResponse
+from aind_metadata_mapper.core import GenericEtl
+from aind_metadata_mapper.core_models import JobResponse
 
 DATETIME_FORMAT = "%H:%M:%S %d %b %Y"
 LENGTH_FORMAT = "%Hh%Mm%Ss%fms"
@@ -38,6 +42,7 @@ LENGTH_FORMAT = "%Hh%Mm%Ss%fms"
 class MRIEtl(GenericEtl[JobSettings]):
     """Class for MRI ETL process."""
 
+    # TODO: Deprecate this constructor. Use GenericEtl constructor instead
     def __init__(self, job_settings: Union[JobSettings, str]):
         """
         Class constructor for Base etl class.
@@ -51,8 +56,14 @@ class MRIEtl(GenericEtl[JobSettings]):
             job_settings_model = JobSettings.model_validate_json(job_settings)
         else:
             job_settings_model = job_settings
+        if (
+            job_settings_model.data_path is not None
+            and job_settings_model.input_source is None
+        ):
+            job_settings_model.input_source = job_settings_model.data_path
         super().__init__(job_settings=job_settings_model)
 
+    # TODO: deprecate method
     @classmethod
     def from_args(cls, args: list):
         """
@@ -62,7 +73,10 @@ class MRIEtl(GenericEtl[JobSettings]):
         args : list
         A list of command line arguments to parse.
         """
-
+        logging.warning(
+            "This method will be removed in future versions. "
+            "Please use JobSettings.from_args instead."
+        )
         parser = argparse.ArgumentParser()
         parser.add_argument(
             "-u",
@@ -90,7 +104,7 @@ class MRIEtl(GenericEtl[JobSettings]):
     def _extract(self) -> BrukerMetadata:
         """Extract the data from the bruker files."""
 
-        metadata = BrukerMetadata(self.job_settings.data_path)
+        metadata = BrukerMetadata(self.job_settings.input_source)
         metadata.parse_scans()
         metadata.parse_subject()
 
@@ -273,6 +287,11 @@ class MRIEtl(GenericEtl[JobSettings]):
 
         scale = self.get_scale(cur_method)
 
+        scan_location = ScannerLocation(self.job_settings.scan_location)
+        magnetic_strength = MagneticStrength(
+            self.job_settings.magnetic_strength
+        )
+
         try:
             return MRIScan(
                 scan_index=scan_index,
@@ -280,8 +299,8 @@ class MRIEtl(GenericEtl[JobSettings]):
                 primary_scan=primary_scan,
                 mri_scanner=Scanner(
                     name=self.job_settings.scanner_name,
-                    scanner_location=self.job_settings.scan_location,
-                    magnetic_strength=self.job_settings.magnetic_strength,
+                    scanner_location=scan_location,
+                    magnetic_strength=magnetic_strength,
                     magnetic_strength_unit="T",
                 ),
                 scan_sequence_type=scan_sequence,
@@ -306,5 +325,6 @@ class MRIEtl(GenericEtl[JobSettings]):
 
 if __name__ == "__main__":
     sys_args = sys.argv[1:]
-    etl = MRIEtl.from_args(sys_args)
+    main_job_settings = JobSettings.from_args(sys_args)
+    etl = MRIEtl(job_settings=main_job_settings)
     etl.run_job()
