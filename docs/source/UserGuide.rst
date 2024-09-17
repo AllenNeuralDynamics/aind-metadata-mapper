@@ -1,12 +1,9 @@
 User Guide
 ==========
-Thank you for using ``aind-metadata-mapper``! This guide is intended for scientists and engineers in AIND that wish to generate metadata models (particularly the session model) from specific acquisition machines. This guide will describe how to:
+Thank you for using ``aind-metadata-mapper``! This guide is intended for scientists and engineers in AIND that wish to generate metadata models (particularly the session model) from specific acquisition machines.
 
-    1. how to define necessary JobSettings and generate desired model directly
-    2. generate and upload the model using the ``aind-data-transfer-models``'s BasicUploadJob
-
-Metadata Conversion Architecture
---------------------------------
+Metadata Architecture
+----------------------
 This repository is split up into different packages by acquisition machine. Each package defines a ``JobSettings`` object and an ``ETL`` to generate a desired model.
 Each JobSettings defines the information necessary to compile metadata, and varies by machine. For example, a bergamo session model can be generated directly like so:
 
@@ -26,11 +23,6 @@ Each JobSettings defines the information necessary to compile metadata, and vari
 
 However, it is also possible to generate the session.json as part of the ``aind-data-transfer-service``'s process of uploading data to the cloud.
 
-.. image:: ../diagrams/metadata_pipeline.png
-   :alt: Metadata Workflow
-   :width: 400px
-   :align: center
-
 This will be done through the basic flow:
     - A user submits a request to upload a session. As part of the request, information about how to compile the metadata will be added.
     - Airflow parses the configs and submits requests to SLURM to compile the metadata and save it to a staging directory in VAST together with the modality data.
@@ -39,6 +31,13 @@ This will be done through the basic flow:
 The information will be passed via field ``session_settings``. This field supports:
     - Using a JobSettings json file that can be read in the metadata mapper
     - Defining the pydantic model and passing those configs directly
+
+Here's a diagram of the overall architecture:
+
+.. image:: ../diagrams/metadata_pipeline.png
+   :alt: Metadata Workflow
+   :width: 400px
+   :align: center
 
 The rest of this document will describe how to generate the session in each of these ways.
 
@@ -118,8 +117,8 @@ This workflow assumes that the user has a pre-defined JobSettings defined in a j
     post_request_content = json.loads(submit_request.model_dump_json(round_trip=True, exclude_none=True, warnings=False))
     submit_job_response = requests.post(url="http://aind-data-transfer-service-dev/api/v1/submit_jobs", json=post_request_content)
 
-Defining the pydantic model and passing the configs directly
-------------------------------------------------------------
+Defining and passing JobSettings directly
+-----------------------------------------
 This example demonstrates how to define ``JobSettings`` and generate the session.json through the GatherMetadataJob.
 
 .. code:: python
