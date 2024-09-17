@@ -236,10 +236,10 @@ class BaseEtl(ABC):
         parser = argparse.ArgumentParser()
         parser.add_argument(
             "-i",
-            "--input-empty_source",
+            "--input-source",
             required=True,
             type=str,
-            help="URL or directory of empty_source data",
+            help="URL or directory of source data",
         )
         parser.add_argument(
             "-o",

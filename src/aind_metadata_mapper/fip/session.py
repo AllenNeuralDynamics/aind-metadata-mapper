@@ -152,7 +152,7 @@ class FIBEtl(GenericEtl[JobSettings]):
             stimulus_end_time=end_datetime,
         )
 
-        # create light empty_source instance
+        # create light source instance
         light_source = []
         for ls in light_source_list:
             diode = LightEmittingDiodeConfig(**ls)

@@ -77,7 +77,7 @@ def get_images_dict(pkl_dict) -> Dict:
         respectively.
 
     """
-    # Sometimes the empty_source is a zipped pickle:
+    # Sometimes the source is a zipped pickle:
     pkl_stimuli = pkl_dict["items"]["behavior"]["stimuli"]
     metadata = {"image_set": pkl_stimuli["images"]["image_path"]}
 

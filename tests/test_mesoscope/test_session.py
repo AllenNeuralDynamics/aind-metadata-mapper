@@ -132,7 +132,7 @@ class TestMesoscope(unittest.TestCase):
         with self.assertRaises(ValueError) as e:
             etl1._extract()
         self.assertEqual(
-            "Behavior empty_source must be a directory",
+            "Behavior source must be a directory",
             e.exception.args[0],
         )
 

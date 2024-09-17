@@ -34,7 +34,7 @@ def setup_neuropixels_etl_resources(
     Returns
     -------
     Tuple[Path, Path, Rig]
-      input_source: path to etl base rig input empty_source
+      input_source: path to etl base rig input source
       output_dir: path to etl output directory
       expected_rig: rig model to compare to output
     """
