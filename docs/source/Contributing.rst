@@ -6,7 +6,7 @@ This document will go through best practices for contributing to this project.
 
 Issues and Feature Requests
 ---------------------------
-Questions, feature requests and bug reports are all welcome as discussions or issues. Please use the provided templates to ensure we have enough information to work with.
+Questions, feature requests and bug reports are all welcome as discussions or `issues <https://github.com/AllenNeuralDynamics/aind-metadata-mapper/issues>`_. Please use the provided `templates <https://github.com/AllenNeuralDynamics/aind-metadata-mapper/issues/new/choose>`_ to ensure we have enough information to work with.
 
 NOTE: If your package requires upgrading aind-data-schema, create a separate ticket and a dedicated engineer will handle the upgrade.
 
