@@ -36,7 +36,7 @@ Contributions are more than welcome for this project! If you'd like to develop t
 ### Documentation
 To generate the rst files source files for documentation, run
 ```bash
-sphinx-apidoc -o doc_template/empty_source/ src 
+sphinx-apidoc -o docs/source/ src 
 ```
 Then to create the documentation HTML files, run
 ```bash

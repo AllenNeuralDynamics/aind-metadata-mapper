@@ -29,7 +29,6 @@ dev = [
     "flake8",
     "interrogate",
     "isort",
-    "Sphinx",
     "furo",
 ]
 
@@ -82,6 +81,11 @@ dynamicrouting = [
 u19 = [
     "aind-metadata-mapper[schema]",
     "pandas >= 2.2.2",
+]
+
+doc = [
+    "Sphinx<6.0",
+    "furo"
 ]
 
 [tool.setuptools.packages.find]
