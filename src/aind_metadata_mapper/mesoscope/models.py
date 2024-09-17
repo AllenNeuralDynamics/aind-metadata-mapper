@@ -29,3 +29,4 @@ class JobSettings(BaseJobSettings):
     experimenter_full_name: List[str] = Field(..., title="Full name of the experimenter")
     mouse_platform_name: str = "disc"
     optional_output: Optional[Path] = None
+    notes: Optional[str] = None
