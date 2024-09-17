@@ -148,11 +148,19 @@ class MesoscopeEtl(
             meta = self._read_h5_metadata(str(timeseries))
         fovs = []
         count = 0
+        notes = None
+        if self.job_settings.notes:
+            try:
+                fov_notes = json.loads(self.job_settings.notes)
+            except json.JSONDecodeError:
+                notes = self.job_settings.notes
         for group in imaging_plane_groups:
             power_ratio = group.get("scanimage_split_percent", None)
             if power_ratio:
                 power_ratio = float(power_ratio)
             for plane in group["imaging_planes"]:
+                if isinstance(fov_notes, dict):
+                    fov_note = fov_notes.get(str(plane["scanimage_scanfield_z"]), None)
                 fov = FieldOfView(
                     coupled_fov_index=int(group["local_z_stack_tif"].split(".")[0][-1]),
                     index=count,
@@ -173,7 +181,8 @@ class MesoscopeEtl(
                     power=float(plane.get("scanimage_power", ""))
                     if not group.get("scanimage_power_percent", "")
                     else float(group.get("scanimage_power_percent", "")),
-                    power_ratio=power_ratio
+                    power_ratio=power_ratio,
+                    notes=str(fov_note),
                 )
                 count += 1
                 fovs.append(fov)
@@ -218,7 +227,7 @@ class MesoscopeEtl(
             stimulus_epochs=self.stim_epochs,
             mouse_platform_name=self.job_settings.mouse_platform_name,
             active_mouse_platform=True,
-            notes=self.job_settings.notes,
+            notes=notes,
         )
 
     def run_job(self) -> None:
