@@ -6,8 +6,7 @@ from pathlib import Path
 from datetime import date
 from os.path import abspath, dirname
 from aind_metadata_mapper import __version__ as package_version
-from enum import Enum
-from types import GenericAlias
+
 INSTITUTE_NAME = "Allen Institute for Neural Dynamics"
 current_year = date.today().year
 # -- Project information -----------------------------------------------------
