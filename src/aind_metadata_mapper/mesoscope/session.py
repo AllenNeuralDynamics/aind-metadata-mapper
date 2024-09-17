@@ -218,6 +218,7 @@ class MesoscopeEtl(
             stimulus_epochs=self.stim_epochs,
             mouse_platform_name=self.job_settings.mouse_platform_name,
             active_mouse_platform=True,
+            notes=self.job_settings.notes,
         )
 
     def run_job(self) -> None:
