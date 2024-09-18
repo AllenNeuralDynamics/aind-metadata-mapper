@@ -3,21 +3,25 @@
 import argparse
 import json
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Union
 
+import h5py as h5
 import tifffile
-from aind_data_schema.core.session import FieldOfView, Session, Stream
+from aind_data_schema.core.session import FieldOfView, LaserConfig, Session, Stream
 from aind_data_schema_models.modalities import Modality
-from PIL import Image
-from PIL.TiffTags import TAGS
+from aind_data_schema_models.units import SizeUnit
+from aind_metadata_mapper.stimulus.camstim import Camstim
+from comb.data_files.behavior_stimulus_file import BehaviorStimulusFile
 
+import aind_metadata_mapper
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.mesoscope.models import JobSettings
 
 
-class MesoscopeEtl(GenericEtl[JobSettings]):
+class MesoscopeEtl(
+    GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camstim.Camstim
+):
     """Class to manage transforming mesoscope platform json and metadata into
     a Session model."""
 
@@ -41,6 +45,13 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         else:
             job_settings_model = job_settings
         super().__init__(job_settings=job_settings_model)
+        Camstim.__init__(
+            self,
+            job_settings.session_id,
+            {},
+            input_directory=job_settings_model.input_source,
+            output_directory=job_settings_model.optional_output,
+        )
 
     def _read_metadata(self, tiff_path: Path):
         """
@@ -48,13 +59,28 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         path and returns teh result. This method was factored
         out so that it could be easily mocked in unit tests.
         """
-        if not tiff_path.is_file():
-            raise ValueError(
-                f"{tiff_path.resolve().absolute()} " "is not a file"
-            )
+
         with open(tiff_path, "rb") as tiff:
             file_handle = tifffile.FileHandle(tiff)
             file_contents = tifffile.read_scanimage_metadata(file_handle)
+        return file_contents
+
+    def _read_h5_metadata(self, h5_path: str):
+        """Reads scanimage metadata from h5path
+
+        Parameters
+        ----------
+        h5_path : str
+            Path to h5 file
+
+        Returns
+        -------
+        dict
+        """
+        data = h5.File(h5_path)
+        file_contents = data["scanimage_metadata"][()].decode()
+        data.close()
+        file_contents = json.loads(file_contents)
         return file_contents
 
     def _extract(self) -> dict:
@@ -76,11 +102,12 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         session_metadata = {}
         if behavior_source.is_dir():
             # deterministic order
+            session_id = self.job_settings.session_id
             for ftype in sorted(list(behavior_source.glob("*json"))):
                 if (
-                    "Behavior" in ftype.stem
-                    or "Eye" in ftype.stem
-                    or "Face" in ftype.stem
+                    ("Behavior" in ftype.stem and session_id in ftype.stem)
+                    or ("Eye" in ftype.stem and session_id in ftype.stem)
+                    or ("Face" in ftype.stem and session_id in ftype.stem)
                 ):
                     with open(ftype, "r") as f:
                         session_metadata[ftype.stem] = json.load(f)
@@ -108,101 +135,99 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         Session
             The session object
         """
-        imaging_plane_groups = extracted_source["platform"][
-            "imaging_plane_groups"
-        ]
-        timeseries = next(
-            self.job_settings.input_source.glob("*timeseries*.tiff"), ""
-        )
-        meta = self._read_metadata(timeseries)
+        imaging_plane_groups = extracted_source["platform"]["imaging_plane_groups"]
+        timeseries = next(self.job_settings.input_source.glob("*timeseries*.tiff"), "")
+        if timeseries:
+            meta = self._read_metadata(timeseries)
+        else:
+            experiment_dir = list(
+                self.job_settings.input_source.glob("ophys_experiment*")
+            )[0]
+            experiment_id = experiment_dir.name.split("_")[-1]
+            timeseries = next(experiment_dir.glob(f"{experiment_id}.h5"))
+            meta = self._read_h5_metadata(str(timeseries))
         fovs = []
-        data_streams = []
+        count = 0
+        notes = None
+        if self.job_settings.notes:
+            try:
+                fov_notes = json.loads(self.job_settings.notes)
+            except json.JSONDecodeError:
+                notes = self.job_settings.notes
         for group in imaging_plane_groups:
+            power_ratio = group.get("scanimage_split_percent", None)
+            if power_ratio:
+                power_ratio = float(power_ratio)
             for plane in group["imaging_planes"]:
+                if isinstance(fov_notes, dict):
+                    fov_note = fov_notes.get(str(plane["scanimage_scanfield_z"]), None)
                 fov = FieldOfView(
-                    index=int(group["local_z_stack_tif"].split(".")[0][-1]),
+                    coupled_fov_index=int(group["local_z_stack_tif"].split(".")[0][-1]),
+                    index=count,
                     fov_coordinate_ml=self.job_settings.fov_coordinate_ml,
                     fov_coordinate_ap=self.job_settings.fov_coordinate_ap,
                     fov_reference=self.job_settings.fov_reference,
                     magnification=self.job_settings.magnification,
-                    fov_scale_factor=meta[0]["SI.hRoiManager.scanZoomFactor"],
+                    fov_scale_factor=0.78,
                     imaging_depth=plane["targeted_depth"],
                     targeted_structure=self._STRUCTURE_LOOKUP_DICT[
                         plane["targeted_structure_id"]
                     ],
+                    scanimage_roi_index=plane["scanimage_roi_index"],
                     fov_width=meta[0]["SI.hRoiManager.pixelsPerLine"],
                     fov_height=meta[0]["SI.hRoiManager.linesPerFrame"],
                     frame_rate=group["acquisition_framerate_Hz"],
-                    # scanfield_z=plane["scanimage_scanfield_z"],
-                    # scanfield_z_unit=SizeUnit.UM,
-                    # power=plane["scanimage_power"],
+                    scanfield_z=plane["scanimage_scanfield_z"],
+                    power=float(plane.get("scanimage_power", ""))
+                    if not group.get("scanimage_power_percent", "")
+                    else float(group.get("scanimage_power_percent", "")),
+                    power_ratio=power_ratio,
+                    notes=str(fov_note),
                 )
+                count += 1
                 fovs.append(fov)
-        data_streams.append(
+        data_streams = [
             Stream(
-                camera_names=["Mesoscope"],
+                light_sources=[
+                    LaserConfig(
+                        device_type="Laser",
+                        name="Laser",
+                        wavelength=920,
+                        wavelength_unit=SizeUnit.NM,
+                    ),
+                ],
                 stream_start_time=self.job_settings.session_start_time,
                 stream_end_time=self.job_settings.session_end_time,
                 ophys_fovs=fovs,
                 stream_modalities=[Modality.POPHYS],
+                camera_names=[
+                    "Mesoscope",
+                    "Behavior",
+                    "Eye",
+                    "Face",
+                ],
             )
-        )
-        for camera in extracted_source.keys():
-            if camera != "platform":
-                start_time = datetime.strptime(
-                    extracted_source[camera]["RecordingReport"]["TimeStart"],
-                    "%Y-%m-%dT%H:%M:%SZ",
+        ]
+        stimulus_data = BehaviorStimulusFile.from_file(
+            next(
+                self.job_settings.input_source.glob(
+                    f"{self.job_settings.session_id}*.pkl"
                 )
-                end_time = datetime.strptime(
-                    extracted_source[camera]["RecordingReport"]["TimeEnd"],
-                    "%Y-%m-%dT%H:%M:%SZ",
-                )
-                camera_name = camera.split("_")[1]
-                data_streams.append(
-                    Stream(
-                        camera_names=[camera_name],
-                        stream_start_time=start_time,
-                        stream_end_time=end_time,
-                        stream_modalities=[Modality.BEHAVIOR_VIDEOS],
-                    )
-                )
-        vasculature_fp = next(
-            self.job_settings.input_source.glob("*vasculature*.tif"), ""
-        )
-        # Pull datetime from vasculature.
-        # Derived from
-        # https://stackoverflow.com/questions/46477712/
-        #   reading-tiff-image-metadata-in-python
-        with Image.open(vasculature_fp) as img:
-            vasculature_dt = [
-                img.tag[key]
-                for key in img.tag.keys()
-                if "DateTime" in TAGS[key]
-            ][0]
-        vasculature_dt = datetime.strptime(
-            vasculature_dt[0], "%Y:%m:%d %H:%M:%S"
-        )
-        data_streams.append(
-            Stream(
-                camera_names=["Vasculature"],
-                stream_start_time=vasculature_dt,
-                stream_end_time=vasculature_dt,
-                stream_modalities=[
-                    Modality.CONFOCAL
-                ],  # TODO: ask Saskia about this
             )
         )
         return Session(
             experimenter_full_name=self.job_settings.experimenter_full_name,
-            session_type="Mesoscope",
+            session_type=stimulus_data.session_type,
             subject_id=self.job_settings.subject_id,
             iacuc_protocol=self.job_settings.iacuc_protocol,
             session_start_time=self.job_settings.session_start_time,
             session_end_time=self.job_settings.session_end_time,
             rig_id=extracted_source["platform"]["rig_id"],
             data_streams=data_streams,
+            stimulus_epochs=self.stim_epochs,
             mouse_platform_name=self.job_settings.mouse_platform_name,
             active_mouse_platform=True,
+            notes=notes,
         )
 
     def run_job(self) -> None:

@@ -102,9 +102,7 @@ class GatherMetadataJob:
         file_name = Subject.default_filename()
         should_use_service: bool = (
             not self.settings.metadata_dir_force
-            or not self._does_file_exist_in_user_defined_dir(
-                file_name=file_name
-            )
+            or not self._does_file_exist_in_user_defined_dir(file_name=file_name)
         )
         if should_use_service:
             response = requests.get(
@@ -117,13 +115,9 @@ class GatherMetadataJob:
                 json_content = response.json()
                 return json_content["data"]
             else:
-                raise AssertionError(
-                    f"Subject metadata is not valid! {response.json()}"
-                )
+                raise AssertionError(f"Subject metadata is not valid! {response.json()}")
         else:
-            contents = self._get_file_from_user_defined_directory(
-                file_name=file_name
-            )
+            contents = self._get_file_from_user_defined_directory(file_name=file_name)
             return contents
 
     def get_procedures(self) -> Optional[dict]:
@@ -131,14 +125,10 @@ class GatherMetadataJob:
         file_name = Procedures.default_filename()
         should_use_service: bool = (
             not self.settings.metadata_dir_force
-            or not self._does_file_exist_in_user_defined_dir(
-                file_name=file_name
-            )
+            or not self._does_file_exist_in_user_defined_dir(file_name=file_name)
         )
         if should_use_service:
-            procedures_file_path = (
-                self.settings.procedures_settings.metadata_service_path
-            )
+            procedures_file_path = self.settings.procedures_settings.metadata_service_path
             response = requests.get(
                 self.settings.metadata_service_domain
                 + f"/{procedures_file_path}/"
@@ -154,9 +144,7 @@ class GatherMetadataJob:
                 )
                 return None
         else:
-            contents = self._get_file_from_user_defined_directory(
-                file_name=file_name
-            )
+            contents = self._get_file_from_user_defined_directory(file_name=file_name)
             return contents
 
     def get_raw_data_description(self) -> dict:
@@ -175,14 +163,11 @@ class GatherMetadataJob:
             for f in funding_info:
                 project_fundees = f.get("fundee", "").split(",")
                 pid_names = [
-                    PIDName(name=p.strip()).model_dump_json()
-                    for p in project_fundees
+                    PIDName(name=p.strip()).model_dump_json() for p in project_fundees
                 ]
                 if project_fundees is not [""]:
                     investigators.update(pid_names)
-            investigators = [
-                PIDName.model_validate_json(i) for i in investigators
-            ]
+            investigators = [PIDName.model_validate_json(i) for i in investigators]
             investigators.sort(key=lambda x: x.name)
             return funding_info, investigators
 
@@ -190,9 +175,7 @@ class GatherMetadataJob:
         file_name = RawDataDescription.default_filename()
         should_use_service: bool = (
             not self.settings.metadata_dir_force
-            or not self._does_file_exist_in_user_defined_dir(
-                file_name=file_name
-            )
+            or not self._does_file_exist_in_user_defined_dir(file_name=file_name)
         )
         if should_use_service:
             basic_settings = RawDataDescription.parse_name(
@@ -206,9 +189,7 @@ class GatherMetadataJob:
             )
 
             try:
-                institution = (
-                    self.settings.raw_data_description_settings.institution
-                )
+                institution = self.settings.raw_data_description_settings.institution
                 modality = self.settings.raw_data_description_settings.modality
                 return json.loads(
                     RawDataDescription(
@@ -221,9 +202,7 @@ class GatherMetadataJob:
                     ).model_dump_json()
                 )
             except ValidationError:
-                institution = (
-                    self.settings.raw_data_description_settings.institution
-                )
+                institution = self.settings.raw_data_description_settings.institution
                 modality = self.settings.raw_data_description_settings.modality
                 return json.loads(
                     RawDataDescription.model_construct(
@@ -236,9 +215,7 @@ class GatherMetadataJob:
                     ).model_dump_json()
                 )
         else:
-            contents = self._get_file_from_user_defined_directory(
-                file_name=file_name
-            )
+            contents = self._get_file_from_user_defined_directory(file_name=file_name)
             return contents
 
     def get_processing_metadata(self):
@@ -247,30 +224,22 @@ class GatherMetadataJob:
         file_name = Processing.default_filename()
         should_use_service: bool = (
             not self.settings.metadata_dir_force
-            or not self._does_file_exist_in_user_defined_dir(
-                file_name=file_name
-            )
+            or not self._does_file_exist_in_user_defined_dir(file_name=file_name)
         )
         if should_use_service:
             processing_instance = Processing(
-                processing_pipeline=(
-                    self.settings.processing_settings.pipeline_process
-                )
+                processing_pipeline=(self.settings.processing_settings.pipeline_process)
             )
             return json.loads(processing_instance.model_dump_json())
         else:
-            contents = self._get_file_from_user_defined_directory(
-                file_name=file_name
-            )
+            contents = self._get_file_from_user_defined_directory(file_name=file_name)
             return contents
 
     def get_session_metadata(self) -> Optional[dict]:
         """Get session metadata"""
         file_name = Session.default_filename()
         if self._does_file_exist_in_user_defined_dir(file_name=file_name):
-            contents = self._get_file_from_user_defined_directory(
-                file_name=file_name
-            )
+            contents = self._get_file_from_user_defined_directory(file_name=file_name)
             return contents
         elif self.settings.session_settings is not None:
             session_settings = self.settings.session_settings.job_settings
@@ -294,9 +263,7 @@ class GatherMetadataJob:
         """Get rig metadata"""
         file_name = Rig.default_filename()
         if self._does_file_exist_in_user_defined_dir(file_name=file_name):
-            contents = self._get_file_from_user_defined_directory(
-                file_name=file_name
-            )
+            contents = self._get_file_from_user_defined_directory(file_name=file_name)
             return contents
         else:
             return None
@@ -305,9 +272,7 @@ class GatherMetadataJob:
         """Get acquisition metadata"""
         file_name = Acquisition.default_filename()
         if self._does_file_exist_in_user_defined_dir(file_name=file_name):
-            contents = self._get_file_from_user_defined_directory(
-                file_name=file_name
-            )
+            contents = self._get_file_from_user_defined_directory(file_name=file_name)
             return contents
         elif self.settings.acquisition_settings is not None:
             acquisition_job = SmartspimETL(
@@ -325,9 +290,7 @@ class GatherMetadataJob:
         """Get instrument metadata"""
         file_name = Instrument.default_filename()
         if self._does_file_exist_in_user_defined_dir(file_name=file_name):
-            contents = self._get_file_from_user_defined_directory(
-                file_name=file_name
-            )
+            contents = self._get_file_from_user_defined_directory(file_name=file_name)
             return contents
         else:
             return None
@@ -362,9 +325,7 @@ class GatherMetadataJob:
             else:
                 return None
 
-        subject = load_model(
-            self.settings.metadata_settings.subject_filepath, Subject
-        )
+        subject = load_model(self.settings.metadata_settings.subject_filepath, Subject)
         data_description = load_model(
             self.settings.metadata_settings.data_description_filepath,
             DataDescription,
@@ -372,9 +333,7 @@ class GatherMetadataJob:
         procedures = load_model(
             self.settings.metadata_settings.procedures_filepath, Procedures
         )
-        session = load_model(
-            self.settings.metadata_settings.session_filepath, Session
-        )
+        session = load_model(self.settings.metadata_settings.session_filepath, Session)
         rig = load_model(self.settings.metadata_settings.rig_filepath, Rig)
         acquisition = load_model(
             self.settings.metadata_settings.acquisition_filepath, Acquisition
@@ -440,9 +399,7 @@ class GatherMetadataJob:
         user defined directory"""
         if self.settings.subject_settings is not None:
             contents = self.get_subject()
-            self._write_json_file(
-                filename=Subject.default_filename(), contents=contents
-            )
+            self._write_json_file(filename=Subject.default_filename(), contents=contents)
         if self.settings.procedures_settings is not None:
             contents = self.get_procedures()
             if contents is not None:
@@ -497,8 +454,7 @@ class GatherMetadataJob:
             # TODO: may need to update aind-data-schema write standard file
             #  class
             output_path = (
-                self.settings.directory_to_write_to
-                / Metadata.default_filename()
+                self.settings.directory_to_write_to / Metadata.default_filename()
             )
             contents = json.loads(metadata.model_dump_json(by_alias=True))
             with open(output_path, "w") as f:
