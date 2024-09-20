@@ -12,7 +12,6 @@ from pathlib import Path
 import np_session
 import npc_ephys
 import npc_mvr
-import npc_sessions
 import numpy as np
 import pandas as pd
 from aind_data_schema.components.coordinates import Coordinates3d
@@ -100,8 +99,8 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
             self.build_stimulus_table()
         if (
             self.opto_pkl_path.exists()
-            and not self.opto_table_path.exists()
-            or overwrite_tables
+            and (not self.opto_table_path.exists()
+            or overwrite_tables)
         ):
             logger.debug("building opto table")
             self.build_optogenetics_table()
@@ -214,7 +213,7 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
         """
         Return list of schema ephys modules for each available probe.
         """
-        newscale_coords = npc_sessions.get_newscale_coordinates(
+        newscale_coords = npc_ephys.get_newscale_coordinates(
             self.motor_locs_path
         )
 
