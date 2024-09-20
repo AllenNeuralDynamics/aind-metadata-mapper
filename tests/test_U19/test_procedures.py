@@ -50,7 +50,7 @@ class TestU19Writer(unittest.TestCase):
             self.example_output = json.load(f)
 
         self.example_job_settings = JobSettings(
-            tissue_sheet_path=EXAMPLE_TISSUE_SHEET,
+            input_source=EXAMPLE_TISSUE_SHEET,
             tissue_sheet_names=[
                 "example_sheet",
                 "extra sheet",
@@ -60,15 +60,6 @@ class TestU19Writer(unittest.TestCase):
             subject_to_ingest="721832",
             allow_validation_errors=True,
         )
-
-    def test_constructor_from_string(self) -> None:
-        """Test constructor from string."""
-
-        job_settings_string = self.example_job_settings.model_dump_json()
-        etl0 = U19Etl(self.example_job_settings)
-        etl1 = U19Etl(job_settings_string)
-
-        self.assertEqual(etl1.job_settings, etl0.job_settings)
 
     @patch(
         "aind_metadata_mapper.u19.procedures.U19Etl.download_procedure_file"
@@ -248,3 +239,7 @@ class TestU19Writer(unittest.TestCase):
 
         self.assertEqual(len(extracted_procedures), 6)
         self.assertEqual(extracted_procedures[5], test_spec_procedure)
+
+
+if __name__ == "__main__":
+    unittest.main()

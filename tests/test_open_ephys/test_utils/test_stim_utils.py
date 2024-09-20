@@ -132,6 +132,18 @@ class TestStimUtils(unittest.TestCase):
         result_df = stim.enforce_df_column_order(empty_df, column_order)
         pd.testing.assert_frame_equal(result_df, empty_df)
 
+    def test_extract_blocks_from_stim(self):
+        """
+        Creating a sample pkl dictionary with a "stimuli" block key
+        """
+        sample_pkl = ["image1.jpg", "image2.jpg", "image3.jpg"]
+
+        # Calling the function with the sample pkl dictionary
+        result = stim.extract_blocks_from_stim(sample_pkl)
+
+        # Asserting that the result is the "stimuli" key
+        self.assertEqual(result, sample_pkl)
+
     def test_seconds_to_frames(self):
         """
         Test the seconds_to_frames function.
