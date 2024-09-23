@@ -332,6 +332,12 @@ def make_spontaneous_activity_tables(
     for ii, table in enumerate(stimulus_tables):
         spon_start[ii + 1] = table[end_key].values[-1]
         spon_end[ii] = table[start_key].values[0]
+        # Assume the same block is being represented twice,
+        # so we grab the next relevant block
+        if spon_end[ii] < spon_start[ii]:
+            temp = spon_end[ii]
+            spon_end[ii] = spon_start[ii]
+            spon_start[ii] = temp
 
     spon_start = spon_start[:-1]
     spon_sweeps = pd.DataFrame({start_key: spon_start, end_key: spon_end})
@@ -341,7 +347,8 @@ def make_spontaneous_activity_tables(
             np.fabs(spon_sweeps[start_key] - spon_sweeps[end_key]) > duration_threshold
         ]
         spon_sweeps.reset_index(drop=True, inplace=True)
-
+    spon_sweeps = spon_sweeps.drop_duplicates(subset=[start_key, end_key])
+    spon_sweeps.reset_index(drop=True, inplace=True)
     return [spon_sweeps]
 
 
