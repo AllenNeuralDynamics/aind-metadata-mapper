@@ -198,7 +198,7 @@ class MesoscopeEtl(
                 power_ratio = float(power_ratio)
             for plane in group["imaging_planes"]:
                 if isinstance(fov_notes, dict):
-                    fov_note = fov_notes.get(str(plane["scanimage_scanfield_z"]), None)
+                    fov_notes = fov_notes.get(str(plane["scanimage_scanfield_z"]), None)
                 fov = FieldOfView(
                     coupled_fov_index=int(group["local_z_stack_tif"].split(".")[0][-1]),
                     index=count,
@@ -222,7 +222,7 @@ class MesoscopeEtl(
                         else float(group.get("scanimage_power_percent", ""))
                     ),
                     power_ratio=power_ratio,
-                    notes=str(fov_note),
+                    notes=str(fov_notes),
                 )
                 count += 1
                 fovs.append(fov)
