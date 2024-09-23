@@ -54,18 +54,23 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
 
         self.json_settings = json_settings
         session_inst = np_session.Session(session_id)
-        self.mtrain = session_inst.mtrain
         self.npexp_path = session_inst.npexp_path
         self.folder = session_inst.folder
+
+        self.mouse_id = self.folder.split('_')[1]
+        print('got mouse id as',self.mouse_id)
+        self.mtrain_regimen = self.get_mtrain(self.mouse_id)
+        print(self.mtrain_regimen.keys())
+        print(self.mtrain_regimen)
         # sometimes data files are deleted on npexp so try files on lims
-        try:
-            self.recording_dir = npc_ephys.get_single_oebin_path(
-                session_inst.lims_path
-            ).parent
-        except:
-            self.recording_dir = npc_ephys.get_single_oebin_path(
-                session_inst.npexp_path
-            ).parent
+        # try:
+        #     self.recording_dir = npc_ephys.get_single_oebin_path(
+        #         session_inst.lims_path
+        #     ).parent
+        # except:
+        self.recording_dir = npc_ephys.get_single_oebin_path(
+            session_inst.npexp_path
+        ).parent
 
         self.motor_locs_path = (
             self.npexp_path / f"{self.folder}.motor-locs.csv"

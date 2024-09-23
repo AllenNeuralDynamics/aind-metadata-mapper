@@ -9,12 +9,17 @@ import aind_data_schema
 import aind_data_schema.core.session as session_schema
 import np_session
 import pandas as pd
+import requests
+from pathlib import Path
 
 import aind_metadata_mapper.open_ephys.utils.constants as constants
 import aind_metadata_mapper.open_ephys.utils.naming_utils as names
 import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
 import aind_metadata_mapper.open_ephys.utils.stim_utils as stim
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
+
+
+NPEXP_ROOT = Path('//allen/programs/mindscope/workgroups/np-exp')
 
 
 class Camstim:
@@ -44,9 +49,11 @@ class Camstim:
 
         self.json_settings = json_settings
         session_inst = np_session.Session(session_id)
-        self.mtrain = session_inst.mtrain
         self.npexp_path = session_inst.npexp_path
         self.folder = session_inst.folder
+
+        self.mouse_id = self.folder.split('_')[1]
+        self.mtrain_regimen = self.get_mtrain(self.mouse_id)
 
         self.pkl_path = self.npexp_path / f"{self.folder}.stim.pkl"
         self.opto_pkl_path = self.npexp_path / f"{self.folder}.opto.pkl"
@@ -83,6 +90,17 @@ class Camstim:
         self.stim_epochs = self.epochs_from_stim_table()
         if self.opto_table_path.exists():
             self.stim_epochs.append(self.epoch_from_opto_table())
+
+    def get_mtrain(self, mouse_id) -> dict:
+        """Returns dictionary containing 'id', 'name', 'stages', 'states'"""
+        server = 'http://mtrain:5000'
+        mouse_state = requests.get(
+            f'{server}/api/v1/subjects/{mouse_id}'
+        ).json()['state']
+        print('mouse state', mouse_state)
+        return requests.get(
+            f"{server}/api/v1/regimens/{mouse_state['regimen_id']}"
+        ).json()
 
     def build_stimulus_table(
         self,
@@ -232,9 +250,9 @@ class Camstim:
         stim = aind_data_schema.core.session.StimulusModality
 
         script_obj = aind_data_schema.components.devices.Software(
-            name=self.mtrain["regimen"]["name"],
+            name=self.mtrain_regimen["name"],
             version="1.0",
-            url=self.mtrain["regimen"]["script"],
+            url=self.mtrain_regimen["script"],
         )
 
         opto_table = pd.read_csv(self.opto_table_path)
@@ -346,9 +364,9 @@ class Camstim:
         )
 
         script_obj = aind_data_schema.components.devices.Software(
-            name=self.mtrain["regimen"]["name"],
+            name=self.mtrain_regimen["name"],
             version="1.0",
-            url=self.mtrain["regimen"]["script"],
+            url=self.mtrain_regimen["script"],
         )
 
         schema_epochs = []
