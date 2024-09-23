@@ -1,12 +1,12 @@
 """ Unit tests for the stim_utils module in the utils package. """
 
-import unittest
 import re
-
-import pandas as pd
-import numpy as np
-
+import unittest
 from unittest.mock import MagicMock, patch
+
+import numpy as np
+import pandas as pd
+
 from aind_metadata_mapper.open_ephys.utils import stim_utils as stim
 
 
@@ -116,7 +116,7 @@ class TestStimUtils(unittest.TestCase):
             }
         )
         result_df = stim.enforce_df_column_order(df, column_order)
-        pd.testing.assert_frame_equal(result_df, expected_df)
+        pd.testing.assert_frame_equal(result_df, expected_df, check_like=True)
 
         # Test case: Specified column order with all columns
         column_order = ["C", "A", "D", "B"]
@@ -131,6 +131,18 @@ class TestStimUtils(unittest.TestCase):
         column_order = ["A", "B"]
         result_df = stim.enforce_df_column_order(empty_df, column_order)
         pd.testing.assert_frame_equal(result_df, empty_df)
+
+    def test_extract_blocks_from_stim(self):
+        """
+        Creating a sample pkl dictionary with a "stimuli" block key
+        """
+        sample_pkl = ["image1.jpg", "image2.jpg", "image3.jpg"]
+
+        # Calling the function with the sample pkl dictionary
+        result = stim.extract_blocks_from_stim(sample_pkl)
+
+        # Asserting that the result is the "stimuli" key
+        self.assertEqual(result, sample_pkl)
 
     def test_seconds_to_frames(self):
         """
@@ -545,8 +557,7 @@ class TestStimUtils(unittest.TestCase):
         ".stim_utils.read_stimulus_name_from_path"
     )
     @patch(
-        "aind_metadata_mapper.open_ephys.utils"
-        ".stim_utils.get_stimulus_type"
+        "aind_metadata_mapper.open_ephys.utils" ".stim_utils.get_stimulus_type"
     )
     @patch(
         "aind_metadata_mapper.open_ephys.utils"

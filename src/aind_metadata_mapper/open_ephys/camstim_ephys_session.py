@@ -5,25 +5,28 @@ File containing CamstimEphysSession class
 import argparse
 import datetime
 import json
+import logging
 import re
 from pathlib import Path
 
-import aind_data_schema
-import aind_data_schema.components.coordinates
-import aind_data_schema.core.session as session_schema
-import aind_data_schema_models.modalities
 import np_session
 import npc_ephys
 import npc_mvr
 import npc_sessions
 import numpy as np
 import pandas as pd
-import logging
+from aind_data_schema.components.coordinates import Coordinates3d
+from aind_data_schema.core.session import (
+    EphysModule,
+    EphysProbeConfig,
+    Session,
+    Stream,
+)
+from aind_data_schema_models.modalities import Modality
 
-import aind_metadata_mapper.stimulus.camstim
-import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
 import aind_metadata_mapper.open_ephys.utils.constants as constants
-
+import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
+import aind_metadata_mapper.stimulus.camstim
 
 logger = logging.getLogger(__name__)
 
@@ -115,11 +118,11 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
 
         self.available_probes = self.get_available_probes()
 
-    def generate_session_json(self) -> session_schema.Session:
+    def generate_session_json(self) -> Session:
         """
         Creates the session schema json
         """
-        self.session_json = session_schema.Session(
+        self.session_json = Session(
             experimenter_full_name=[
                 self.platform_json["operatorID"].replace(".", " ").title()
             ],
@@ -149,7 +152,8 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
         self.session_json.write_standard_file(self.npexp_path)
         logger.debug(f"File created at {str(self.npexp_path)}/session.json")
 
-    def extract_probe_letter(self, probe_exp, s):
+    @staticmethod
+    def extract_probe_letter(probe_exp, s):
         """
         Extracts probe letter from a string.
         """
@@ -180,7 +184,7 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
     @staticmethod
     def manipulator_coords(
         probe_name: str, newscale_coords: pd.DataFrame
-    ) -> tuple[aind_data_schema.components.coordinates.Coordinates3d, str]:
+    ) -> tuple[Coordinates3d, str]:
         """
         Returns the schema coordinates object containing probe's manipulator
         coordinates accrdong to newscale, and associated 'notes'. If the
@@ -197,9 +201,7 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
             )
         if probe_row.empty:
             return (
-                aind_data_schema.components.coordinates.Coordinates3d(
-                    x="0.0", y="0.0", z="0.0", unit="micrometer"
-                ),
+                Coordinates3d(x="0.0", y="0.0", z="0.0", unit="micrometer"),
                 "Coordinate info not available",
             )
         else:
@@ -209,9 +211,7 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
                 probe_row["z"].item(),
             )
         return (
-            aind_data_schema.components.coordinates.Coordinates3d(
-                x=x, y=y, z=z, unit="micrometer"
-            ),
+            Coordinates3d(x=x, y=y, z=z, unit="micrometer"),
             "",
         )
 
@@ -230,28 +230,24 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
                 probe_name, newscale_coords
             )
 
-            probe_module = session_schema.EphysModule(
+            probe_module = EphysModule(
                 assembly_name=probe_name.upper(),
                 arc_angle=0.0,
                 module_angle=0.0,
                 rotation_angle=0.0,
                 primary_targeted_structure="none",
-                ephys_probes=[
-                    session_schema.EphysProbeConfig(name=probe_name.upper())
-                ],
+                ephys_probes=[EphysProbeConfig(name=probe_name.upper())],
                 manipulator_coordinates=manipulator_coordinates,
                 notes=notes,
             )
             ephys_modules.append(probe_module)
         return ephys_modules
 
-    def ephys_stream(self) -> session_schema.Stream:
+    def ephys_stream(self) -> Stream:
         """
         Returns schema ephys datastream, including the list of ephys modules
         and the ephys start and end times.
         """
-        modality = aind_data_schema_models.modalities.Modality
-
         probe_exp = r"(?<=[pP{1}]robe)[-_\s]*(?P<letter>[A-F]{1})(?![a-zA-Z])"
 
         times = npc_ephys.get_ephys_timing_on_sync(
@@ -273,33 +269,31 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
             timing.stop_time for timing in ephys_timing_data
         )
 
-        return session_schema.Stream(
+        return Stream(
             stream_start_time=self.session_start
             + datetime.timedelta(seconds=stream_first_time),
             stream_end_time=self.session_start
             + datetime.timedelta(seconds=stream_last_time),
             ephys_modules=self.ephys_modules(),
             stick_microscopes=[],
-            stream_modalities=[modality.ECEPHYS],
+            stream_modalities=[Modality.ECEPHYS],
         )
 
-    def sync_stream(self) -> session_schema.Stream:
+    def sync_stream(self) -> Stream:
         """
         Returns schema behavior stream for the sync timing.
         """
-        modality = aind_data_schema_models.modalities.Modality
-        return session_schema.Stream(
+        return Stream(
             stream_start_time=self.session_start,
             stream_end_time=self.session_end,
-            stream_modalities=[modality.BEHAVIOR],
+            stream_modalities=[Modality.BEHAVIOR],
             daq_names=["Sync"],
         )
 
-    def video_stream(self) -> session_schema.Stream:
+    def video_stream(self) -> Stream:
         """
         Returns schema behavior videos stream for video timing
         """
-        modality = aind_data_schema_models.modalities.Modality
         video_frame_times = npc_mvr.mvr.get_video_frame_times(
             self.sync_path, self.npexp_path
         )
@@ -311,16 +305,16 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
             np.nanmax(timestamps) for timestamps in video_frame_times.values()
         )
 
-        return session_schema.Stream(
+        return Stream(
             stream_start_time=self.session_start
             + datetime.timedelta(seconds=stream_first_time),
             stream_end_time=self.session_start
             + datetime.timedelta(seconds=stream_last_time),
             camera_names=["Front camera", "Side camera", "Eye camera"],
-            stream_modalities=[modality.BEHAVIOR_VIDEOS],
+            stream_modalities=[Modality.BEHAVIOR_VIDEOS],
         )
 
-    def data_streams(self) -> tuple[session_schema.Stream, ...]:
+    def data_streams(self) -> tuple[Stream, ...]:
         """
         Return three schema datastreams; ephys, behavior, and behavior videos.
         May be extended.

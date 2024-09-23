@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "aind-metadata-mapper"
 description = "Generated from aind-library-template"
 license = {text = "MIT"}
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 authors = [
     {name = "Allen Institute for Neural Dynamics"}
 ]
@@ -17,35 +17,63 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
-    "aind-data-schema==0.36.0",
-    "aind-data-schema-models==0.1.7",
-    "scanimage-tiff-reader==1.4.1.4",
-    "tifffile==2024.2.12",
+    "aind-data-schema==1.0.0",
+    "aind-data-schema-models>=0.3.2",
     "pydantic-settings>=2.0",
-    "pillow",
-    "bruker2nifti==1.0.4",
-    "requests",
-    "pillow",
-    "pyaml",
-    "h5py",
-    "pandas",
-    "numpy",
-    "np_session",
-    "npc_ephys",
-    "scipy",
-    "pytz"
+    "pydantic<2.9"
 ]
 
 [project.optional-dependencies]
 dev = [
-    'black',
-    'coverage',
-    'flake8',
-    'interrogate',
-    'isort',
-    'Sphinx',
-    'furo',
-    "pyyaml>=6.0.0",
+    "aind-metadata-mapper[all]",
+    "black",
+    "coverage",
+    "flake8",
+    "interrogate",
+    "isort",
+    "Sphinx",
+    "furo",
+]
+
+all = [
+    "aind-metadata-mapper[bergamo]",
+    "aind-metadata-mapper[bruker]",
+    "aind-metadata-mapper[mesoscope]",
+    "aind-metadata-mapper[openephys]",
+    "aind-metadata-mapper[dynamicrouting]",
+    "aind-metadata-mapper[u19]",
+]
+
+bergamo = [
+    "scanimage-tiff-reader==1.4.1.4",
+    "numpy >= 1.26.4",
+]
+
+bruker = [
+    "bruker2nifti==1.0.4",
+]
+
+mesoscope = [
+    "aind-metadata-mapper[bergamo]",
+    "pillow >= 10.4.0",
+    "tifffile==2024.2.12 ; python_version >= '3.9'",
+]
+
+openephys = [
+    "h5py >= 3.11.0",
+    "np_session >= 0.1.39",
+    "npc_ephys >= 0.1.18 ; python_version >= '3.9'",
+    "scipy >= 1.11.0",
+    "pandas >= 2.2.2",
+    "numpy >= 1.26.4",
+]
+
+dynamicrouting = [
+    "pyyaml >= 6.0.0",
+]
+
+u19 = [
+    "pandas >= 2.2.2",
 ]
 
 [tool.setuptools.packages.find]
@@ -76,7 +104,7 @@ exclude = '''
 '''
 
 [tool.coverage.run]
-omit = ["*__init__*"]
+omit = ["*__init__*", "tests/integration/*"]
 source = ["aind_metadata_mapper", "tests"]
 
 [tool.coverage.report]

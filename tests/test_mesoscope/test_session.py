@@ -148,7 +148,7 @@ class TestMesoscope(unittest.TestCase):
         """Tests that _extract raises a ValueError"""
         mock_is_dir.return_value = True
         mock_path_exists.return_value = False
-        mock_path_glob.return_value = iter([Path("/somedir/a")])
+        mock_path_glob.return_value = iter([Path("somedir/a")])
         etl1 = MesoscopeEtl(
             job_settings=self.example_job_settings,
         )
@@ -177,15 +177,15 @@ class TestMesoscope(unittest.TestCase):
 
         # mock scanimage metadata
         mock_meta = [{}]
-        mock_meta[0][
-            "SI.hRoiManager.linesPerFrame"
-        ] = self.example_scanimage_meta["lines_per_frame"]
-        mock_meta[0][
-            "SI.hRoiManager.pixelsPerLine"
-        ] = self.example_scanimage_meta["pixels_per_line"]
-        mock_meta[0][
-            "SI.hRoiManager.scanZoomFactor"
-        ] = self.example_scanimage_meta["fov_scale_factor"]
+        mock_meta[0]["SI.hRoiManager.linesPerFrame"] = (
+            self.example_scanimage_meta["lines_per_frame"]
+        )
+        mock_meta[0]["SI.hRoiManager.pixelsPerLine"] = (
+            self.example_scanimage_meta["pixels_per_line"]
+        )
+        mock_meta[0]["SI.hRoiManager.scanZoomFactor"] = (
+            self.example_scanimage_meta["fov_scale_factor"]
+        )
         mock_scanimage.return_value = mock_meta
 
         extract = etl._extract()

@@ -1,9 +1,9 @@
 {
    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/session.py",
-   "schema_version": "0.2.6",
+   "schema_version": "1.0.0",
    "protocol_id": [],
    "experimenter_full_name": [
-       "Don Key"
+      "Don Key"
    ],
    "session_start_time": "1999-10-04T00:00:00Z",
    "session_end_time": "1999-10-04T00:00:48Z",
@@ -16,120 +16,124 @@
    "animal_weight_prior": null,
    "animal_weight_post": null,
    "weight_unit": "gram",
+   "anaesthesia": null,
    "data_streams": [
-       {
-           "stream_start_time": "1999-10-04T00:00:00Z",
-           "stream_end_time": "1999-10-04T00:00:48Z",
-           "daq_names": [],
-           "camera_names": [],
-           "light_sources": [
-               {
-                   "device_type": "LightEmittingDiode",
-                   "name": "470nm LED",
-                   "excitation_power": "0.02",
-                   "excitation_power_unit": "milliwatt"
-               },
-               {
-                   "device_type": "LightEmittingDiode",
-                   "name": "415nm LED",
-                   "excitation_power": "0.02",
-                   "excitation_power_unit": "milliwatt"
-               },
-               {
-                   "device_type": "LightEmittingDiode",
-                   "name": "565nm LED",
-                   "excitation_power": "0.02",
-                   "excitation_power_unit": "milliwatt"
-               }
-           ],
-           "ephys_modules": [],
-           "stick_microscopes": [],
-           "manipulator_modules": [],
-           "detectors": [
-               {
-                   "name": "Hamamatsu Camera",
-                   "exposure_time": "10",
-                   "exposure_time_unit": "millisecond",
-                   "trigger_type": "Internal"
-               }
-           ],
-           "fiber_connections": [
-               {
-                   "patch_cord_name": "Patch Cord A",
-                   "patch_cord_output_power": "40",
-                   "output_power_unit": "microwatt",
-                   "fiber_name": "Fiber A"
-               }
-           ],
-           "fiber_modules": [],
-           "ophys_fovs": [],
-           "slap_fovs": null,
-           "stack_parameters": null,
-           "stream_modalities": [
-               {
-                   "name": "Fiber photometry",
-                   "abbreviation": "fib"
-               }
-           ],
-           "notes": null
-       }
+      {
+         "stream_start_time": "1999-10-04T00:00:00Z",
+         "stream_end_time": "1999-10-04T00:00:48Z",
+         "daq_names": [],
+         "camera_names": [],
+         "light_sources": [
+            {
+               "device_type": "Light emitting diode",
+               "name": "470nm LED",
+               "excitation_power": "0.02",
+               "excitation_power_unit": "milliwatt"
+            },
+            {
+               "device_type": "Light emitting diode",
+               "name": "415nm LED",
+               "excitation_power": "0.02",
+               "excitation_power_unit": "milliwatt"
+            },
+            {
+               "device_type": "Light emitting diode",
+               "name": "565nm LED",
+               "excitation_power": "0.02",
+               "excitation_power_unit": "milliwatt"
+            }
+         ],
+         "ephys_modules": [],
+         "stick_microscopes": [],
+         "manipulator_modules": [],
+         "detectors": [
+            {
+               "name": "Hamamatsu Camera",
+               "exposure_time": "10",
+               "exposure_time_unit": "millisecond",
+               "trigger_type": "Internal"
+            }
+         ],
+         "fiber_connections": [
+            {
+               "patch_cord_name": "Patch Cord A",
+               "patch_cord_output_power": "40",
+               "output_power_unit": "microwatt",
+               "fiber_name": "Fiber A"
+            }
+         ],
+         "fiber_modules": [],
+         "ophys_fovs": [],
+         "slap_fovs": [],
+         "stack_parameters": null,
+         "mri_scans": [],
+         "stream_modalities": [
+            {
+               "name": "Fiber photometry",
+               "abbreviation": "fib"
+            }
+         ],
+         "software": [],
+         "notes": null
+      }
    ],
    "stimulus_epochs": [
-       {
-           "stimulus_start_time": "1999-10-04T00:00:00Z",
-           "stimulus_end_time": "1999-10-04T00:00:48Z",
-           "stimulus_name": "OptoStim10Hz",
-           "session_number": null,
-           "software": [],
-           "script": null,
-           "stimulus_modalities": [
-               "Optogenetics"
-           ],
-           "stimulus_parameters": [
-               {
-                   "stimulus_type": "Opto Stimulation",
-                   "stimulus_name": "OptoStim10Hz",
-                   "pulse_shape": "Square",
-                   "pulse_frequency": [
-                       "10"
-                   ],
-                   "pulse_frequency_unit": "hertz",
-                   "number_pulse_trains": [
-                       2
-                   ],
-                   "pulse_width": [
-                       5000
-                   ],
-                   "pulse_width_unit": "millisecond",
-                   "pulse_train_duration": [
-                       "2.0"
-                   ],
-                   "pulse_train_duration_unit": "second",
-                   "fixed_pulse_train_interval": true,
-                   "pulse_train_interval": "18.0",
-                   "pulse_train_interval_unit": "second",
-                   "baseline_duration": "10.0",
-                   "baseline_duration_unit": "second",
-                   "other_parameters": {},
-                   "notes": null
-               }
-           ],
-           "stimulus_device_names": [],
-           "speaker_config": null,
-           "light_source_config": null,
-           "output_parameters": {},
-           "reward_consumed_during_epoch": null,
-           "reward_consumed_unit": "microliter",
-           "trials_total": null,
-           "trials_finished": null,
-           "trials_rewarded": null,
-           "notes": null
-       }
+      {
+         "stimulus_start_time": "1999-10-04T00:00:00Z",
+         "stimulus_end_time": "1999-10-04T00:00:48Z",
+         "stimulus_name": "OptoStim10Hz",
+         "session_number": null,
+         "software": [],
+         "script": null,
+         "stimulus_modalities": [
+            "Optogenetics"
+         ],
+         "stimulus_parameters": [
+            {
+               "stimulus_type": "Opto Stimulation",
+               "stimulus_name": "OptoStim10Hz",
+               "pulse_shape": "Square",
+               "pulse_frequency": [
+                  "10"
+               ],
+               "pulse_frequency_unit": "hertz",
+               "number_pulse_trains": [
+                  2
+               ],
+               "pulse_width": [
+                  5000
+               ],
+               "pulse_width_unit": "millisecond",
+               "pulse_train_duration": [
+                  "2.0"
+               ],
+               "pulse_train_duration_unit": "second",
+               "fixed_pulse_train_interval": true,
+               "pulse_train_interval": "18.0",
+               "pulse_train_interval_unit": "second",
+               "baseline_duration": "10.0",
+               "baseline_duration_unit": "second",
+               "other_parameters": {},
+               "notes": null
+            }
+         ],
+         "stimulus_device_names": [],
+         "speaker_config": null,
+         "light_source_config": [],
+         "output_parameters": {},
+         "reward_consumed_during_epoch": null,
+         "reward_consumed_unit": "microliter",
+         "trials_total": null,
+         "trials_finished": null,
+         "trials_rewarded": null,
+         "notes": null
+      }
    ],
    "mouse_platform_name": "Disc",
    "active_mouse_platform": false,
+   "headframe_registration": null,
    "reward_delivery": null,
    "reward_consumed_total": null,
-   "reward_consumed_unit": "microliter",
+   "reward_consumed_unit": "milliliter",
    "notes": "brabrabrabra...."
 }

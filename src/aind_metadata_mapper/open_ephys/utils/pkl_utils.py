@@ -184,8 +184,6 @@ def get_running_array(pkl, key):
         try:
             result = pkl[key]
         except KeyError:
-            raise KeyError(
-                f"unable to extract {key} from this stimulus pickle"
-            )
+            raise KeyError(f"unable to extract {key} from this stimulus pickle")
 
     return np.array(result)

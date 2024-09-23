@@ -46,9 +46,7 @@ class MvrRigEtl(NeuropixelsRigEtl):
             try:
                 mvr_camera_config = mvr_config[mvr_name]
             except KeyError:
-                logger.debug(
-                    "No camera found for: %s in mvr config." % mvr_name
-                )
+                logger.debug("No camera found for: %s in mvr config." % mvr_name)
                 continue
             serial_numbers.append(
                 (
@@ -72,9 +70,7 @@ class MvrRigEtl(NeuropixelsRigEtl):
                         assembly_name,
                     ),
                 ],
-                setter=(
-                    lambda item, name, value: setattr(item.camera, name, value)
-                ),
+                setter=(lambda item, name, value: setattr(item.camera, name, value)),
                 serial_number=serial_number,
                 recording_software=Software(
                     name="MVR",

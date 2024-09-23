@@ -19,7 +19,7 @@ BASE_RIG_PATH = RESOURCES_DIR / "dynamic_routing" / "base_rig.json"
 BASE_RIG_MISSING_PROBE_PATH = (
     RESOURCES_DIR / "dynamic_routing" / "base-missing-probe_rig.json"
 )
-OUTPUT_DIR = Path(".")  # File writes will be mocked
+OUTPUT_DIR = Path("abc")  # File writes will be mocked
 
 
 class TestOpenEphysRigEtl(unittest.TestCase):

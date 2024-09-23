@@ -21,7 +21,7 @@ Then in bash, run
 pip install -e .[dev]
 ```
 to set up your environment. Once these steps are complete, you can get developing🚀. Data is organized by acquisition machine, so if you're adding a new machine, create a new directory. Otherwise, put your code in its corresponding directory.
-### Testing
+### Unit Testing
 
 Testing is required to open a PR in this repository to ensure robustness and reliability of our codebase. 
 - **1:1 Correspondence:** Structure unit tests in a manner that mirrors the module structure. 
@@ -39,5 +39,12 @@ Testing is required to open a PR in this repository to ensure robustness and rel
     coverage html
     ```
     and find the report in the htmlcov/index.html.
-
+  
 There are several libraries used to run linters and check documentation. We've included these in the development package. You can run them as described [here](https://github.com/AllenNeuralDynamics/aind-metadata-mapper/blob/main/README.md#linters-and-testing). 
+
+### Integration Testing
+To ensure that an ETL runs as expected against data on the VAST, you can run an integration test locally by pointing to the input directory on VAST. For example, to test the 'bergamo' package:
+```bash
+    python tests/integration/bergamo/session.py --input_source "/allen/aind/scratch/svc_aind_upload/test_data_sets/bergamo" IntegrationTestBergamo
+ ```
+
