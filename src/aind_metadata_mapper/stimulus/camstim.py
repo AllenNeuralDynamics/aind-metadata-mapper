@@ -46,14 +46,11 @@ class Camstim:
         else:
             self.opto_conditions_map = json_settings["opto_conditions_map"]
         overwrite_tables = json_settings.get("overwrite_tables", False)
-
         self.json_settings = json_settings
+    
         session_inst = np_session.Session(session_id)
         self.npexp_path = session_inst.npexp_path
         self.folder = session_inst.folder
-
-        self.mouse_id = self.folder.split('_')[1]
-        self.mtrain_regimen = self.get_mtrain(self.mouse_id)
 
         self.pkl_path = self.npexp_path / f"{self.folder}.stim.pkl"
         self.opto_pkl_path = self.npexp_path / f"{self.folder}.opto.pkl"
@@ -75,6 +72,10 @@ class Camstim:
             self.session_end,
         )
 
+        self.mouse_id = self.folder.split('_')[1]
+        self.session_uuid = self.get_session_uuid()
+        self.mtrain_regimen = self.get_mtrain()
+
         if not self.stim_table_path.exists() or overwrite_tables:
             print("building stim table")
             self.build_stimulus_table()
@@ -91,16 +92,14 @@ class Camstim:
         if self.opto_table_path.exists():
             self.stim_epochs.append(self.epoch_from_opto_table())
 
-    def get_mtrain(self, mouse_id) -> dict:
+    def get_session_uuid(self) -> str:
+        return pkl.load_pkl(self.pkl_path)['session_uuid']
+
+    def get_mtrain(self) -> dict:
         """Returns dictionary containing 'id', 'name', 'stages', 'states'"""
         server = 'http://mtrain:5000'
-        mouse_state = requests.get(
-            f'{server}/api/v1/subjects/{mouse_id}'
-        ).json()['state']
-        print('mouse state', mouse_state)
-        return requests.get(
-            f"{server}/api/v1/regimens/{mouse_state['regimen_id']}"
-        ).json()
+        mtrain_response = requests.get(f"{server}/behavior_session/{self.session_uuid}/details").json()
+        return mtrain_response['result']['regimen']
 
     def build_stimulus_table(
         self,
@@ -252,7 +251,7 @@ class Camstim:
         script_obj = aind_data_schema.components.devices.Software(
             name=self.mtrain_regimen["name"],
             version="1.0",
-            url=self.mtrain_regimen["script"],
+            url=self.mtrain_regimen
         )
 
         opto_table = pd.read_csv(self.opto_table_path)

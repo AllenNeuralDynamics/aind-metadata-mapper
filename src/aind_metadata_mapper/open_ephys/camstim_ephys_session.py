@@ -51,17 +51,11 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
         else:
             self.opto_conditions_map = json_settings["opto_conditions_map"]
         overwrite_tables = json_settings.get("overwrite_tables", False)
-
         self.json_settings = json_settings
+
         session_inst = np_session.Session(session_id)
         self.npexp_path = session_inst.npexp_path
         self.folder = session_inst.folder
-
-        self.mouse_id = self.folder.split('_')[1]
-        print('got mouse id as',self.mouse_id)
-        self.mtrain_regimen = self.get_mtrain(self.mouse_id)
-        print(self.mtrain_regimen.keys())
-        print(self.mtrain_regimen)
         # sometimes data files are deleted on npexp so try files on lims
         # try:
         #     self.recording_dir = npc_ephys.get_single_oebin_path(
@@ -98,6 +92,9 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
             f"session start: {self.session_start} \n"
             f" session end: {self.session_end}"
         )
+
+        self.session_uuid = self.get_session_uuid()
+        self.mtrain_regimen = self.get_mtrain()
 
         if not self.stim_table_path.exists() or overwrite_tables:
             logger.debug("building stim table")
