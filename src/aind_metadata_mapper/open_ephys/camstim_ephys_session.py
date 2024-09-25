@@ -9,7 +9,6 @@ import logging
 import re
 from pathlib import Path
 
-import np_session
 import npc_ephys
 import npc_mvr
 import numpy as np
@@ -53,9 +52,8 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
         overwrite_tables = json_settings.get("overwrite_tables", False)
         self.json_settings = json_settings
 
-        session_inst = np_session.Session(session_id)
-        self.npexp_path = session_inst.npexp_path
-        self.folder = session_inst.folder
+        self.folder = self.get_folder(session_id)
+        self.npexp_path = self.get_npexp_path(session_id)
         # sometimes data files are deleted on npexp so try files on lims
         # try:
         #     self.recording_dir = npc_ephys.get_single_oebin_path(
@@ -63,7 +61,7 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
         #     ).parent
         # except:
         self.recording_dir = npc_ephys.get_single_oebin_path(
-            session_inst.npexp_path
+            self.npexp_path
         ).parent
 
         self.motor_locs_path = (

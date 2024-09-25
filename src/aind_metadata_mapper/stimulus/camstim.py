@@ -48,9 +48,8 @@ class Camstim:
         overwrite_tables = json_settings.get("overwrite_tables", False)
         self.json_settings = json_settings
     
-        session_inst = np_session.Session(session_id)
-        self.npexp_path = session_inst.npexp_path
-        self.folder = session_inst.folder
+        self.npexp_path = self.get_npexp_path(session_id)
+        self.folder = self.get_folder(session_id)
 
         self.pkl_path = self.npexp_path / f"{self.folder}.stim.pkl"
         self.opto_pkl_path = self.npexp_path / f"{self.folder}.opto.pkl"
@@ -91,6 +90,16 @@ class Camstim:
         self.stim_epochs = self.epochs_from_stim_table()
         if self.opto_table_path.exists():
             self.stim_epochs.append(self.epoch_from_opto_table())
+
+    def get_folder(self, session_id) -> str:
+        for subfolder in NPEXP_ROOT.iterdir():
+            if subfolder.name.split('_')[0] == session_id:
+                return subfolder.name
+        else:
+            raise Exception('Session folder not found in np-exp')
+
+    def get_npexp_path(self, session_id) -> Path:
+        return NPEXP_ROOT / self.get_folder(session_id)
 
     def get_session_uuid(self) -> str:
         return pkl.load_pkl(self.pkl_path)['session_uuid']
