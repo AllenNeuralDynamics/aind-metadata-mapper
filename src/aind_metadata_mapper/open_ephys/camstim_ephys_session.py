@@ -16,12 +16,17 @@ import pandas as pd
 from aind_data_schema.components.coordinates import Coordinates3d
 from aind_data_schema.core.session import ManipulatorModule, Session, Stream
 from aind_data_schema_models.modalities import Modality
+from typing import Union
 
 import aind_metadata_mapper.open_ephys.utils.constants as constants
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
 import aind_metadata_mapper.stimulus.camstim
 
+from aind_metadata_mapper.core import GenericEtl
+from aind_metadata_mapper.open_ephys.models import JobSettings
+
 logger = logging.getLogger(__name__)
+
 
 
 class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
@@ -34,7 +39,7 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
     npexp_path: Path
     recording_dir: Path
 
-    def __init__(self, session_id: str, json_settings: dict) -> None:
+    def __init__(self, session_id: str, job_settings: Union[JobSettings, str]) -> None:
         """
         Determine needed input filepaths from np-exp and lims, get session
         start and end times from sync file, write stim tables and extract
@@ -45,12 +50,19 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
         different laser states for this experiment. Otherwise, the default is
         used from naming_utils.
         """
-        if json_settings.get("opto_conditions_map", None) is None:
+        if isinstance(job_settings, str):
+            self.job_settings = JobSettings.model_validate_json(job_settings)
+        else:
+            self.job_settings = job_settings
+        # GenericEtl.__init__(job_settings=job_settings_model)
+        # print(super())
+
+        if job_settings.get("opto_conditions_map", None) is None:
             self.opto_conditions_map = constants.DEFAULT_OPTO_CONDITIONS
         else:
-            self.opto_conditions_map = json_settings["opto_conditions_map"]
-        overwrite_tables = json_settings.get("overwrite_tables", False)
-        self.json_settings = json_settings
+            self.opto_conditions_map = job_settings["opto_conditions_map"]
+        overwrite_tables = job_settings.get("overwrite_tables", False)
+        # self.json_settings = json_settings
 
         self.folder = self.get_folder(session_id)
         self.npexp_path = self.get_npexp_path(session_id)
@@ -110,6 +122,12 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
 
         self.available_probes = self.get_available_probes()
 
+    def _extract(self):
+        pass
+
+    def _transform(self):
+        pass
+
     def generate_session_json(self) -> Session:
         """
         Creates the session schema json
@@ -120,16 +138,16 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
             ],
             session_start_time=self.session_start,
             session_end_time=self.session_end,
-            session_type=self.json_settings.get("session_type", ""),
-            iacuc_protocol=self.json_settings.get("iacuc_protocol", ""),
+            session_type=self.job_settings.get("session_type", ""),
+            iacuc_protocol=self.job_settings.get("iacuc_protocol", ""),
             rig_id=self.platform_json["rig_id"],
             subject_id=self.folder.split("_")[1],
             data_streams=self.data_streams(),
             stimulus_epochs=self.stim_epochs,
-            mouse_platform_name=self.json_settings.get(
+            mouse_platform_name=self.job_settings.get(
                 "mouse_platform", "Mouse Platform"
             ),
-            active_mouse_platform=self.json_settings.get(
+            active_mouse_platform=self.job_settings.get(
                 "active_mouse_platform", False
             ),
             reward_consumed_unit="milliliter",
