@@ -4,19 +4,18 @@ File containing Camstim class
 
 import datetime
 import functools
+from pathlib import Path
 
 import aind_data_schema
 import aind_data_schema.core.session as session_schema
 import pandas as pd
 import requests
-from pathlib import Path
 
 import aind_metadata_mapper.open_ephys.utils.constants as constants
 import aind_metadata_mapper.open_ephys.utils.naming_utils as names
 import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
 import aind_metadata_mapper.open_ephys.utils.stim_utils as stim
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
-
 
 NPEXP_ROOT = Path("//allen/programs/mindscope/workgroups/np-exp")
 
