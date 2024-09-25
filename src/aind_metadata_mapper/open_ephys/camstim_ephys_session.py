@@ -97,10 +97,8 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
         if not self.stim_table_path.exists() or overwrite_tables:
             logger.debug("building stim table")
             self.build_stimulus_table()
-        if (
-            self.opto_pkl_path.exists()
-            and (not self.opto_table_path.exists()
-            or overwrite_tables)
+        if self.opto_pkl_path.exists() and (
+            not self.opto_table_path.exists() or overwrite_tables
         ):
             logger.debug("building opto table")
             self.build_optogenetics_table()

@@ -7,7 +7,6 @@ import functools
 
 import aind_data_schema
 import aind_data_schema.core.session as session_schema
-import np_session
 import pandas as pd
 import requests
 from pathlib import Path
@@ -19,7 +18,7 @@ import aind_metadata_mapper.open_ephys.utils.stim_utils as stim
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
 
 
-NPEXP_ROOT = Path('//allen/programs/mindscope/workgroups/np-exp')
+NPEXP_ROOT = Path("//allen/programs/mindscope/workgroups/np-exp")
 
 
 class Camstim:
@@ -47,7 +46,7 @@ class Camstim:
             self.opto_conditions_map = json_settings["opto_conditions_map"]
         overwrite_tables = json_settings.get("overwrite_tables", False)
         self.json_settings = json_settings
-    
+
         self.npexp_path = self.get_npexp_path(session_id)
         self.folder = self.get_folder(session_id)
 
@@ -71,7 +70,7 @@ class Camstim:
             self.session_end,
         )
 
-        self.mouse_id = self.folder.split('_')[1]
+        self.mouse_id = self.folder.split("_")[1]
         self.session_uuid = self.get_session_uuid()
         self.mtrain_regimen = self.get_mtrain()
 
@@ -92,23 +91,27 @@ class Camstim:
             self.stim_epochs.append(self.epoch_from_opto_table())
 
     def get_folder(self, session_id) -> str:
+        """returns the directory name of the session on the np-exp directory"""
         for subfolder in NPEXP_ROOT.iterdir():
-            if subfolder.name.split('_')[0] == session_id:
+            if subfolder.name.split("_")[0] == session_id:
                 return subfolder.name
         else:
-            raise Exception('Session folder not found in np-exp')
+            raise Exception("Session folder not found in np-exp")
 
     def get_npexp_path(self, session_id) -> Path:
+        """returns the path to the session on allen's np-exp directory"""
         return NPEXP_ROOT / self.get_folder(session_id)
 
     def get_session_uuid(self) -> str:
-        return pkl.load_pkl(self.pkl_path)['session_uuid']
+        """returns session uuid from pickle file"""
+        return pkl.load_pkl(self.pkl_path)["session_uuid"]
 
     def get_mtrain(self) -> dict:
         """Returns dictionary containing 'id', 'name', 'stages', 'states'"""
-        server = 'http://mtrain:5000'
-        mtrain_response = requests.get(f"{server}/behavior_session/{self.session_uuid}/details").json()
-        return mtrain_response['result']['regimen']
+        server = "http://mtrain:5000"
+        req = f"{server}/behavior_session/{self.session_uuid}/details"
+        mtrain_response = requests.get(req).json()
+        return mtrain_response["result"]["regimen"]
 
     def build_stimulus_table(
         self,
@@ -260,7 +263,7 @@ class Camstim:
         script_obj = aind_data_schema.components.devices.Software(
             name=self.mtrain_regimen["name"],
             version="1.0",
-            url=self.mtrain_regimen
+            url=self.mtrain_regimen,
         )
 
         opto_table = pd.read_csv(self.opto_table_path)
