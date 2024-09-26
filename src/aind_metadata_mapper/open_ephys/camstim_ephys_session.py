@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 
-class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
+class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim, GenericEtl):
     """
     An Ephys session, designed for OpenScope, employing neuropixel
     probes with visual and optogenetic stimulus from Camstim.
@@ -122,13 +122,17 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
 
         self.available_probes = self.get_available_probes()
 
+    def run_job(self):
+        """Transforms all metadata for the session into relevant files"""
+        self._extract()
+        self._transform()
+        self._load()
+
     def _extract(self):
+        """TODO: refactor a lot of the __init__ code here"""
         pass
 
-    def _transform(self):
-        pass
-
-    def generate_session_json(self) -> Session:
+    def _transform(self) -> Session:
         """
         Creates the session schema json
         """
@@ -155,7 +159,7 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
         )
         return self.session_json
 
-    def write_session_json(self) -> None:
+    def _load(self) -> None:
         """
         Writes the session json to a session.json file
         """
@@ -364,7 +368,7 @@ def main() -> None:
     Run Main
     """
     sessionETL = CamstimEphysSession(**vars(parse_args()))
-    sessionETL.generate_session_json()
+    sessionETL.run_job()
 
 
 if __name__ == "__main__":
