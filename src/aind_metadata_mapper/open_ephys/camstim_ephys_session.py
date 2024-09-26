@@ -8,6 +8,7 @@ import json
 import logging
 import re
 from pathlib import Path
+from typing import Union
 
 import npc_ephys
 import npc_mvr
@@ -16,20 +17,19 @@ import pandas as pd
 from aind_data_schema.components.coordinates import Coordinates3d
 from aind_data_schema.core.session import ManipulatorModule, Session, Stream
 from aind_data_schema_models.modalities import Modality
-from typing import Union
 
 import aind_metadata_mapper.open_ephys.utils.constants as constants
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
 import aind_metadata_mapper.stimulus.camstim
-
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.open_ephys.models import JobSettings
 
 logger = logging.getLogger(__name__)
 
 
-
-class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim, GenericEtl):
+class CamstimEphysSession(
+    aind_metadata_mapper.stimulus.camstim.Camstim, GenericEtl
+):
     """
     An Ephys session, designed for OpenScope, employing neuropixel
     probes with visual and optogenetic stimulus from Camstim.
@@ -39,7 +39,9 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim, Generic
     npexp_path: Path
     recording_dir: Path
 
-    def __init__(self, session_id: str, job_settings: Union[JobSettings, str]) -> None:
+    def __init__(
+        self, session_id: str, job_settings: Union[JobSettings, str]
+    ) -> None:
         """
         Determine needed input filepaths from np-exp and lims, get session
         start and end times from sync file, write stim tables and extract

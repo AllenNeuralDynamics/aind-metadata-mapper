@@ -1,10 +1,6 @@
 """Module defining JobSettings for Mesoscope ETL"""
 
-from datetime import datetime
-from pathlib import Path
-from typing import List, Literal, Union
-
-from pydantic import Field
+from typing import Literal
 
 from aind_metadata_mapper.core_models import BaseJobSettings
 
