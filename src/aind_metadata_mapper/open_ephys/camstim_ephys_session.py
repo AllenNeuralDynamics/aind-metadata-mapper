@@ -18,7 +18,6 @@ from aind_data_schema.components.coordinates import Coordinates3d
 from aind_data_schema.core.session import ManipulatorModule, Session, Stream
 from aind_data_schema_models.modalities import Modality
 
-import aind_metadata_mapper.open_ephys.utils.constants as constants
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
 import aind_metadata_mapper.stimulus.camstim
 from aind_metadata_mapper.core import GenericEtl
@@ -36,11 +35,11 @@ class CamstimEphysSession(
     """
 
     json_settings: dict = None
-    npexp_path: Path
+    session_path: Path
     recording_dir: Path
 
     def __init__(
-        self, session_id: str, job_settings: Union[JobSettings, str]
+        self, session_id: str, job_settings: Union[JobSettings, str, dict]
     ) -> None:
         """
         Determine needed input filepaths from np-exp and lims, get session
@@ -53,21 +52,16 @@ class CamstimEphysSession(
         used from naming_utils.
         """
         if isinstance(job_settings, str):
-            self.job_settings = JobSettings.model_validate_json(job_settings)
+            job_settings_model = JobSettings.model_validate_json(job_settings)
+        elif isinstance(job_settings, dict):
+            job_settings_model = JobSettings(**job_settings)    
         else:
-            self.job_settings = job_settings
-        # GenericEtl.__init__(job_settings=job_settings_model)
-        # print(super())
+            job_settings_model = job_settings
+        GenericEtl.__init__(self, job_settings=job_settings_model)
 
-        if job_settings.get("opto_conditions_map", None) is None:
-            self.opto_conditions_map = constants.DEFAULT_OPTO_CONDITIONS
-        else:
-            self.opto_conditions_map = job_settings["opto_conditions_map"]
-        overwrite_tables = job_settings.get("overwrite_tables", False)
-        # self.json_settings = json_settings
-
-        self.folder = self.get_folder(session_id)
-        self.npexp_path = self.get_npexp_path(session_id)
+        sessions_root = Path(self.job_settings.sessions_root)
+        self.folder = self.get_folder(session_id, sessions_root)
+        self.session_path = self.get_session_path(session_id, sessions_root)
         # sometimes data files are deleted on npexp so try files on lims
         # try:
         #     self.recording_dir = npc_ephys.get_single_oebin_path(
@@ -75,24 +69,24 @@ class CamstimEphysSession(
         #     ).parent
         # except:
         self.recording_dir = npc_ephys.get_single_oebin_path(
-            self.npexp_path
+            self.session_path
         ).parent
 
         self.motor_locs_path = (
-            self.npexp_path / f"{self.folder}.motor-locs.csv"
+            self.session_path / f"{self.folder}.motor-locs.csv"
         )
-        self.pkl_path = self.npexp_path / f"{self.folder}.stim.pkl"
-        self.opto_pkl_path = self.npexp_path / f"{self.folder}.opto.pkl"
+        self.pkl_path = self.session_path / f"{self.folder}.stim.pkl"
+        self.opto_pkl_path = self.session_path / f"{self.folder}.opto.pkl"
         self.opto_table_path = (
-            self.npexp_path / f"{self.folder}_opto_epochs.csv"
+            self.session_path / f"{self.folder}_opto_epochs.csv"
         )
         self.stim_table_path = (
-            self.npexp_path / f"{self.folder}_stim_epochs.csv"
+            self.session_path / f"{self.folder}_stim_epochs.csv"
         )
-        self.sync_path = self.npexp_path / f"{self.folder}.sync"
+        self.sync_path = self.session_path / f"{self.folder}.sync"
 
         platform_path = next(
-            self.npexp_path.glob(f"{self.folder}_platform*.json")
+            self.session_path.glob(f"{self.folder}_platform*.json")
         )
         self.platform_json = json.loads(platform_path.read_text())
         self.project_name = self.platform_json["project"]
@@ -108,11 +102,11 @@ class CamstimEphysSession(
         self.session_uuid = self.get_session_uuid()
         self.mtrain_regimen = self.get_mtrain()
 
-        if not self.stim_table_path.exists() or overwrite_tables:
+        if not self.stim_table_path.exists() or self.job_settings.overwrite_tables:
             logger.debug("building stim table")
             self.build_stimulus_table()
         if self.opto_pkl_path.exists() and (
-            not self.opto_table_path.exists() or overwrite_tables
+            not self.opto_table_path.exists() or self.job_settings.overwrite_tables
         ):
             logger.debug("building opto table")
             self.build_optogenetics_table()
@@ -144,18 +138,14 @@ class CamstimEphysSession(
             ],
             session_start_time=self.session_start,
             session_end_time=self.session_end,
-            session_type=self.job_settings.get("session_type", ""),
-            iacuc_protocol=self.job_settings.get("iacuc_protocol", ""),
+            session_type=self.job_settings.session_type,
+            iacuc_protocol=self.job_settings.iacuc_protocol,
             rig_id=self.platform_json["rig_id"],
             subject_id=self.folder.split("_")[1],
             data_streams=self.data_streams(),
             stimulus_epochs=self.stim_epochs,
-            mouse_platform_name=self.job_settings.get(
-                "mouse_platform", "Mouse Platform"
-            ),
-            active_mouse_platform=self.job_settings.get(
-                "active_mouse_platform", False
-            ),
+            mouse_platform_name=self.job_settings.mouse_platform_name,
+            active_mouse_platform=self.job_settings.active_mouse_platform,
             reward_consumed_unit="milliliter",
             notes="",
         )
@@ -165,8 +155,8 @@ class CamstimEphysSession(
         """
         Writes the session json to a session.json file
         """
-        self.session_json.write_standard_file(self.npexp_path)
-        logger.debug(f"File created at {str(self.npexp_path)}/session.json")
+        self.session_json.write_standard_file(self.session_path)
+        logger.debug(f"File created at {str(self.session_path)}/session.json")
 
     @staticmethod
     def extract_probe_letter(probe_exp, s):
@@ -310,7 +300,7 @@ class CamstimEphysSession(
         Returns schema behavior videos stream for video timing
         """
         video_frame_times = npc_mvr.mvr.get_video_frame_times(
-            self.sync_path, self.npexp_path
+            self.sync_path, self.session_path
         )
 
         stream_first_time = min(
