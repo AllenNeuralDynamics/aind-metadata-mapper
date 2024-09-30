@@ -124,7 +124,7 @@ class CamstimEphysSession(
         """Transforms all metadata for the session into relevant files"""
         self._extract()
         self._transform()
-        self._load()
+        return self._load(self.session_json, self.session_path)
 
     def _extract(self):
         """TODO: refactor a lot of the __init__ code here"""
@@ -152,13 +152,6 @@ class CamstimEphysSession(
             notes="",
         )
         return self.session_json
-
-    def _load(self) -> None:
-        """
-        Writes the session json to a session.json file
-        """
-        self.session_json.write_standard_file(self.session_path)
-        logger.debug(f"File created at {str(self.session_path)}/session.json")
 
     @staticmethod
     def extract_probe_letter(probe_exp, s):
