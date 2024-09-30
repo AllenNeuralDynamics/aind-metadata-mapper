@@ -2,51 +2,42 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
+from typing import Union, List
 
 from aind_data_schema.core.session import Session
 from aind_data_schema_models.modalities import Modality
 
-from aind_metadata_mapper.core import BaseEtl
+from aind_metadata_mapper.core import GenericEtl
+from aind_metadata_mapper.open_ephys.models import JobSettings
 
 
 @dataclass(frozen=True)
 class ParsedInformation:
     """RawImageInfo gets parsed into this data"""
 
-    stage_logs: [str]
-    openephys_logs: [str]
+    stage_logs: List[str]
+    openephys_logs: List[str]
     experiment_data: dict
 
 
-class EphysEtl(BaseEtl):
+class EphysEtl(GenericEtl[JobSettings]):
     """This class contains the methods to write open_ephys session"""
 
-    def __init__(
-        self,
-        output_directory: Path,
-        stage_logs: [str],
-        openephys_logs: [str],
-        experiment_data: dict,
-        input_source: str = "",
-    ):
+    def __init__(self, job_settings: Union[JobSettings, str]):
         """
-        Class constructor for Base etl class.
+        Class constructor
         Parameters
         ----------
-        input_source : Union[str, PathLike]
-          Can be a string or a Path
-        output_directory : Path
-          The directory where to save the json files.
-        stage_logs : List
-          stage logs of all open_ephys data streams in a session
-        openephys_logs : List
-          openephys logs of all open_ephys data streams in a session
+        job_settings: Union[JobSettings, str]
+          Variables for a particular session
         """
-        super().__init__(input_source, output_directory)
-        self.stage_logs = stage_logs
-        self.openephys_logs = openephys_logs
-        self.experiment_data = experiment_data
+
+        if isinstance(job_settings, str):
+            job_settings_model = JobSettings.model_validate_json(job_settings)
+        else:
+            job_settings_model = job_settings
+
+        super().__init__(job_settings=job_settings_model)
 
     def _transform(self, extracted_source: ParsedInformation) -> Session:
         """
@@ -145,7 +136,7 @@ class EphysEtl(BaseEtl):
     def _extract(self) -> ParsedInformation:
         """Extract metadata from open_ephys session."""
         return ParsedInformation(
-            stage_logs=self.stage_logs,
-            openephys_logs=self.openephys_logs,
-            experiment_data=self.experiment_data,
+            stage_logs=self.job_settings.stage_logs,
+            openephys_logs=self.job_settings.openephys_logs,
+            experiment_data=self.job_settings.experiment_data,
         )
