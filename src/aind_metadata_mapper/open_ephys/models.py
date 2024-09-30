@@ -72,11 +72,12 @@ class JobSettings(BaseJobSettings):
     project_name: str
     iacuc_protocol: str
     description: str
-    sessions_root: Union[Path, str] = "//allen/programs/mindscope/workgroups/np-exp"
+    sessions_root: Union[Path, str] = \
+        "//allen/programs/mindscope/workgroups/np-exp"
     opto_conditions_map: dict = DEFAULT_OPTO_CONDITIONS
     overwrite_tables: bool = False
     mtrain_server: str = "http://mtrain:5000"
-    #TODO: refactor sessions_root and camstimephys getfolder functions out and use this instead
+    # TODO: use input_source and replace sessions_root, camstimephys.getfolder
     input_source: str = 'blah'
     active_mouse_platform: bool = False
     mouse_platform_name: str = 'Mouse Platform'

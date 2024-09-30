@@ -2,7 +2,6 @@
 File containing CamstimEphysSession class
 """
 
-import argparse
 import datetime
 import json
 import logging
@@ -54,7 +53,7 @@ class CamstimEphysSession(
         if isinstance(job_settings, str):
             job_settings_model = JobSettings.model_validate_json(job_settings)
         elif isinstance(job_settings, dict):
-            job_settings_model = JobSettings(**job_settings)    
+            job_settings_model = JobSettings(**job_settings)
         else:
             job_settings_model = job_settings
         GenericEtl.__init__(self, job_settings=job_settings_model)
@@ -102,11 +101,14 @@ class CamstimEphysSession(
         self.session_uuid = self.get_session_uuid()
         self.mtrain_regimen = self.get_mtrain()
 
-        if not self.stim_table_path.exists() or self.job_settings.overwrite_tables:
+        if not self.stim_table_path.exists() or (
+            self.job_settings.overwrite_tables
+        ):
             logger.debug("building stim table")
             self.build_stimulus_table()
         if self.opto_pkl_path.exists() and (
-            not self.opto_table_path.exists() or self.job_settings.overwrite_tables
+            not self.opto_table_path.exists() or
+            self.job_settings.overwrite_tables
         ):
             logger.debug("building opto table")
             self.build_optogenetics_table()
@@ -331,35 +333,11 @@ class CamstimEphysSession(
         return tuple(data_streams)
 
 
-def parse_args() -> argparse.Namespace:
-    """
-    Parse Arguments
-    """
-    parser = argparse.ArgumentParser(
-        description="Generate a session.json file for an ephys session"
-    )
-    parser.add_argument(
-        "session_id",
-        help=(
-            "session ID (lims or np-exp foldername) or path to session"
-            "folder"
-        ),
-    )
-    parser.add_argument(
-        "json-settings",
-        help=(
-            'json containing at minimum the fields "session_type" and'
-            '"iacuc protocol"'
-        ),
-    )
-    return parser.parse_args()
-
-
 def main() -> None:
     """
     Run Main
     """
-    sessionETL = CamstimEphysSession(**vars(parse_args()))
+    sessionETL = CamstimEphysSession(**vars)
     sessionETL.run_job()
 
 
