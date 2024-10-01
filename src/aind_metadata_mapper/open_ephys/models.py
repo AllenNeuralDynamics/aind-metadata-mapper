@@ -76,7 +76,7 @@ class JobSettings(BaseJobSettings):
         "//allen/programs/mindscope/workgroups/np-exp"
     opto_conditions_map: dict = DEFAULT_OPTO_CONDITIONS
     overwrite_tables: bool = False
-    mtrain_server: str = "http://mtrain:5000"
+    mtrain_server: str
     # TODO: use input_source and replace sessions_root, camstimephys.getfolder
     input_source: str = 'blah'
     active_mouse_platform: bool = False
