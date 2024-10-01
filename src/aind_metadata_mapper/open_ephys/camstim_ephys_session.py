@@ -1,5 +1,5 @@
 """
-File containing CamstimEphysSession class
+File containing CamstimEphysSessionEtl class
 """
 
 import datetime
@@ -25,7 +25,7 @@ from aind_metadata_mapper.open_ephys.models import JobSettings
 logger = logging.getLogger(__name__)
 
 
-class CamstimEphysSession(
+class CamstimEphysSessionEtl(
     aind_metadata_mapper.stimulus.camstim.Camstim, GenericEtl
 ):
     """
@@ -330,7 +330,7 @@ def main() -> None:
     """
     Run Main
     """
-    sessionETL = CamstimEphysSession(**vars)
+    sessionETL = CamstimEphysSessionEtl(**vars)
     sessionETL.run_job()
 
 

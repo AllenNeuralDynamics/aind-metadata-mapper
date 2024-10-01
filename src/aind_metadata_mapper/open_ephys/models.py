@@ -81,8 +81,3 @@ class JobSettings(BaseJobSettings):
     input_source: str = 'blah'
     active_mouse_platform: bool = False
     mouse_platform_name: str = 'Mouse Platform'
-
-    # experimenter_full_name: List[str] = Field(
-    #     ..., title="Full name of the experimenter"
-    # )
-    mouse_platform_name: str = "disc"
