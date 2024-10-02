@@ -173,7 +173,7 @@ class U19Etl(GenericEtl[JobSettings]):
             )
             self.tissue_sheets.append(df)
 
-    def extract_spec_procedures(self, subj_id, row):  # noqa: C901
+    def extract_spec_procedures(self, input_subj_id, row):  # noqa: C901
         """Extract the specimen procedures from the spreadsheet."""
 
         default_source = Organization.LIFECANVAS
@@ -183,6 +183,9 @@ class U19Etl(GenericEtl[JobSettings]):
             .strip()
             .lower()
         )
+
+        if not isinstance(subj_id, int):
+            subj_id = input_subj_id
 
         experimenter = row["SubjInfo"]["Unnamed: 2_level_1"][
             "Experimenter"
