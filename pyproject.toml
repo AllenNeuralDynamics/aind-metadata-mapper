@@ -66,11 +66,11 @@ mesoscope = [
 openephys = [
     "aind-metadata-mapper[schema]",
     "h5py >= 3.11.0",
-    "np_session >= 0.1.39",
     "npc_ephys >= 0.1.18 ; python_version >= '3.9'",
     "scipy >= 1.11.0",
     "pandas >= 2.2.2",
     "numpy >= 1.26.4",
+    "npc_mvr >= 0.1.6"
 ]
 
 dynamicrouting = [
