@@ -304,19 +304,19 @@ class TestStimUtils(unittest.TestCase):
             mock_stimulus_tabler,
             mock_spontaneous_activity_tabler,
         )
-        self.assertEquals(
+        self.assertEqual(
             result_stim_table_full["start_time"].all(),
             expected_stim_table_full["start_time"].all(),
         )
-        self.assertEquals(
+        self.assertEqual(
             result_stim_table_full["end_time"].all(),
             expected_stim_table_full["end_time"].all(),
         )
-        self.assertEquals(
+        self.assertEqual(
             result_stim_table_full["stim_param"].all(),
             expected_stim_table_full["stim_param"].all(),
         )
-        self.assertEquals(
+        self.assertEqual(
             result_stim_table_full["stim_block"].all(),
             expected_stim_table_full["stim_block"].all(),
         )
