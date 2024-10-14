@@ -122,7 +122,7 @@ class TestU19Writer(unittest.TestCase):
 
     @patch(
         "aind_metadata_mapper.u19.procedures."
-       "SmartSPIMSpecimenIngester._transform"
+        "SmartSPIMSpecimenIngester._transform"
     )
     def test_load(self, mock_transform):
         """Test load method."""
