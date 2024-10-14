@@ -62,7 +62,9 @@ class TestU19Writer(unittest.TestCase):
         )
 
     @patch(
-        "aind_metadata_mapper.u19.procedures.SmartSPIMSpecimenIngester.download_procedure_file"
+        "aind_metadata_mapper.u19."
+        "procedures.SmartSPIMSpecimenIngester."
+        "download_procedure_file"
     )
     def test_run_job(self, mock_download_procedure):
         """Test run_job method."""
@@ -78,7 +80,9 @@ class TestU19Writer(unittest.TestCase):
         self.assertEqual(self.example_output, actual_output)
 
     @patch(
-        "aind_metadata_mapper.u19.procedures.SmartSPIMSpecimenIngester.download_procedure_file"
+        "aind_metadata_mapper.u19."
+        "procedures.SmartSPIMSpecimenIngester."
+        "download_procedure_file"
     )
     def test_extract(self, mock_download_procedure):
         """Test extract method."""
@@ -116,7 +120,10 @@ class TestU19Writer(unittest.TestCase):
             ),
         )
 
-    @patch("aind_metadata_mapper.u19.procedures.SmartSPIMSpecimenIngester._transform")
+    @patch(
+        "aind_metadata_mapper.u19.procedures."
+       "SmartSPIMSpecimenIngester._transform"
+    )
     def test_load(self, mock_transform):
         """Test load method."""
 
