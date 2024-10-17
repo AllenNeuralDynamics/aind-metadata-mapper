@@ -19,7 +19,7 @@ dynamic = ["version"]
 dependencies = [
     "aind-data-schema-models>=0.3.2",
     "pydantic-settings>=2.0",
-    "aind-data-schema>=1.0.0"
+    "aind-data-schema==1.0.0"
 ]
 
 [project.optional-dependencies]
