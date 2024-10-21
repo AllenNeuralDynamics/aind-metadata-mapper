@@ -152,7 +152,7 @@ class TestStimUtils(unittest.TestCase):
 
         # Iterate over each index and assert the result matches the expected image name
         for index in range(len(expected_image_names)):
-            result = get_stimulus_image_name(stimulus, index)
+            result = stim.get_stimulus_image_name(stimulus, index)
             self.assertEqual(result, expected_image_names[index])
 
 
