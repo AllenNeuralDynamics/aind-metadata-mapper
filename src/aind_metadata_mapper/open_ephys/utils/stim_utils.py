@@ -596,16 +596,12 @@ def read_stimulus_name_from_path(stimulus):
 
     """
 
-    if "stim_path" in stimulus:
-        stim_name = stimulus["stim_path"]
+    stim_name = stimulus["stim_path"].split("\\")[-1].split(".")[0]
 
-    if stim_name == "":
-        if "movie_local_path" in stimulus and stimulus["movie_local_path"] != "":
-            stim_name = stimulus["movie_local_path"].split("\\")[-1].split(".")[0]
-        else:
-            stim_name = stimulus["stim"]
+    if stimulus["stim_path"] == "":
+        stim_name = stimulus["movie_local_path"].split("\\")[-1].split(".")[0]
     else:
-        stim_name = stim_name.split("\\")[-1].split(".")[0]
+        stim_name = stimulus["stim_path"].split("\\")[-1].split(".")[0]
     return stim_name
 
 

@@ -1,7 +1,7 @@
 """Mesoscope ETL"""
-
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 from typing import Union
@@ -40,15 +40,24 @@ class MesoscopeEtl(
         312782574: "VISli",
     }
 
-    def __init__(
-        self,
-        job_settings: Union[JobSettings, str],
-    ):
-        """Class constructor for Mesoscope etl job"""
+    # TODO: Deprecate this constructor. Use GenericEtl constructor instead
+    def __init__(self, job_settings: Union[JobSettings, str]):
+        """
+        Class constructor for Base etl class.
+        Parameters
+        ----------
+        job_settings: Union[JobSettings, str]
+          Variables for a particular session
+        """
+
         if isinstance(job_settings, str):
             job_settings_model = JobSettings.model_validate_json(job_settings)
         else:
             job_settings_model = job_settings
+        if isinstance(job_settings_model.behavior_source, str):
+            job_settings_model.behavior_source = Path(
+                job_settings_model.behavior_source
+            )
         super().__init__(job_settings=job_settings_model)
         Camstim.__init__(
             self,
@@ -58,7 +67,8 @@ class MesoscopeEtl(
             output_directory=job_settings_model.optional_output,
         )
 
-    def _read_metadata(self, tiff_path: Path):
+    @staticmethod
+    def _read_metadata(tiff_path: Path):
         """
         Calls tifffile.read_scanimage_metadata on the specified
         path and returns teh result. This method was factored
@@ -297,6 +307,11 @@ class MesoscopeEtl(
         A list of command line arguments to parse.
         """
 
+        logging.warning(
+            "This method will be removed in future versions. "
+            "Please use JobSettings.from_args instead."
+        )
+
         parser = argparse.ArgumentParser()
         parser.add_argument(
             "-u",
@@ -324,5 +339,6 @@ class MesoscopeEtl(
 
 if __name__ == "__main__":
     sys_args = sys.argv[1:]
-    metl = MesoscopeEtl.from_args(sys_args)
+    main_job_settings = JobSettings.from_args(sys_args)
+    metl = MesoscopeEtl(job_settings=main_job_settings)
     metl.run_job()

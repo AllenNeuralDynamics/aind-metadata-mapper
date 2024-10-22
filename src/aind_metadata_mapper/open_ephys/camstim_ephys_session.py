@@ -16,12 +16,7 @@ import npc_sessions
 import numpy as np
 import pandas as pd
 from aind_data_schema.components.coordinates import Coordinates3d
-from aind_data_schema.core.session import (
-    EphysModule,
-    EphysProbeConfig,
-    Session,
-    Stream,
-)
+from aind_data_schema.core.session import ManipulatorModule, Session, Stream
 from aind_data_schema_models.modalities import Modality
 
 import aind_metadata_mapper.open_ephys.utils.constants as constants
@@ -230,13 +225,12 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
                 probe_name, newscale_coords
             )
 
-            probe_module = EphysModule(
+            probe_module = ManipulatorModule(
                 assembly_name=probe_name.upper(),
                 arc_angle=0.0,
                 module_angle=0.0,
                 rotation_angle=0.0,
                 primary_targeted_structure="none",
-                ephys_probes=[EphysProbeConfig(name=probe_name.upper())],
                 manipulator_coordinates=manipulator_coordinates,
                 notes=notes,
             )

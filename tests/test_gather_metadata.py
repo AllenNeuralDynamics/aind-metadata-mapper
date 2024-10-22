@@ -20,7 +20,7 @@ from aind_metadata_mapper.bergamo.models import (
 from aind_metadata_mapper.bruker.models import (
     JobSettings as BrukerSessionJobSettings,
 )
-from aind_metadata_mapper.core import JobResponse
+from aind_metadata_mapper.core_models import JobResponse
 from aind_metadata_mapper.fip.models import (
     JobSettings as FipSessionJobSettings,
 )
@@ -48,6 +48,7 @@ RESOURCES_DIR = (
     / "gather_metadata_job"
 )
 METADATA_DIR = RESOURCES_DIR / "metadata_files"
+METADATA_DIR_WITH_RIG_ISSUE = RESOURCES_DIR / "schema_files_with_issues"
 EXAMPLE_BERGAMO_CONFIGS = RESOURCES_DIR / "test_bergamo_configs.json"
 
 
@@ -429,7 +430,9 @@ class TestGatherMetadataJob(unittest.TestCase):
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             processing_settings=ProcessingSettings(
-                pipeline_process=processing_pipeline
+                pipeline_process=json.loads(
+                    processing_pipeline.model_dump_json()
+                )
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
@@ -468,7 +471,9 @@ class TestGatherMetadataJob(unittest.TestCase):
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             processing_settings=ProcessingSettings(
-                pipeline_process=processing_pipeline
+                pipeline_process=json.loads(
+                    processing_pipeline.model_dump_json()
+                )
             ),
             metadata_dir=metadata_dir,
             metadata_dir_force=True,
@@ -559,7 +564,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             status_code=200, data=json.dumps({"some_key": "some_value"})
         )
         mesoscope_session_settings = (
-            MesoscopeSessionJobSettings.model_construct()
+            MesoscopeSessionJobSettings.model_construct(behavior_source="abc")
         )
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
@@ -630,6 +635,19 @@ class TestGatherMetadataJob(unittest.TestCase):
         contents = metadata_job.get_rig_metadata()
         self.assertIsNone(contents)
 
+    def test_get_problematic_rig_metadata(self):
+        """Tests get_rig_metadata when there is a pydantic serialization
+        issue."""
+        metadata_dir = METADATA_DIR_WITH_RIG_ISSUE
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_dir=metadata_dir,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_rig_metadata()
+        self.assertIsNotNone(contents)
+
     def test_get_acquisition_metadata(self):
         """Tests get_acquisition_metadata"""
         metadata_dir = RESOURCES_DIR / "metadata_files"
@@ -668,9 +686,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             acquisition_settings=AcquisitionSettings(
                 job_settings=SmartSpimAcquisitionJobSettings(
                     subject_id="695464",
-                    raw_dataset_path=Path(
-                        "SmartSPIM_695464_2023-10-18_20-30-30"
-                    ),
+                    input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
                 )
             ),
         )
@@ -692,9 +708,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             acquisition_settings=AcquisitionSettings(
                 job_settings=SmartSpimAcquisitionJobSettings(
                     subject_id="695464",
-                    raw_dataset_path=Path(
-                        "SmartSPIM_695464_2023-10-18_20-30-30"
-                    ),
+                    input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
                 )
             ),
         )
@@ -731,6 +745,25 @@ class TestGatherMetadataJob(unittest.TestCase):
     def test_gather_non_automated_metadata(self, mock_write_file: MagicMock):
         """Tests _gather_non_automated_metadata method"""
         metadata_dir = RESOURCES_DIR / "metadata_files"
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_dir=metadata_dir,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        metadata_job._gather_non_automated_metadata()
+        mock_write_file.assert_called()
+
+    @patch(
+        "aind_metadata_mapper.gather_metadata.GatherMetadataJob."
+        "_write_json_file"
+    )
+    def test_gather_non_automated_metadata_with_ser_issues(
+        self, mock_write_file: MagicMock
+    ):
+        """Tests _gather_non_automated_metadata method when there are
+        serialization issues"""
+        metadata_dir = METADATA_DIR_WITH_RIG_ISSUE
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
@@ -779,10 +812,36 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual(expected_warnings, str(w.warning))
         self.assertEqual(
             "s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
-            main_metadata.location,
+            main_metadata["location"],
         )
-        self.assertEqual("Invalid", main_metadata.metadata_status.value)
-        self.assertEqual("632269", main_metadata.subject.subject_id)
+        self.assertEqual("Invalid", main_metadata["metadata_status"])
+        self.assertEqual("632269", main_metadata["subject"]["subject_id"])
+
+    @patch("logging.warning")
+    def test_get_main_metadata_with_ser_issues(self, mock_log: MagicMock):
+        """Tests get_main_metadata method when rig.json file has
+        serialization issues."""
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_settings=MetadataSettings(
+                name="ecephys_632269_2023-10-10_10-10-10",
+                location="s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
+                subject_filepath=(METADATA_DIR / "subject.json"),
+                data_description_filepath=(
+                    METADATA_DIR / "data_description.json"
+                ),
+                procedures_filepath=(METADATA_DIR / "procedures.json"),
+                session_filepath=None,
+                rig_filepath=(METADATA_DIR_WITH_RIG_ISSUE / "rig.json"),
+                processing_filepath=(METADATA_DIR / "processing.json"),
+                acquisition_filepath=None,
+                instrument_filepath=None,
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        main_metadata = metadata_job.get_main_metadata()
+        mock_log.assert_called_once()
+        self.assertIsNotNone(main_metadata["rig"]["schema_version"])
 
     @patch("logging.warning")
     def test_get_main_metadata_with_validation_errors(
@@ -808,14 +867,14 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         main_metadata = metadata_job.get_main_metadata()
-        self.assertIsNotNone(main_metadata.subject)
-        self.assertIsNotNone(main_metadata.procedures)
-        self.assertIsNotNone(main_metadata.data_description)
-        self.assertIsNotNone(main_metadata.session)
-        self.assertIsNotNone(main_metadata.rig)
-        self.assertIsNotNone(main_metadata.processing)
-        self.assertIsNotNone(main_metadata.acquisition)
-        self.assertIsNotNone(main_metadata.instrument)
+        self.assertIsNotNone(main_metadata["subject"])
+        self.assertIsNotNone(main_metadata["procedures"])
+        self.assertIsNotNone(main_metadata["data_description"])
+        self.assertIsNotNone(main_metadata["session"])
+        self.assertIsNotNone(main_metadata["rig"])
+        self.assertIsNotNone(main_metadata["processing"])
+        self.assertIsNotNone(main_metadata["acquisition"])
+        self.assertIsNotNone(main_metadata["instrument"])
         mock_warn.assert_called_once()
 
     @patch("builtins.open", new_callable=mock_open())
@@ -911,7 +970,9 @@ class TestGatherMetadataJob(unittest.TestCase):
                 modality=[Modality.ECEPHYS, Modality.BEHAVIOR_VIDEOS],
             ),
             processing_settings=ProcessingSettings(
-                pipeline_process=processing_pipeline
+                pipeline_process=json.loads(
+                    processing_pipeline.model_dump_json()
+                )
             ),
             metadata_settings=MetadataSettings(
                 name="ecephys_632269_2023-10-10_10-10-10",
