@@ -31,7 +31,6 @@ class JobSettings(BaseJobSettings):
     experimenter_full_name: List[str] = Field(title="Full name of the experimenter")
     mouse_platform_name: str = Field(default="disc", title="Name of the mouse platform")
     optional_output: Optional[Path] = Field(default=None, title="Optional output path")
-    notes: Optional[str] = Field(default=None, title="Optional output path")
 
     @field_validator("input_source", "behavior_source", "output_directory")
     @classmethod
