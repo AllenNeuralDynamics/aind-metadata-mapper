@@ -42,7 +42,7 @@ all = [
 ]
 
 schema = [
-    "aind-data-schema>=1.0.0,<2.0",
+    "aind-data-schema>=1.1.1,<2.0",
     "pydantic<2.9"
 ]
 
@@ -66,11 +66,11 @@ mesoscope = [
 openephys = [
     "aind-metadata-mapper[schema]",
     "h5py >= 3.11.0",
-    "np_session >= 0.1.39",
     "npc_ephys >= 0.1.18 ; python_version >= '3.9'",
     "scipy >= 1.11.0",
     "pandas >= 2.2.2",
     "numpy >= 1.26.4",
+    "npc_mvr >= 0.1.6"
 ]
 
 dynamicrouting = [

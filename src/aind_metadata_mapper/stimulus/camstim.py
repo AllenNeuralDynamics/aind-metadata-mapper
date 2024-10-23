@@ -4,17 +4,20 @@ File containing Camstim class
 
 import datetime
 import functools
+from pathlib import Path
+from typing import Union
 
 import aind_data_schema
 import aind_data_schema.core.session as session_schema
-import np_session
 import pandas as pd
+import requests
 
 import aind_metadata_mapper.open_ephys.utils.constants as constants
 import aind_metadata_mapper.open_ephys.utils.naming_utils as names
 import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
 import aind_metadata_mapper.open_ephys.utils.stim_utils as stim
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
+from aind_metadata_mapper.open_ephys.models import JobSettings
 
 
 class Camstim:
@@ -25,7 +28,7 @@ class Camstim:
     def __init__(
         self,
         session_id: str,
-        json_settings: dict,
+        job_settings: Union[JobSettings, str],
     ) -> None:
         """
         Determine needed input filepaths from np-exp and lims, get session
@@ -36,27 +39,29 @@ class Camstim:
         settings to specify the different laser states for this experiment.
         Otherwise, the default is used from naming_utils.
         """
-        if json_settings.get("opto_conditions_map", None) is None:
+        if isinstance(job_settings, str):
+            self.job_settings = JobSettings.model_validate_json(job_settings)
+        else:
+            self.job_settings = job_settings
+
+        if self.job_settings.get("opto_conditions_map", None) is None:
             self.opto_conditions_map = names.DEFAULT_OPTO_CONDITIONS
         else:
-            self.opto_conditions_map = json_settings["opto_conditions_map"]
-        overwrite_tables = json_settings.get("overwrite_tables", False)
+            self.opto_conditions_map = self.job_settings["opto_conditions_map"]
 
-        self.json_settings = json_settings
-        session_inst = np_session.Session(session_id)
-        self.mtrain = session_inst.mtrain
-        self.npexp_path = session_inst.npexp_path
-        self.folder = session_inst.folder
+        sessions_root = Path(self.job_settings.get('sessions_root'))
+        self.session_path = self.get_session_path(session_id, sessions_root)
+        self.folder = self.get_folder(session_id, sessions_root)
 
-        self.pkl_path = self.npexp_path / f"{self.folder}.stim.pkl"
-        self.opto_pkl_path = self.npexp_path / f"{self.folder}.opto.pkl"
+        self.pkl_path = self.session_path / f"{self.folder}.stim.pkl"
+        self.opto_pkl_path = self.session_path / f"{self.folder}.opto.pkl"
         self.opto_table_path = (
-            self.npexp_path / f"{self.folder}_opto_epochs.csv"
+            self.session_path / f"{self.folder}_opto_epochs.csv"
         )
         self.stim_table_path = (
-            self.npexp_path / f"{self.folder}_stim_epochs.csv"
+            self.session_path / f"{self.folder}_stim_epochs.csv"
         )
-        self.sync_path = self.npexp_path / f"{self.folder}.sync"
+        self.sync_path = self.session_path / f"{self.folder}.sync"
 
         sync_data = sync.load_sync(self.sync_path)
         self.session_start = sync.get_start_time(sync_data)
@@ -68,13 +73,20 @@ class Camstim:
             self.session_end,
         )
 
-        if not self.stim_table_path.exists() or overwrite_tables:
+        self.mouse_id = self.folder.split("_")[1]
+        self.session_uuid = self.get_session_uuid()
+        self.mtrain_regimen = self.get_mtrain()
+
+        if (
+            not self.stim_table_path.exists()
+            or self.job_settings['overwrite_tables']
+        ):
             print("building stim table")
             self.build_stimulus_table()
         if (
             self.opto_pkl_path.exists()
             and not self.opto_table_path.exists()
-            or overwrite_tables
+            or self.job_settings['overwrite_tables']
         ):
             print("building opto table")
             self.build_optogenetics_table()
@@ -83,6 +95,29 @@ class Camstim:
         self.stim_epochs = self.epochs_from_stim_table()
         if self.opto_table_path.exists():
             self.stim_epochs.append(self.epoch_from_opto_table())
+
+    def get_folder(self, session_id, npexp_root) -> str:
+        """returns the directory name of the session on the np-exp directory"""
+        for subfolder in npexp_root.iterdir():
+            if subfolder.name.split("_")[0] == session_id:
+                return subfolder.name
+        else:
+            raise Exception("Session folder not found in np-exp")
+
+    def get_session_path(self, session_id, npexp_root) -> Path:
+        """returns the path to the session on allen's np-exp directory"""
+        return npexp_root / self.get_folder(session_id, npexp_root)
+
+    def get_session_uuid(self) -> str:
+        """returns session uuid from pickle file"""
+        return pkl.load_pkl(self.pkl_path)["session_uuid"]
+
+    def get_mtrain(self) -> dict:
+        """Returns dictionary containing 'id', 'name', 'stages', 'states'"""
+        server = self.job_settings.mtrain_server
+        req = f"{server}/behavior_session/{self.session_uuid}/details"
+        mtrain_response = requests.get(req).json()
+        return mtrain_response["result"]["regimen"]
 
     def build_stimulus_table(
         self,
@@ -232,9 +267,9 @@ class Camstim:
         stim = aind_data_schema.core.session.StimulusModality
 
         script_obj = aind_data_schema.components.devices.Software(
-            name=self.mtrain["regimen"]["name"],
+            name=self.mtrain_regimen["name"],
             version="1.0",
-            url=self.mtrain["regimen"]["script"],
+            url=self.mtrain_regimen,
         )
 
         opto_table = pd.read_csv(self.opto_table_path)
@@ -346,9 +381,9 @@ class Camstim:
         )
 
         script_obj = aind_data_schema.components.devices.Software(
-            name=self.mtrain["regimen"]["name"],
+            name=self.mtrain_regimen["name"],
             version="1.0",
-            url=self.mtrain["regimen"]["script"],
+            url=self.mtrain_regimen["script"],
         )
 
         schema_epochs = []
