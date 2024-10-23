@@ -198,21 +198,11 @@ class MesoscopeEtl(
         imaging_plane_groups = extracted_source["platform"]["imaging_plane_groups"]
         fovs = []
         count = 0
-        notes = None
-        fov_notes = None
-        fov_value = None
-        if self.job_settings.notes:
-            try:
-                fov_notes = json.loads(self.job_settings.notes)
-            except json.JSONDecodeError:
-                notes = self.job_settings.notes
         for group in imaging_plane_groups:
             power_ratio = group.get("scanimage_split_percent", None)
             if power_ratio:
                 power_ratio = float(power_ratio)
             for plane in group["imaging_planes"]:
-                if isinstance(fov_notes, dict):
-                    fov_value = fov_notes.get(str(plane["scanimage_scanfield_z"]), None)
                 fov = FieldOfView(
                     coupled_fov_index=int(group["local_z_stack_tif"].split(".")[0][-1]),
                     index=count,
@@ -236,7 +226,6 @@ class MesoscopeEtl(
                         else float(group.get("scanimage_power_percent", ""))
                     ),
                     power_ratio=power_ratio,
-                    notes=str(fov_value) if fov_value else None,
                 )
                 count += 1
                 fovs.append(fov)
