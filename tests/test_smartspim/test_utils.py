@@ -9,8 +9,7 @@ from pathlib import Path
 from aind_data_schema.components.coordinates import AnatomicalDirection
 
 from aind_metadata_mapper.smartspim import utils
-
-from ..resources.smartspim.example_metadata import (
+from tests.test_smartspim.example_metadata import (
     example_filter_mapping,
     example_metadata_info,
 )

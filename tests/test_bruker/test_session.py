@@ -16,7 +16,7 @@ from aind_data_schema.components.devices import (
     MagneticStrength,
     ScannerLocation,
 )
-
+from aind_data_schema.core.session import Session
 from aind_metadata_mapper.bruker.session import JobSettings, MRIEtl
 
 RESOURCES_DIR = (
@@ -73,26 +73,30 @@ class TestMRIWriter(unittest.TestCase):
         with open(EXPECTED_SESSION, "r") as f:
             contents = json.load(f)
 
+        contents["schema_version"] = Session.model_fields[
+            "schema_version"
+        ].default
         cls.expected_session = contents
 
-        cls.example_job_settings = JobSettings(
-            data_path="some_data_path",
+        example_job_settings = JobSettings(
+            input_source="some_data_path",
             experimenter_full_name=["fake mae"],
             primary_scan_number=7,
             setup_scan_number=1,
             scanner_name="fake scanner",
             session_type="3D MRI Scan",
-            scan_location=ScannerLocation.FRED_HUTCH,
-            magnetic_strength=MagneticStrength.MRI_7T,
+            scan_location=ScannerLocation.FRED_HUTCH.value,
+            magnetic_strength=MagneticStrength.MRI_7T.value,
             subject_id="fake subject",
             iacuc_protocol="fake iacuc",
             session_notes="test",
             collection_tz="US/Pacific",
         )
-
-        cls.example_etl = MRIEtl(cls.example_job_settings)
-
-        cls.example_model = cls.example_etl._extract()
+        example_etl = MRIEtl(job_settings=example_job_settings)
+        example_model = example_etl._extract()
+        cls.example_job_settings = example_job_settings
+        cls.example_etl = example_etl
+        cls.example_model = example_model
 
     def test_constructor_from_string(self) -> None:
         """Test constructor from string."""

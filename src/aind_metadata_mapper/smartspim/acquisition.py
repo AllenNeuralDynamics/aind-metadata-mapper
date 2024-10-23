@@ -2,17 +2,17 @@
 
 import os
 import re
+import sys
 from datetime import datetime
-from pathlib import Path
-from typing import Dict
+from typing import Dict, Union
 
 from aind_data_schema.components.coordinates import ImageAxis
 from aind_data_schema.core import acquisition
-from pydantic_settings import BaseSettings
 
-from aind_metadata_mapper.core import GenericEtl, JobResponse
-
-from .utils import (
+from aind_metadata_mapper.core import GenericEtl
+from aind_metadata_mapper.core_models import JobResponse
+from aind_metadata_mapper.smartspim.models import JobSettings
+from aind_metadata_mapper.smartspim.utils import (
     get_anatomical_direction,
     get_excitation_emission_waves,
     get_session_end,
@@ -21,50 +21,40 @@ from .utils import (
 )
 
 
-class JobSettings(BaseSettings):
-    """Data to be entered by the user."""
-
-    subject_id: str
-    raw_dataset_path: Path
-    output_directory: Path
-
-    # Metadata names
-    asi_filename: str = "derivatives/ASI_logging.txt"
-    mdata_filename_json: str = "derivatives/metadata.json"
-
-    # Metadata provided by microscope operators
-    processing_manifest_path: str = "derivatives/processing_manifest.json"
-
-
-class SmartspimETL(GenericEtl):
+class SmartspimETL(GenericEtl[JobSettings]):
     """
     This class contains the methods to write the metadata
     for a SmartSPIM session
     """
 
-    def __init__(self, job_settings: BaseSettings):
+    # TODO: Deprecate this constructor. Use GenericEtl constructor instead
+    def __init__(self, job_settings: Union[JobSettings, str]):
         """
-        Constructor method
-
+        Class constructor for Base etl class.
         Parameters
         ----------
-        job_settings: BaseSettings
-            Job settings for the SmartSPIM ETL
-
+        job_settings: Union[JobSettings, str]
+          Variables for a particular session
         """
+
         if isinstance(job_settings, str):
             job_settings_model = JobSettings.model_validate_json(job_settings)
-
         else:
             job_settings_model = job_settings
-
-        self.regex_date = (
-            r"(20[0-9]{2})-([0-9]{2})-([0-9]{2})_([0-9]{2})-"
-            r"([0-9]{2})-([0-9]{2})"
-        )
-        self.regex_mouse_id = r"([0-9]{6})"
-
+        if (
+            job_settings_model.raw_dataset_path is not None
+            and job_settings_model.input_source is None
+        ):
+            job_settings_model.input_source = (
+                job_settings_model.raw_dataset_path
+            )
         super().__init__(job_settings=job_settings_model)
+
+    REGEX_DATE = (
+        r"(20[0-9]{2})-([0-9]{2})-([0-9]{2})_([0-9]{2})-"
+        r"([0-9]{2})-([0-9]{2})"
+    )
+    REGEX_MOUSE_ID = r"([0-9]{6})"
 
     def _extract(self) -> Dict:
         """
@@ -78,7 +68,7 @@ class SmartspimETL(GenericEtl):
             is needed to build the acquisition.json.
         """
         # Path where the channels are stored
-        smartspim_channel_root = self.job_settings.raw_dataset_path.joinpath(
+        smartspim_channel_root = self.job_settings.input_source.joinpath(
             "SmartSPIM"
         )
 
@@ -90,15 +80,15 @@ class SmartspimETL(GenericEtl):
         ]
 
         # Path to metadata files
-        asi_file_path_txt = self.job_settings.raw_dataset_path.joinpath(
+        asi_file_path_txt = self.job_settings.input_source.joinpath(
             self.job_settings.asi_filename
         )
 
-        mdata_path_json = self.job_settings.raw_dataset_path.joinpath(
+        mdata_path_json = self.job_settings.input_source.joinpath(
             self.job_settings.mdata_filename_json
         )
 
-        processing_manifest_path = self.job_settings.raw_dataset_path.joinpath(
+        processing_manifest_path = self.job_settings.input_source.joinpath(
             self.job_settings.processing_manifest_path
         )
 
@@ -110,9 +100,7 @@ class SmartspimETL(GenericEtl):
             raise FileNotFoundError(f"File {mdata_path_json} does not exist")
 
         if not processing_manifest_path.exists():
-            raise FileNotFoundError(
-                f"File {processing_manifest_path} does not exist"
-            )
+            raise FileNotFoundError(f"File {processing_manifest_path} does not exist")
 
         # Getting acquisition metadata from the microscope
         metadata_info = read_json_as_dict(mdata_path_json)
@@ -159,10 +147,10 @@ class SmartspimETL(GenericEtl):
         """
 
         mouse_date = re.search(
-            self.regex_date, self.job_settings.raw_dataset_path.stem
+            self.REGEX_DATE, self.job_settings.input_source.stem
         )
         mouse_id = re.search(
-            self.regex_mouse_id, self.job_settings.raw_dataset_path.stem
+            self.REGEX_MOUSE_ID, self.job_settings.input_source.stem
         )
 
         # Converting to date and mouse ID
@@ -175,9 +163,7 @@ class SmartspimETL(GenericEtl):
         else:
             raise ValueError("Error while getting mouse date and ID")
 
-        processing_manifest = metadata_dict["processing_manifest"][
-            "prelim_acquisition"
-        ]
+        processing_manifest = metadata_dict["processing_manifest"]["prelim_acquisition"]
         axes = processing_manifest.get("axes")
 
         if axes is None:
@@ -203,9 +189,7 @@ class SmartspimETL(GenericEtl):
         spl_medium = sample_immersion.get("medium")
 
         # Parsing the mediums the operator gives
-        notes = (
-            f"Chamber immersion: {chm_medium} - Sample immersion: {spl_medium}"
-        )
+        notes = f"Chamber immersion: {chm_medium} - Sample immersion: {spl_medium}"
         notes += f" - Operator notes: {processing_manifest.get('notes')}"
 
         if "cargille" in chm_medium.lower():
@@ -221,9 +205,7 @@ class SmartspimETL(GenericEtl):
             spl_medium = "other"
 
         acquisition_model = acquisition.Acquisition(
-            experimenter_full_name=processing_manifest.get(
-                "experimenter_full_name"
-            ),
+            experimenter_full_name=processing_manifest.get("experimenter_full_name"),
             specimen_id="",
             subject_id=mouse_id,
             instrument_id=processing_manifest.get("instrument_id"),
@@ -242,9 +224,7 @@ class SmartspimETL(GenericEtl):
                 medium=spl_medium,
                 refractive_index=sample_immersion.get("refractive_index"),
             ),
-            local_storage_directory=processing_manifest.get(
-                "local_storage_directory"
-            ),
+            local_storage_directory=processing_manifest.get("local_storage_directory"),
             external_storage_directory="",
             # processing_steps=[],
             notes=notes,
@@ -268,7 +248,12 @@ class SmartspimETL(GenericEtl):
         """
         metadata_dict = self._extract()
         acquisition_model = self._transform(metadata_dict=metadata_dict)
-        job_response = self._load(
-            acquisition_model, self.job_settings.output_directory
-        )
+        job_response = self._load(acquisition_model, self.job_settings.output_directory)
         return job_response
+
+
+if __name__ == "__main__":
+    sys_args = sys.argv[1:]
+    main_job_settings = JobSettings.from_args(sys_args)
+    etl = SmartspimETL(job_settings=main_job_settings)
+    etl.run_job()

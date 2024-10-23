@@ -40,6 +40,6 @@ def setup_neuropixels_etl_resources(
     """
     return (
         RESOURCES_DIR / "base_rig.json",
-        Path("./"),  # hopefully file writes are mocked
+        Path("abc"),  # hopefully file writes are mocked
         Rig.model_validate_json(expected_json.read_text()),
     )

@@ -24,7 +24,7 @@ class TestNeuropixelsRig(unittest.TestCase):
         """Test ETL workflow with inferred probe mapping."""
         etl = NeuropixelsRigEtl(
             RESOURCES_DIR / "base_rig.json",
-            Path("./"),
+            Path("abc"),
         )
         extracted = etl._extract()
         transformed = etl._transform(extracted)

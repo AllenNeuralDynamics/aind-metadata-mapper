@@ -1,10 +1,10 @@
 """Module to write valid OptoStim and Subject schemas"""
 
 import re
+import sys
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import List, Optional, Union
+from datetime import timedelta
+from typing import Union
 
 from aind_data_schema.components.stimulus import OptoStimulation, PulseShape
 from aind_data_schema.core.session import (
@@ -17,37 +17,10 @@ from aind_data_schema.core.session import (
     Stream,
 )
 from aind_data_schema_models.modalities import Modality
-from pydantic import Field
-from pydantic_settings import BaseSettings
 
-from aind_metadata_mapper.core import GenericEtl, JobResponse
-
-
-class JobSettings(BaseSettings):
-    """Data that needs to be input by user."""
-
-    output_directory: Optional[Path] = Field(
-        default=None,
-        description=(
-            "Directory where to save the json file to. If None, then json"
-            " contents will be returned in the Response message."
-        ),
-    )
-
-    string_to_parse: str
-    experimenter_full_name: List[str]
-    session_start_time: datetime
-    notes: str
-    labtracks_id: str
-    iacuc_protocol: str
-    light_source_list: List[dict]
-    detector_list: List[dict]
-    fiber_connections_list: List[dict]
-
-    rig_id: str = "ophys_rig"
-    session_type: str = "Foraging_Photometry"
-    mouse_platform_name: str = "Disc"
-    active_mouse_platform: bool = False
+from aind_metadata_mapper.core import GenericEtl
+from aind_metadata_mapper.core_models import JobResponse
+from aind_metadata_mapper.fip.models import JobSettings
 
 
 @dataclass(frozen=True)
@@ -75,10 +48,8 @@ class FIBEtl(GenericEtl[JobSettings]):
     interval_regex = re.compile(r"OptoInterval\(s\):\s*([0-9.]+)")
     base_regex = re.compile(r"OptoBase\(s\):\s*([0-9.]+)")
 
-    def __init__(
-        self,
-        job_settings: Union[JobSettings, str],
-    ):
+    # TODO: Deprecate this constructor. Use GenericEtl constructor instead
+    def __init__(self, job_settings: Union[JobSettings, str]):
         """
         Class constructor for Base etl class.
         Parameters
@@ -86,6 +57,7 @@ class FIBEtl(GenericEtl[JobSettings]):
         job_settings: Union[JobSettings, str]
           Variables for a particular session
         """
+
         if isinstance(job_settings, str):
             job_settings_model = JobSettings.model_validate_json(job_settings)
         else:
@@ -164,12 +136,8 @@ class FIBEtl(GenericEtl[JobSettings]):
         )
 
         # create stimulus presentation instance
-        experiment_duration = (
-            opto_base + opto_duration + (opto_interval * trial_num)
-        )
-        end_datetime = session_start_time + timedelta(
-            seconds=experiment_duration
-        )
+        experiment_duration = opto_base + opto_duration + (opto_interval * trial_num)
+        end_datetime = session_start_time + timedelta(seconds=experiment_duration)
         stimulus_epochs = StimulusEpoch(
             stimulus_name=stimulus_name,
             stimulus_modalities=[StimulusModality.OPTOGENETICS],
@@ -238,7 +206,12 @@ class FIBEtl(GenericEtl[JobSettings]):
         """Run the etl job and return a JobResponse."""
         extracted = self._extract()
         transformed = self._transform(extracted_source=extracted)
-        job_response = self._load(
-            transformed, self.job_settings.output_directory
-        )
+        job_response = self._load(transformed, self.job_settings.output_directory)
         return job_response
+
+
+if __name__ == "__main__":
+    sys_args = sys.argv[1:]
+    main_job_settings = JobSettings.from_args(sys_args)
+    etl = FIBEtl(job_settings=main_job_settings)
+    etl.run_job()

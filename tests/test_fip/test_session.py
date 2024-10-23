@@ -32,7 +32,7 @@ class TestSchemaWriter(unittest.TestCase):
         with open(EXAMPLE_MD_PATH, "r") as f:
             raw_md_contents = f.read()
         with open(EXPECTED_SESSION, "r") as f:
-            expected_session_contents = Session(**json.load(f))
+            expected_session_contents = json.load(f)
 
         cls.example_job_settings = JobSettings(
             string_to_parse=raw_md_contents,
@@ -80,8 +80,12 @@ class TestSchemaWriter(unittest.TestCase):
             mouse_platform_name="Disc",
             active_mouse_platform=False,
         )
-
-        cls.expected_session = expected_session_contents
+        expected_session_contents["schema_version"] = Session.model_fields[
+            "schema_version"
+        ].default
+        cls.expected_session = Session.model_validate_json(
+            json.dumps(expected_session_contents)
+        )
 
     def test_constructor_from_string(self) -> None:
         """Tests that the settings can be constructed from a json string"""

@@ -1,6 +1,7 @@
 """Tests for Sync rig ETL."""
 
 import os
+import json
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -8,7 +9,7 @@ from unittest.mock import MagicMock, patch
 from aind_metadata_mapper.dynamic_routing.sync_rig import (  # type: ignore
     SyncRigEtl,
 )
-from tests.test_dynamic_routing import test_utils as test_utils
+from aind_data_schema.core.rig import Rig
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
@@ -16,6 +17,7 @@ RESOURCES_DIR = (
     / "resources"
     / "dynamic_routing"
 )
+SYNC_PATH = Path(RESOURCES_DIR / "sync_rig.json")
 
 
 class TestSyncRigEtl(unittest.TestCase):
@@ -51,13 +53,14 @@ class TestSyncRigEtl(unittest.TestCase):
 
     def setUp(self):
         """Sets up test resources."""
-        (
-            self.input_source,
-            self.output_dir,
-            self.expected,
-        ) = test_utils.setup_neuropixels_etl_resources(
-            RESOURCES_DIR / "sync_rig.json"
-        )
+        self.input_source = RESOURCES_DIR / "base_rig.json"
+        self.output_dir = Path("abc")
+        with open(SYNC_PATH, "r") as f:
+            mvr_contents = json.load(f)
+        mvr_contents["schema_version"] = Rig.model_fields[
+            "schema_version"
+        ].default
+        self.expected = Rig(**mvr_contents)
 
 
 if __name__ == "__main__":

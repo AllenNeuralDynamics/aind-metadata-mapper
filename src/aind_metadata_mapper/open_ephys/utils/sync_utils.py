@@ -1,8 +1,8 @@
 """ Functions for working with sync files. """
 
 import datetime
-from typing import Optional, Sequence, Union
 import logging
+from typing import Optional, Sequence, Union
 
 import h5py
 import numpy as np
@@ -306,9 +306,7 @@ def get_clipped_stim_timestamps(sync, pkl_path):
         # Some versions of camstim caused a spike when the DAQ is first
         # initialized. Remove it.
         if rising[1] - rising[0] > 0.2:
-            logger.debug(
-                "Initial DAQ spike detected from stimulus, " "removing it"
-            )
+            logger.debug("Initial DAQ spike detected from stimulus, " "removing it")
             timestamps = timestamps[1:]
 
         delta = len(timestamps) - stim_data_length
@@ -407,9 +405,7 @@ def get_edges(
             continue
 
     if not permissive:
-        raise KeyError(
-            f"none of {keys} were found in this dataset's line labels"
-        )
+        raise KeyError(f"none of {keys} were found in this dataset's line labels")
 
 
 def get_bit_changes(sync_file, bit):
@@ -605,9 +601,7 @@ def estimate_frame_duration(pd_times, cycle=60):
     return trimmed_stats(np.diff(pd_times))[0] / cycle
 
 
-def allocate_by_vsync(
-    vs_diff, index, starts, ends, frame_duration, irregularity, cycle
-):
+def allocate_by_vsync(vs_diff, index, starts, ends, frame_duration, irregularity, cycle):
     """
     Allocates frame times based on the vsync signal.
 
@@ -635,7 +629,7 @@ def allocate_by_vsync(
     ends : np.ndarray
         End times of the frames.
     """
-    current_vs_diff = vs_diff[index * cycle: (index + 1) * cycle]
+    current_vs_diff = vs_diff[index * cycle : (index + 1) * cycle]
     sign = np.sign(irregularity)
 
     if sign > 0:
@@ -644,14 +638,12 @@ def allocate_by_vsync(
         vs_ind = np.argmin(current_vs_diff)
 
     ends[vs_ind:] += sign * frame_duration
-    starts[vs_ind + 1:] += sign * frame_duration
+    starts[vs_ind + 1 :] += sign * frame_duration
 
     return starts, ends
 
 
-def trim_border_pulses(
-    pd_times, vs_times, frame_interval=1 / 60, num_frames=5
-):
+def trim_border_pulses(pd_times, vs_times, frame_interval=1 / 60, num_frames=5):
     """
     Trims pulses near borders of the photodiode signal.
 
@@ -749,9 +741,9 @@ def trim_discontiguous_vsyncs(vs_times, photodiode_cycle=60):
         if largest_chunk == 0:
             return vs_times[: np.min(breaks + 1)]
         elif largest_chunk == len(breaks):
-            return vs_times[np.max(breaks + 1):]
+            return vs_times[np.max(breaks + 1) :]
         else:
-            return vs_times[breaks[largest_chunk - 1]: breaks[largest_chunk]]
+            return vs_times[breaks[largest_chunk - 1] : breaks[largest_chunk]]
     else:
         return vs_times
 
@@ -819,9 +811,7 @@ def remove_zero_frames(frame_times):
         """
 
         try:
-            return (
-                big_deltas[np.max(np.where((big_deltas < value))[0])] - value
-            )
+            return big_deltas[np.max(np.where((big_deltas < value))[0])] - value
         except ValueError:
             return None
 
@@ -835,9 +825,7 @@ def remove_zero_frames(frame_times):
                 ft[d + paired_deltas[idx]] = np.median(deltas)
                 ft[d] = np.median(deltas)
 
-    t = np.concatenate(
-        ([np.min(frame_times)], np.cumsum(ft) + np.min(frame_times))
-    )
+    t = np.concatenate(([np.min(frame_times)], np.cumsum(ft) + np.min(frame_times)))
 
     return t
 
@@ -883,14 +871,11 @@ def compute_frame_times(
         zip(photodiode_times[:-1], photodiode_times[1:])
     ):
         interval_duration = end_time - start_time
-        irregularity = (
-            int(np.around((interval_duration) / frame_duration)) - cycle
-        )
+        irregularity = int(np.around((interval_duration) / frame_duration)) - cycle
 
         local_frame_duration = interval_duration / (cycle + irregularity)
         durations = (
-            np.zeros(cycle + (start_index == num_intervals - 1))
-            + local_frame_duration
+            np.zeros(cycle + (start_index == num_intervals - 1)) + local_frame_duration
         )
 
         current_ends = np.cumsum(durations) + start_time
@@ -908,9 +893,7 @@ def compute_frame_times(
             irregularity += -1 * np.sign(irregularity)
 
         early_frame = start_index * cycle
-        late_frame = (start_index + 1) * cycle + (
-            start_index == num_intervals - 1
-        )
+        late_frame = (start_index + 1) * cycle + (start_index == num_intervals - 1)
 
         remaining = starts[early_frame:late_frame].size
         starts[early_frame:late_frame] = current_starts[:remaining]
@@ -919,9 +902,7 @@ def compute_frame_times(
     return indices, starts, ends
 
 
-def separate_vsyncs_and_photodiode_times(
-    vs_times, pd_times, photodiode_cycle=60
-):
+def separate_vsyncs_and_photodiode_times(vs_times, pd_times, photodiode_cycle=60):
     """
     Separates the vsyncs and photodiode times.
 
@@ -958,8 +939,7 @@ def separate_vsyncs_and_photodiode_times(
             * (pd_times <= break_times[indx + 1] + shift)
         )[0]
         vs_in_range = np.where(
-            (vs_times > break_times[indx])
-            * (vs_times <= break_times[indx + 1])
+            (vs_times > break_times[indx]) * (vs_times <= break_times[indx + 1])
         )[0]
 
         vs_times_out.append(vs_times[vs_in_range])
@@ -1044,7 +1024,7 @@ def fix_unexpected_edges(pd_times, ndevs=10, cycle=60, max_frame_offset=4):
 
     output_edges = []
     for low, high in zip(bad_blocks[:-1], bad_blocks[1:]):
-        current_bad_edge_indices = bad_edges[low: high - 1]
+        current_bad_edge_indices = bad_edges[low : high - 1]
         current_bad_edges = pd_times[current_bad_edge_indices]
         low_bound = pd_times[current_bad_edge_indices[0]]
         high_bound = pd_times[current_bad_edge_indices[-1] + 1]
@@ -1052,9 +1032,7 @@ def fix_unexpected_edges(pd_times, ndevs=10, cycle=60, max_frame_offset=4):
         edges_missing = int(np.around((high_bound - low_bound) / diff_mean))
         expected = np.linspace(low_bound, high_bound, edges_missing + 1)
 
-        distances = distance.cdist(
-            current_bad_edges[:, None], expected[:, None]
-        )
+        distances = distance.cdist(current_bad_edges[:, None], expected[:, None])
         distances = np.around(distances / frame_interval).astype(int)
 
         min_offsets = np.amin(distances, axis=0)
@@ -1063,12 +1041,8 @@ def fix_unexpected_edges(pd_times, ndevs=10, cycle=60, max_frame_offset=4):
             [
                 output_edges,
                 expected[min_offsets > max_frame_offset],
-                current_bad_edges[
-                    min_offset_indices[min_offsets <= max_frame_offset]
-                ],
+                current_bad_edges[min_offset_indices[min_offsets <= max_frame_offset]],
             ]
         )
 
-    return np.sort(
-        np.concatenate([output_edges, pd_times[expected_duration_mask > 0]])
-    )
+    return np.sort(np.concatenate([output_edges, pd_times[expected_duration_mask > 0]]))

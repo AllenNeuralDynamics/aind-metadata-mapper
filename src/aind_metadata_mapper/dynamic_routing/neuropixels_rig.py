@@ -57,9 +57,7 @@ class NeuropixelsRigEtl(BaseEtl):
         """
         if self.initial_model != extracted_source:
             logger.debug("Rig model changed. Updating modification date.")
-            self.update_modification_date(
-                extracted_source, self.modification_date
-            )
+            self.update_modification_date(extracted_source, self.modification_date)
         else:
             logger.debug("Rig model unchanged. Keeping modification date.")
 
@@ -77,6 +75,6 @@ class NeuropixelsRigEtl(BaseEtl):
             modification_date = date.today()
 
         extracted_source.rig_id = (
-            f"{room_id}_{rig_name}_{modification_date.strftime('%y%m%d')}"
+            f"{room_id}_{rig_name}_{modification_date.strftime('%Y%m%d')}"
         )
         extracted_source.modification_date = modification_date

@@ -1,0 +1,57 @@
+{
+   "user_settings_config_file": null,
+   "job_settings_name": "Bergamo",
+   "input_source": "tests/resources/bergamo",
+   "output_directory": null,
+   "experimenter_full_name": [
+      "John Apple"
+   ],
+   "subject_id": "12345",
+   "imaging_laser_wavelength": 920,
+   "fov_imaging_depth": 200,
+   "fov_targeted_structure": "Primary Motor Cortex",
+   "notes": "test upload",
+   "mouse_platform_name": "Standard Mouse Tube",
+   "active_mouse_platform": false,
+   "session_type": "BCI",
+   "iacuc_protocol": "2109",
+   "rig_id": "442 Bergamo 2p photostim",
+   "behavior_camera_names": [
+      "Side Face Camera",
+      "Bottom Face Camera"
+   ],
+   "ch1_filter_names": [
+      "Green emission filter",
+      "Emission dichroic"
+   ],
+   "ch1_detector_name": "Green PMT",
+   "ch1_daq_name": "PXI",
+   "ch2_filter_names": [
+      "Red emission filter",
+      "Emission dichroic"
+   ],
+   "ch2_detector_name": "Red PMT",
+   "ch2_daq_name": "PXI",
+   "imaging_laser_name": "Chameleon Laser",
+   "photostim_laser_name": "Monaco Laser",
+   "stimulus_device_names": [
+      "speaker",
+      "lickport"
+   ],
+   "photostim_laser_wavelength": 1040,
+   "fov_coordinate_ml": "1.5",
+   "fov_coordinate_ap": 1.5,
+   "fov_reference": "Bregma",
+   "starting_lickport_position": [
+      0.0,
+      -6.0,
+      0.0
+   ],
+   "behavior_task_name": "single neuron BCI conditioning",
+   "hit_rate_trials_0_10": null,
+   "hit_rate_trials_20_40": null,
+   "total_hits": null,
+   "average_hit_rate": null,
+   "trial_num": null,
+   "timezone": "US/Pacific"
+}

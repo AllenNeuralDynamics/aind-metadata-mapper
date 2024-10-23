@@ -1,16 +1,16 @@
-name: Lint and run tests
+name: Run checks in dev
 
 on:
   pull_request:
     branches:
-      - main
+      - dev
 
 jobs:
   ci:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.10', '3.11' ]
+        python-version: [ '3.9', '3.10', '3.11' ]
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}

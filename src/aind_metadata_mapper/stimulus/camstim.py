@@ -4,20 +4,21 @@ File containing Camstim class
 
 import datetime
 import functools
+from pathlib import Path
+from typing import Union
 
 import aind_data_schema
 import aind_data_schema.core.session as session_schema
-import np_session
 import pandas as pd
-from pathlib import Path
-import pickle
+import requests
 
+import aind_metadata_mapper.open_ephys.utils.behavior_utils as behavior
 import aind_metadata_mapper.open_ephys.utils.constants as constants
 import aind_metadata_mapper.open_ephys.utils.naming_utils as names
 import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
 import aind_metadata_mapper.open_ephys.utils.stim_utils as stim
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
-import aind_metadata_mapper.open_ephys.utils.behavior_utils as behavior
+from aind_metadata_mapper.open_ephys.models import JobSettings
 
 
 class Camstim:
@@ -28,9 +29,7 @@ class Camstim:
     def __init__(
         self,
         session_id: str,
-        json_settings: dict,
-        session_fp: Path = None,
-        output_fp: Path = None,
+        job_settings: Union[JobSettings, str],
     ) -> None:
         """
         Determine needed input filepaths from np-exp and lims, get session
@@ -41,38 +40,29 @@ class Camstim:
         settings to specify the different laser states for this experiment.
         Otherwise, the default is used from naming_utils.
         """
-
-        if json_settings.get("opto_conditions_map", None) is None:
-            self.opto_conditions_map = constants.DEFAULT_OPTO_CONDITIONS
+        if isinstance(job_settings, str):
+            self.job_settings = JobSettings.model_validate_json(job_settings)
         else:
-            self.opto_conditions_map = json_settings["opto_conditions_map"]
-        overwrite_tables = json_settings.get("overwrite_tables", False)
+            self.job_settings = job_settings
 
-        self.json_settings = json_settings
-        try:
-            session_inst = np_session.Session(session_id)
-            self.mtrain = session_inst.mtrain
-            self.npexp_path = session_inst.npexp_path
-            self.folder = session_inst.folder
-            self.pkl_path = self.npexp_path / f"{self.folder}.stim.pkl"
-            self.opto_pkl_path = self.npexp_path / f"{self.folder}.opto.pkl"
-            self.opto_table_path = (
-                self.npexp_path / f"{self.folder}_opto_epochs.csv"
-            )
-            self.stim_table_path = (
-                self.npexp_path / f"{self.folder}_stim_epochs.csv"
-            )
-            self.sync_path = self.npexp_path / f"{self.folder}.sync"
+        if self.job_settings.get("opto_conditions_map", None) is None:
+            self.opto_conditions_map = names.DEFAULT_OPTO_CONDITIONS
+        else:
+            self.opto_conditions_map = self.job_settings["opto_conditions_map"]
 
-            sync_data = sync.load_sync(self.sync_path)
-            self.session_start = sync.get_start_time(sync_data)
-            self.session_end = sync.get_stop_time(sync_data)
-            print(
-                "session start : session end\n",
-                self.session_start,
-                ":",
-                self.session_end,
-            )
+        sessions_root = Path(self.job_settings.get('sessions_root'))
+        self.session_path = self.get_session_path(session_id, sessions_root)
+        self.folder = self.get_folder(session_id, sessions_root)
+
+        self.pkl_path = self.session_path / f"{self.folder}.stim.pkl"
+        self.opto_pkl_path = self.session_path / f"{self.folder}.opto.pkl"
+        self.opto_table_path = (
+            self.session_path / f"{self.folder}_opto_epochs.csv"
+        )
+        self.stim_table_path = (
+            self.session_path / f"{self.folder}_stim_epochs.csv"
+        )
+        self.sync_path = self.session_path / f"{self.folder}.sync"
 
             if not self.stim_table_path.exists() or overwrite_tables:
                 print("building stim table")
@@ -85,48 +75,65 @@ class Camstim:
                 print("building opto table")
                 self.build_optogenetics_table()
 
-            print("getting stim epochs")
-            self.stim_epochs = self.epochs_from_stim_table()
-            if self.opto_table_path.exists():
-                self.stim_epochs.append(self.epoch_from_opto_table())
-        except Exception:
-            print(f"Session fp: {session_fp}")
-            print(f"Session id: {session_id}")
-            self.pkl_path = next(session_fp.glob(f'{session_id}*.pkl'))
-            if output_fp:
-                output_fp = Path(output_fp)
-                self.stim_table_path = output_fp / f'{session_id}_stim_epochs.csv'
-            else:
-                self.stim_table_path = (
-                session_fp / f'{session_id}_stim_epochs.csv'
-            )
-            self.sync_path = next(session_fp.glob(f'{session_id}*.h5'))
-            sync_data = sync.load_sync(self.sync_path)
+        self.mouse_id = self.folder.split("_")[1]
+        self.session_uuid = self.get_session_uuid()
+        self.mtrain_regimen = self.get_mtrain()
+
+        if (
+            not self.stim_table_path.exists()
+            or self.job_settings['overwrite_tables']
+        ):
+            print("building stim table")
+            self.build_stimulus_table()
+        if (
+            self.opto_pkl_path.exists()
+            and not self.opto_table_path.exists()
+            or self.job_settings['overwrite_tables']
+        ):
+            print("building opto table")
+            self.build_optogenetics_table()
 
             self.session_start = sync.get_start_time(sync_data)
             self.session_end = sync.get_stop_time(sync_data)
-            with open(self.pkl_path, 'rb') as f:
-                pkl_data = pickle.load(f, encoding="latin1")
-            if "behavior" in pkl_data['items'].keys():
+
+            pkl_data = pkl.load_pkl(self.pkl_path)
+            if pkl_data["items"].get("behavior", None):
                 self.build_behavior_table()
             else:
                 self.build_stimulus_table()
-            
 
             print("getting stim epochs")
             self.stim_epochs = self.epochs_from_stim_table()
 
-
-    def build_behavior_table(
-            self
-    ):
+    def build_behavior_table(self):
         stim_file = self.pkl_path
         sync_file = sync.load_sync(self.sync_path)
         timestamps = sync.get_ophys_stimulus_timestamps(sync_file, stim_file)
         behavior_table = behavior.from_stimulus_file(stim_file, timestamps)
         behavior_table[0].to_csv(self.stim_table_path, index=False)
 
+    def get_folder(self, session_id, npexp_root) -> str:
+        """returns the directory name of the session on the np-exp directory"""
+        for subfolder in npexp_root.iterdir():
+            if subfolder.name.split("_")[0] == session_id:
+                return subfolder.name
+        else:
+            raise Exception("Session folder not found in np-exp")
 
+    def get_session_path(self, session_id, npexp_root) -> Path:
+        """returns the path to the session on allen's np-exp directory"""
+        return npexp_root / self.get_folder(session_id, npexp_root)
+
+    def get_session_uuid(self) -> str:
+        """returns session uuid from pickle file"""
+        return pkl.load_pkl(self.pkl_path)["session_uuid"]
+
+    def get_mtrain(self) -> dict:
+        """Returns dictionary containing 'id', 'name', 'stages', 'states'"""
+        server = self.job_settings.mtrain_server
+        req = f"{server}/behavior_session/{self.session_uuid}/details"
+        mtrain_response = requests.get(req).json()
+        return mtrain_response["result"]["regimen"]
 
     def build_stimulus_table(
         self,
@@ -178,8 +185,10 @@ class Camstim:
             duration_threshold=minimum_spontaneous_activity_duration,
         )
 
+        stimuli = pkl.get_stimuli(stim_file)
+        stimuli = stim.extract_blocks_from_stim(stimuli)
         stim_table_sweeps = stim.create_stim_table(
-            stim_file, pkl.get_stimuli(stim_file), stimulus_tabler, spon_tabler
+            stim_file, stimuli, stimulus_tabler, spon_tabler
         )
 
         stim_table_seconds = stim.convert_frames_to_seconds(
@@ -188,12 +197,8 @@ class Camstim:
 
         stim_table_seconds = names.collapse_columns(stim_table_seconds)
         stim_table_seconds = names.drop_empty_columns(stim_table_seconds)
-        stim_table_seconds = names.standardize_movie_numbers(
-            stim_table_seconds
-        )
-        stim_table_seconds = names.add_number_to_shuffled_movie(
-            stim_table_seconds
-        )
+        stim_table_seconds = names.standardize_movie_numbers(stim_table_seconds)
+        stim_table_seconds = names.add_number_to_shuffled_movie(stim_table_seconds)
         stim_table_seconds = names.map_stimulus_names(
             stim_table_seconds, stimulus_name_map
         )
@@ -241,9 +246,7 @@ class Camstim:
                 "level": levels,
             }
         )
-        optotagging_table = optotagging_table.sort_values(
-            by="start_time", axis=0
-        )
+        optotagging_table = optotagging_table.sort_values(by="start_time", axis=0)
 
         stop_times = []
         names = []
@@ -274,9 +277,9 @@ class Camstim:
         stim = aind_data_schema.core.session.StimulusModality
 
         script_obj = aind_data_schema.components.devices.Software(
-            name=self.mtrain["regimen"]["name"],
+            name=self.mtrain_regimen["name"],
             version="1.0",
-            url=self.mtrain["regimen"]["script"],
+            url=self.mtrain_regimen,
         )
 
         opto_table = pd.read_csv(self.opto_table_path)
@@ -321,7 +324,6 @@ class Camstim:
         stim_name, stim_type, or frame) are listed as parameters, and the set
         of values for that column are listed as parameter values.
         """
-        print("STIM_TABLE", stim_table)
         epochs = []
 
         initial_epoch = [None, 0.0, 0.0, {}, set()]
@@ -331,20 +333,21 @@ class Camstim:
             # if the stim name changes, summarize current epoch's parameters
             # and start a new epoch
             if current_idx == 0:
-                 current_epoch[0] = row["stim_name"]
-            if row["stim_name"] != current_epoch[0] or current_idx == stim_table.shape[0] -1:
+                current_epoch[0] = row["stim_name"]
+            if row["stim_name"] != current_epoch[0]:
                 for column in stim_table:
                     if column not in (
                         "start_time",
                         "stop_time",
                         "stim_name",
                         "stim_type",
+                        "duration",
+                        "start_frame",
+                        "end_frame",
                         "frame",
                     ):
                         param_set = set(
-                            stim_table[column][
-                                epoch_start_idx:current_idx
-                            ].dropna()
+                            stim_table[column][epoch_start_idx:current_idx].dropna()
                         )
                         current_epoch[3][column] = param_set
 
@@ -359,24 +362,22 @@ class Camstim:
                     {},
                     set(),
                 ]
-
             # if stim name hasn't changed, we are in the same epoch, keep
             # pushing the stop time
             else:
                 current_epoch[2] = row["stop_time"]
+
             # if this row is a movie or image set, record it's stim name in
             # the epoch's templates entry
-            stim_type = row.get("stim_type", "")
-            if pd.isnull(stim_type):
-                stim_type = ""
+            stim_name = row.get("stim_name", "")
+            if pd.isnull(stim_name):
+                stim_name = ""
 
-            if "image" in stim_type.lower() or "movie" in stim_type.lower():
+            if "image" in stim_name.lower() or "movie" in stim_name.lower():
                 current_epoch[4].add(row["stim_name"])
 
-            if current_idx == len(row["stim_name"]) - 1 and epochs == initial_epoch:
-                epochs.append(current_epoch)
-
         # slice off dummy epoch from beginning
+        # if there is one
         if len(epochs) > 0 and epochs[0][0] is None:
             return epochs[1:]
         else:
@@ -398,11 +399,12 @@ class Camstim:
         )
 
         script_obj = aind_data_schema.components.devices.Software(
-            name="test",
+            name=self.mtrain_regimen["name"],
             version="1.0",
-            url='test',
+            url=self.mtrain_regimen["script"],
         )
 
+        print("STIM PATH", self.stim_table_path)
         schema_epochs = []
         for (
             epoch_name,

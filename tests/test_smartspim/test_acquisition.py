@@ -12,8 +12,7 @@ from aind_metadata_mapper.smartspim.acquisition import (
     JobSettings,
     SmartspimETL,
 )
-
-from ..resources.smartspim.example_metadata import (
+from tests.test_smartspim.example_metadata import (
     example_filter_mapping,
     example_metadata_info,
     example_processing_manifest,
@@ -28,8 +27,8 @@ class TestSmartspimETL(unittest.TestCase):
         """Setting up temporary folder directory"""
         self.example_job_settings_success = JobSettings(
             subject_id="000000",
-            raw_dataset_path="/SmartSPIM_000000_2024-10-10_10-10-10",
-            output_directory="/output_folder",
+            input_source="SmartSPIM_000000_2024-10-10_10-10-10",
+            output_directory="output_folder",
             asi_filename="derivatives/ASI_logging.txt",
             mdata_filename_json="derivatives/metadata.json",
             processing_manifest_path="derivatives/processing_manifest.json",
@@ -40,8 +39,8 @@ class TestSmartspimETL(unittest.TestCase):
 
         self.example_job_settings_fail_mouseid = JobSettings(
             subject_id="00000",
-            raw_dataset_path="/SmartSPIM_00000_2024-10-10_10-10-10",
-            output_directory="/output_folder",
+            input_source="SmartSPIM_00000_2024-10-10_10-10-10",
+            output_directory="output_folder",
             asi_filename="derivatives/ASI_logging.txt",
             mdata_filename_json="derivatives/metadata.json",
             processing_manifest_path="derivatives/processing_manifest.json",
