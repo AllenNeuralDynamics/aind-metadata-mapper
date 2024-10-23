@@ -1031,13 +1031,13 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Tests that users can set a session config file when requesting
         GatherMetadataJob"""
 
+        bergamo_settings = BergamoSessionJobSettings(
+            user_settings_config_file=EXAMPLE_BERGAMO_CONFIGS
+        )
         test_configs = {
             "directory_to_write_to": RESOURCES_DIR,
             "session_settings": {
-                "job_settings": {
-                    "job_settings_name": "Bergamo",
-                    "user_settings_config_file": EXAMPLE_BERGAMO_CONFIGS,
-                }
+                "job_settings": bergamo_settings.model_dump(),
             },
         }
         job_settings = JobSettings.model_validate_json(

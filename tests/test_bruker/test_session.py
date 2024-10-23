@@ -16,7 +16,7 @@ from aind_data_schema.components.devices import (
     MagneticStrength,
     ScannerLocation,
 )
-
+from aind_data_schema.core.session import Session
 from aind_metadata_mapper.bruker.session import JobSettings, MRIEtl
 
 RESOURCES_DIR = (
@@ -73,6 +73,9 @@ class TestMRIWriter(unittest.TestCase):
         with open(EXPECTED_SESSION, "r") as f:
             contents = json.load(f)
 
+        contents["schema_version"] = Session.model_fields[
+            "schema_version"
+        ].default
         cls.expected_session = contents
 
         example_job_settings = JobSettings(
