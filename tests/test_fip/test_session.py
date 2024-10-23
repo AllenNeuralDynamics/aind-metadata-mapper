@@ -80,7 +80,9 @@ class TestSchemaWriter(unittest.TestCase):
             mouse_platform_name="Disc",
             active_mouse_platform=False,
         )
-
+        expected_session_contents["schema_version"] = Session.model_fields[
+            "schema_version"
+        ].default
         cls.expected_session = Session.model_validate_json(
             json.dumps(expected_session_contents)
         )
