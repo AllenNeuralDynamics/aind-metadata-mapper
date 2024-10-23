@@ -7,6 +7,7 @@ import sys
 import unittest
 from pathlib import Path
 
+from aind_data_schema.core.session import Session
 from aind_metadata_mapper.bergamo.models import JobSettings
 from aind_metadata_mapper.bergamo.session import BergamoEtl
 
@@ -28,6 +29,10 @@ class IntegrationTestBergamo(unittest.TestCase):
         """Set up the class."""
         with open(EXPECTED_OUTPUT_FILE_PATH, "r") as f:
             expected_output_json = json.load(f)
+
+        expected_output_json["schema_version"] = Session.model_fields[
+            "schema_version"
+        ].default
         cls.expected_output = expected_output_json
 
     def test_run_job(self):
