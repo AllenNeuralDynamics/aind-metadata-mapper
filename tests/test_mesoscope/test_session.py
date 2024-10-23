@@ -37,7 +37,11 @@ class TestMesoscope(unittest.TestCase):
         with open(EXAMPLE_EXTRACT, "r") as f:
             cls.example_extract = json.load(f)
         with open(EXAMPLE_SESSION, "r") as f:
-            cls.example_session = json.load(f)
+            expected_session = json.load(f)
+        expected_session["schema_version"] = Session.model_fields[
+            "schema_version"
+        ].default
+        cls.example_session = expected_session
         cls.example_scanimage_meta = {
             "lines_per_frame": 512,
             "pixels_per_line": 512,
@@ -177,15 +181,15 @@ class TestMesoscope(unittest.TestCase):
 
         # mock scanimage metadata
         mock_meta = [{}]
-        mock_meta[0][
-            "SI.hRoiManager.linesPerFrame"
-        ] = self.example_scanimage_meta["lines_per_frame"]
-        mock_meta[0][
-            "SI.hRoiManager.pixelsPerLine"
-        ] = self.example_scanimage_meta["pixels_per_line"]
-        mock_meta[0][
-            "SI.hRoiManager.scanZoomFactor"
-        ] = self.example_scanimage_meta["fov_scale_factor"]
+        mock_meta[0]["SI.hRoiManager.linesPerFrame"] = (
+            self.example_scanimage_meta["lines_per_frame"]
+        )
+        mock_meta[0]["SI.hRoiManager.pixelsPerLine"] = (
+            self.example_scanimage_meta["pixels_per_line"]
+        )
+        mock_meta[0]["SI.hRoiManager.scanZoomFactor"] = (
+            self.example_scanimage_meta["fov_scale_factor"]
+        )
         mock_scanimage.return_value = mock_meta
 
         extract = etl._extract()
