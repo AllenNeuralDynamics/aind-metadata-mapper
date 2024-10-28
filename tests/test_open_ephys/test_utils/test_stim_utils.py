@@ -132,6 +132,28 @@ class TestStimUtils(unittest.TestCase):
         result_df = stim.enforce_df_column_order(empty_df, column_order)
         pd.testing.assert_frame_equal(result_df, empty_df)
 
+    def test_get_stimulus_image_name(self):
+        """
+        Test the extraction of image names from the stimulus dictionary.
+        """
+        # Sample stimulus dictionary
+        stimulus = {
+            "sweep_order": [0, 1, 2],
+            "image_path_list": [
+                "somepath\\passive\\image1.jpg",
+                "somepath\\passive\\image2.jpg",
+                "somepath\\passive\\image3.jpg"
+            ]
+        }
+
+        # Expected image names
+        expected_image_names = ["image1.jpg", "image2.jpg", "image3.jpg"]
+
+        # Iterate over each index and assert it is expected image name
+        for index in range(len(expected_image_names)):
+            result = stim.get_stimulus_image_name(stimulus, index)
+            self.assertEqual(result, expected_image_names[index])
+
     def test_extract_blocks_from_stim(self):
         """
         Creating a sample pkl dictionary with a "stimuli" block key
