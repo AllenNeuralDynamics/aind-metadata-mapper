@@ -55,9 +55,7 @@ class MesoscopeEtl(
         else:
             job_settings_model = job_settings
         if isinstance(job_settings_model.behavior_source, str):
-            job_settings_model.behavior_source = Path(
-                job_settings_model.behavior_source
-            )
+            job_settings_model.behavior_source = Path(job_settings_model.behavior_source)
         super().__init__(job_settings=job_settings_model)
         Camstim.__init__(
             self,
@@ -66,7 +64,7 @@ class MesoscopeEtl(
                 output_directory=self.job_settings.output_directory,
                 session_id=self.job_settings.session_id,
                 subject_id=self.job_settings.subject_id,
-            )
+            ),
         )
 
     @staticmethod
@@ -142,7 +140,7 @@ class MesoscopeEtl(
             raise ValueError("No platform json file found in directory")
         with open(input_source, "r") as f:
             session_metadata["platform"] = json.load(f)
-        
+
         return session_metadata
 
     def _extract_time_series_metadata(self) -> dict:
