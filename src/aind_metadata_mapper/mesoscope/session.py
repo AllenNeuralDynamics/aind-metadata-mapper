@@ -21,7 +21,7 @@ from comb.data_files.behavior_stimulus_file import BehaviorStimulusFile
 import aind_metadata_mapper
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.mesoscope.models import JobSettings
-from aind_metadata_mapper.stimulus.camstim import Camstim
+from aind_metadata_mapper.stimulus.camstim import Camstim, CamstimSettings
 
 
 class MesoscopeEtl(
@@ -61,10 +61,12 @@ class MesoscopeEtl(
         super().__init__(job_settings=job_settings_model)
         Camstim.__init__(
             self,
-            job_settings.session_id,
-            {},
-            input_directory=job_settings_model.input_source,
-            output_directory=job_settings_model.optional_output,
+            CamstimSettings(
+                input_source=self.job_settings.input_source,
+                output_directory=self.job_settings.output_directory,
+                session_id=self.job_settings.session_id,
+                subject_id=self.job_settings.subject_id,
+            )
         )
 
     @staticmethod
@@ -270,7 +272,6 @@ class MesoscopeEtl(
             stimulus_epochs=self.stim_epochs,
             mouse_platform_name=self.job_settings.mouse_platform_name,
             active_mouse_platform=True,
-            notes=notes,
         )
 
     def run_job(self) -> None:
