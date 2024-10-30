@@ -263,15 +263,15 @@ class Camstim:
                         )
                         current_epoch[3][column] = param_set
 
-                    epochs.append(current_epoch)
-                    epoch_start_idx = current_idx
-                    current_epoch = [
-                        row["stim_name"],
-                        row["start_time"],
-                        row["stop_time"],
-                        {},
-                        set(),
-                    ]
+                epochs.append(current_epoch)
+                epoch_start_idx = current_idx
+                current_epoch = [
+                    row["stim_name"],
+                    row["start_time"],
+                    row["stop_time"],
+                    {},
+                    set(),
+                ]
             # if stim name hasn't changed, we are in the same epoch, keep
             # pushing the stop time
             else:
