@@ -60,12 +60,12 @@ class Camstim:
         self.session_path = Path(self.camstim_settings.input_source)
         session_id = self.camstim_settings.session_id
         self.pkl_path = next(self.session_path.rglob("*.pkl"))
-        self.stim_table_path = self.pkl_path.parent / f"{session_id}_stim_epochs.csv"
+        self.stim_table_path = self.pkl_path.parent / f"{session_id}_stim_table.csv"
         if self.camstim_settings.output_directory:
             self.stim_table_path = (
                 self.camstim_settings.output_directory
                 / f"{session_id}_behavior"
-                / f"{session_id}_stim_epochs.csv"
+                / f"{session_id}_stim_table.csv"
             )
         self.sync_path = next(self.session_path.glob("*.h5"))
         sync_data = sync.load_sync(self.sync_path)
