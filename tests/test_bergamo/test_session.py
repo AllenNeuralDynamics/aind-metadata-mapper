@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from aind_data_schema.core.session import Session
 from aind_metadata_mapper.bergamo.session import BergamoEtl, JobSettings
 
 RESOURCES_DIR = (
@@ -41,16 +42,10 @@ class TestBergamoEtl(unittest.TestCase):
             fov_targeted_structure="Primary Motor Cortex",
             notes="test upload",
         )
+        expected_session_contents["schema_version"] = Session.model_fields[
+            "schema_version"
+        ].default
         cls.expected_session = expected_session_contents
-
-    def test_get_tif_file_locations(self):
-        """Tests _get_tif_file_locations method"""
-        etl = BergamoEtl(job_settings=self.example_job_settings)
-        locations = etl.get_tif_file_locations()
-        expected_paths = {
-            "cropped_neuron50": [RESOURCES_DIR / "cropped_neuron50_00001.tif"]
-        }
-        self.assertEqual(expected_paths, locations)
 
     def test_class_constructor(self):
         """Tests that the class can be constructed from a json string"""
@@ -60,6 +55,15 @@ class TestBergamoEtl(unittest.TestCase):
             job_settings=json_str,
         )
         self.assertEqual(settings1, etl_job1.job_settings)
+
+    def test_get_tif_file_locations(self):
+        """Tests _get_tif_file_locations method"""
+        etl = BergamoEtl(job_settings=self.example_job_settings)
+        locations = etl.get_tif_file_locations()
+        expected_paths = {
+            "cropped_neuron50": [RESOURCES_DIR / "cropped_neuron50_00001.tif"]
+        }
+        self.assertEqual(expected_paths, locations)
 
     def test_flat_dict_to_nested(self):
         """Test util method to convert dictionaries from flat to nested."""

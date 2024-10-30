@@ -1,6 +1,7 @@
 """Tests for the dynamic_routing open open_ephys rig ETL."""
 
 import os
+import json
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -27,9 +28,12 @@ class TestOpenEphysRigEtl(unittest.TestCase):
 
     def load_rig(self, model_path: Path):
         """Convenience function to load a rig model."""
-        return Rig.model_validate_json(
-            (model_path).read_text(),
-        )
+        with open(model_path, "r") as f:
+            expected_rig = json.load(f)
+        expected_rig["schema_version"] = Rig.model_fields[
+            "schema_version"
+        ].default
+        return Rig(**expected_rig)
 
     def test_transform(self):
         """Tests etl transform."""

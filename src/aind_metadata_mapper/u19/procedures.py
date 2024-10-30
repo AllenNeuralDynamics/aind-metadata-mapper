@@ -2,6 +2,7 @@
 
 import json
 import logging
+import sys
 from datetime import datetime
 from typing import Union
 
@@ -15,7 +16,8 @@ from aind_data_schema.core.procedures import (
 )
 from aind_data_schema_models.organizations import Organization
 
-from aind_metadata_mapper.core import GenericEtl, JobResponse
+from aind_metadata_mapper.core import GenericEtl
+from aind_metadata_mapper.core_models import JobResponse
 from aind_metadata_mapper.u19.models import JobSettings
 from aind_metadata_mapper.u19.utils import construct_new_model
 
@@ -35,6 +37,7 @@ def strings_to_dates(strings):
 class U19Etl(GenericEtl[JobSettings]):
     """U19 ETL class."""
 
+    # TODO: Deprecate this constructor. Use GenericEtl constructor instead
     def __init__(self, job_settings: Union[JobSettings, str]):
         """
         Class constructor for Base etl class.
@@ -48,6 +51,13 @@ class U19Etl(GenericEtl[JobSettings]):
             job_settings_model = JobSettings.model_validate_json(job_settings)
         else:
             job_settings_model = job_settings
+        if (
+            job_settings_model.tissue_sheet_path is not None
+            and job_settings_model.input_source is None
+        ):
+            job_settings_model.input_source = (
+                job_settings_model.tissue_sheet_path
+            )
         super().__init__(job_settings=job_settings_model)
 
     def run_job(self) -> JobResponse:
@@ -78,9 +88,9 @@ class U19Etl(GenericEtl[JobSettings]):
             if row is None:
                 logging.warning(f"Could not find row for {subj_id}")
                 return
-            existing_procedure["specimen_procedures"] = self.extract_spec_procedures(
-                subj_id, row
-            )
+            existing_procedure[
+                "specimen_procedures"
+            ] = self.extract_spec_procedures(subj_id, row)
 
             return construct_new_model(
                 existing_procedure,
@@ -146,7 +156,7 @@ class U19Etl(GenericEtl[JobSettings]):
 
         for sheet_name in self.job_settings.tissue_sheet_names:
             df = pd.read_excel(
-                self.job_settings.tissue_sheet_path,
+                self.job_settings.input_source,
                 sheet_name=sheet_name,
                 header=[0, 1, 2],
             )
@@ -382,3 +392,10 @@ class U19Etl(GenericEtl[JobSettings]):
             items.append(easyindex_100_procedure)
 
         return items
+
+
+if __name__ == "__main__":
+    sys_args = sys.argv[1:]
+    main_job_settings = JobSettings.from_args(sys_args)
+    etl = U19Etl(job_settings=main_job_settings)
+    etl.run_job()

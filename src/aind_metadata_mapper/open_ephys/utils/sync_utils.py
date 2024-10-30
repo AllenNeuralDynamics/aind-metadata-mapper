@@ -3,6 +3,7 @@
 import datetime
 import logging
 from typing import Optional, Sequence, Union
+from functools import lru_cache
 
 import h5py
 import numpy as np
@@ -13,6 +14,7 @@ import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
 logger = logging.getLogger(__name__)
 
 
+@lru_cache(maxsize=32)
 def load_sync(path):
     """
     Loads an hdf5 sync dataset.

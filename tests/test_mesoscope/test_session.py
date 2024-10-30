@@ -37,7 +37,11 @@ class TestMesoscope(unittest.TestCase):
         with open(EXAMPLE_EXTRACT, "r") as f:
             cls.example_extract = json.load(f)
         with open(EXAMPLE_SESSION, "r") as f:
-            cls.example_session = json.load(f)
+            expected_session = json.load(f)
+        expected_session["schema_version"] = Session.model_fields[
+            "schema_version"
+        ].default
+        cls.example_session = expected_session
         cls.example_scanimage_meta = {
             "lines_per_frame": 512,
             "pixels_per_line": 512,

@@ -1,47 +1,45 @@
 """
-File containing CamstimEphysSession class
+File containing CamstimEphysSessionEtl class
 """
 
-import argparse
 import datetime
 import json
 import logging
 import re
 from pathlib import Path
+from typing import Union
 
-import np_session
 import npc_ephys
 import npc_mvr
-import npc_sessions
 import numpy as np
 import pandas as pd
 from aind_data_schema.components.coordinates import Coordinates3d
-from aind_data_schema.core.session import (
-    EphysModule,
-    EphysProbeConfig,
-    Session,
-    Stream,
-)
+from aind_data_schema.core.session import ManipulatorModule, Session, Stream
 from aind_data_schema_models.modalities import Modality
 
-import aind_metadata_mapper.open_ephys.utils.constants as constants
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
 import aind_metadata_mapper.stimulus.camstim
+from aind_metadata_mapper.core import GenericEtl
+from aind_metadata_mapper.open_ephys.models import JobSettings
 
 logger = logging.getLogger(__name__)
 
 
-class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
+class CamstimEphysSessionEtl(
+    aind_metadata_mapper.stimulus.camstim.Camstim, GenericEtl
+):
     """
     An Ephys session, designed for OpenScope, employing neuropixel
     probes with visual and optogenetic stimulus from Camstim.
     """
 
     json_settings: dict = None
-    npexp_path: Path
+    session_path: Path
     recording_dir: Path
 
-    def __init__(self, session_id: str, json_settings: dict) -> None:
+    def __init__(
+        self, session_id: str, job_settings: Union[JobSettings, str, dict]
+    ) -> None:
         """
         Determine needed input filepaths from np-exp and lims, get session
         start and end times from sync file, write stim tables and extract
@@ -52,42 +50,42 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
         different laser states for this experiment. Otherwise, the default is
         used from naming_utils.
         """
-        if json_settings.get("opto_conditions_map", None) is None:
-            self.opto_conditions_map = constants.DEFAULT_OPTO_CONDITIONS
+        if isinstance(job_settings, str):
+            job_settings_model = JobSettings.model_validate_json(job_settings)
+        elif isinstance(job_settings, dict):
+            job_settings_model = JobSettings(**job_settings)
         else:
-            self.opto_conditions_map = json_settings["opto_conditions_map"]
-        overwrite_tables = json_settings.get("overwrite_tables", False)
+            job_settings_model = job_settings
+        GenericEtl.__init__(self, job_settings=job_settings_model)
 
-        self.json_settings = json_settings
-        session_inst = np_session.Session(session_id)
-        self.mtrain = session_inst.mtrain
-        self.npexp_path = session_inst.npexp_path
-        self.folder = session_inst.folder
+        sessions_root = Path(self.job_settings.sessions_root)
+        self.folder = self.get_folder(session_id, sessions_root)
+        self.session_path = self.get_session_path(session_id, sessions_root)
         # sometimes data files are deleted on npexp so try files on lims
-        try:
-            self.recording_dir = npc_ephys.get_single_oebin_path(
-                session_inst.lims_path
-            ).parent
-        except:
-            self.recording_dir = npc_ephys.get_single_oebin_path(
-                session_inst.npexp_path
-            ).parent
+        # try:
+        #     self.recording_dir = npc_ephys.get_single_oebin_path(
+        #         session_inst.lims_path
+        #     ).parent
+        # except:
+        self.recording_dir = npc_ephys.get_single_oebin_path(
+            self.session_path
+        ).parent
 
         self.motor_locs_path = (
-            self.npexp_path / f"{self.folder}.motor-locs.csv"
+            self.session_path / f"{self.folder}.motor-locs.csv"
         )
-        self.pkl_path = self.npexp_path / f"{self.folder}.stim.pkl"
-        self.opto_pkl_path = self.npexp_path / f"{self.folder}.opto.pkl"
+        self.pkl_path = self.session_path / f"{self.folder}.stim.pkl"
+        self.opto_pkl_path = self.session_path / f"{self.folder}.opto.pkl"
         self.opto_table_path = (
-            self.npexp_path / f"{self.folder}_opto_epochs.csv"
+            self.session_path / f"{self.folder}_opto_epochs.csv"
         )
         self.stim_table_path = (
-            self.npexp_path / f"{self.folder}_stim_epochs.csv"
+            self.session_path / f"{self.folder}_stim_epochs.csv"
         )
-        self.sync_path = self.npexp_path / f"{self.folder}.sync"
+        self.sync_path = self.session_path / f"{self.folder}.sync"
 
         platform_path = next(
-            self.npexp_path.glob(f"{self.folder}_platform*.json")
+            self.session_path.glob(f"{self.folder}_platform*.json")
         )
         self.platform_json = json.loads(platform_path.read_text())
         self.project_name = self.platform_json["project"]
@@ -100,13 +98,17 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
             f" session end: {self.session_end}"
         )
 
-        if not self.stim_table_path.exists() or overwrite_tables:
+        self.session_uuid = self.get_session_uuid()
+        self.mtrain_regimen = self.get_mtrain()
+
+        if not self.stim_table_path.exists() or (
+            self.job_settings.overwrite_tables
+        ):
             logger.debug("building stim table")
             self.build_stimulus_table()
-        if (
-            self.opto_pkl_path.exists()
-            and not self.opto_table_path.exists()
-            or overwrite_tables
+        if self.opto_pkl_path.exists() and (
+            not self.opto_table_path.exists() or
+            self.job_settings.overwrite_tables
         ):
             logger.debug("building opto table")
             self.build_optogenetics_table()
@@ -118,7 +120,17 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
 
         self.available_probes = self.get_available_probes()
 
-    def generate_session_json(self) -> Session:
+    def run_job(self):
+        """Transforms all metadata for the session into relevant files"""
+        self._extract()
+        self._transform()
+        return self._load(self.session_json, self.session_path)
+
+    def _extract(self):
+        """TODO: refactor a lot of the __init__ code here"""
+        pass
+
+    def _transform(self) -> Session:
         """
         Creates the session schema json
         """
@@ -128,29 +140,18 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
             ],
             session_start_time=self.session_start,
             session_end_time=self.session_end,
-            session_type=self.json_settings.get("session_type", ""),
-            iacuc_protocol=self.json_settings.get("iacuc_protocol", ""),
+            session_type=self.job_settings.session_type,
+            iacuc_protocol=self.job_settings.iacuc_protocol,
             rig_id=self.platform_json["rig_id"],
             subject_id=self.folder.split("_")[1],
             data_streams=self.data_streams(),
             stimulus_epochs=self.stim_epochs,
-            mouse_platform_name=self.json_settings.get(
-                "mouse_platform", "Mouse Platform"
-            ),
-            active_mouse_platform=self.json_settings.get(
-                "active_mouse_platform", False
-            ),
+            mouse_platform_name=self.job_settings.mouse_platform_name,
+            active_mouse_platform=self.job_settings.active_mouse_platform,
             reward_consumed_unit="milliliter",
             notes="",
         )
         return self.session_json
-
-    def write_session_json(self) -> None:
-        """
-        Writes the session json to a session.json file
-        """
-        self.session_json.write_standard_file(self.npexp_path)
-        logger.debug(f"File created at {str(self.npexp_path)}/session.json")
 
     @staticmethod
     def extract_probe_letter(probe_exp, s):
@@ -219,7 +220,7 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
         """
         Return list of schema ephys modules for each available probe.
         """
-        newscale_coords = npc_sessions.get_newscale_coordinates(
+        newscale_coords = npc_ephys.get_newscale_coordinates(
             self.motor_locs_path
         )
 
@@ -230,13 +231,12 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
                 probe_name, newscale_coords
             )
 
-            probe_module = EphysModule(
+            probe_module = ManipulatorModule(
                 assembly_name=probe_name.upper(),
                 arc_angle=0.0,
                 module_angle=0.0,
                 rotation_angle=0.0,
                 primary_targeted_structure="none",
-                ephys_probes=[EphysProbeConfig(name=probe_name.upper())],
                 manipulator_coordinates=manipulator_coordinates,
                 notes=notes,
             )
@@ -295,7 +295,7 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
         Returns schema behavior videos stream for video timing
         """
         video_frame_times = npc_mvr.mvr.get_video_frame_times(
-            self.sync_path, self.npexp_path
+            self.sync_path, self.session_path
         )
 
         stream_first_time = min(
@@ -326,36 +326,12 @@ class CamstimEphysSession(aind_metadata_mapper.stimulus.camstim.Camstim):
         return tuple(data_streams)
 
 
-def parse_args() -> argparse.Namespace:
-    """
-    Parse Arguments
-    """
-    parser = argparse.ArgumentParser(
-        description="Generate a session.json file for an ephys session"
-    )
-    parser.add_argument(
-        "session_id",
-        help=(
-            "session ID (lims or np-exp foldername) or path to session"
-            "folder"
-        ),
-    )
-    parser.add_argument(
-        "json-settings",
-        help=(
-            'json containing at minimum the fields "session_type" and'
-            '"iacuc protocol"'
-        ),
-    )
-    return parser.parse_args()
-
-
 def main() -> None:
     """
     Run Main
     """
-    sessionETL = CamstimEphysSession(**vars(parse_args()))
-    sessionETL.generate_session_json()
+    sessionETL = CamstimEphysSessionEtl(**vars)
+    sessionETL.run_job()
 
 
 if __name__ == "__main__":
