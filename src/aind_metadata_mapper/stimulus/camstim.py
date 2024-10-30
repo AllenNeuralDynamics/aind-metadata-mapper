@@ -172,63 +172,6 @@ class Camstim:
 
         stim_table_final.to_csv(self.stim_table_path, index=False)
 
-    def build_optogenetics_table(self, keys=stim_utils.OPTOGENETIC_STIMULATION_KEYS):
-        """
-        Builds an optogenetics table from the opto pickle file and sync file.
-        Writes the table to a csv file.
-
-        Parameters
-        ----------
-        output_opto_table_path : str
-            Path to write the optogenetics table to.
-        keys : list[str], optional
-            List of laser keys
-
-        returns
-        -------
-        dict
-            Dictionary containing the path to the output opto table
-        """
-        opto_file = pkl.load_pkl(self.opto_pkl_path)
-        sync_file = sync.load_sync(self.sync_path)
-
-        start_times = sync.extract_led_times(sync_file, keys)
-
-        conditions = [str(item) for item in opto_file["opto_conditions"]]
-        levels = opto_file["opto_levels"]
-        assert len(conditions) == len(levels)
-        if len(start_times) > len(conditions):
-            raise ValueError(
-                f"there are {len(start_times) - len(conditions)} extra "
-                f"optotagging sync times!"
-            )
-        optotagging_table = pd.DataFrame(
-            {
-                "start_time": start_times,
-                "condition": conditions,
-                "level": levels,
-            }
-        )
-        optotagging_table = optotagging_table.sort_values(by="start_time", axis=0)
-
-        stop_times = []
-        names = []
-        conditions = []
-        for _, row in optotagging_table.iterrows():
-            condition = self.opto_conditions_map[row["condition"]]
-            stop_times.append(row["start_time"] + condition["duration"])
-            names.append(condition["name"])
-            conditions.append(condition["condition"])
-
-        optotagging_table["stop_time"] = stop_times
-        optotagging_table["stimulus_name"] = names
-        optotagging_table["condition"] = conditions
-        optotagging_table["duration"] = (
-            optotagging_table["stop_time"] - optotagging_table["start_time"]
-        )
-
-        optotagging_table.to_csv(self.opto_table_path, index=False)
-
     def extract_stim_epochs(
         self, stim_table: pd.DataFrame
     ) -> list[list[str, int, int, dict, set]]:
