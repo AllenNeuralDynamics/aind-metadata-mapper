@@ -1,7 +1,7 @@
 """Tests for the dynamic_routing open open_ephys rig ETL."""
 
-import os
 import json
+import os
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch

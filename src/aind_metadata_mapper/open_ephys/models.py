@@ -1,7 +1,8 @@
 """Module defining JobSettings for Mesoscope ETL"""
 
-from typing import Literal, Union
 from pathlib import Path
+from typing import Literal, Union
+
 from aind_metadata_mapper.core_models import BaseJobSettings
 
 DEFAULT_OPTO_CONDITIONS = {

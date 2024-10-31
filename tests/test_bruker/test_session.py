@@ -17,6 +17,7 @@ from aind_data_schema.components.devices import (
     ScannerLocation,
 )
 from aind_data_schema.core.session import Session
+
 from aind_metadata_mapper.bruker.session import JobSettings, MRIEtl
 
 RESOURCES_DIR = (

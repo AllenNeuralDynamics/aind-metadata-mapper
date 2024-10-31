@@ -92,9 +92,9 @@ class SmartSPIMSpecimenIngester(GenericEtl[JobSettings]):
             if row is None:
                 logging.warning(f"Could not find row for {subj_id}")
                 return
-            existing_procedure[
-                "specimen_procedures"
-            ] = self.extract_spec_procedures(subj_id, row)
+            existing_procedure["specimen_procedures"] = (
+                self.extract_spec_procedures(subj_id, row)
+            )
 
             return construct_new_model(
                 existing_procedure,

@@ -49,7 +49,7 @@ class Camstim:
         else:
             self.opto_conditions_map = self.job_settings["opto_conditions_map"]
 
-        sessions_root = Path(self.job_settings.get('sessions_root'))
+        sessions_root = Path(self.job_settings.get("sessions_root"))
         self.session_path = self.get_session_path(session_id, sessions_root)
         self.folder = self.get_folder(session_id, sessions_root)
 
@@ -79,14 +79,14 @@ class Camstim:
 
         if (
             not self.stim_table_path.exists()
-            or self.job_settings['overwrite_tables']
+            or self.job_settings["overwrite_tables"]
         ):
             print("building stim table")
             self.build_stimulus_table()
         if (
             self.opto_pkl_path.exists()
             and not self.opto_table_path.exists()
-            or self.job_settings['overwrite_tables']
+            or self.job_settings["overwrite_tables"]
         ):
             print("building opto table")
             self.build_optogenetics_table()
