@@ -1,10 +1,12 @@
 """Tests for the MVR rig ETL."""
 
 import os
+import json
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from aind_data_schema.core.rig import Rig
 from aind_metadata_mapper.dynamic_routing.mvr_rig import (  # type: ignore
     MvrRigEtl,
 )
@@ -16,6 +18,8 @@ RESOURCES_DIR = (
     / "resources"
     / "dynamic_routing"
 )
+
+MVR_PATH = Path(RESOURCES_DIR / "mvr_rig.json")
 
 
 class TestMvrRigEtl(unittest.TestCase):
@@ -76,13 +80,14 @@ class TestMvrRigEtl(unittest.TestCase):
 
     def setUp(self):
         """Sets up test resources."""
-        (
-            self.input_source,
-            self.output_dir,
-            self.expected,
-        ) = test_utils.setup_neuropixels_etl_resources(
-            RESOURCES_DIR / "mvr_rig.json",
-        )
+        self.input_source = RESOURCES_DIR / "base_rig.json"
+        self.output_dir = Path("abc")
+        with open(MVR_PATH, "r") as f:
+            mvr_contents = json.load(f)
+        mvr_contents["schema_version"] = Rig.model_fields[
+            "schema_version"
+        ].default
+        self.expected = Rig(**mvr_contents)
 
 
 if __name__ == "__main__":

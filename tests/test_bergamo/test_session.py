@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from aind_data_schema.core.session import Session
 from aind_metadata_mapper.bergamo.session import BergamoEtl, JobSettings
 
 RESOURCES_DIR = (
@@ -41,6 +42,9 @@ class TestBergamoEtl(unittest.TestCase):
             fov_targeted_structure="Primary Motor Cortex",
             notes="test upload",
         )
+        expected_session_contents["schema_version"] = Session.model_fields[
+            "schema_version"
+        ].default
         cls.expected_session = expected_session_contents
 
     def test_class_constructor(self):
