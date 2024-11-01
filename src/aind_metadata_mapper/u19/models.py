@@ -24,7 +24,8 @@ class JobSettings(BaseJobSettings):
         ),
     )
     procedures_download_link: str = Field(
-        description="Link to download the relevant procedures " "from metadata service",
+        description="Link to download the relevant procedures "
+        "from metadata service",
     )
     allow_validation_errors: bool = Field(
         False, description="Whether or not to allow validation errors."

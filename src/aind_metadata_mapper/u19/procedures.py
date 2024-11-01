@@ -66,9 +66,13 @@ class U19Etl(GenericEtl[JobSettings]):
         extracted = self._extract(self.job_settings.subject_to_ingest)
         if type(extracted) is JobResponse:
             return extracted
-        transformed = self._transform(extracted, self.job_settings.subject_to_ingest)
+        transformed = self._transform(
+            extracted, self.job_settings.subject_to_ingest
+        )
 
-        job_response = self._load(transformed, self.job_settings.output_directory)
+        job_response = self._load(
+            transformed, self.job_settings.output_directory
+        )
         return job_response
 
     def _extract(self, subj):
@@ -106,16 +110,20 @@ class U19Etl(GenericEtl[JobSettings]):
                 in sheet["SubjInfo"]["Unnamed: 0_level_1"]["Mouse ID"].tolist()
             ):
                 return sheet.loc[
-                    sheet["SubjInfo"]["Unnamed: 0_level_1"]["Mouse ID"] == int(subj_id)
+                    sheet["SubjInfo"]["Unnamed: 0_level_1"]["Mouse ID"]
+                    == int(subj_id)
                 ]
 
     def download_procedure_file(self, subj_id: str):
         """Download the procedure file for a subject."""
         # Get the procedure file from the U19 server
-        request = requests.get(f"{self.job_settings.procedures_download_link}/{subj_id}")
+        request = requests.get(
+            f"{self.job_settings.procedures_download_link}/{subj_id}"
+        )
 
         logging.info(
-            f"Downloaded {subj_id} model with " f"status code: {request.status_code}"
+            f"Downloaded {subj_id} model with "
+            f"status code: {request.status_code}"
         )
 
         if request.status_code in [404, 500, 503, 422]:
@@ -142,10 +150,13 @@ class U19Etl(GenericEtl[JobSettings]):
             logging.warning(f"Validation errors for {subj_id}")
             return item["data"]
 
-        logging.error(f"Unknown error while downloading procedures for {subj_id}")
+        logging.error(
+            f"Unknown error while downloading procedures for {subj_id}"
+        )
         return JobResponse(
             status_code=request.status_code,
-            message="Unknown error while downloading " f"procedures for {subj_id}",
+            message="Unknown error while downloading "
+            f"procedures for {subj_id}",
             data=None,
         )
 
@@ -168,10 +179,14 @@ class U19Etl(GenericEtl[JobSettings]):
         default_source = Organization.LIFECANVAS
 
         subj_id = (
-            str(row["SubjInfo"]["Unnamed: 0_level_1"]["Mouse ID"].iloc[0]).strip().lower()
+            str(row["SubjInfo"]["Unnamed: 0_level_1"]["Mouse ID"].iloc[0])
+            .strip()
+            .lower()
         )
 
-        experimenter = row["SubjInfo"]["Unnamed: 2_level_1"]["Experimenter"].iloc[0]
+        experimenter = row["SubjInfo"]["Unnamed: 2_level_1"][
+            "Experimenter"
+        ].iloc[0]
 
         shield_off_date = row["Fixation"]["SHIELD OFF"]["Date(s)"].iloc[0]
 
@@ -214,9 +229,9 @@ class U19Etl(GenericEtl[JobSettings]):
             name="SHIELD ON", source=default_source, lot_number=shield_on_lot
         )
 
-        passive_delipidation_dates = row["Passive delipidation"]["24 Hr Delipidation "][
-            "Date(s)"
-        ].iloc[0]
+        passive_delipidation_dates = row["Passive delipidation"][
+            "24 Hr Delipidation "
+        ]["Date(s)"].iloc[0]
         if not pd.isna(passive_delipidation_dates):
             (
                 passive_delipidation_start_date,
@@ -232,7 +247,10 @@ class U19Etl(GenericEtl[JobSettings]):
         ].iloc[0]
         passive_delip_source = default_source
         if not pd.isna(passive_delip_notes):
-            if "SBiP" in passive_delip_notes or "dicholoromethane" in passive_delip_notes:
+            if (
+                "SBiP" in passive_delip_notes
+                or "dicholoromethane" in passive_delip_notes
+            ):
                 passive_delip_source = Organization.SIGMA
         else:
             passive_delip_notes = "None"
@@ -243,16 +261,16 @@ class U19Etl(GenericEtl[JobSettings]):
             lot_number=passive_conduction_buffer_lot,
         )
 
-        active_delipidation_dates = row["Active Delipidation"]["Active Delipidation"][
-            "Date(s)"
-        ].iloc[0]
+        active_delipidation_dates = row["Active Delipidation"][
+            "Active Delipidation"
+        ]["Date(s)"].iloc[0]
         if not pd.isna(active_delipidation_dates):
             active_delip_start_date, active_delip_end_date = strings_to_dates(
                 get_dates(active_delipidation_dates)
             )
-        active_conduction_buffer_lot = row["Active Delipidation"]["Conduction Buffer"][
-            "Lot#"
-        ].iloc[0]
+        active_conduction_buffer_lot = row["Active Delipidation"][
+            "Conduction Buffer"
+        ]["Lot#"].iloc[0]
         if pd.isna(active_conduction_buffer_lot):
             active_conduction_buffer_lot = "unknown"
 
@@ -268,7 +286,9 @@ class U19Etl(GenericEtl[JobSettings]):
             lot_number=active_conduction_buffer_lot,
         )
 
-        easyindex_50_date = row["Index matching"]["50% EasyIndex"]["Date(s)"].iloc[0]
+        easyindex_50_date = row["Index matching"]["50% EasyIndex"][
+            "Date(s)"
+        ].iloc[0]
         if not pd.isna(easyindex_50_date):
             easyindex_50_start_date, easyindex_50_end_date = strings_to_dates(
                 get_dates(easyindex_50_date)
@@ -276,7 +296,9 @@ class U19Etl(GenericEtl[JobSettings]):
         easyindex_50_lot = row["Index matching"]["EasyIndex"]["Lot#"].iloc[0]
         if pd.isna(easyindex_50_lot):
             easyindex_50_lot = "unknown"
-        easyindex_100_date = row["Index matching"]["100% EasyIndex"]["Date(s)"].iloc[0]
+        easyindex_100_date = row["Index matching"]["100% EasyIndex"][
+            "Date(s)"
+        ].iloc[0]
         if not pd.isna(easyindex_100_date):
             (
                 easyindex_100_start_date,
@@ -285,7 +307,9 @@ class U19Etl(GenericEtl[JobSettings]):
         easyindex_100_lot = row["Index matching"]["EasyIndex"]["Lot#"].iloc[0]
         if pd.isna(easyindex_100_lot):
             easyindex_100_lot = "unknown"
-        easyindex_notes = row["Index matching"]["Notes"]["Unnamed: 22_level_2"].iloc[0]
+        easyindex_notes = row["Index matching"]["Notes"][
+            "Unnamed: 22_level_2"
+        ].iloc[0]
         if pd.isna(easyindex_notes):
             easyindex_notes = "None"
 
@@ -301,7 +325,9 @@ class U19Etl(GenericEtl[JobSettings]):
             lot_number=easyindex_100_lot,
         )
 
-        overall_notes = row["Index matching"]["Notes"]["Unnamed: 24_level_2"].iloc[0]
+        overall_notes = row["Index matching"]["Notes"][
+            "Unnamed: 24_level_2"
+        ].iloc[0]
         if pd.isna(overall_notes):
             overall_notes = None
 

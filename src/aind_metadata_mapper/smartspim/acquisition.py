@@ -100,7 +100,9 @@ class SmartspimETL(GenericEtl[JobSettings]):
             raise FileNotFoundError(f"File {mdata_path_json} does not exist")
 
         if not processing_manifest_path.exists():
-            raise FileNotFoundError(f"File {processing_manifest_path} does not exist")
+            raise FileNotFoundError(
+                f"File {processing_manifest_path} does not exist"
+            )
 
         # Getting acquisition metadata from the microscope
         metadata_info = read_json_as_dict(mdata_path_json)
@@ -163,7 +165,9 @@ class SmartspimETL(GenericEtl[JobSettings]):
         else:
             raise ValueError("Error while getting mouse date and ID")
 
-        processing_manifest = metadata_dict["processing_manifest"]["prelim_acquisition"]
+        processing_manifest = metadata_dict["processing_manifest"][
+            "prelim_acquisition"
+        ]
         axes = processing_manifest.get("axes")
 
         if axes is None:
@@ -189,7 +193,9 @@ class SmartspimETL(GenericEtl[JobSettings]):
         spl_medium = sample_immersion.get("medium")
 
         # Parsing the mediums the operator gives
-        notes = f"Chamber immersion: {chm_medium} - Sample immersion: {spl_medium}"
+        notes = (
+            f"Chamber immersion: {chm_medium} - Sample immersion: {spl_medium}"
+        )
         notes += f" - Operator notes: {processing_manifest.get('notes')}"
 
         if "cargille" in chm_medium.lower():
@@ -205,7 +211,9 @@ class SmartspimETL(GenericEtl[JobSettings]):
             spl_medium = "other"
 
         acquisition_model = acquisition.Acquisition(
-            experimenter_full_name=processing_manifest.get("experimenter_full_name"),
+            experimenter_full_name=processing_manifest.get(
+                "experimenter_full_name"
+            ),
             specimen_id="",
             subject_id=mouse_id,
             instrument_id=processing_manifest.get("instrument_id"),
@@ -224,7 +232,9 @@ class SmartspimETL(GenericEtl[JobSettings]):
                 medium=spl_medium,
                 refractive_index=sample_immersion.get("refractive_index"),
             ),
-            local_storage_directory=processing_manifest.get("local_storage_directory"),
+            local_storage_directory=processing_manifest.get(
+                "local_storage_directory"
+            ),
             external_storage_directory="",
             # processing_steps=[],
             notes=notes,
@@ -248,7 +258,9 @@ class SmartspimETL(GenericEtl[JobSettings]):
         """
         metadata_dict = self._extract()
         acquisition_model = self._transform(metadata_dict=metadata_dict)
-        job_response = self._load(acquisition_model, self.job_settings.output_directory)
+        job_response = self._load(
+            acquisition_model, self.job_settings.output_directory
+        )
         return job_response
 
 

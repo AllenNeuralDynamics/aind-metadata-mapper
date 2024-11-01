@@ -87,11 +87,13 @@ def add_number_to_shuffled_movie(
         return table
     table = table.copy()
 
-    table[tmp_colname] = table[stim_colname].str.extract(natural_movie_re, expand=True)[
-        "number"
-    ]
+    table[tmp_colname] = table[stim_colname].str.extract(
+        natural_movie_re, expand=True
+    )["number"]
 
-    unique_numbers = [item for item in table[tmp_colname].dropna(inplace=False).unique()]
+    unique_numbers = [
+        item for item in table[tmp_colname].dropna(inplace=False).unique()
+    ]
     if len(unique_numbers) != 1:
         raise ValueError(
             "unable to uniquely determine a movie number for this session. "
@@ -183,9 +185,9 @@ def standardize_movie_numbers(
     warnings.filterwarnings("ignore", category=UserWarning)
 
     movie_rows = table[stim_colname].str.contains(movie_re, na=False)
-    table.loc[movie_rows, stim_colname] = table.loc[movie_rows, stim_colname].str.replace(
-        numeral_re, replace, regex=True
-    )
+    table.loc[movie_rows, stim_colname] = table.loc[
+        movie_rows, stim_colname
+    ].str.replace(numeral_re, replace, regex=True)
 
     return table
 
@@ -209,7 +211,9 @@ def map_stimulus_names(table, name_map=None, stim_colname="stim_name"):
 
     name_map[np.nan] = "spontaneous"
 
-    table[stim_colname] = table[stim_colname].replace(to_replace=name_map, inplace=False)
+    table[stim_colname] = table[stim_colname].replace(
+        to_replace=name_map, inplace=False
+    )
 
     name_map.pop(np.nan)
 
