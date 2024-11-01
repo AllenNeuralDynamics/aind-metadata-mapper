@@ -1,14 +1,14 @@
 """Tests for the dynamic_routing open open_ephys rig ETL."""
 
-import os
 import json
+import os
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from aind_data_schema.core.rig import Rig  # type: ignore
-from aind_metadata_mapper.open_ephys.rig import OpenEphysRigEtl
 
+from aind_metadata_mapper.open_ephys.rig import OpenEphysRigEtl
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__))) / ".." / "resources"

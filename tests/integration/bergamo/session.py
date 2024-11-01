@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 
 from aind_data_schema.core.session import Session
+
 from aind_metadata_mapper.bergamo.models import JobSettings
 from aind_metadata_mapper.bergamo.session import BergamoEtl
 

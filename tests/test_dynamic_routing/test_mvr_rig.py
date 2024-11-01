@@ -1,12 +1,13 @@
 """Tests for the MVR rig ETL."""
 
-import os
 import json
+import os
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from aind_data_schema.core.rig import Rig
+
 from aind_metadata_mapper.dynamic_routing.mvr_rig import (  # type: ignore
     MvrRigEtl,
 )

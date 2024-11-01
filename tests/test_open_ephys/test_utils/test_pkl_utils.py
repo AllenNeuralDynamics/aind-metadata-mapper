@@ -1,6 +1,7 @@
 """ Unit tests for the pkl_utils module. """
 
 import unittest
+
 import numpy as np
 
 from aind_metadata_mapper.open_ephys.utils import pkl_utils as pkl

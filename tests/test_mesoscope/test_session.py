@@ -6,12 +6,14 @@ import unittest
 import zoneinfo
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 from aind_data_schema.core.session import Session
 from PIL import Image
+from pydantic import BaseModel
 
-from aind_metadata_mapper.mesoscope.session import JobSettings, MesoscopeEtl
+from aind_metadata_mapper.mesoscope.models import JobSettings
+from aind_metadata_mapper.mesoscope.session import MesoscopeEtl
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
@@ -19,11 +21,32 @@ RESOURCES_DIR = (
     / "resources"
     / "mesoscope"
 )
+STIMULUS_DIR = (
+    Path(os.path.dirname(os.path.realpath(__file__)))
+    / ".."
+    / "resources"
+    / "stimulus"
+)
 
-EXAMPLE_EXTRACT = RESOURCES_DIR / "example_extract.json"
+EXAMPLE_MOVIE_META = RESOURCES_DIR / "example_movie_meta.json"
 EXAMPLE_SESSION = RESOURCES_DIR / "expected_session.json"
+EXAMPLE_SESSION_META = RESOURCES_DIR / "example_session_meta.json"
 EXAMPLE_PLATFORM = RESOURCES_DIR / "example_platform.json"
+EXAMPLE_TIMESERIES = RESOURCES_DIR / "example_timeseries_meta.json"
+EXAMPLE_SESSION_META = RESOURCES_DIR / "example_session_meta.json"
 EXAMPLE_IMAGE = RESOURCES_DIR / "test.tiff"
+USER_INPUT = RESOURCES_DIR / "user_input.json"
+CAMSTIM_INPUT = STIMULUS_DIR / "camstim_input.json"
+
+
+class MockBehaviorStimulus:
+    def __init__(self):
+        self.session_type = "mesoscope"
+
+    def from_file(self):
+        return iter(
+            [Path("data\\mesoscope\\2021-06-01\\2021-06-01_15-00-00'")]
+        )
 
 
 class TestMesoscope(unittest.TestCase):
@@ -34,10 +57,16 @@ class TestMesoscope(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         """Set up the test suite"""
-        with open(EXAMPLE_EXTRACT, "r") as f:
-            cls.example_extract = json.load(f)
+        with open(EXAMPLE_MOVIE_META, "r") as f:
+            cls.example_movie_meta = json.load(f)
         with open(EXAMPLE_SESSION, "r") as f:
             expected_session = json.load(f)
+        with open(EXAMPLE_PLATFORM, "r") as f:
+            cls.example_platform = json.load(f)
+        with open(EXAMPLE_TIMESERIES, "r") as f:
+            cls.example_timeseries_meta = json.load(f)
+        with open(EXAMPLE_SESSION_META, "r") as f:
+            cls.example_session_meta = json.load(f)
         expected_session["schema_version"] = Session.model_fields[
             "schema_version"
         ].default
@@ -47,68 +76,70 @@ class TestMesoscope(unittest.TestCase):
             "pixels_per_line": 512,
             "fov_scale_factor": 1.0,
         }
-        cls.example_job_settings = JobSettings(
-            input_source=EXAMPLE_PLATFORM,
-            behavior_source=RESOURCES_DIR,
-            output_directory=RESOURCES_DIR,
-            subject_id="12345",
-            session_start_time=datetime(
-                2024, 2, 22, 15, 30, 0, tzinfo=zoneinfo.ZoneInfo("UTC")
-            ),
-            session_end_time=datetime(
-                2024, 2, 22, 17, 30, 0, tzinfo=zoneinfo.ZoneInfo("UTC")
-            ),
-            project="some_project",
-            experimenter_full_name=["John Doe"],
-            magnification="16x",
-            fov_coordinate_ap=1.5,
-            fov_coordinate_ml=1.5,
-            fov_reference="Bregma",
-            iacuc_protocol="12345",
-            mouse_platform_name="disc",
-        )
+        with open(USER_INPUT, "r") as f:
+            cls.user_input = json.load(f)
+        with open(CAMSTIM_INPUT, "r") as f:
+            cls.camstim_input = json.load(f)
 
-    def test_constructor_from_string(self) -> None:
+    @patch("pathlib.Path.is_dir")
+    @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
+    def test_constructor_from_string(
+        self,
+        mock_camstim: MagicMock,
+        mock_is_dir: MagicMock,
+    ) -> None:
         """Tests that the settings can be constructed from a json string"""
-        job_settings_str = self.example_job_settings.model_dump_json()
-        etl0 = MesoscopeEtl(
+        mock_camstim.return_value = None
+        mock_is_dir.return_value = True
+        job_settings = JobSettings(**self.user_input)
+        job_settings_str = job_settings.model_dump_json()
+        etl = MesoscopeEtl(
             job_settings=job_settings_str,
         )
-        etl1 = MesoscopeEtl(
-            job_settings=self.example_job_settings,
-        )
-        self.assertEqual(etl1.job_settings, etl0.job_settings)
+        self.assertEqual(etl.job_settings, JobSettings(**self.user_input))
 
     @patch("pathlib.Path.is_file")
-    def test_read_metadata_value_error(self, mock_is_file: MagicMock) -> None:
+    @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
+    @patch("pathlib.Path.is_dir")
+    @patch("builtins.open", mock_open(read_data="test data"))
+    def test_read_metadata_value_error(
+        self,
+        mock_is_dir: MagicMock,
+        mock_camstim: MagicMock,
+        mock_is_file: MagicMock,
+    ) -> None:
         """Tests that _read_metadata raises a ValueError"""
+        mock_is_dir.return_value = True
+        mock_camstim.return_value = None
         mock_is_file.return_value = False
         etl1 = MesoscopeEtl(
-            job_settings=self.example_job_settings,
+            job_settings=JobSettings(**self.user_input),
         )
         tiff_path = Path("non_existent_file_path")
         with self.assertRaises(ValueError) as e:
             etl1._read_metadata(tiff_path)
-        self.assertEqual(
-            f"{tiff_path.resolve().absolute()} is not a file",
-            e.exception.args[0],
-        )
 
     @patch("pathlib.Path.is_file")
     @patch("builtins.open")
     @patch("tifffile.FileHandle")
     @patch("tifffile.read_scanimage_metadata")
+    @patch("pathlib.Path.is_dir")
+    @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
     def test_read_metadata(
         self,
+        mock_camstim: MagicMock,
+        mock_is_dir: MagicMock,
         mock_read_scan: MagicMock,
         mock_file_handle: MagicMock,
         mock_open: MagicMock,
         mock_is_file: MagicMock,
     ) -> None:
         """Tests that _read_metadata calls readers"""
+        mock_camstim.return_value = None
+        mock_is_dir.return_value = True
         mock_is_file.return_value = True
         etl1 = MesoscopeEtl(
-            job_settings=self.example_job_settings,
+            job_settings=JobSettings(**self.user_input),
         )
         tiff_path = Path("file_path")
         etl1._read_metadata(tiff_path)
@@ -116,91 +147,102 @@ class TestMesoscope(unittest.TestCase):
         mock_file_handle.assert_called()
         mock_read_scan.assert_called()
 
-    def test_extract(self) -> None:
-        """Tests that the raw image info is extracted correctly."""
-        etl = MesoscopeEtl(
-            job_settings=self.example_job_settings,
-        )
-        with open(EXAMPLE_EXTRACT, "r") as f:
-            expected_extract = json.load(f)
-        extract = etl._extract()
-        self.assertEqual(extract, expected_extract)
-
     @patch("pathlib.Path.is_dir")
-    def test_extract_no_behavior_dir(self, mock_is_dir: MagicMock) -> None:
-        """Tests that _extract raises a ValueError"""
-        mock_is_dir.return_value = False
-        etl1 = MesoscopeEtl(
-            job_settings=self.example_job_settings,
-        )
-        with self.assertRaises(ValueError) as e:
-            etl1._extract()
-        self.assertEqual(
-            "Behavior source must be a directory",
-            e.exception.args[0],
-        )
-
-    @patch("pathlib.Path.is_dir")
-    @patch("pathlib.Path.exists")
+    @patch("pathlib.Path.rglob")
     @patch("pathlib.Path.glob")
-    def test_extract_no_input_source(
+    @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
+    @patch(
+        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._extract_platform_metadata"
+    )
+    @patch(
+        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._extract_time_series_metadata"
+    )
+    def test_extract(
         self,
-        mock_path_glob: MagicMock,
-        mock_path_exists: MagicMock,
+        mock_extract_timeseries: MagicMock,
+        mock_platform: MagicMock,
+        mock_camstim: MagicMock,
+        mock_glob: MagicMock,
+        mock_rglob: MagicMock,
+        mock_is_dir: MagicMock,
+    ) -> None:
+        """Tests that the raw image info is extracted correctly."""
+        mock_extract_timeseries.return_value = self.example_movie_meta
+        mock_platform.return_value = self.example_platform
+        mock_camstim.return_value = None
+        mock_glob.return_value = iter([Path("somedir/a")])
+        mock_rglob.return_value = iter([Path("somedir/a")])
+        mock_is_dir.return_value = True
+        etl = MesoscopeEtl(
+            job_settings=JobSettings(**self.user_input),
+        )
+
+        session_meta, movie_meta = etl._extract()
+        self.assertEqual(movie_meta, self.example_movie_meta)
+        self.assertEqual(session_meta, self.example_platform)
+
+    @patch("pathlib.Path.is_dir")
+    @patch(
+        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._extract_platform_metadata"
+    )
+    @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
+    @patch(
+        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._extract_time_series_metadata"
+    )
+    def test_model(
+        self,
+        mock_extract_movie: MagicMock,
+        mock_camstim: MagicMock,
+        mock_extract_platform: MagicMock,
         mock_is_dir: MagicMock,
     ) -> None:
         """Tests that _extract raises a ValueError"""
-        mock_is_dir.return_value = True
-        mock_path_exists.return_value = False
-        mock_path_glob.return_value = iter([Path("somedir/a")])
-        etl1 = MesoscopeEtl(
-            job_settings=self.example_job_settings,
-        )
+        mock_extract_movie.return_value = self.example_movie_meta
+        mock_camstim.return_value = None
+        mock_extract_platform.return_value = self.example_platform
+        mock_is_dir.return_value = False
         with self.assertRaises(ValueError) as e:
-            etl1._extract()
-        self.assertEqual(
-            "No platform json file found in directory",
-            e.exception.args[0],
-        )
+            JobSettings(**self.user_input)
 
     @patch(
         "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._read_metadata"
     )
     @patch("PIL.Image.open")
-    def test_transform(self, mock_open, mock_scanimage) -> None:
+    @patch("pathlib.Path.is_dir")
+    @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
+    @patch(
+        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._get_session_type"
+    )
+    @patch(
+        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._camstim_table_and_epochs"
+    )
+    def test_transform(
+        self,
+        mock_camstim_epochs: MagicMock,
+        mock_session_type: MagicMock,
+        mock_camstim: MagicMock,
+        mock_dir: MagicMock,
+        mock_open: MagicMock,
+        mock_scanimage: MagicMock,
+    ) -> None:
         """Tests that the platform json is extracted and transfromed into a
         session object correctly"""
-
+        mock_camstim_epochs.return_value = []
+        mock_session_type.return_value = "ANTERIOR_MOUSEMOTION"
+        mock_camstim.return_value = None
+        mock_dir.return_value = True
         etl = MesoscopeEtl(
-            job_settings=self.example_job_settings,
+            job_settings=JobSettings(**self.user_input),
         )
         # mock vasculature image
         mock_image = Image.new("RGB", (100, 100))
         mock_image.tag = {306: ("2024:02:12 11:02:22",)}
         mock_open.return_value = mock_image
 
-        # mock scanimage metadata
-        mock_meta = [{}]
-        mock_meta[0]["SI.hRoiManager.linesPerFrame"] = (
-            self.example_scanimage_meta["lines_per_frame"]
+        mock_scanimage.return_value = self.example_scanimage_meta
+        transformed_session = etl._transform(
+            self.example_session_meta, self.example_timeseries_meta
         )
-        mock_meta[0]["SI.hRoiManager.pixelsPerLine"] = (
-            self.example_scanimage_meta["pixels_per_line"]
-        )
-        mock_meta[0]["SI.hRoiManager.scanZoomFactor"] = (
-            self.example_scanimage_meta["fov_scale_factor"]
-        )
-        mock_scanimage.return_value = mock_meta
-
-        extract = etl._extract()
-        transformed_session = etl._transform(extract)
-        for stream in transformed_session.data_streams:
-            stream.stream_start_time = stream.stream_start_time.replace(
-                tzinfo=zoneinfo.ZoneInfo("UTC")
-            )
-            stream.stream_end_time = stream.stream_end_time.replace(
-                tzinfo=zoneinfo.ZoneInfo("UTC")
-            )
         self.assertEqual(
             self.example_session,
             json.loads(transformed_session.model_dump_json()),
@@ -209,19 +251,29 @@ class TestMesoscope(unittest.TestCase):
     @patch("aind_metadata_mapper.mesoscope.session.MesoscopeEtl._extract")
     @patch("aind_metadata_mapper.mesoscope.session.MesoscopeEtl._transform")
     @patch("aind_data_schema.base.AindCoreModel.write_standard_file")
+    @patch("pathlib.Path.is_dir")
+    @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
     def test_run_job(
         self,
+        mock_camstim: MagicMock,
+        mock_is_dir: MagicMock,
         mock_write: MagicMock,
         mock_transform: MagicMock,
         mock_extract: MagicMock,
     ) -> None:
         """Tests the run_job method"""
+        mock_camstim.return_value = None
+        mock_is_dir.return_value = True
         mock_transform.return_value = Session.model_construct()
+        mock_extract.return_value = (
+            self.example_platform,
+            self.example_movie_meta,
+        )
+        self.user_input["output_directory"] = str(RESOURCES_DIR)
         etl = MesoscopeEtl(
-            job_settings=self.example_job_settings,
+            job_settings=JobSettings(**self.user_input),
         )
         etl.run_job()
-        mock_extract.assert_called_once()
         mock_write.assert_called_once_with(output_directory=RESOURCES_DIR)
 
 
