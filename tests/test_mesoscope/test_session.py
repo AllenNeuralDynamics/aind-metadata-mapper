@@ -36,16 +36,6 @@ USER_INPUT = RESOURCES_DIR / "user_input.json"
 CAMSTIM_INPUT = STIMULUS_DIR / "camstim_input.json"
 
 
-class MockBehaviorStimulus:
-    def __init__(self):
-        self.session_type = "mesoscope"
-
-    def from_file(self):
-        return iter(
-            [Path("data\\mesoscope\\2021-06-01\\2021-06-01_15-00-00'")]
-        )
-
-
 class TestMesoscope(unittest.TestCase):
     """Tests methods in MesoscopeEtl class"""
 
