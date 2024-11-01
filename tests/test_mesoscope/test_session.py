@@ -3,14 +3,11 @@
 import json
 import os
 import unittest
-import zoneinfo
-from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
 from aind_data_schema.core.session import Session
 from PIL import Image
-from pydantic import BaseModel
 
 from aind_metadata_mapper.mesoscope.models import JobSettings
 from aind_metadata_mapper.mesoscope.session import MesoscopeEtl
