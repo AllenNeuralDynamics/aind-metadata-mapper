@@ -19,18 +19,32 @@ class JobSettings(BaseJobSettings):
     session_id: str = Field(..., title="ID of the session")
     behavior_source: Path = Field(..., title="Path to the behavior source")
     output_directory: Path = Field(..., title="Path to the output directory")
-    session_start_time: datetime = Field(..., title="Start time of the session")
+    session_start_time: datetime = Field(
+        ..., title="Start time of the session"
+    )
     session_end_time: datetime = Field(..., title="End time of the session")
     subject_id: str = Field(..., title="ID of the subject")
     project: str = Field(..., title="Name of the project")
     iacuc_protocol: str = Field(default="2115", title="IACUC protocol number")
     magnification: str = Field(default="16x", title="Magnification")
-    fov_coordinate_ml: float = Field(default=1.5, title="Coordinate in ML direction")
-    fov_coordinate_ap: float = Field(default=1.5, title="Coordinate in AL direction")
-    fov_reference: str = Field(default="Bregma", title="Reference point for the FOV")
-    experimenter_full_name: List[str] = Field(title="Full name of the experimenter")
-    mouse_platform_name: str = Field(default="disc", title="Name of the mouse platform")
-    optional_output: Optional[Path] = Field(default=None, title="Optional output path")
+    fov_coordinate_ml: float = Field(
+        default=1.5, title="Coordinate in ML direction"
+    )
+    fov_coordinate_ap: float = Field(
+        default=1.5, title="Coordinate in AL direction"
+    )
+    fov_reference: str = Field(
+        default="Bregma", title="Reference point for the FOV"
+    )
+    experimenter_full_name: List[str] = Field(
+        title="Full name of the experimenter"
+    )
+    mouse_platform_name: str = Field(
+        default="disc", title="Name of the mouse platform"
+    )
+    optional_output: Optional[Path] = Field(
+        default=None, title="Optional output path"
+    )
 
     @field_validator("input_source", "behavior_source", "output_directory")
     @classmethod

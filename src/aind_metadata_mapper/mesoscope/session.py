@@ -18,15 +18,12 @@ from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import SizeUnit
 from comb.data_files.behavior_stimulus_file import BehaviorStimulusFile
 
-import aind_metadata_mapper
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.mesoscope.models import JobSettings
 from aind_metadata_mapper.stimulus.camstim import Camstim, CamstimSettings
 
 
-class MesoscopeEtl(
-    GenericEtl[JobSettings], aind_metadata_mapper.stimulus.camstim.Camstim
-):
+class MesoscopeEtl(GenericEtl[JobSettings]):
     """Class to manage transforming mesoscope platform json and metadata into
     a Session model."""
 
@@ -55,17 +52,17 @@ class MesoscopeEtl(
         else:
             job_settings_model = job_settings
         if isinstance(job_settings_model.behavior_source, str):
-            job_settings_model.behavior_source = Path(job_settings_model.behavior_source)
+            job_settings_model.behavior_source = Path(
+                job_settings_model.behavior_source
+            )
         super().__init__(job_settings=job_settings_model)
-        Camstim.__init__(
-            self,
-            CamstimSettings(
-                input_source=self.job_settings.input_source,
-                output_directory=self.job_settings.output_directory,
-                session_id=self.job_settings.session_id,
-                subject_id=self.job_settings.subject_id,
-            ),
+        camstim_settings = CamstimSettings(
+            input_source=self.job_settings.input_source,
+            output_directory=self.job_settings.output_directory,
+            session_id=self.job_settings.session_id,
+            subject_id=self.job_settings.subject_id,
         )
+        self.camstim = Camstim(camstim_settings)
 
     @staticmethod
     def _read_metadata(tiff_path: Path):
@@ -110,7 +107,9 @@ class MesoscopeEtl(
         """
         session_metadata = {}
         session_id = self.job_settings.session_id
-        for ftype in sorted(list(self.job_settings.behavior_source.glob("*json"))):
+        for ftype in sorted(
+            list(self.job_settings.behavior_source.glob("*json"))
+        ):
             if (
                 ("Behavior" in ftype.stem and session_id in ftype.stem)
                 or ("Eye" in ftype.stem and session_id in ftype.stem)
@@ -120,7 +119,7 @@ class MesoscopeEtl(
                     session_metadata[ftype.stem] = json.load(f)
         return session_metadata
 
-    def _extract_platform_metdata(self, session_metadata: dict) -> dict:
+    def _extract_platform_metadata(self, session_metadata: dict) -> dict:
         """Parses the platform json file and returns the metadata
 
         Parameters
@@ -133,7 +132,9 @@ class MesoscopeEtl(
         dict
             _description_
         """
-        input_source = next(self.job_settings.input_source.glob("*platform.json"), "")
+        input_source = next(
+            self.job_settings.input_source.glob("*platform.json"), ""
+        )
         if (
             isinstance(input_source, str) and input_source == ""
         ) or not input_source.exists():
@@ -151,7 +152,9 @@ class MesoscopeEtl(
         dict
             timeseries metadata
         """
-        timeseries = next(self.job_settings.input_source.glob("*timeseries*.tiff"), "")
+        timeseries = next(
+            self.job_settings.input_source.glob("*timeseries*.tiff"), ""
+        )
         if timeseries:
             meta = self._read_metadata(timeseries)
         else:
@@ -179,9 +182,38 @@ class MesoscopeEtl(
         # The pydantic models will validate that the user inputs a Path.
         # We can add validators there if we want to coerce strings to Paths.
         session_metadata = self._extract_behavior_metdata()
-        session_metadata = self._extract_platform_metdata(session_metadata)
+        session_metadata = self._extract_platform_metadata(session_metadata)
         meta = self._extract_time_series_metadata()
         return session_metadata, meta
+
+    def _get_session_type(self) -> str:
+        """Get the session type from the behavior stimulus file
+
+        Returns
+        -------
+        str
+            The session type
+        """
+        pkl_fp = next(
+            self.job_settings.input_source.glob(
+                f"{self.job_settings.session_id}*.pkl"
+            )
+        )
+        return BehaviorStimulusFile.from_file(pkl_fp).session_type
+
+    def _camstim_table_and_epochs(self) -> list:
+        """Get the camstim table and epochs
+
+        Returnsd
+        -------
+        list
+            The camstim table and epochs
+        """
+        if self.camstim.behavior:
+            self.camstim.build_behavior_table()
+        else:
+            self.camstim.build_stimulus_table()
+        return self.camstim.epochs_from_stim_table()
 
     def _transform(self, extracted_source: dict, meta: dict) -> Session:
         """Transform the platform data into a session object
@@ -195,7 +227,9 @@ class MesoscopeEtl(
         Session
             The session object
         """
-        imaging_plane_groups = extracted_source["platform"]["imaging_plane_groups"]
+        imaging_plane_groups = extracted_source["platform"][
+            "imaging_plane_groups"
+        ]
         fovs = []
         count = 0
         for group in imaging_plane_groups:
@@ -204,7 +238,9 @@ class MesoscopeEtl(
                 power_ratio = float(power_ratio)
             for plane in group["imaging_planes"]:
                 fov = FieldOfView(
-                    coupled_fov_index=int(group["local_z_stack_tif"].split(".")[0][-1]),
+                    coupled_fov_index=int(
+                        group["local_z_stack_tif"].split(".")[0][-1]
+                    ),
                     index=count,
                     fov_coordinate_ml=self.job_settings.fov_coordinate_ml,
                     fov_coordinate_ap=self.job_settings.fov_coordinate_ap,
@@ -251,23 +287,18 @@ class MesoscopeEtl(
                 ],
             )
         ]
-        stimulus_data = BehaviorStimulusFile.from_file(
-            next(
-                self.job_settings.input_source.glob(
-                    f"{self.job_settings.session_id}*.pkl"
-                )
-            )
-        )
+        session_type = self._get_session_type()
+        stim_epochs = self._camstim_table_and_epochs()
         return Session(
             experimenter_full_name=self.job_settings.experimenter_full_name,
-            session_type=stimulus_data.session_type,
+            session_type=session_type,
             subject_id=self.job_settings.subject_id,
             iacuc_protocol=self.job_settings.iacuc_protocol,
             session_start_time=self.job_settings.session_start_time,
             session_end_time=self.job_settings.session_end_time,
             rig_id=extracted_source["platform"]["rig_id"],
             data_streams=data_streams,
-            stimulus_epochs=self.stim_epochs,
+            stimulus_epochs=stim_epochs,
             mouse_platform_name=self.job_settings.mouse_platform_name,
             active_mouse_platform=True,
         )
@@ -280,7 +311,9 @@ class MesoscopeEtl(
         None
         """
         session_meta, movie_meta = self._extract()
-        transformed = self._transform(extracted_source=session_meta, meta=movie_meta)
+        transformed = self._transform(
+            extracted_source=session_meta, meta=movie_meta
+        )
         transformed.write_standard_file(
             output_directory=self.job_settings.output_directory
         )
