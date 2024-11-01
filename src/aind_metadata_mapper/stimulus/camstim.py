@@ -56,35 +56,52 @@ class Camstim:
         settings to specify the different laser states for this experiment.
         Otherwise, the default is used from naming_utils.
         """
+        self.sync_path = None
+        self.session_uuid = None
+        self.mtrain_regimen = None
         self.camstim_settings = camstim_settings
         self.session_path = Path(self.camstim_settings.input_source)
         session_id = self.camstim_settings.session_id
         self.pkl_path = next(self.session_path.rglob("*.pkl"))
-        self.stim_table_path = self.pkl_path.parent / f"{session_id}_stim_table.csv"
+        self.stim_table_path = (
+            self.pkl_path.parent / f"{session_id}_stim_table.csv"
+        )
         if self.camstim_settings.output_directory:
             self.stim_table_path = (
                 self.camstim_settings.output_directory
                 / f"{session_id}_behavior"
                 / f"{session_id}_stim_table.csv"
             )
-        self.sync_path = next(self.session_path.glob("*.h5"))
-        sync_data = sync.load_sync(self.sync_path)
-        self.session_start = sync.get_start_time(sync_data)
-        self.session_end = sync.get_stop_time(sync_data)
+
+        self.session_start, self.session_end = self._get_sync_data()
         self.mouse_id = self.camstim_settings.subject_id
         self.session_uuid = self.get_session_uuid()
         self.mtrain_regimen = self.get_mtrain()
-        if pkl.load_pkl(self.pkl_path)["items"].get("behavior", None):
-            self.build_behavior_table()
-        else:
-            self.build_stimulus_table()
-        self.stim_epochs = self.epochs_from_stim_table()
+
+        self.behavior = self._is_behavior()
+
+    def _is_behavior(self) -> bool:
+        """Check if the session has behavior data"""
+        return pkl.load_pkl(self.pkl_path)["items"].get("behavior", None)
+
+    def _get_sync_data(self) -> None:
+        """Set the sync path
+
+        Returns
+        -------
+        Path
+        """
+        self.sync_path = next(self.session_path.glob("*.h5"))
+        sync_data = sync.load_sync(self.sync_path)
+        return sync.get_start_time(sync_data), sync.get_stop_time(sync_data)
 
     def build_behavior_table(self):
         stim_file = self.pkl_path
         sync_file = sync.load_sync(self.sync_path)
         timestamps = sync.get_ophys_stimulus_timestamps(sync_file, stim_file)
-        behavior_table = behavior_utils.from_stimulus_file(stim_file, timestamps)
+        behavior_table = behavior_utils.from_stimulus_file(
+            stim_file, timestamps
+        )
         behavior_table[0].to_csv(self.stim_table_path, index=False)
 
     def get_session_uuid(self) -> str:
@@ -160,8 +177,12 @@ class Camstim:
 
         stim_table_seconds = names.collapse_columns(stim_table_seconds)
         stim_table_seconds = names.drop_empty_columns(stim_table_seconds)
-        stim_table_seconds = names.standardize_movie_numbers(stim_table_seconds)
-        stim_table_seconds = names.add_number_to_shuffled_movie(stim_table_seconds)
+        stim_table_seconds = names.standardize_movie_numbers(
+            stim_table_seconds
+        )
+        stim_table_seconds = names.add_number_to_shuffled_movie(
+            stim_table_seconds
+        )
         stim_table_seconds = names.map_stimulus_names(
             stim_table_seconds, stimulus_name_map
         )
@@ -202,7 +223,9 @@ class Camstim:
                         "frame",
                     ):
                         param_set = set(
-                            stim_table[column][epoch_start_idx:current_idx].dropna()
+                            stim_table[column][
+                                epoch_start_idx:current_idx
+                            ].dropna()
                         )
                         current_epoch[3][column] = param_set
 
@@ -268,8 +291,10 @@ class Camstim:
             )
 
             epoch_obj = StimulusEpoch(
-                stimulus_start_time=self.session_start + timedelta(seconds=epoch_start),
-                stimulus_end_time=self.session_start + timedelta(seconds=epoch_end),
+                stimulus_start_time=self.session_start
+                + timedelta(seconds=epoch_start),
+                stimulus_end_time=self.session_start
+                + timedelta(seconds=epoch_end),
                 stimulus_name=epoch_name,
                 software=[software_obj],
                 script=script_obj,
@@ -293,7 +318,10 @@ class OpenEphysCamstim(Camstim):
            settings for camstim object
         """
         self.camstim_settings = camstim_settings
-        if not self.stim_table_path.exists() or self.camstim_settings.overwrite_tables:
+        if (
+            not self.stim_table_path.exists()
+            or self.camstim_settings.overwrite_tables
+        ):
             print("building stim table")
             self.build_stimulus_table()
 
@@ -301,7 +329,10 @@ class OpenEphysCamstim(Camstim):
         self.session_uuid = self.get_session_uuid()
         self.mtrain_regimen = self.get_mtrain()
 
-        if not self.stim_table_path.exists() or self.camstim_settings["overwrite_tables"]:
+        if (
+            not self.stim_table_path.exists()
+            or self.camstim_settings["overwrite_tables"]
+        ):
             print("building stim table")
             self.build_stimulus_table()
 
@@ -322,14 +353,20 @@ class OpenEphysCamstim(Camstim):
         if self.camstim_settings.opto_conditions_map is None:
             self.opto_conditions_map = names.DEFAULT_OPTO_CONDITIONS
         else:
-            self.opto_conditions_map = self.camstim_settings.opto_conditions_map
+            self.opto_conditions_map = (
+                self.camstim_settings.opto_conditions_map
+            )
         self.session_path = self.get_session_path(session_id, input_source)
         self.folder = self.get_folder(session_id, input_source)
         self.opto_pkl_path = self.session_path / f"{self.folder}.opto.pkl"
-        self.opto_table_path = self.session_path / f"{self.folder}_opto_epochs.csv"
+        self.opto_table_path = (
+            self.session_path / f"{self.folder}_opto_epochs.csv"
+        )
         self.pkl_path = self.session_path / f"{self.folder}.stim.pkl"
 
-        self.stim_table_path = self.session_path / f"{self.folder}_stim_epochs.csv"
+        self.stim_table_path = (
+            self.session_path / f"{self.folder}_stim_epochs.csv"
+        )
         self.sync_path = self.session_path / f"{self.folder}.sync"
 
         if (
