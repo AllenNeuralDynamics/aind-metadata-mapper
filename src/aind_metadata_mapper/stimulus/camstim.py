@@ -57,12 +57,14 @@ class Camstim:
         Otherwise, the default is used from naming_utils.
         """
         self.sync_path = None
+        self.sync_data = None
         self.session_uuid = None
         self.mtrain_regimen = None
         self.camstim_settings = camstim_settings
-        self.session_path = Path(self.camstim_settings.input_source)
+        self.mtrain_server = self.camstim_settings.mtrain_server
+        self.input_source = Path(self.camstim_settings.input_source)
         session_id = self.camstim_settings.session_id
-        self.pkl_path = next(self.session_path.rglob("*.pkl"))
+        self.pkl_path = next(self.input_source.rglob("*.pkl"))
         self.stim_table_path = (
             self.pkl_path.parent / f"{session_id}_stim_table.csv"
         )
@@ -73,7 +75,7 @@ class Camstim:
                 / f"{session_id}_stim_table.csv"
             )
 
-        self.session_start, self.session_end = self._get_sync_data()
+        self.session_start, self.session_end = self._get_sync_times()
         self.mouse_id = self.camstim_settings.subject_id
         self.session_uuid = self.get_session_uuid()
         self.mtrain_regimen = self.get_mtrain()
@@ -82,25 +84,29 @@ class Camstim:
 
     def _is_behavior(self) -> bool:
         """Check if the session has behavior data"""
-        return pkl.load_pkl(self.pkl_path)["items"].get("behavior", None)
+        behavior = pkl.load_pkl(self.pkl_path)["items"].get("behavior", None)
+        if behavior:
+            return True
+        return False
 
-    def _get_sync_data(self) -> None:
+    def _get_sync_times(self) -> None:
         """Set the sync path
-
         Returns
         -------
         Path
         """
-        self.sync_path = next(self.session_path.glob("*.h5"))
-        sync_data = sync.load_sync(self.sync_path)
-        return sync.get_start_time(sync_data), sync.get_stop_time(sync_data)
+        self.sync_path = next(self.input_source.glob("*.h5"))
+        self.sync_data = sync.load_sync(self.sync_path)
+        return sync.get_start_time(self.sync_data), sync.get_stop_time(
+            sync_data
+        )
 
-    def build_behavior_table(self):
-        stim_file = self.pkl_path
-        sync_file = sync.load_sync(self.sync_path)
-        timestamps = sync.get_ophys_stimulus_timestamps(sync_file, stim_file)
+    def build_behavior_table(self) -> None:
+        timestamps = sync.get_ophys_stimulus_timestamps(
+            self.sync_data, self.pkl_path
+        )
         behavior_table = behavior_utils.from_stimulus_file(
-            stim_file, timestamps
+            self.pkl_path, timestamps
         )
         behavior_table[0].to_csv(self.stim_table_path, index=False)
 
@@ -110,7 +116,7 @@ class Camstim:
 
     def get_mtrain(self) -> dict:
         """Returns dictionary containing 'id', 'name', 'stages', 'states'"""
-        server = self.camstim_settings.mtrain_server
+        server = self.mtrain_server
         req = f"{server}/behavior_session/{self.session_uuid}/details"
         mtrain_response = requests.get(req).json()
         return mtrain_response["result"]["regimen"]
@@ -228,7 +234,6 @@ class Camstim:
                             ].dropna()
                         )
                         current_epoch[3][column] = param_set
-
                 epochs.append(current_epoch)
                 epoch_start_idx = current_idx
                 current_epoch = [
@@ -251,7 +256,6 @@ class Camstim:
 
             if "image" in stim_name.lower() or "movie" in stim_name.lower():
                 current_epoch[4].add(row["stim_name"])
-
         # slice off dummy epoch from beginning
         return epochs[1:]
 

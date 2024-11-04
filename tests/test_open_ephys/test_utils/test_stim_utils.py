@@ -142,8 +142,8 @@ class TestStimUtils(unittest.TestCase):
             "image_path_list": [
                 "somepath\\passive\\image1.jpg",
                 "somepath\\passive\\image2.jpg",
-                "somepath\\passive\\image3.jpg"
-            ]
+                "somepath\\passive\\image3.jpg",
+            ],
         }
 
         # Expected image names
