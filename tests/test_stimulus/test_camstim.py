@@ -1,11 +1,13 @@
 import unittest
-from unittest.mock import patch, MagicMock
-from aind_metadata_mapper.stimulus.camstim import Camstim, CamstimSettings
-from aind_data_schema.base import AindGeneric
 from datetime import datetime as dt
-import pandas as pd
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
 import numpy as np
+import pandas as pd
+from aind_data_schema.base import AindGeneric
+
+from aind_metadata_mapper.stimulus.camstim import Camstim, CamstimSettings
 
 
 class TestCamstim(unittest.TestCase):
