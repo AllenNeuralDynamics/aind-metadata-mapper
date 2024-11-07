@@ -103,7 +103,7 @@ class TestMesoscope(unittest.TestCase):
             job_settings=JobSettings(**self.user_input),
         )
         tiff_path = Path("non_existent_file_path")
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaises(ValueError):
             etl1._read_metadata(tiff_path)
 
     @patch("pathlib.Path.is_file")
@@ -139,10 +139,10 @@ class TestMesoscope(unittest.TestCase):
     @patch("pathlib.Path.glob")
     @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
     @patch(
-        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._extract_platform_metadata"
+        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._extract_platform_metadata"  # noqa
     )
     @patch(
-        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._extract_time_series_metadata"
+        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._extract_time_series_metadata"  # noqa
     )
     def test_extract(
         self,
@@ -170,11 +170,11 @@ class TestMesoscope(unittest.TestCase):
 
     @patch("pathlib.Path.is_dir")
     @patch(
-        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._extract_platform_metadata"
+        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._extract_platform_metadata"  # noqa
     )
     @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
     @patch(
-        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._extract_time_series_metadata"
+        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._extract_time_series_metadata"  # noqa
     )
     def test_model(
         self,
@@ -188,7 +188,7 @@ class TestMesoscope(unittest.TestCase):
         mock_camstim.return_value = None
         mock_extract_platform.return_value = self.example_platform
         mock_is_dir.return_value = False
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaises(ValueError):
             JobSettings(**self.user_input)
 
     @patch(
@@ -201,7 +201,7 @@ class TestMesoscope(unittest.TestCase):
         "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._get_session_type"
     )
     @patch(
-        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._camstim_table_and_epochs"
+        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._camstim_table_and_epochs"  # noqa
     )
     def test_transform(
         self,
