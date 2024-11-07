@@ -98,7 +98,7 @@ class Camstim:
         self.sync_path = next(self.input_source.glob("*.h5"))
         self.sync_data = sync.load_sync(self.sync_path)
         return sync.get_start_time(self.sync_data), sync.get_stop_time(
-            sync_data
+            self.sync_data
         )
 
     def build_behavior_table(self) -> None:
