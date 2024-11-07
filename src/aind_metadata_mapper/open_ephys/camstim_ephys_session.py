@@ -70,12 +70,6 @@ class CamstimEphysSessionEtl(
         sessions_root = Path(self.job_settings.sessions_root)
         self.folder = self.get_folder(session_id, sessions_root)
         self.session_path = self.get_session_path(session_id, sessions_root)
-        # sometimes data files are deleted on npexp so try files on lims
-        # try:
-        #     self.recording_dir = npc_ephys.get_single_oebin_path(
-        #         session_inst.lims_path
-        #     ).parent
-        # except:
         self.recording_dir = npc_ephys.get_single_oebin_path(
             self.session_path
         ).parent
