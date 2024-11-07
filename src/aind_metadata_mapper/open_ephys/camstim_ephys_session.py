@@ -153,6 +153,18 @@ class CamstimEphysSessionEtl(
         )
         return self.session_json
 
+    def get_folder(self, session_id, npexp_root) -> str:
+        """returns the directory name of the session on the np-exp directory"""
+        for subfolder in npexp_root.iterdir():
+            if subfolder.name.split("_")[0] == session_id:
+                return subfolder.name
+        else:
+            raise Exception("Session folder not found in np-exp")
+        
+    def get_session_path(self, session_id, npexp_root) -> Path:
+        """returns the path to the session on allen's np-exp directory"""
+        return npexp_root / self.get_folder(session_id, npexp_root)
+    
     @staticmethod
     def extract_probe_letter(probe_exp, s):
         """
