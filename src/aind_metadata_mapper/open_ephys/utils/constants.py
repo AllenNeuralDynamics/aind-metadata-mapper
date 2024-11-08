@@ -1,4 +1,5 @@
 """ Constants for the naming utils of metadata mapper """
+
 import re
 
 INT_NULL = -99

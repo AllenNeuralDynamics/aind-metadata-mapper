@@ -2,8 +2,8 @@
 
 import datetime
 import logging
-from typing import Optional, Sequence, Union
 from functools import lru_cache
+from typing import Optional, Sequence, Union
 
 import h5py
 import numpy as np
