@@ -116,7 +116,7 @@ class Camstim:
 
     def get_mtrain(self) -> dict:
         """Returns dictionary containing 'id', 'name', 'stages', 'states'"""
-        server = self.job_settings.mtrain_server
+        server = self.mtrain_server
         req = f"{server}/behavior_session/{self.session_uuid}/details"
         mtrain_response = requests.get(req).json()
         return mtrain_response["result"]["regimen"]
