@@ -12,8 +12,8 @@ from aind_metadata_mapper.stimulus.camstim import Camstim, CamstimSettings
 
 
 class TestCamstim(unittest.TestCase):
-    """Test camstim.py
-    """
+    """Test camstim.py"""
+
     @classmethod
     @patch("pathlib.Path.rglob")
     @patch("aind_metadata_mapper.stimulus.camstim.Camstim._get_sync_times")
@@ -34,11 +34,10 @@ class TestCamstim(unittest.TestCase):
         mock_sync_times: MagicMock,
         mock_rglob: MagicMock,
     ) -> None:
-        """Set up the test suite
-        """
+        """Set up the test suite"""
         mock_get_fps.return_value = 30.0
         mock_load_sync.return_value = {}
-        mock_load_pkl.return_value  = {"fps": 30.0}
+        mock_load_pkl.return_value = {"fps": 30.0}
         mock_is_behavior.return_value = True
         mock_mtrain.return_value = {
             "name": "test_name",
@@ -66,10 +65,10 @@ class TestCamstim(unittest.TestCase):
         )
 
     @patch(
-        "aind_metadata_mapper.stimulus.camstim.sync.get_ophys_stimulus_timestamps" #noqa
+        "aind_metadata_mapper.stimulus.camstim.sync.get_ophys_stimulus_timestamps"  # noqa
     )
     @patch(
-        "aind_metadata_mapper.stimulus.camstim.behavior_utils.from_stimulus_file" #noqa
+        "aind_metadata_mapper.stimulus.camstim.behavior_utils.from_stimulus_file"  # noqa
     )
     @patch("pandas.DataFrame.to_csv")
     def test_build_behavior_table(
@@ -98,7 +97,7 @@ class TestCamstim(unittest.TestCase):
         )
 
     @patch(
-        "aind_metadata_mapper.stimulus.camstim.stim_utils.extract_frame_times_from_photodiode" #noqa
+        "aind_metadata_mapper.stimulus.camstim.stim_utils.extract_frame_times_from_photodiode"  # noqa
     )
     @patch(
         "aind_metadata_mapper.stimulus.camstim.stim_utils.create_stim_table"
@@ -110,9 +109,11 @@ class TestCamstim(unittest.TestCase):
     )
     @patch("aind_metadata_mapper.open_ephys.utils.pkl_utils.get_stimuli")
     @patch(
-        "aind_metadata_mapper.open_ephys.utils.stim_utils.extract_blocks_from_stim" #noqa
+        "aind_metadata_mapper.open_ephys.utils.stim_utils.extract_blocks_from_stim"  # noqa
     )
-    @patch("aind_metadata_mapper.stimulus.camstim.Camstim.get_stim_table_seconds")
+    @patch(
+        "aind_metadata_mapper.stimulus.camstim.Camstim.get_stim_table_seconds"
+    )
     def test_build_stimulus_table(
         self,
         mock_get_stim_table_seconds: MagicMock,
@@ -126,7 +127,9 @@ class TestCamstim(unittest.TestCase):
     ):
         """Test the build_stimulus_table method"""
         # Mock the return values
-        mock_get_stim_table_seconds.return_value = [pd.DataFrame({"a": [1, 2, 3]})]
+        mock_get_stim_table_seconds.return_value = [
+            pd.DataFrame({"a": [1, 2, 3]})
+        ]
         mock_extract_blocks_from_stim.return_value = [1, 2, 3]
         mock_get_stimuli.return_value = {"stuff": "things"}
         mock_seconds_to_frames.return_value = np.array([1, 2, 3])
