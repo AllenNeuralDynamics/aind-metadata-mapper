@@ -28,6 +28,8 @@ from aind_metadata_mapper.open_ephys.utils import (
 
 
 class CamstimSettings(BaseModel):
+    """Camstim settings for extracting stimulus epochs"""
+
     sessions_root: Optional[Path] = None
     opto_conditions_map: Optional[dict] = None
     overwrite_tables: bool = False
@@ -74,6 +76,7 @@ class Camstim:
             )
         self.pkl_data = pkl.load_pkl(self.pkl_path)
         self.sync_data = sync.load_sync(self.sync_path)
+        self.fps = pkl.get_fps(self.pkl_data)
         self.session_start, self.session_end = self._get_sync_times()
         self.mouse_id = self.camstim_settings.subject_id
         self.session_uuid = self.get_session_uuid()
@@ -83,8 +86,7 @@ class Camstim:
 
     def _is_behavior(self) -> bool:
         """Check if the session has behavior data"""
-        behavior = pkl.load_pkl(self.pkl_path)["items"].get("behavior", None)
-        if behavior:
+        if self.pkl_data.get("items", {}).get("behavior", None):
             return True
         return False
 
@@ -101,6 +103,13 @@ class Camstim:
         )
 
     def build_behavior_table(self) -> None:
+        """Builds a behavior table from the stimulus pickle file and writes it
+        to a csv file
+
+        Returns
+        -------
+        None
+        """
         timestamps = sync.get_ophys_stimulus_timestamps(
             self.sync_data, self.pkl_path
         )
@@ -121,10 +130,25 @@ class Camstim:
         return mtrain_response["result"]["regimen"]
 
     def get_stim_table_seconds(
-        self, stim_table_sweeps, frame_times, stim_file, name_map
+        self, stim_table_sweeps, frame_times, name_map
     ) -> pd.DataFrame:
+        """Builds a stimulus table from the stimulus pickle file, sync file
+
+        Parameters
+        ----------
+        stim_table_sweeps : pd.DataFrame
+            DataFrame containing stimulus information
+        frame_times : np.array
+            Array containing frame times
+        name_map : dict
+            Dictionary containing stimulus names
+
+        Returns
+        -------
+        pd.DataFrame
+        """
         stim_table_seconds = stim_utils.convert_frames_to_seconds(
-            stim_table_sweeps, frame_times, pkl.get_fps(stim_file), True
+            stim_table_sweeps, frame_times, self.fps, True
         )
         stim_table_seconds = names.collapse_columns(stim_table_seconds)
         stim_table_seconds = names.drop_empty_columns(stim_table_seconds)
@@ -195,7 +219,7 @@ class Camstim:
         )
 
         stim_table_seconds = self.get_stim_table_seconds(
-            stim_table_sweeps, frame_times, self.pkl_data, stimulus_name_map
+            stim_table_sweeps, frame_times, stimulus_name_map
         )
         stim_table_final = names.map_column_names(
             stim_table_seconds, column_name_map, ignore_case=False
