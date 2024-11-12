@@ -93,7 +93,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         try:
             file_contents = data["scanimage_metadata"][()].decode()
         except KeyError:
-            file_contents = '[{"SI.hRoiManager.pixelsPerLine": 512, "SI.hRoiManager.linesPerFrame": 512}]'
+            file_contents = '[{"SI.hRoiManager.pixelsPerLine": 512, "SI.hRoiManager.linesPerFrame": 512}]' # noqa
         data.close()
         file_contents = json.loads(file_contents)
         return file_contents
