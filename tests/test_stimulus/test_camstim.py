@@ -249,6 +249,64 @@ class TestCamstim(unittest.TestCase):
             AindGeneric(param1={"c"}, param2={3}),
         )
 
+    @patch(
+        "aind_metadata_mapper.stimulus.camstim.stim_utils.convert_frames_to_seconds" # noqa
+    )
+    @patch("aind_metadata_mapper.stimulus.camstim.names.collapse_columns")
+    @patch("aind_metadata_mapper.stimulus.camstim.names.drop_empty_columns")
+    @patch(
+        "aind_metadata_mapper.stimulus.camstim.names.standardize_movie_numbers"
+    )
+    @patch(
+        "aind_metadata_mapper.stimulus.camstim.names.add_number_to_shuffled_movie" # noqa
+    )
+    @patch("aind_metadata_mapper.stimulus.camstim.names.map_stimulus_names")
+    def test_get_stim_table_seconds(
+        self,
+        mock_map_stimulus_names: MagicMock,
+        mock_add_number_to_shuffled_movie: MagicMock,
+        mock_standardize_movie_numbers: MagicMock,
+        mock_drop_empty_columns: MagicMock,
+        mock_collapse_columns: MagicMock,
+        mock_convert_frames_to_seconds: MagicMock,
+    ):
+        """Test the get_stim_table_seconds method"""
+        # Mock the return values
+        mock_convert_frames_to_seconds.return_value = pd.DataFrame(
+            {"a": [1, 2, 3]}
+        )
+        mock_collapse_columns.return_value = pd.DataFrame({"a": [1, 2, 3]})
+        mock_drop_empty_columns.return_value = pd.DataFrame({"a": [1, 2, 3]})
+        mock_standardize_movie_numbers.return_value = pd.DataFrame(
+            {"a": [1, 2, 3]}
+        )
+        mock_add_number_to_shuffled_movie.return_value = pd.DataFrame(
+            {"a": [1, 2, 3]}
+        )
+        mock_map_stimulus_names.return_value = pd.DataFrame({"a": [1, 2, 3]})
+
+        # Call the method
+        stim_table_sweeps = pd.DataFrame({"frame": [1, 2, 3]})
+        frame_times = [0.1, 0.2, 0.3]
+        name_map = {"old_name": "new_name"}
+
+        result = self.camstim.get_stim_table_seconds(
+            stim_table_sweeps, frame_times, name_map
+        )
+        # Assert the calls
+        mock_convert_frames_to_seconds.assert_called_once_with(
+            stim_table_sweeps, frame_times, 30.0, True
+        )
+        mock_collapse_columns.assert_called_once()
+        mock_drop_empty_columns.assert_called_once()
+        mock_standardize_movie_numbers.assert_called_once()
+        mock_add_number_to_shuffled_movie.assert_called_once()
+        mock_map_stimulus_names.assert_called_once()
+
+        # Assert the result
+        expected_result = pd.DataFrame({"a": [1, 2, 3]})
+        pd.testing.assert_frame_equal(result, expected_result)
+
 
 if __name__ == "__main__":
     unittest.main()
