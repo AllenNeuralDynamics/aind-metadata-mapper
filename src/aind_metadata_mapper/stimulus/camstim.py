@@ -58,8 +58,6 @@ class Camstim:
         """
         self.sync_path = None
         self.sync_data = None
-        self.session_uuid = None
-        self.mtrain_regimen = None
         self.camstim_settings = camstim_settings
         self.mtrain_server = self.camstim_settings.mtrain_server
         self.input_source = Path(self.camstim_settings.input_source)
@@ -74,7 +72,8 @@ class Camstim:
                 / f"{session_id}_behavior"
                 / f"{session_id}_stim_table.csv"
             )
-
+        self.pkl_data = pkl.load_pkl(self.pkl_path)
+        self.sync_data = sync.load_sync(self.sync_path)
         self.session_start, self.session_end = self._get_sync_times()
         self.mouse_id = self.camstim_settings.subject_id
         self.session_uuid = self.get_session_uuid()
@@ -121,6 +120,25 @@ class Camstim:
         mtrain_response = requests.get(req).json()
         return mtrain_response["result"]["regimen"]
 
+    def get_stim_table_seconds(
+        self, stim_table_sweeps, frame_times, stim_file, name_map
+    ) -> pd.DataFrame:
+        stim_table_seconds = stim_utils.convert_frames_to_seconds(
+            stim_table_sweeps, frame_times, pkl.get_fps(stim_file), True
+        )
+        stim_table_seconds = names.collapse_columns(stim_table_seconds)
+        stim_table_seconds = names.drop_empty_columns(stim_table_seconds)
+        stim_table_seconds = names.standardize_movie_numbers(
+            stim_table_seconds
+        )
+        stim_table_seconds = names.add_number_to_shuffled_movie(
+            stim_table_seconds
+        )
+        stim_table_seconds = names.map_stimulus_names(
+            stim_table_seconds, name_map
+        )
+        return stim_table_seconds
+
     def build_stimulus_table(
         self,
         minimum_spontaneous_activity_duration=0.0,
@@ -151,12 +169,11 @@ class Camstim:
             names.default_column_renames
 
         """
-        stim_file = pkl.load_pkl(self.pkl_path)
-        sync_file = sync.load_sync(self.sync_path)
-
-        frame_times = stim_utils.extract_frame_times_from_photodiode(sync_file)
+        frame_times = stim_utils.extract_frame_times_from_photodiode(
+            self.sync_data
+        )
         minimum_spontaneous_activity_duration = (
-            minimum_spontaneous_activity_duration / pkl.get_fps(stim_file)
+            minimum_spontaneous_activity_duration / pkl.get_fps(self.pkl_data)
         )
 
         stimulus_tabler = functools.partial(
@@ -171,28 +188,15 @@ class Camstim:
             duration_threshold=minimum_spontaneous_activity_duration,
         )
 
-        stimuli = pkl.get_stimuli(stim_file)
+        stimuli = pkl.get_stimuli(self.pkl_data)
         stimuli = stim_utils.extract_blocks_from_stim(stimuli)
         stim_table_sweeps = stim_utils.create_stim_table(
-            stim_file, stimuli, stimulus_tabler, spon_tabler
+            self.pkl_data, stimuli, stimulus_tabler, spon_tabler
         )
 
-        stim_table_seconds = stim_utils.convert_frames_to_seconds(
-            stim_table_sweeps, frame_times, pkl.get_fps(stim_file), True
+        stim_table_seconds = self.get_stim_table_seconds(
+            stim_table_sweeps, frame_times, self.pkl_data, stimulus_name_map
         )
-
-        stim_table_seconds = names.collapse_columns(stim_table_seconds)
-        stim_table_seconds = names.drop_empty_columns(stim_table_seconds)
-        stim_table_seconds = names.standardize_movie_numbers(
-            stim_table_seconds
-        )
-        stim_table_seconds = names.add_number_to_shuffled_movie(
-            stim_table_seconds
-        )
-        stim_table_seconds = names.map_stimulus_names(
-            stim_table_seconds, stimulus_name_map
-        )
-
         stim_table_final = names.map_column_names(
             stim_table_seconds, column_name_map, ignore_case=False
         )
