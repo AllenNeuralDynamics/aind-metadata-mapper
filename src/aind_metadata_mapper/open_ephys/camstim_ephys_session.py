@@ -107,8 +107,8 @@ class CamstimEphysSessionEtl(
             logger.debug("building stim table")
             self.build_stimulus_table()
         if self.opto_pkl_path.exists() and (
-            not self.opto_table_path.exists() or
-            self.job_settings.overwrite_tables
+            not self.opto_table_path.exists()
+            or self.job_settings.overwrite_tables
         ):
             logger.debug("building opto table")
             self.build_optogenetics_table()

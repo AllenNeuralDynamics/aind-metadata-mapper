@@ -1,4 +1,5 @@
 """Module defining JobSettings for SmartSPIM ETL"""
+
 from pathlib import Path
 from typing import Literal, Optional, Union
 
