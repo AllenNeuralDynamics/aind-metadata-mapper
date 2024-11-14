@@ -17,7 +17,6 @@ from aind_data_schema.core.session import (
 )
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import SizeUnit
-from comb.data_files.behavior_stimulus_file import BehaviorStimulusFile
 
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.mesoscope.models import JobSettings
@@ -94,7 +93,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         try:
             file_contents = data["scanimage_metadata"][()].decode()
         except KeyError:
-            file_contents = '[{"SI.hRoiManager.pixelsPerLine": 512, "SI.hRoiManager.linesPerFrame": 512}]' # noqa
+            file_contents = '[{"SI.hRoiManager.pixelsPerLine": 512, "SI.hRoiManager.linesPerFrame": 512}]'  # noqa
         data.close()
         file_contents = json.loads(file_contents)
         return file_contents
@@ -187,21 +186,6 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         meta = self._extract_time_series_metadata()
         return session_metadata, meta
 
-    def _get_session_type(self) -> str:
-        """Get the session type from the behavior stimulus file
-
-        Returns
-        -------
-        str
-            The session type
-        """
-        pkl_fp = next(
-            self.job_settings.input_source.glob(
-                f"{self.job_settings.session_id}*.pkl"
-            )
-        )
-        return BehaviorStimulusFile.from_file(pkl_fp).session_type
-
     def _camstim_table_and_epochs(self) -> list:
         """Get the camstim table and epochs
 
@@ -288,7 +272,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
                 ],
             )
         ]
-        session_type = self._get_session_type()
+        session_type = self.camstim.session_type
         stim_epochs = self._camstim_table_and_epochs()
         return Session(
             experimenter_full_name=self.job_settings.experimenter_full_name,
