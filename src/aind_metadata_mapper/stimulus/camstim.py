@@ -75,15 +75,28 @@ class Camstim:
                 / f"{session_id}_stim_table.csv"
             )
         self.pkl_data = pkl.load_pkl(self.pkl_path)
-        self.sync_data = sync.load_sync(self.sync_path)
         self.fps = pkl.get_fps(self.pkl_data)
         self.session_start, self.session_end = self._get_sync_times()
+        self.sync_data = sync.load_sync(self.sync_path)
         self.mouse_id = self.camstim_settings.subject_id
         self.session_uuid = self.get_session_uuid()
         self.mtrain_regimen = self.get_mtrain()
-
         self.behavior = self._is_behavior()
+        self.session_type = self._get_session_type()
 
+    def _get_session_type(self) -> str:
+        """Determine the session type from the pickle data
+        
+        Returns
+        -------
+        str
+            session type
+        """
+        if self.behavior:
+            return self.pkl_data['items']["behavior"]['params']['stage']
+        else:
+            return self.pkl_data['items']["foraging"]["params"]["stage"]
+        
     def _is_behavior(self) -> bool:
         """Check if the session has behavior data"""
         if self.pkl_data.get("items", {}).get("behavior", None):
