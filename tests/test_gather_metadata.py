@@ -812,12 +812,11 @@ class TestGatherMetadataJob(unittest.TestCase):
             "Pydantic serializer warnings:\n"
             "  Expected `date` but got `str`"
             " - serialized value may not be as expected\n"
-            "  Expected `Union[CALLITHRIX_JACCHUS, HOMO_SAPIENS, "
-            "MACACA_MULATTA, MUS_MUSCULUS, RATTUS_NORVEGICUS]` but got `dict`"
+            "  Expected `Union[_Callithrix_Jacchus, _Homo_Sapiens, _Macaca_Mulatta, _Mus_Musculus, _Rattus_Norvegicus]` but got `dict`"
             " - serialized value may not be as expected\n"
             "  Expected `BreedingInfo` but got `dict`"
             " - serialized value may not be as expected\n"
-            "  Expected `Union[AI, COLUMBIA, HUST, JANELIA, JAX, NYU, OTHER]`"
+            "  Expected `Union[_Allen_Institute, _Columbia_University, _Huazhong_University_Of_Science_And_Technology, _Janelia_Research_Campus, _Jackson_Laboratory, _New_York_University, _Other]`"
             " but got `dict`"
             " - serialized value may not be as expected"
         )
@@ -826,7 +825,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             "s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
             main_metadata["location"],
         )
-        self.assertEqual("Invalid", main_metadata["metadata_status"])
+        self.assertEqual("Missing", main_metadata["metadata_status"])
         self.assertEqual("632269", main_metadata["subject"]["subject_id"])
 
     @patch("logging.warning")
