@@ -18,7 +18,7 @@ from aind_data_schema_models.organizations import Organization
 
 from aind_metadata_mapper.u19.models import JobSettings
 from aind_metadata_mapper.u19.procedures import (
-    U19Etl,
+    SmartSPIMSpecimenIngester,
     get_dates,
     strings_to_dates,
 )
@@ -62,7 +62,8 @@ class TestU19Writer(unittest.TestCase):
         )
 
     @patch(
-        "aind_metadata_mapper.u19.procedures.U19Etl.download_procedure_file"
+        "aind_metadata_mapper.u19.procedures."
+        "SmartSPIMSpecimenIngester.download_procedure_file"
     )
     def test_run_job(self, mock_download_procedure):
         """Test run_job method."""
@@ -70,7 +71,7 @@ class TestU19Writer(unittest.TestCase):
         with open(EXAMPLE_DOWNLOAD_PROCEDURE, "r") as f:
             mock_download_procedure.return_value = json.load(f)
 
-        etl = U19Etl(self.example_job_settings)
+        etl = SmartSPIMSpecimenIngester(self.example_job_settings)
         job_response = etl.run_job()
 
         actual_output = json.loads(job_response.data)
@@ -78,7 +79,8 @@ class TestU19Writer(unittest.TestCase):
         self.assertEqual(self.example_output, actual_output)
 
     @patch(
-        "aind_metadata_mapper.u19.procedures.U19Etl.download_procedure_file"
+        "aind_metadata_mapper.u19.procedures."
+        "SmartSPIMSpecimenIngester.download_procedure_file"
     )
     def test_extract(self, mock_download_procedure):
         """Test extract method."""
@@ -86,7 +88,7 @@ class TestU19Writer(unittest.TestCase):
         with open(EXAMPLE_DOWNLOAD_PROCEDURE, "r") as f:
             mock_download_procedure.return_value = json.load(f)
 
-        etl = U19Etl(self.example_job_settings)
+        etl = SmartSPIMSpecimenIngester(self.example_job_settings)
         extracted = etl._extract(self.example_job_settings.subject_to_ingest)
 
         self.assertEqual(
@@ -97,7 +99,7 @@ class TestU19Writer(unittest.TestCase):
     def test_transform(self):
         """Test transform method."""
 
-        etl = U19Etl(self.example_job_settings)
+        etl = SmartSPIMSpecimenIngester(self.example_job_settings)
         etl.load_specimen_procedure_file()
 
         with open(EXAMPLE_DOWNLOAD_PROCEDURE, "r") as f:
@@ -116,7 +118,10 @@ class TestU19Writer(unittest.TestCase):
             ),
         )
 
-    @patch("aind_metadata_mapper.u19.procedures.U19Etl._transform")
+    @patch(
+        "aind_metadata_mapper.u19.procedures."
+        "SmartSPIMSpecimenIngester._transform"
+    )
     def test_load(self, mock_transform):
         """Test load method."""
 
@@ -124,7 +129,7 @@ class TestU19Writer(unittest.TestCase):
             self.example_output, Procedures, True
         )
 
-        etl = U19Etl(self.example_job_settings)
+        etl = SmartSPIMSpecimenIngester(self.example_job_settings)
         transformed = etl._transform(
             self.example_job_settings.subject_to_ingest
         )
@@ -140,7 +145,7 @@ class TestU19Writer(unittest.TestCase):
     def test_find_sheet_row(self):
         """Test find_sheet_row method."""
 
-        etl = U19Etl(self.example_job_settings)
+        etl = SmartSPIMSpecimenIngester(self.example_job_settings)
         etl.load_specimen_procedure_file()
         row = etl.find_sheet_row(self.example_job_settings.subject_to_ingest)
 
@@ -157,7 +162,7 @@ class TestU19Writer(unittest.TestCase):
             )
             mock_requests.return_value.status_code = 200
 
-        etl = U19Etl(self.example_job_settings)
+        etl = SmartSPIMSpecimenIngester(self.example_job_settings)
         response = etl.download_procedure_file(
             self.example_job_settings.subject_to_ingest
         )
@@ -170,7 +175,7 @@ class TestU19Writer(unittest.TestCase):
     def test_load_specimen_procedure_file(self):
         """Test load_specimen_procedure_file method."""
 
-        etl = U19Etl(self.example_job_settings)
+        etl = SmartSPIMSpecimenIngester(self.example_job_settings)
         etl.load_specimen_procedure_file()
 
         self.assertTrue(len(etl.tissue_sheets) == 2)
@@ -192,7 +197,7 @@ class TestU19Writer(unittest.TestCase):
     def test_extract_spec_procedures(self):
         """Test extract_spec_procedures method."""
 
-        etl = U19Etl(self.example_job_settings)
+        etl = SmartSPIMSpecimenIngester(self.example_job_settings)
         etl.load_specimen_procedure_file()
 
         row = etl.find_sheet_row(self.example_job_settings.subject_to_ingest)

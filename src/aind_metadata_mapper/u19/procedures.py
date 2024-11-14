@@ -34,7 +34,7 @@ def strings_to_dates(strings):
     return [date1, date2]
 
 
-class U19Etl(GenericEtl[JobSettings]):
+class SmartSPIMSpecimenIngester(GenericEtl[JobSettings]):
     """U19 ETL class."""
 
     # TODO: Deprecate this constructor. Use GenericEtl constructor instead
@@ -92,9 +92,9 @@ class U19Etl(GenericEtl[JobSettings]):
             if row is None:
                 logging.warning(f"Could not find row for {subj_id}")
                 return
-            existing_procedure[
-                "specimen_procedures"
-            ] = self.extract_spec_procedures(subj_id, row)
+            existing_procedure["specimen_procedures"] = (
+                self.extract_spec_procedures(subj_id, row)
+            )
 
             return construct_new_model(
                 existing_procedure,
@@ -423,5 +423,5 @@ class U19Etl(GenericEtl[JobSettings]):
 if __name__ == "__main__":
     sys_args = sys.argv[1:]
     main_job_settings = JobSettings.from_args(sys_args)
-    etl = U19Etl(job_settings=main_job_settings)
+    etl = SmartSPIMSpecimenIngester(job_settings=main_job_settings)
     etl.run_job()
