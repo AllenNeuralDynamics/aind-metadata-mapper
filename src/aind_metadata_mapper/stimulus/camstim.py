@@ -86,17 +86,17 @@ class Camstim:
 
     def _get_session_type(self) -> str:
         """Determine the session type from the pickle data
-        
+
         Returns
         -------
         str
             session type
         """
         if self.behavior:
-            return self.pkl_data['items']["behavior"]['params']['stage']
+            return self.pkl_data["items"]["behavior"]["params"]["stage"]
         else:
-            return self.pkl_data['items']["foraging"]["params"]["stage"]
-        
+            return self.pkl_data["items"]["foraging"]["params"]["stage"]
+
     def _is_behavior(self) -> bool:
         """Check if the session has behavior data"""
         if self.pkl_data.get("items", {}).get("behavior", None):
