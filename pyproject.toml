@@ -61,7 +61,7 @@ mesoscope = [
     "aind-metadata-mapper[bergamo]",
     "pillow >= 10.4.0",
     "tifffile==2024.2.12 ; python_version >= '3.9'",
-    "git+https://github.com/AllenNeuralDynamics/comb.git"
+    "comb @ git+https://github.com/AllenNeuralDynamics/comb.git"
 ]
 
 openephys = [
