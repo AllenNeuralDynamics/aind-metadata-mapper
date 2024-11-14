@@ -556,15 +556,27 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_run_job.assert_called_once()
 
     @patch("aind_metadata_mapper.mesoscope.session.MesoscopeEtl.run_job")
+    @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
     def test_get_session_metadata_mesoscope_success(
-        self, mock_run_job: MagicMock
+        self, mock_camstim: MagicMock, mock_run_job: MagicMock
     ):
         """Tests get_session_metadata bruker creates MRIEtl"""
+        mock_camstim.return_value = None
         mock_run_job.return_value = JobResponse(
             status_code=200, data=json.dumps({"some_key": "some_value"})
         )
         mesoscope_session_settings = (
-            MesoscopeSessionJobSettings.model_construct(behavior_source="abc")
+            MesoscopeSessionJobSettings.model_construct(
+                behavior_source="abc",
+                input_source="some/path",
+                session_id="123",
+                output_directory="some/output",
+                session_start_time=datetime.now(),
+                session_end_time=datetime.now(),
+                subject_id="123",
+                project="some_project",
+                experimenter_full_name=["John Doe"],
+            )
         )
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
