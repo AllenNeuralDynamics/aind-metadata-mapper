@@ -37,7 +37,16 @@ class TestCamstim(unittest.TestCase):
         """Set up the test suite"""
         mock_get_fps.return_value = 30.0
         mock_load_sync.return_value = {}
-        mock_load_pkl.return_value = {"fps": 30.0}
+        mock_load_pkl.return_value = {
+            "fps": 30.0,
+            "items": {
+                "behavior": {
+                    "params": {
+                        "stage": "stage",
+                    }
+                }
+            },
+        }
         mock_is_behavior.return_value = True
         mock_mtrain.return_value = {
             "name": "test_name",
@@ -250,7 +259,7 @@ class TestCamstim(unittest.TestCase):
         )
 
     @patch(
-        "aind_metadata_mapper.stimulus.camstim.stim_utils.convert_frames_to_seconds" # noqa
+        "aind_metadata_mapper.stimulus.camstim.stim_utils.convert_frames_to_seconds"  # noqa
     )
     @patch("aind_metadata_mapper.stimulus.camstim.names.collapse_columns")
     @patch("aind_metadata_mapper.stimulus.camstim.names.drop_empty_columns")
@@ -258,7 +267,7 @@ class TestCamstim(unittest.TestCase):
         "aind_metadata_mapper.stimulus.camstim.names.standardize_movie_numbers"
     )
     @patch(
-        "aind_metadata_mapper.stimulus.camstim.names.add_number_to_shuffled_movie" # noqa
+        "aind_metadata_mapper.stimulus.camstim.names.add_number_to_shuffled_movie"  # noqa
     )
     @patch("aind_metadata_mapper.stimulus.camstim.names.map_stimulus_names")
     def test_get_stim_table_seconds(
