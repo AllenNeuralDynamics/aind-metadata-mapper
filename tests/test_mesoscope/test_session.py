@@ -198,15 +198,11 @@ class TestMesoscope(unittest.TestCase):
     @patch("pathlib.Path.is_dir")
     @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
     @patch(
-        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._get_session_type"
-    )
-    @patch(
-        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._camstim_table_and_epochs"  # noqa
+        "aind_metadata_mapper.mesoscope.session.MesoscopeEtl._camstim_epoch_and_session"  # noqa
     )
     def test_transform(
         self,
         mock_camstim_epochs: MagicMock,
-        mock_session_type: MagicMock,
         mock_camstim: MagicMock,
         mock_dir: MagicMock,
         mock_open: MagicMock,
@@ -214,8 +210,7 @@ class TestMesoscope(unittest.TestCase):
     ) -> None:
         """Tests that the platform json is extracted and transfromed into a
         session object correctly"""
-        mock_camstim_epochs.return_value = []
-        mock_session_type.return_value = "ANTERIOR_MOUSEMOTION"
+        mock_camstim_epochs.return_value = ([], "ANTERIOR_MOUSEMOTION")
         mock_camstim.return_value = None
         mock_dir.return_value = True
         etl = MesoscopeEtl(
