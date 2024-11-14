@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Literal, Optional
 
-from pydantic import Field, field_validator
+from pydantic import Field
 
 from aind_metadata_mapper.core_models import BaseJobSettings
 
