@@ -1,4 +1,5 @@
 """Module defining JobSettings for Bruker ETL"""
+
 from pathlib import Path
 from typing import List, Literal, Optional, Union
 

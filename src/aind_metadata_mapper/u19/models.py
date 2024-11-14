@@ -1,4 +1,5 @@
 """Defines Job Settings for U19 ETL"""
+
 from pathlib import Path
 from typing import List, Literal, Optional, Union
 

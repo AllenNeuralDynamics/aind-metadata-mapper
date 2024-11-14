@@ -1,4 +1,5 @@
 """Mesoscope ETL"""
+
 import argparse
 import json
 import logging

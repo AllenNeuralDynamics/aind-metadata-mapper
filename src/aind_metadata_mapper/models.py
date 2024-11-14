@@ -1,4 +1,5 @@
 """Module to define models for Gather Metadata Job"""
+
 from pathlib import Path
 from typing import List, Literal, Optional, Union
 
