@@ -5,7 +5,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Union
+from typing import Union, Tuple
 
 import h5py as h5
 import tifffile
@@ -186,7 +186,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         meta = self._extract_time_series_metadata()
         return session_metadata, meta
 
-    def _camstim_table_and_epochs(self) -> list:
+    def _camstim_epoch_and_session(self) -> Tuple[list, str]:
         """Get the camstim table and epochs
 
         Returnsd
@@ -198,7 +198,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
             self.camstim.build_behavior_table()
         else:
             self.camstim.build_stimulus_table()
-        return self.camstim.epochs_from_stim_table()
+        return self.camstim.epochs_from_stim_table(), self.camstim.session_type
 
     def _transform(self, extracted_source: dict, meta: dict) -> Session:
         """Transform the platform data into a session object
@@ -272,8 +272,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
                 ],
             )
         ]
-        session_type = self.camstim.session_type
-        stim_epochs = self._camstim_table_and_epochs()
+        stim_epochs, session_type = self._camstim_epoch_and_session()
         return Session(
             experimenter_full_name=self.job_settings.experimenter_full_name,
             session_type=session_type,
