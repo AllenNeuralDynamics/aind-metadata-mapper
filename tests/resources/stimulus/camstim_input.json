@@ -1,0 +1,6 @@
+{
+    "input_source": "/some/directory",
+    "output_directory": "/some/directory",
+    "session_id": "1234567890",
+    "subject_id": "123456"
+}

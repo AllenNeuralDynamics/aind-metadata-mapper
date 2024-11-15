@@ -1,0 +1,23 @@
+{
+  "user_settings_config_file": null,
+  "job_settings_name": "Mesoscope",
+  "input_source": "data\\mesoscope\\2021-06-01\\2021-06-01_15-00-00",
+  "session_id": "1234566789",
+  "behavior_source": "data\\mesoscope\\behavior",
+  "output_directory": "results\\directory",
+  "session_start_time": "2024-08-14T12:17:44.389517-07:00",
+  "session_end_time": "2024-08-14T13:20:36.128377-07:00",
+  "subject_id": "731327",
+  "project": "Some Project",
+  "iacuc_protocol": "2115",
+  "magnification": "16x",
+  "fov_coordinate_ml": 1.5,
+  "fov_coordinate_ap": 1.5,
+  "fov_reference": "Bregma",
+  "experimenter_full_name": [
+    "unknown user"
+  ],
+  "mouse_platform_name": "disc",
+  "optional_output": null,
+  "notes": null
+}

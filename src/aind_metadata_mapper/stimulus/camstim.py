@@ -2,22 +2,42 @@
 File containing Camstim class
 """
 
-import datetime
 import functools
+from datetime import timedelta
 from pathlib import Path
-from typing import Union
+from typing import Optional
 
-import aind_data_schema
-import aind_data_schema.core.session as session_schema
 import pandas as pd
 import requests
+from aind_data_schema.components.devices import Software
+from aind_data_schema.core.session import (
+    StimulusEpoch,
+    StimulusModality,
+    VisualStimulation,
+)
+from pydantic import BaseModel
 
-import aind_metadata_mapper.open_ephys.utils.constants as constants
 import aind_metadata_mapper.open_ephys.utils.naming_utils as names
 import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
-import aind_metadata_mapper.open_ephys.utils.stim_utils as stim
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
-from aind_metadata_mapper.open_ephys.models import JobSettings
+from aind_metadata_mapper.open_ephys.utils import (
+    behavior_utils,
+    constants,
+    stim_utils,
+)
+
+
+class CamstimSettings(BaseModel):
+    """Camstim settings for extracting stimulus epochs"""
+
+    sessions_root: Optional[Path] = None
+    opto_conditions_map: Optional[dict] = None
+    overwrite_tables: bool = False
+    mtrain_server: str = "http://mtrain:5000"
+    input_source: Path
+    output_directory: Optional[Path]
+    session_id: str
+    subject_id: str
 
 
 class Camstim:
@@ -27,8 +47,7 @@ class Camstim:
 
     def __init__(
         self,
-        session_id: str,
-        job_settings: Union[JobSettings, str],
+        camstim_settings: CamstimSettings,
     ) -> None:
         """
         Determine needed input filepaths from np-exp and lims, get session
@@ -39,91 +58,129 @@ class Camstim:
         settings to specify the different laser states for this experiment.
         Otherwise, the default is used from naming_utils.
         """
-        if isinstance(job_settings, str):
-            self.job_settings = JobSettings.model_validate_json(job_settings)
-        else:
-            self.job_settings = job_settings
-
-        if self.job_settings.get("opto_conditions_map", None) is None:
-            self.opto_conditions_map = names.DEFAULT_OPTO_CONDITIONS
-        else:
-            self.opto_conditions_map = self.job_settings["opto_conditions_map"]
-
-        sessions_root = Path(self.job_settings.get("sessions_root"))
-        self.session_path = self.get_session_path(session_id, sessions_root)
-        self.folder = self.get_folder(session_id, sessions_root)
-
-        self.pkl_path = self.session_path / f"{self.folder}.stim.pkl"
-        self.opto_pkl_path = self.session_path / f"{self.folder}.opto.pkl"
-        self.opto_table_path = (
-            self.session_path / f"{self.folder}_opto_epochs.csv"
-        )
+        self.sync_path = None
+        self.sync_data = None
+        self.camstim_settings = camstim_settings
+        self.mtrain_server = self.camstim_settings.mtrain_server
+        self.input_source = Path(self.camstim_settings.input_source)
+        session_id = self.camstim_settings.session_id
+        self.pkl_path = next(self.input_source.rglob("*.pkl"))
         self.stim_table_path = (
-            self.session_path / f"{self.folder}_stim_epochs.csv"
+            self.pkl_path.parent / f"{session_id}_stim_table.csv"
         )
-        self.sync_path = self.session_path / f"{self.folder}.sync"
-
-        sync_data = sync.load_sync(self.sync_path)
-        self.session_start = sync.get_start_time(sync_data)
-        self.session_end = sync.get_stop_time(sync_data)
-        print(
-            "session start : session end\n",
-            self.session_start,
-            ":",
-            self.session_end,
-        )
-
-        self.mouse_id = self.folder.split("_")[1]
+        if self.camstim_settings.output_directory:
+            self.stim_table_path = (
+                self.camstim_settings.output_directory
+                / f"{session_id}_behavior"
+                / f"{session_id}_stim_table.csv"
+            )
+        self.pkl_data = pkl.load_pkl(self.pkl_path)
+        self.fps = pkl.get_fps(self.pkl_data)
+        self.session_start, self.session_end = self._get_sync_times()
+        self.sync_data = sync.load_sync(self.sync_path)
+        self.mouse_id = self.camstim_settings.subject_id
         self.session_uuid = self.get_session_uuid()
         self.mtrain_regimen = self.get_mtrain()
+        self.behavior = self._is_behavior()
+        self.session_type = self._get_session_type()
 
-        if (
-            not self.stim_table_path.exists()
-            or self.job_settings["overwrite_tables"]
-        ):
-            print("building stim table")
-            self.build_stimulus_table()
-        if (
-            self.opto_pkl_path.exists()
-            and not self.opto_table_path.exists()
-            or self.job_settings["overwrite_tables"]
-        ):
-            print("building opto table")
-            self.build_optogenetics_table()
+    def _get_session_type(self) -> str:
+        """Determine the session type from the pickle data
 
-        print("getting stim epochs")
-        self.stim_epochs = self.epochs_from_stim_table()
-        if self.opto_table_path.exists():
-            self.stim_epochs.append(self.epoch_from_opto_table())
-
-    def get_folder(self, session_id, npexp_root) -> str:
-        """returns the directory name of the session on the np-exp directory"""
-        for subfolder in npexp_root.iterdir():
-            if subfolder.name.split("_")[0] == session_id:
-                return subfolder.name
+        Returns
+        -------
+        str
+            session type
+        """
+        if self.behavior:
+            return self.pkl_data["items"]["behavior"]["params"]["stage"]
         else:
-            raise Exception("Session folder not found in np-exp")
+            return self.pkl_data["items"]["foraging"]["params"]["stage"]
 
-    def get_session_path(self, session_id, npexp_root) -> Path:
-        """returns the path to the session on allen's np-exp directory"""
-        return npexp_root / self.get_folder(session_id, npexp_root)
+    def _is_behavior(self) -> bool:
+        """Check if the session has behavior data"""
+        if self.pkl_data.get("items", {}).get("behavior", None):
+            return True
+        return False
+
+    def _get_sync_times(self) -> None:
+        """Set the sync path
+        Returns
+        -------
+        Path
+        """
+        self.sync_path = next(self.input_source.glob("*.h5"))
+        self.sync_data = sync.load_sync(self.sync_path)
+        return sync.get_start_time(self.sync_data), sync.get_stop_time(
+            self.sync_data
+        )
+
+    def build_behavior_table(self) -> None:
+        """Builds a behavior table from the stimulus pickle file and writes it
+        to a csv file
+
+        Returns
+        -------
+        None
+        """
+        timestamps = sync.get_ophys_stimulus_timestamps(
+            self.sync_data, self.pkl_path
+        )
+        behavior_table = behavior_utils.from_stimulus_file(
+            self.pkl_path, timestamps
+        )
+        behavior_table[0].to_csv(self.stim_table_path, index=False)
 
     def get_session_uuid(self) -> str:
-        """returns session uuid from pickle file"""
+        """Returns the session uuid from the pickle file"""
         return pkl.load_pkl(self.pkl_path)["session_uuid"]
 
     def get_mtrain(self) -> dict:
         """Returns dictionary containing 'id', 'name', 'stages', 'states'"""
-        server = self.job_settings.mtrain_server
+        server = self.mtrain_server
         req = f"{server}/behavior_session/{self.session_uuid}/details"
         mtrain_response = requests.get(req).json()
         return mtrain_response["result"]["regimen"]
+
+    def get_stim_table_seconds(
+        self, stim_table_sweeps, frame_times, name_map
+    ) -> pd.DataFrame:
+        """Builds a stimulus table from the stimulus pickle file, sync file
+
+        Parameters
+        ----------
+        stim_table_sweeps : pd.DataFrame
+            DataFrame containing stimulus information
+        frame_times : np.array
+            Array containing frame times
+        name_map : dict
+            Dictionary containing stimulus names
+
+        Returns
+        -------
+        pd.DataFrame
+        """
+        stim_table_seconds = stim_utils.convert_frames_to_seconds(
+            stim_table_sweeps, frame_times, self.fps, True
+        )
+        stim_table_seconds = names.collapse_columns(stim_table_seconds)
+        stim_table_seconds = names.drop_empty_columns(stim_table_seconds)
+        stim_table_seconds = names.standardize_movie_numbers(
+            stim_table_seconds
+        )
+        stim_table_seconds = names.add_number_to_shuffled_movie(
+            stim_table_seconds
+        )
+        stim_table_seconds = names.map_stimulus_names(
+            stim_table_seconds, name_map
+        )
+        return stim_table_seconds
 
     def build_stimulus_table(
         self,
         minimum_spontaneous_activity_duration=0.0,
         extract_const_params_from_repr=False,
-        drop_const_params=stim.DROP_PARAMS,
+        drop_const_params=stim_utils.DROP_PARAMS,
         stimulus_name_map=constants.default_stimulus_renames,
         column_name_map=constants.default_column_renames,
     ):
@@ -149,157 +206,39 @@ class Camstim:
             names.default_column_renames
 
         """
-        stim_file = pkl.load_pkl(self.pkl_path)
-        sync_file = sync.load_sync(self.sync_path)
-
-        frame_times = stim.extract_frame_times_from_photodiode(sync_file)
+        frame_times = stim_utils.extract_frame_times_from_photodiode(
+            self.sync_data
+        )
         minimum_spontaneous_activity_duration = (
-            minimum_spontaneous_activity_duration / pkl.get_fps(stim_file)
+            minimum_spontaneous_activity_duration / pkl.get_fps(self.pkl_data)
         )
 
         stimulus_tabler = functools.partial(
-            stim.build_stimuluswise_table,
-            seconds_to_frames=stim.seconds_to_frames,
+            stim_utils.build_stimuluswise_table,
+            seconds_to_frames=stim_utils.seconds_to_frames,
             extract_const_params_from_repr=extract_const_params_from_repr,
             drop_const_params=drop_const_params,
         )
 
         spon_tabler = functools.partial(
-            stim.make_spontaneous_activity_tables,
+            stim_utils.make_spontaneous_activity_tables,
             duration_threshold=minimum_spontaneous_activity_duration,
         )
 
-        stimuli = pkl.get_stimuli(stim_file)
-        stimuli = stim.extract_blocks_from_stim(stimuli)
-        stim_table_sweeps = stim.create_stim_table(
-            stim_file, stimuli, stimulus_tabler, spon_tabler
+        stimuli = pkl.get_stimuli(self.pkl_data)
+        stimuli = stim_utils.extract_blocks_from_stim(stimuli)
+        stim_table_sweeps = stim_utils.create_stim_table(
+            self.pkl_data, stimuli, stimulus_tabler, spon_tabler
         )
 
-        stim_table_seconds = stim.convert_frames_to_seconds(
-            stim_table_sweeps, frame_times, pkl.get_fps(stim_file), True
+        stim_table_seconds = self.get_stim_table_seconds(
+            stim_table_sweeps, frame_times, stimulus_name_map
         )
-
-        stim_table_seconds = names.collapse_columns(stim_table_seconds)
-        stim_table_seconds = names.drop_empty_columns(stim_table_seconds)
-        stim_table_seconds = names.standardize_movie_numbers(
-            stim_table_seconds
-        )
-        stim_table_seconds = names.add_number_to_shuffled_movie(
-            stim_table_seconds
-        )
-        stim_table_seconds = names.map_stimulus_names(
-            stim_table_seconds, stimulus_name_map
-        )
-
         stim_table_final = names.map_column_names(
             stim_table_seconds, column_name_map, ignore_case=False
         )
 
         stim_table_final.to_csv(self.stim_table_path, index=False)
-
-    def build_optogenetics_table(self, keys=stim.OPTOGENETIC_STIMULATION_KEYS):
-        """
-        Builds an optogenetics table from the opto pickle file and sync file.
-        Writes the table to a csv file.
-
-        Parameters
-        ----------
-        output_opto_table_path : str
-            Path to write the optogenetics table to.
-        keys : list[str], optional
-            List of laser keys
-
-        returns
-        -------
-        dict
-            Dictionary containing the path to the output opto table
-        """
-        opto_file = pkl.load_pkl(self.opto_pkl_path)
-        sync_file = sync.load_sync(self.sync_path)
-
-        start_times = sync.extract_led_times(sync_file, keys)
-
-        conditions = [str(item) for item in opto_file["opto_conditions"]]
-        levels = opto_file["opto_levels"]
-        assert len(conditions) == len(levels)
-        if len(start_times) > len(conditions):
-            raise ValueError(
-                f"there are {len(start_times) - len(conditions)} extra "
-                f"optotagging sync times!"
-            )
-        optotagging_table = pd.DataFrame(
-            {
-                "start_time": start_times,
-                "condition": conditions,
-                "level": levels,
-            }
-        )
-        optotagging_table = optotagging_table.sort_values(
-            by="start_time", axis=0
-        )
-
-        stop_times = []
-        names = []
-        conditions = []
-        for _, row in optotagging_table.iterrows():
-            condition = self.opto_conditions_map[row["condition"]]
-            stop_times.append(row["start_time"] + condition["duration"])
-            names.append(condition["name"])
-            conditions.append(condition["condition"])
-
-        optotagging_table["stop_time"] = stop_times
-        optotagging_table["stimulus_name"] = names
-        optotagging_table["condition"] = conditions
-        optotagging_table["duration"] = (
-            optotagging_table["stop_time"] - optotagging_table["start_time"]
-        )
-
-        optotagging_table.to_csv(self.opto_table_path, index=False)
-
-    def epoch_from_opto_table(self) -> session_schema.StimulusEpoch:
-        """
-        From the optogenetic stimulation table, returns a single schema
-        stimulus epoch representing the optotagging period. Include all
-        unknown table columns (not start_time, stop_time, stim_name) as
-        parameters, and include the set of all of that column's values as the
-        parameter values.
-        """
-        stim = aind_data_schema.core.session.StimulusModality
-
-        script_obj = aind_data_schema.components.devices.Software(
-            name=self.mtrain_regimen["name"],
-            version="1.0",
-            url=self.mtrain_regimen,
-        )
-
-        opto_table = pd.read_csv(self.opto_table_path)
-
-        opto_params = {}
-        for column in opto_table:
-            if column in ("start_time", "stop_time", "stim_name"):
-                continue
-            param_set = set(opto_table[column].dropna())
-            opto_params[column] = param_set
-
-        params_obj = session_schema.VisualStimulation(
-            stimulus_name="Optogenetic Stimulation",
-            stimulus_parameters=opto_params,
-            stimulus_template_name=[],
-        )
-
-        opto_epoch = session_schema.StimulusEpoch(
-            stimulus_start_time=self.session_start
-            + datetime.timedelta(seconds=opto_table.start_time.iloc[0]),
-            stimulus_end_time=self.session_start
-            + datetime.timedelta(seconds=opto_table.start_time.iloc[-1]),
-            stimulus_name="Optogenetic Stimulation",
-            software=[],
-            script=script_obj,
-            stimulus_modalities=[stim.OPTOGENETICS],
-            stimulus_parameters=[params_obj],
-        )
-
-        return opto_epoch
 
     def extract_stim_epochs(
         self, stim_table: pd.DataFrame
@@ -336,7 +275,6 @@ class Camstim:
                             ].dropna()
                         )
                         current_epoch[3][column] = param_set
-
                 epochs.append(current_epoch)
                 epoch_start_idx = current_idx
                 current_epoch = [
@@ -359,33 +297,30 @@ class Camstim:
 
             if "image" in stim_name.lower() or "movie" in stim_name.lower():
                 current_epoch[4].add(row["stim_name"])
-
         # slice off dummy epoch from beginning
         return epochs[1:]
 
-    def epochs_from_stim_table(self) -> list[session_schema.StimulusEpoch]:
+    def epochs_from_stim_table(self) -> list[StimulusEpoch]:
         """
         From the stimulus epochs table, return a list of schema stimulus
         epochs representing the various periods of stimulus from the session.
         Also include the camstim version from pickle file and stimulus script
         used from mtrain.
         """
-        stim = aind_data_schema.core.session.StimulusModality
 
-        software_obj = aind_data_schema.components.devices.Software(
+        software_obj = Software(
             name="camstim",
-            version=pkl.load_pkl(self.pkl_path)["platform"]["camstim"].split(
-                "+"
-            )[0],
+            version="1.0",
             url="https://eng-gitlab.corp.alleninstitute.org/braintv/camstim",
         )
 
-        script_obj = aind_data_schema.components.devices.Software(
+        script_obj = Software(
             name=self.mtrain_regimen["name"],
             version="1.0",
             url=self.mtrain_regimen["script"],
         )
 
+        print("STIM PATH", self.stim_table_path)
         schema_epochs = []
         for (
             epoch_name,
@@ -394,21 +329,21 @@ class Camstim:
             stim_params,
             stim_template_names,
         ) in self.extract_stim_epochs(pd.read_csv(self.stim_table_path)):
-            params_obj = session_schema.VisualStimulation(
+            params_obj = VisualStimulation(
                 stimulus_name=epoch_name,
                 stimulus_parameters=stim_params,
                 stimulus_template_name=stim_template_names,
             )
 
-            epoch_obj = session_schema.StimulusEpoch(
+            epoch_obj = StimulusEpoch(
                 stimulus_start_time=self.session_start
-                + datetime.timedelta(seconds=epoch_start),
+                + timedelta(seconds=epoch_start),
                 stimulus_end_time=self.session_start
-                + datetime.timedelta(seconds=epoch_end),
+                + timedelta(seconds=epoch_end),
                 stimulus_name=epoch_name,
                 software=[software_obj],
                 script=script_obj,
-                stimulus_modalities=[stim.VISUAL],
+                stimulus_modalities=[StimulusModality.VISUAL],
                 stimulus_parameters=[params_obj],
             )
             schema_epochs.append(epoch_obj)
