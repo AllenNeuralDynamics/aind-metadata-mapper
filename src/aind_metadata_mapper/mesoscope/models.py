@@ -46,7 +46,7 @@ class JobSettings(BaseJobSettings):
         default=None, title="Optional output path"
     )
 
-    @field_validator("input_source", "behavior_source","output_directory")
+    @field_validator("input_source", "behavior_source", "output_directory")
     @classmethod
     def validate_path_is_dir(cls, v):
         """Validate that the input source is a directory"""
