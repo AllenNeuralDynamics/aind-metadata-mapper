@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Literal, Optional
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from aind_metadata_mapper.core_models import BaseJobSettings
 
@@ -46,6 +46,7 @@ class JobSettings(BaseJobSettings):
         default=None, title="Optional output path"
     )
 
+    @field_validator("input_source", "behavior_source","output_directory")
     @classmethod
     def validate_path_is_dir(cls, v):
         """Validate that the input source is a directory"""
