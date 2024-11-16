@@ -174,7 +174,11 @@ class GatherMetadataJob:
                 funding_info = []
             investigators = set()
             for f in funding_info:
-                project_fundees = f.get("fundee", "").split(",")
+                project_fundees = (
+                    ""
+                    if f.get("fundee", None) is None
+                    else f.get("fundee", "").split(",")
+                )
                 pid_names = [
                     PIDName(name=p.strip()).model_dump_json()
                     for p in project_fundees
