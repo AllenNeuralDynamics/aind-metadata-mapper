@@ -55,10 +55,16 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
             job_settings_model.behavior_source = Path(
                 job_settings_model.behavior_source
             )
+        camstim_output = job_settings_model.output_directory
+        if job_settings_model.make_camsitm_dir:
+            camstim_output = (
+                job_settings_model.output_directory
+                / f"{job_settings_model.session_id}_behavior"
+            )
         super().__init__(job_settings=job_settings_model)
         camstim_settings = CamstimSettings(
             input_source=self.job_settings.input_source,
-            output_directory=self.job_settings.output_directory,
+            output_directory=camstim_output,
             session_id=self.job_settings.session_id,
             subject_id=self.job_settings.subject_id,
         )
