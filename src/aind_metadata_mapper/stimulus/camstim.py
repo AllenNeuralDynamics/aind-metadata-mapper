@@ -65,15 +65,12 @@ class Camstim:
         self.input_source = Path(self.camstim_settings.input_source)
         session_id = self.camstim_settings.session_id
         self.pkl_path = next(self.input_source.rglob("*.pkl"))
+        if not self.camstim_settings.output_directory.is_dir():
+            self.camstim_settings.output_directory.mkdir(parents=True)
         self.stim_table_path = (
-            self.pkl_path.parent / f"{session_id}_stim_table.csv"
+            self.camstim_settings.output_directory
+            / f"{session_id}_stim_table.csv"
         )
-        if self.camstim_settings.output_directory:
-            self.stim_table_path = (
-                self.camstim_settings.output_directory
-                / f"{session_id}_behavior"
-                / f"{session_id}_stim_table.csv"
-            )
         self.pkl_data = pkl.load_pkl(self.pkl_path)
         self.fps = pkl.get_fps(self.pkl_data)
         self.session_start, self.session_end = self._get_sync_times()
