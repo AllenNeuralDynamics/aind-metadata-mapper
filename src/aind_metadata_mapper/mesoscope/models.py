@@ -18,6 +18,9 @@ class JobSettings(BaseJobSettings):
     input_source: Path = Field(..., title="Path to the input source")
     session_id: str = Field(..., title="ID of the session")
     behavior_source: Path = Field(..., title="Path to the behavior source")
+    make_camsitm_dir: bool = Field(
+        default=False, title="Make camsitm directory"
+    )
     output_directory: Path = Field(..., title="Path to the output directory")
     session_start_time: datetime = Field(
         ..., title="Start time of the session"
