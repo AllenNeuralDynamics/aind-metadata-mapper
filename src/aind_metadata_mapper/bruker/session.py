@@ -1,4 +1,5 @@
 """Sets up the MRI ingest ETL"""
+
 import argparse
 import json
 import logging

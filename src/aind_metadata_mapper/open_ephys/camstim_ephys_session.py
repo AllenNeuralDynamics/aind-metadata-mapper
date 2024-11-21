@@ -6,6 +6,7 @@ import datetime
 import json
 import logging
 import re
+from datetime import timedelta
 from pathlib import Path
 from typing import Union
 
@@ -14,7 +15,15 @@ import npc_mvr
 import numpy as np
 import pandas as pd
 from aind_data_schema.components.coordinates import Coordinates3d
-from aind_data_schema.core.session import ManipulatorModule, Session, Stream
+from aind_data_schema.components.devices import Software
+from aind_data_schema.core.session import (
+    ManipulatorModule,
+    Session,
+    StimulusEpoch,
+    StimulusModality,
+    Stream,
+    VisualStimulation,
+)
 from aind_data_schema_models.modalities import Modality
 
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
@@ -61,12 +70,6 @@ class CamstimEphysSessionEtl(
         sessions_root = Path(self.job_settings.sessions_root)
         self.folder = self.get_folder(session_id, sessions_root)
         self.session_path = self.get_session_path(session_id, sessions_root)
-        # sometimes data files are deleted on npexp so try files on lims
-        # try:
-        #     self.recording_dir = npc_ephys.get_single_oebin_path(
-        #         session_inst.lims_path
-        #     ).parent
-        # except:
         self.recording_dir = npc_ephys.get_single_oebin_path(
             self.session_path
         ).parent
@@ -107,8 +110,8 @@ class CamstimEphysSessionEtl(
             logger.debug("building stim table")
             self.build_stimulus_table()
         if self.opto_pkl_path.exists() and (
-            not self.opto_table_path.exists() or
-            self.job_settings.overwrite_tables
+            not self.opto_table_path.exists()
+            or self.job_settings.overwrite_tables
         ):
             logger.debug("building opto table")
             self.build_optogenetics_table()
@@ -152,6 +155,18 @@ class CamstimEphysSessionEtl(
             notes="",
         )
         return self.session_json
+
+    def get_folder(self, session_id, npexp_root) -> str:
+        """returns the directory name of the session on the np-exp directory"""
+        for subfolder in npexp_root.iterdir():
+            if subfolder.name.split("_")[0] == session_id:
+                return subfolder.name
+        else:
+            raise Exception("Session folder not found in np-exp")
+
+    def get_session_path(self, session_id, npexp_root) -> Path:
+        """returns the path to the session on allen's np-exp directory"""
+        return npexp_root / self.get_folder(session_id, npexp_root)
 
     @staticmethod
     def extract_probe_letter(probe_exp, s):
@@ -324,6 +339,50 @@ class CamstimEphysSessionEtl(
         data_streams.append(self.sync_stream())
         data_streams.append(self.video_stream())
         return tuple(data_streams)
+
+    def epoch_from_opto_table(self) -> StimulusEpoch:
+        """
+        From the optogenetic stimulation table, returns a single schema
+        stimulus epoch representing the optotagging period. Include all
+        unknown table columns (not start_time, stop_time, stim_name) as
+        parameters, and include the set of all of that column's values as the
+        parameter values.
+        """
+
+        script_obj = Software(
+            name=self.mtrain_regimen["name"],
+            version="1.0",
+            url=self.mtrain_regimen,
+        )
+
+        opto_table = pd.read_csv(self.opto_table_path)
+
+        opto_params = {}
+        for column in opto_table:
+            if column in ("start_time", "stop_time", "stim_name"):
+                continue
+            param_set = set(opto_table[column].dropna())
+            opto_params[column] = param_set
+
+        params_obj = VisualStimulation(
+            stimulus_name="Optogenetic Stimulation",
+            stimulus_parameters=opto_params,
+            stimulus_template_name=[],
+        )
+
+        opto_epoch = StimulusEpoch(
+            stimulus_start_time=self.session_start
+            + timedelta(seconds=opto_table.start_time.iloc[0]),
+            stimulus_end_time=self.session_start
+            + timedelta(seconds=opto_table.start_time.iloc[-1]),
+            stimulus_name="Optogenetic Stimulation",
+            software=[],
+            script=script_obj,
+            stimulus_modalities=[StimulusModality.OPTOGENETICS],
+            stimulus_parameters=[params_obj],
+        )
+
+        return opto_epoch
 
 
 def main() -> None:

@@ -338,6 +338,12 @@ def make_spontaneous_activity_tables(
     for ii, table in enumerate(stimulus_tables):
         spon_start[ii + 1] = table[end_key].values[-1]
         spon_end[ii] = table[start_key].values[0]
+        # Assume the same block is being represented twice,
+        # so we grab the next relevant block
+        if spon_end[ii] < spon_start[ii]:
+            temp = spon_end[ii]
+            spon_end[ii] = spon_start[ii]
+            spon_start[ii] = temp
 
     spon_start = spon_start[:-1]
     spon_sweeps = pd.DataFrame({start_key: spon_start, end_key: spon_end})
@@ -348,7 +354,8 @@ def make_spontaneous_activity_tables(
             > duration_threshold
         ]
         spon_sweeps.reset_index(drop=True, inplace=True)
-
+    spon_sweeps = spon_sweeps.drop_duplicates(subset=[start_key, end_key])
+    spon_sweeps.reset_index(drop=True, inplace=True)
     return [spon_sweeps]
 
 
@@ -602,12 +609,21 @@ def read_stimulus_name_from_path(stimulus):
 
     """
 
-    stim_name = stimulus["stim_path"].split("\\")[-1].split(".")[0]
+    if "stim_path" in stimulus:
+        stim_name = stimulus["stim_path"]
 
-    if stimulus["stim_path"] == "":
-        stim_name = stimulus["movie_local_path"].split("\\")[-1].split(".")[0]
+    if stim_name == "":
+        if (
+            "movie_local_path" in stimulus
+            and stimulus["movie_local_path"] != ""
+        ):
+            stim_name = (
+                stimulus["movie_local_path"].split("\\")[-1].split(".")[0]
+            )
+        else:
+            stim_name = stimulus["stim"]
     else:
-        stim_name = stimulus["stim_path"].split("\\")[-1].split(".")[0]
+        stim_name = stim_name.split("\\")[-1].split(".")[0]
     return stim_name
 
 
@@ -638,6 +654,21 @@ def get_stimulus_type(stimulus):
         return stim_type
     else:
         return "None or Blank"
+
+
+def get_stimulus_image_name(stimulus, index):
+    """
+    Extracts the image name from the stimulus dictionary.
+    Used when image is NOT from a movie file.
+    """
+    image_index = stimulus["sweep_order"][index]
+    image_name = stimulus["image_path_list"][image_index]
+    # Use regex to capture everything after 'passive\\'
+    match = re.search(r"passive\\(.+)", image_name)
+
+    if match:
+        extracted_image_name = match.group(1)
+    return extracted_image_name
 
 
 def build_stimuluswise_table(
@@ -703,29 +734,53 @@ def build_stimuluswise_table(
     if get_stimulus_name is None:
         get_stimulus_name = read_stimulus_name_from_path
 
-    frame_display_sequence = seconds_to_frames(
-        stimulus["display_sequence"], pickle_file
-    )
+    if stimulus["display_sequence"] is None:
+        get_stimulus_name = get_stimulus_image_name
+        frame_display_sequence = (
+            stimulus["sweep_frames"][0][0],
+            stimulus["sweep_frames"][-1][1],
+        )
+        sweep_frames_table = pd.DataFrame(
+            stimulus["sweep_frames"], columns=(start_key, end_key)
+        )
+        sweep_frames_table[block_key] = np.zeros(
+            [sweep_frames_table.shape[0]], dtype=int
+        )
+        stim_table = pd.DataFrame(
+            {
+                start_key: sweep_frames_table[start_key],
+                end_key: sweep_frames_table[end_key] + 1,
+                name_key: [
+                    get_stimulus_name(stimulus, idx)
+                    for idx in sweep_frames_table.index
+                ],
+                template_key: "Image",
+                block_key: sweep_frames_table[block_key],
+            }
+        )
+    else:
+        frame_display_sequence = seconds_to_frames(
+            stimulus["display_sequence"], pickle_file
+        )
+        sweep_frames_table = pd.DataFrame(
+            stimulus["sweep_frames"], columns=(start_key, end_key)
+        )
+        sweep_frames_table[block_key] = np.zeros(
+            [sweep_frames_table.shape[0]], dtype=int
+        )
+        sweep_frames_table = apply_display_sequence(
+            sweep_frames_table, frame_display_sequence, block_key=block_key
+        )
 
-    sweep_frames_table = pd.DataFrame(
-        stimulus["sweep_frames"], columns=(start_key, end_key)
-    )
-    sweep_frames_table[block_key] = np.zeros(
-        [sweep_frames_table.shape[0]], dtype=int
-    )
-    sweep_frames_table = apply_display_sequence(
-        sweep_frames_table, frame_display_sequence, block_key=block_key
-    )
-
-    stim_table = pd.DataFrame(
-        {
-            start_key: sweep_frames_table[start_key],
-            end_key: sweep_frames_table[end_key] + 1,
-            name_key: get_stimulus_name(stimulus),
-            template_key: get_stimulus_type(stimulus),
-            block_key: sweep_frames_table[block_key],
-        }
-    )
+        stim_table = pd.DataFrame(
+            {
+                start_key: sweep_frames_table[start_key],
+                end_key: sweep_frames_table[end_key] + 1,
+                name_key: get_stimulus_name(stimulus),
+                template_key: get_stimulus_type(stimulus),
+                block_key: sweep_frames_table[block_key],
+            }
+        )
 
     sweep_order = stimulus["sweep_order"][: len(sweep_frames_table)]
     dimnames = stimulus["dimnames"]

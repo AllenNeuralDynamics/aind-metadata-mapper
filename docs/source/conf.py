@@ -2,9 +2,10 @@
 #
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
-from pathlib import Path
 from datetime import date
 from os.path import abspath, dirname
+from pathlib import Path
+
 from aind_metadata_mapper import __version__ as package_version
 
 INSTITUTE_NAME = "Allen Institute for Neural Dynamics"

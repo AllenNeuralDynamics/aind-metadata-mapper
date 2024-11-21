@@ -50,6 +50,8 @@
       "column_z_stack": "1330132892_cortical_z_stack0.tiff",
       "local_z_stack_tif": "1330132892_local_z_stack0.tiff",
       "acquisition_framerate_Hz": 9.48,
+      "scanimage_power_percent": 30,
+      "scanimage_split_percent": 40,
       "imaging_planes": [
         {
           "targeted_x": -2015.51,
@@ -99,6 +101,8 @@
       "column_z_stack": "1330132892_cortical_z_stack0.tiff",
       "local_z_stack_tif": "1330132892_local_z_stack1.tiff",
       "acquisition_framerate_Hz": 9.48,
+      "scanimage_power_percent": 22,
+      "scanimage_split_percent": 50,
       "imaging_planes": [
         {
           "targeted_x": -2015.51,
@@ -148,6 +152,8 @@
       "column_z_stack": "1330132892_cortical_z_stack0.tiff",
       "local_z_stack_tif": "1330132892_local_z_stack2.tiff",
       "acquisition_framerate_Hz": 9.48,
+      "scanimage_power_percent": 20,
+      "scanimage_split_percent": 55,
       "imaging_planes": [
         {
           "targeted_x": -2015.51,
@@ -197,6 +203,8 @@
       "column_z_stack": "1330132892_cortical_z_stack0.tiff",
       "local_z_stack_tif": "1330132892_local_z_stack3.tiff",
       "acquisition_framerate_Hz": 9.48,
+      "scanimage_power_percent": 18,
+      "scanimage_split_percent": 70,
       "imaging_planes": [
         {
           "targeted_x": -2015.51,
