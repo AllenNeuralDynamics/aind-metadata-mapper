@@ -200,14 +200,18 @@ class GatherMetadataJob:
             )
         )
         if should_use_service:
+            # Returns a dictionary with name, subject_id, and creation_time
             basic_settings = RawDataDescription.parse_name(
                 name=self.settings.raw_data_description_settings.name
             )
             ds_settings = self.settings.raw_data_description_settings
+            project_name = (
+                self.settings.raw_data_description_settings.project_name
+            )
             funding_source, investigator_list = get_funding_info(
                 self.settings.metadata_service_domain,
                 ds_settings.metadata_service_path,
-                self.settings.raw_data_description_settings.project_name,
+                project_name,
             )
 
             try:
@@ -217,6 +221,7 @@ class GatherMetadataJob:
                 modality = self.settings.raw_data_description_settings.modality
                 return json.loads(
                     RawDataDescription(
+                        project_name=project_name,
                         name=self.settings.raw_data_description_settings.name,
                         institution=institution,
                         modality=modality,
@@ -232,6 +237,7 @@ class GatherMetadataJob:
                 modality = self.settings.raw_data_description_settings.modality
                 return json.loads(
                     RawDataDescription.model_construct(
+                        project_name=project_name,
                         name=self.settings.raw_data_description_settings.name,
                         institution=institution,
                         modality=modality,
