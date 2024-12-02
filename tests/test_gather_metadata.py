@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, mock_open, patch
 from aind_data_schema.core.metadata import Metadata
 from aind_data_schema.core.processing import DataProcess, PipelineProcess
 from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.organizations import Organization
 from aind_data_schema_models.process_names import ProcessName
 from pydantic import ValidationError
 from requests import Response
@@ -1045,6 +1046,30 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual(
             ["John Apple"],
             job_settings.session_settings.job_settings.experimenter_full_name,
+        )
+
+    def test_project_name_is_set(self):
+        """Tests project_name makes it to the data_description file"""
+
+        settings = JobSettings(
+            job_settings_name="GatherMetadata",
+            metadata_service_domain="http://example.com",
+            raw_data_description_settings=RawDataDescriptionSettings(
+                name="behavior_123456_2024-10-01_09-00-23",
+                project_name="Cognitive flexibility in patch foraging",
+                modality=[Modality.BEHAVIOR, Modality.BEHAVIOR_VIDEOS],
+                institution=Organization.AIND,
+                metadata_service_path="funding",
+            ),
+            directory_to_write_to="/some/dir/data_dir",
+            metadata_dir_force=False,
+        )
+
+        job = GatherMetadataJob(settings=settings)
+        data_description_contents = job.get_raw_data_description()
+        self.assertEqual(
+            "Cognitive flexibility in patch foraging",
+            data_description_contents["project_name"],
         )
 
 
