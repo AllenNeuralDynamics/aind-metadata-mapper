@@ -69,10 +69,17 @@ class SmartSPIMSpecimenIngester(GenericEtl[JobSettings]):
         transformed = self._transform(
             extracted, self.job_settings.subject_to_ingest
         )
-
-        job_response = self._load(
-            transformed, self.job_settings.output_directory
-        )
+        try:
+            job_response = self._load(
+                transformed, self.job_settings.output_directory
+            )
+        except Exception as e:
+            logging.error(f"Error loading {self.job_settings.subject_to_ingest}: {e}")
+            return JobResponse(
+                status_code=500,
+                message=f"Error loading {self.job_settings.subject_to_ingest}",
+                data=None,
+            )
         return job_response
 
     def _extract(self, subj):
