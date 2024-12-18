@@ -101,13 +101,7 @@ class GatherMetadataJob:
     def get_subject(self) -> dict:
         """Get subject metadata"""
         file_name = Subject.default_filename()
-        should_use_service: bool = (
-            not self.settings.metadata_dir_force
-            or not self._does_file_exist_in_user_defined_dir(
-                file_name=file_name
-            )
-        )
-        if should_use_service:
+        if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
             response = requests.get(
                 self.settings.metadata_service_domain
                 + f"/{self.settings.subject_settings.metadata_service_path}/"
@@ -130,13 +124,7 @@ class GatherMetadataJob:
     def get_procedures(self) -> Optional[dict]:
         """Get procedures metadata"""
         file_name = Procedures.default_filename()
-        should_use_service: bool = (
-            not self.settings.metadata_dir_force
-            or not self._does_file_exist_in_user_defined_dir(
-                file_name=file_name
-            )
-        )
-        if should_use_service:
+        if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
             procedures_file_path = (
                 self.settings.procedures_settings.metadata_service_path
             )
@@ -193,13 +181,7 @@ class GatherMetadataJob:
 
         # Returns a dict with platform, subject_id, and acq_datetime
         file_name = RawDataDescription.default_filename()
-        should_use_service: bool = (
-            not self.settings.metadata_dir_force
-            or not self._does_file_exist_in_user_defined_dir(
-                file_name=file_name
-            )
-        )
-        if should_use_service:
+        if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
             # Returns a dictionary with name, subject_id, and creation_time
             basic_settings = RawDataDescription.parse_name(
                 name=self.settings.raw_data_description_settings.name
@@ -256,13 +238,7 @@ class GatherMetadataJob:
         """Get processing metadata"""
 
         file_name = Processing.default_filename()
-        should_use_service: bool = (
-            not self.settings.metadata_dir_force
-            or not self._does_file_exist_in_user_defined_dir(
-                file_name=file_name
-            )
-        )
-        if should_use_service:
+        if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
             try:
                 processing_pipeline = PipelineProcess.model_validate_json(
                     json.dumps(
