@@ -116,8 +116,8 @@ class JobSettings(BaseSettings, extra="allow"):
         default=None,
         description="Optional path where user defined metadata files might be",
     )
-    metadata_dir_force: bool = Field(
-        default=False,
+    metadata_dir_force: Optional[bool] = Field(
+        default=None,
         description=(
             "Whether to override the user defined files in metadata_dir with "
             "those pulled from metadata service"

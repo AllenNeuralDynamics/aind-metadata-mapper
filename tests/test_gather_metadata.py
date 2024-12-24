@@ -169,7 +169,6 @@ class TestGatherMetadataJob(unittest.TestCase):
                 subject_id="632269",
             ),
             metadata_dir=metadata_dir,
-            metadata_dir_force=True,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_subject()
@@ -238,7 +237,6 @@ class TestGatherMetadataJob(unittest.TestCase):
                 subject_id="632269",
             ),
             metadata_dir=metadata_dir,
-            metadata_dir_force=True,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_procedures()
@@ -325,7 +323,6 @@ class TestGatherMetadataJob(unittest.TestCase):
                 modality=[Modality.ECEPHYS, Modality.BEHAVIOR_VIDEOS],
             ),
             metadata_dir=metadata_dir,
-            metadata_dir_force=True,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_raw_data_description()
@@ -477,7 +474,6 @@ class TestGatherMetadataJob(unittest.TestCase):
                 )
             ),
             metadata_dir=metadata_dir,
-            metadata_dir_force=True,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_processing_metadata()
@@ -1062,7 +1058,6 @@ class TestGatherMetadataJob(unittest.TestCase):
                 metadata_service_path="funding",
             ),
             directory_to_write_to="/some/dir/data_dir",
-            metadata_dir_force=False,
         )
 
         job = GatherMetadataJob(settings=settings)
