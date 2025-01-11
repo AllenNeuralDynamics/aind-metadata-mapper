@@ -12,7 +12,6 @@ from aind_data_schema.base import AindCoreModel
 from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema.core.data_description import (
     DataDescription,
-    Funding,
     RawDataDescription,
 )
 from aind_data_schema.core.instrument import Instrument
@@ -176,9 +175,7 @@ class GatherMetadataJob:
                 if project_investigators is not [""]:
                     investigators.update(investigators_pid_names)
                 funding_info_without_investigators = {
-                    k: v
-                    for k, v in f.items()
-                    if k != "investigators"
+                    k: v for k, v in f.items() if k != "investigators"
                 }
                 parsed_funding_info.append(funding_info_without_investigators)
             investigators = [
