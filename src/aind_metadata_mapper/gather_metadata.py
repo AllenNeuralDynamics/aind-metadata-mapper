@@ -161,23 +161,28 @@ class GatherMetadataJob:
             else:
                 funding_info = []
             investigators = set()
+            parsed_funding_info = []
             for f in funding_info:
-                project_fundees = (
+                project_investigators = (
                     ""
-                    if f.get("fundee", None) is None
-                    else f.get("fundee", "").split(",")
+                    if f.get("investigators", None) is None
+                    else f.get("investigators", "").split(",")
                 )
-                pid_names = [
+                investigators_pid_names = [
                     PIDName(name=p.strip()).model_dump_json()
-                    for p in project_fundees
+                    for p in project_investigators
                 ]
-                if project_fundees is not [""]:
-                    investigators.update(pid_names)
+                if project_investigators is not [""]:
+                    investigators.update(investigators_pid_names)
+                funding_info_without_investigators = {
+                    k: v for k, v in f.items() if k != "investigators"
+                }
+                parsed_funding_info.append(funding_info_without_investigators)
             investigators = [
                 PIDName.model_validate_json(i) for i in investigators
             ]
             investigators.sort(key=lambda x: x.name)
-            return funding_info, investigators
+            return parsed_funding_info, investigators
 
         # Returns a dict with platform, subject_id, and acq_datetime
         file_name = RawDataDescription.default_filename()
