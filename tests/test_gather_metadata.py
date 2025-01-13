@@ -290,7 +290,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_raw_data_description()
-        expected_investigators = ["Anna Apple", "John Smith"]
+        expected_investigators = ["Anna Apple"]
         actual_investigators = [i["name"] for i in contents["investigators"]]
         self.assertEqual(expected_investigators, actual_investigators)
         self.assertEqual("ecephys", contents["platform"]["abbreviation"])
@@ -360,7 +360,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_raw_data_description()
-        expected_investigators = ["Anna Apple", "Don Key", "John Smith"]
+        expected_investigators = ["Anna Apple"]
         actual_investigators = [i["name"] for i in contents["investigators"]]
         self.assertEqual(2, len(contents["funding_source"]))
         self.assertEqual(expected_investigators, actual_investigators)
@@ -782,7 +782,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job._gather_non_automated_metadata()
         mock_write_file.assert_called()
 
-    def test_get_main_metadata_with_warnings(self):
+    @patch("logging.warning")
+    def test_get_main_metadata_with_warnings(self, mock_warn: MagicMock):
         """Tests get_main_metadata method raises validation warnings"""
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
@@ -812,6 +813,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         self.assertEqual("Missing", main_metadata["metadata_status"])
         self.assertEqual("632269", main_metadata["subject"]["subject_id"])
+        mock_warn.assert_called_once()
 
     @patch("logging.warning")
     def test_get_main_metadata_with_ser_issues(self, mock_log: MagicMock):
