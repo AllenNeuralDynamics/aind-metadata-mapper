@@ -97,6 +97,7 @@ class MetadataSettings(BaseSettings, extra="allow"):
     processing_filepath: Optional[Path] = None
     acquisition_filepath: Optional[Path] = None
     instrument_filepath: Optional[Path] = None
+    quality_control_filepath: Optional[Path] = None
 
 
 class JobSettings(BaseSettings, extra="allow"):

@@ -18,6 +18,7 @@ from aind_data_schema.core.instrument import Instrument
 from aind_data_schema.core.metadata import Metadata
 from aind_data_schema.core.procedures import Procedures
 from aind_data_schema.core.processing import PipelineProcess, Processing
+from aind_data_schema.core.quality_control import QualityControl
 from aind_data_schema.core.rig import Rig
 from aind_data_schema.core.session import Session
 from aind_data_schema.core.subject import Subject
@@ -304,6 +305,17 @@ class GatherMetadataJob:
         else:
             return None
 
+    def get_quality_control_metadata(self) -> Optional[dict]:
+        """Get quality_control metadata"""
+        file_name = QualityControl.default_filename()
+        if self._does_file_exist_in_user_defined_dir(file_name=file_name):
+            contents = self._get_file_from_user_defined_directory(
+                file_name=file_name
+            )
+            return contents
+        else:
+            return None
+
     def get_acquisition_metadata(self) -> Optional[dict]:
         """Get acquisition metadata"""
         file_name = Acquisition.default_filename()
@@ -388,6 +400,10 @@ class GatherMetadataJob:
             self.settings.metadata_settings.session_filepath, Session
         )
         rig = load_model(self.settings.metadata_settings.rig_filepath, Rig)
+        quality_control = load_model(
+            self.settings.metadata_settings.quality_control_filepath,
+            QualityControl,
+        )
         acquisition = load_model(
             self.settings.metadata_settings.acquisition_filepath, Acquisition
         )
@@ -410,6 +426,7 @@ class GatherMetadataJob:
                 processing=processing,
                 acquisition=acquisition,
                 instrument=instrument,
+                quality_control=quality_control,
             )
             metadata_json = json.loads(metadata.model_dump_json(by_alias=True))
             return metadata_json
@@ -430,6 +447,7 @@ class GatherMetadataJob:
             metadata_json["processing"] = processing
             metadata_json["acquisition"] = acquisition
             metadata_json["instrument"] = instrument
+            metadata_json["quality_control"] = quality_control
             return metadata_json
 
     def _write_json_file(self, filename: str, contents: dict) -> None:
