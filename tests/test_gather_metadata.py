@@ -644,6 +644,28 @@ class TestGatherMetadataJob(unittest.TestCase):
         contents = metadata_job.get_rig_metadata()
         self.assertIsNone(contents)
 
+    def test_get_quality_control_metadata(self):
+        """Tests get_quality_control_metadata"""
+        metadata_dir = RESOURCES_DIR / "metadata_files"
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_dir=metadata_dir,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_quality_control_metadata()
+        self.assertIsNotNone(contents)
+
+    def test_get_quality_control_metadata_none(self):
+        """Tests get_quality_control_metadata returns none"""
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_quality_control_metadata()
+        self.assertIsNone(contents)
+
     def test_get_problematic_rig_metadata(self):
         """Tests get_rig_metadata when there is a pydantic serialization
         issue."""
