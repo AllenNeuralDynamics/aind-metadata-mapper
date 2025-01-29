@@ -38,7 +38,7 @@ class SessionSettings(BaseSettings, extra="allow"):
             BrukerSessionJobSettings,
             FipSessionJobSettings,
             MesoscopeSessionJobSettings,
-            OpenEphysJobSettings
+            OpenEphysJobSettings,
         ],
         Field(discriminator="job_settings_name"),
     ]
