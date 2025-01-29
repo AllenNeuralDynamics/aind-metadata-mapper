@@ -29,9 +29,6 @@ from aind_metadata_mapper.gather_metadata import GatherMetadataJob
 from aind_metadata_mapper.mesoscope.models import (
     JobSettings as MesoscopeSessionJobSettings,
 )
-from aind_metadata_mapper.open_ephys.models import (
-    JobSettings as OpenEphysJobSettings,
-)
 from aind_metadata_mapper.models import (
     AcquisitionSettings,
     JobSettings,
@@ -41,6 +38,9 @@ from aind_metadata_mapper.models import (
     RawDataDescriptionSettings,
     SessionSettings,
     SubjectSettings,
+)
+from aind_metadata_mapper.open_ephys.models import (
+    JobSettings as OpenEphysJobSettings,
 )
 from aind_metadata_mapper.smartspim.acquisition import (
     JobSettings as SmartSpimAcquisitionJobSettings,
@@ -560,7 +560,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         ".CamstimEphysSessionEtl.run_job"
     )
     def test_get_session_metadata_camstim_success(
-            self, mock_run_job: MagicMock
+        self, mock_run_job: MagicMock
     ):
         """Tests get_session_metadata openephys creates
         CamstimEphysSessionEtl class."""

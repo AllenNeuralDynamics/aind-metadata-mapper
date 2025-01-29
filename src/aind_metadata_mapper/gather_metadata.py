@@ -6,9 +6,6 @@ import logging
 import sys
 from pathlib import Path
 from typing import Optional, Type
-from aind_metadata_mapper.mesoscope.models import (
-    JobSettings as MesoscopeSessionJobSettings,
-)
 
 import requests
 from aind_data_schema.base import AindCoreModel
@@ -40,15 +37,18 @@ from aind_metadata_mapper.bruker.session import MRIEtl
 from aind_metadata_mapper.fip.models import (
     JobSettings as FipSessionJobSettings,
 )
-from aind_metadata_mapper.open_ephys.models import (
-    JobSettings as OpenEphysJobSettings,
-)
 from aind_metadata_mapper.fip.session import FIBEtl
+from aind_metadata_mapper.mesoscope.models import (
+    JobSettings as MesoscopeSessionJobSettings,
+)
 from aind_metadata_mapper.mesoscope.session import MesoscopeEtl
+from aind_metadata_mapper.models import JobSettings
 from aind_metadata_mapper.open_ephys.camstim_ephys_session import (
     CamstimEphysSessionEtl,
 )
-from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.open_ephys.models import (
+    JobSettings as OpenEphysJobSettings,
+)
 from aind_metadata_mapper.smartspim.acquisition import SmartspimETL
 
 
