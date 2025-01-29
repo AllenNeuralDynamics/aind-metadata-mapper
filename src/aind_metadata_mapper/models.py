@@ -28,6 +28,7 @@ from aind_metadata_mapper.open_ephys.models import (
     JobSettings as OpenEphysJobSettings,
 )
 
+
 class SessionSettings(BaseSettings, extra="allow"):
     """Settings needed to retrieve session metadata"""
 
