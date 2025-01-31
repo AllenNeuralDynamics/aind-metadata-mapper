@@ -26,6 +26,7 @@ from aind_data_schema.core.session import (
 )
 from aind_data_schema_models.modalities import Modality
 
+import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
 import aind_metadata_mapper.stimulus.camstim
 from aind_metadata_mapper.core import GenericEtl
@@ -47,7 +48,7 @@ class CamstimEphysSessionEtl(
     recording_dir: Path
 
     def __init__(
-        self, session_id: str, job_settings: Union[JobSettings, str, dict]
+        self, job_settings: Union[JobSettings, str, dict]
     ) -> None:
         """
         Determine needed input filepaths from np-exp and lims, get session
@@ -67,48 +68,64 @@ class CamstimEphysSessionEtl(
             job_settings_model = job_settings
         GenericEtl.__init__(self, job_settings=job_settings_model)
 
-        sessions_root = Path(self.job_settings.sessions_root)
-        self.folder = self.get_folder(session_id, sessions_root)
-        self.session_path = self.get_session_path(session_id, sessions_root)
+        # sessions_root = Path(self.job_settings.sessions_root)
+        # self.folder_name = self.get_folder(session_id, sessions_root)
+        # self.session_path = self.get_session_path(session_id, sessions_root)
+        self.session_path = job_settings.input_source
+        self.folder_name = self.session_path.name
+        self.output_dir = job_settings.output_directory
+        
         self.recording_dir = npc_ephys.get_single_oebin_path(
             self.session_path
         ).parent
 
         self.motor_locs_path = (
-            self.session_path / f"{self.folder}.motor-locs.csv"
+            self.session_path / f"{self.folder_name}.motor-locs.csv"
         )
-        self.pkl_path = self.session_path / f"{self.folder}.stim.pkl"
-        self.opto_pkl_path = self.session_path / f"{self.folder}.opto.pkl"
+        self.pkl_path = self.session_path / f"{self.folder_name}.stim.pkl"
+        if not self.pkl_path.exists():
+            self.pkl_path = self.session_path / f"{self.folder_name}.behavior.pkl"
+        print("Using pickle:",self.pkl_path)
+        self.pkl_data = pkl.load_pkl(self.pkl_path)
+        self.fps = pkl.get_fps(self.pkl_data)
+
+        self.opto_pkl_path = self.session_path / f"{self.folder_name}.opto.pkl"
         self.opto_table_path = (
-            self.session_path / f"{self.folder}_opto_epochs.csv"
+            self.session_path / f"{self.folder_name}_opto_epochs.csv"
         )
+        self.opto_conditions_map = job_settings.opto_conditions_map
         self.stim_table_path = (
-            self.session_path / f"{self.folder}_stim_epochs.csv"
+            self.session_path / f"{self.folder_name}_stim_epochs.csv"
         )
-        self.sync_path = self.session_path / f"{self.folder}.sync"
+        self.sync_path = self.session_path / f"{self.folder_name}.sync"
 
         platform_path = next(
-            self.session_path.glob(f"{self.folder}_platform*.json")
+            self.session_path.glob(f"{self.folder_name}_platform*.json")
         )
         self.platform_json = json.loads(platform_path.read_text())
         self.project_name = self.platform_json["project"]
 
-        sync_data = sync.load_sync(self.sync_path)
-        self.session_start = sync.get_start_time(sync_data)
-        self.session_end = sync.get_stop_time(sync_data)
+        self.sync_data = sync.load_sync(self.sync_path)
+        self.session_start = sync.get_start_time(self.sync_data)
+        self.session_end = sync.get_stop_time(self.sync_data)
         logger.debug(
             f"session start: {self.session_start} \n"
             f" session end: {self.session_end}"
         )
 
         self.session_uuid = self.get_session_uuid()
+        self.mtrain_server = job_settings.mtrain_server
         self.mtrain_regimen = self.get_mtrain()
+        self.behavior = self._is_behavior()
 
         if not self.stim_table_path.exists() or (
             self.job_settings.overwrite_tables
         ):
             logger.debug("building stim table")
-            self.build_stimulus_table()
+            if self.behavior:
+                self.build_behavior_table()
+            else:
+                self.build_stimulus_table()
         if self.opto_pkl_path.exists() and (
             not self.opto_table_path.exists()
             or self.job_settings.overwrite_tables
@@ -127,7 +144,7 @@ class CamstimEphysSessionEtl(
         """Transforms all metadata for the session into relevant files"""
         self._extract()
         self._transform()
-        return self._load(self.session_json, self.session_path)
+        return self._load(self.session_json, self.output_dir)
 
     def _extract(self):
         """TODO: refactor a lot of the __init__ code here"""
@@ -146,7 +163,7 @@ class CamstimEphysSessionEtl(
             session_type=self.job_settings.session_type,
             iacuc_protocol=self.job_settings.iacuc_protocol,
             rig_id=self.platform_json["rig_id"],
-            subject_id=self.folder.split("_")[1],
+            subject_id=self.folder_name.split("_")[1],
             data_streams=self.data_streams(),
             stimulus_epochs=self.stim_epochs,
             mouse_platform_name=self.job_settings.mouse_platform_name,
@@ -340,6 +357,54 @@ class CamstimEphysSessionEtl(
         data_streams.append(self.video_stream())
         return tuple(data_streams)
 
+    def build_optogenetics_table(self):
+        """
+        Builds an optogenetics table from the opto pickle file and sync file.
+        Writes the table to a csv file.
+        Parameters
+        ----------
+        output_opto_table_path : str
+            Path to write the optogenetics table to.
+        returns
+        -------
+        dict
+            Dictionary containing the path to the output opto table
+        """
+        opto_file = pkl.load_pkl(self.opto_pkl_path)
+        sync_file = sync.load_sync(self.sync_path)
+        start_times = sync.extract_led_times(sync_file, self.opto_conditions_map)
+        conditions = [str(item) for item in opto_file["opto_conditions"]]
+        levels = opto_file["opto_levels"]
+        assert len(conditions) == len(levels)
+        if len(start_times) > len(conditions):
+            raise ValueError(
+                f"there are {len(start_times) - len(conditions)} extra "
+                f"optotagging sync times!"
+            )
+        optotagging_table = pd.DataFrame(
+            {
+                "start_time": start_times,
+                "condition": conditions,
+                "level": levels,
+            }
+        )
+        optotagging_table = optotagging_table.sort_values(by="start_time", axis=0)
+        stop_times = []
+        names = []
+        conditions = []
+        for _, row in optotagging_table.iterrows():
+            condition = self.opto_conditions_map[row["condition"]]
+            stop_times.append(row["start_time"] + condition["duration"])
+            names.append(condition["name"])
+            conditions.append(condition["condition"])
+        optotagging_table["stop_time"] = stop_times
+        optotagging_table["stimulus_name"] = names
+        optotagging_table["condition"] = conditions
+        optotagging_table["duration"] = (
+            optotagging_table["stop_time"] - optotagging_table["start_time"]
+        )
+        optotagging_table.to_csv(self.opto_table_path, index=False)
+
     def epoch_from_opto_table(self) -> StimulusEpoch:
         """
         From the optogenetic stimulation table, returns a single schema
@@ -352,7 +417,7 @@ class CamstimEphysSessionEtl(
         script_obj = Software(
             name=self.mtrain_regimen["name"],
             version="1.0",
-            url=self.mtrain_regimen,
+            url=self.mtrain_regimen["script"],
         )
 
         opto_table = pd.read_csv(self.opto_table_path)
