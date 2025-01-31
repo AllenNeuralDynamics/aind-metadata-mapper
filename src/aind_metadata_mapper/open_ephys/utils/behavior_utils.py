@@ -90,11 +90,10 @@ def get_images_dict(pkl_dict) -> Dict:
     images_meta = []
 
     for cat, cat_images in image_set.items():
-        cat_decoded = cat.decode("utf-8")
         for img_index, (img_name, img) in enumerate(cat_images.items()):
             meta = {
-                "image_category": cat_decoded,
-                "image_name": img_name.decode("utf-8"),
+                "image_category": cat,
+                "image_name": img_name,
                 "orientation": np.NaN,
                 "phase": np.NaN,
                 "spatial_frequency": np.NaN,
