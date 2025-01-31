@@ -34,7 +34,7 @@ def load_img_pkl(pstream):
         image pkl file.
 
     """
-    return pickle.load(pstream, encoding="bytes")
+    return pickle.load(pstream, encoding="Latin-1")
 
 
 def get_stimuli(pkl):
