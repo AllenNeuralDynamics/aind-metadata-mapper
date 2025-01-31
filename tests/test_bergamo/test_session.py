@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from aind_data_schema.core.session import Session
+
 from aind_metadata_mapper.bergamo.session import BergamoEtl, JobSettings
 
 RESOURCES_DIR = (

@@ -18,6 +18,7 @@ from aind_data_schema.core.instrument import Instrument
 from aind_data_schema.core.metadata import Metadata
 from aind_data_schema.core.procedures import Procedures
 from aind_data_schema.core.processing import PipelineProcess, Processing
+from aind_data_schema.core.quality_control import QualityControl
 from aind_data_schema.core.rig import Rig
 from aind_data_schema.core.session import Session
 from aind_data_schema.core.subject import Subject
@@ -101,13 +102,7 @@ class GatherMetadataJob:
     def get_subject(self) -> dict:
         """Get subject metadata"""
         file_name = Subject.default_filename()
-        should_use_service: bool = (
-            not self.settings.metadata_dir_force
-            or not self._does_file_exist_in_user_defined_dir(
-                file_name=file_name
-            )
-        )
-        if should_use_service:
+        if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
             response = requests.get(
                 self.settings.metadata_service_domain
                 + f"/{self.settings.subject_settings.metadata_service_path}/"
@@ -130,13 +125,7 @@ class GatherMetadataJob:
     def get_procedures(self) -> Optional[dict]:
         """Get procedures metadata"""
         file_name = Procedures.default_filename()
-        should_use_service: bool = (
-            not self.settings.metadata_dir_force
-            or not self._does_file_exist_in_user_defined_dir(
-                file_name=file_name
-            )
-        )
-        if should_use_service:
+        if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
             procedures_file_path = (
                 self.settings.procedures_settings.metadata_service_path
             )
@@ -173,37 +162,44 @@ class GatherMetadataJob:
             else:
                 funding_info = []
             investigators = set()
+            parsed_funding_info = []
             for f in funding_info:
-                project_fundees = f.get("fundee", "").split(",")
-                pid_names = [
+                project_investigators = (
+                    ""
+                    if f.get("investigators", None) is None
+                    else f.get("investigators", "").split(",")
+                )
+                investigators_pid_names = [
                     PIDName(name=p.strip()).model_dump_json()
-                    for p in project_fundees
+                    for p in project_investigators
                 ]
-                if project_fundees is not [""]:
-                    investigators.update(pid_names)
+                if project_investigators is not [""]:
+                    investigators.update(investigators_pid_names)
+                funding_info_without_investigators = {
+                    k: v for k, v in f.items() if k != "investigators"
+                }
+                parsed_funding_info.append(funding_info_without_investigators)
             investigators = [
                 PIDName.model_validate_json(i) for i in investigators
             ]
             investigators.sort(key=lambda x: x.name)
-            return funding_info, investigators
+            return parsed_funding_info, investigators
 
         # Returns a dict with platform, subject_id, and acq_datetime
         file_name = RawDataDescription.default_filename()
-        should_use_service: bool = (
-            not self.settings.metadata_dir_force
-            or not self._does_file_exist_in_user_defined_dir(
-                file_name=file_name
-            )
-        )
-        if should_use_service:
+        if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
+            # Returns a dictionary with name, subject_id, and creation_time
             basic_settings = RawDataDescription.parse_name(
                 name=self.settings.raw_data_description_settings.name
             )
             ds_settings = self.settings.raw_data_description_settings
+            project_name = (
+                self.settings.raw_data_description_settings.project_name
+            )
             funding_source, investigator_list = get_funding_info(
                 self.settings.metadata_service_domain,
                 ds_settings.metadata_service_path,
-                self.settings.raw_data_description_settings.project_name,
+                project_name,
             )
 
             try:
@@ -213,6 +209,7 @@ class GatherMetadataJob:
                 modality = self.settings.raw_data_description_settings.modality
                 return json.loads(
                     RawDataDescription(
+                        project_name=project_name,
                         name=self.settings.raw_data_description_settings.name,
                         institution=institution,
                         modality=modality,
@@ -228,6 +225,7 @@ class GatherMetadataJob:
                 modality = self.settings.raw_data_description_settings.modality
                 return json.loads(
                     RawDataDescription.model_construct(
+                        project_name=project_name,
                         name=self.settings.raw_data_description_settings.name,
                         institution=institution,
                         modality=modality,
@@ -246,13 +244,7 @@ class GatherMetadataJob:
         """Get processing metadata"""
 
         file_name = Processing.default_filename()
-        should_use_service: bool = (
-            not self.settings.metadata_dir_force
-            or not self._does_file_exist_in_user_defined_dir(
-                file_name=file_name
-            )
-        )
-        if should_use_service:
+        if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
             try:
                 processing_pipeline = PipelineProcess.model_validate_json(
                     json.dumps(
@@ -305,6 +297,17 @@ class GatherMetadataJob:
     def get_rig_metadata(self) -> Optional[dict]:
         """Get rig metadata"""
         file_name = Rig.default_filename()
+        if self._does_file_exist_in_user_defined_dir(file_name=file_name):
+            contents = self._get_file_from_user_defined_directory(
+                file_name=file_name
+            )
+            return contents
+        else:
+            return None
+
+    def get_quality_control_metadata(self) -> Optional[dict]:
+        """Get quality_control metadata"""
+        file_name = QualityControl.default_filename()
         if self._does_file_exist_in_user_defined_dir(file_name=file_name):
             contents = self._get_file_from_user_defined_directory(
                 file_name=file_name
@@ -397,6 +400,10 @@ class GatherMetadataJob:
             self.settings.metadata_settings.session_filepath, Session
         )
         rig = load_model(self.settings.metadata_settings.rig_filepath, Rig)
+        quality_control = load_model(
+            self.settings.metadata_settings.quality_control_filepath,
+            QualityControl,
+        )
         acquisition = load_model(
             self.settings.metadata_settings.acquisition_filepath, Acquisition
         )
@@ -419,6 +426,7 @@ class GatherMetadataJob:
                 processing=processing,
                 acquisition=acquisition,
                 instrument=instrument,
+                quality_control=quality_control,
             )
             metadata_json = json.loads(metadata.model_dump_json(by_alias=True))
             return metadata_json
@@ -439,6 +447,7 @@ class GatherMetadataJob:
             metadata_json["processing"] = processing
             metadata_json["acquisition"] = acquisition
             metadata_json["instrument"] = instrument
+            metadata_json["quality_control"] = quality_control
             return metadata_json
 
     def _write_json_file(self, filename: str, contents: dict) -> None:

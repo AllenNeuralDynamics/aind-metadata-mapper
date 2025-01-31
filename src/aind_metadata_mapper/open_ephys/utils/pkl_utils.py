@@ -66,7 +66,13 @@ def get_fps(pkl):
         fps.
 
     """
-    return pkl["fps"]
+    if not pkl.get("fps"):
+        fps = round(
+            1 / np.mean(pkl["items"]["behavior"]["intervalsms"]) * 0.001, 2
+        )
+    else:
+        fps = pkl["fps"]
+    return fps
 
 
 def get_pre_blank_sec(pkl):

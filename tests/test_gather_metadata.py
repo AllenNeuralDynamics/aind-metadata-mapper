@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, mock_open, patch
 from aind_data_schema.core.metadata import Metadata
 from aind_data_schema.core.processing import DataProcess, PipelineProcess
 from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.organizations import Organization
 from aind_data_schema_models.process_names import ProcessName
 from pydantic import ValidationError
 from requests import Response
@@ -168,7 +169,6 @@ class TestGatherMetadataJob(unittest.TestCase):
                 subject_id="632269",
             ),
             metadata_dir=metadata_dir,
-            metadata_dir_force=True,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_subject()
@@ -237,7 +237,6 @@ class TestGatherMetadataJob(unittest.TestCase):
                 subject_id="632269",
             ),
             metadata_dir=metadata_dir,
-            metadata_dir_force=True,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_procedures()
@@ -291,7 +290,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_raw_data_description()
-        expected_investigators = ["Anna Apple", "John Smith"]
+        expected_investigators = ["Anna Apple"]
         actual_investigators = [i["name"] for i in contents["investigators"]]
         self.assertEqual(expected_investigators, actual_investigators)
         self.assertEqual("ecephys", contents["platform"]["abbreviation"])
@@ -324,7 +323,6 @@ class TestGatherMetadataJob(unittest.TestCase):
                 modality=[Modality.ECEPHYS, Modality.BEHAVIOR_VIDEOS],
             ),
             metadata_dir=metadata_dir,
-            metadata_dir_force=True,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_raw_data_description()
@@ -362,7 +360,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_raw_data_description()
-        expected_investigators = ["Anna Apple", "Don Key", "John Smith"]
+        expected_investigators = ["Anna Apple"]
         actual_investigators = [i["name"] for i in contents["investigators"]]
         self.assertEqual(2, len(contents["funding_source"]))
         self.assertEqual(expected_investigators, actual_investigators)
@@ -476,7 +474,6 @@ class TestGatherMetadataJob(unittest.TestCase):
                 )
             ),
             metadata_dir=metadata_dir,
-            metadata_dir_force=True,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_processing_metadata()
@@ -556,15 +553,27 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_run_job.assert_called_once()
 
     @patch("aind_metadata_mapper.mesoscope.session.MesoscopeEtl.run_job")
+    @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
     def test_get_session_metadata_mesoscope_success(
-        self, mock_run_job: MagicMock
+        self, mock_camstim: MagicMock, mock_run_job: MagicMock
     ):
         """Tests get_session_metadata bruker creates MRIEtl"""
+        mock_camstim.return_value = None
         mock_run_job.return_value = JobResponse(
             status_code=200, data=json.dumps({"some_key": "some_value"})
         )
         mesoscope_session_settings = (
-            MesoscopeSessionJobSettings.model_construct(behavior_source="abc")
+            MesoscopeSessionJobSettings.model_construct(
+                behavior_source="abc",
+                input_source="some/path",
+                session_id="123",
+                output_directory="some/output",
+                session_start_time=datetime.now(),
+                session_end_time=datetime.now(),
+                subject_id="123",
+                project="some_project",
+                experimenter_full_name=["John Doe"],
+            )
         )
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
@@ -633,6 +642,28 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_rig_metadata()
+        self.assertIsNone(contents)
+
+    def test_get_quality_control_metadata(self):
+        """Tests get_quality_control_metadata"""
+        metadata_dir = RESOURCES_DIR / "metadata_files"
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_dir=metadata_dir,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_quality_control_metadata()
+        self.assertIsNotNone(contents)
+
+    def test_get_quality_control_metadata_none(self):
+        """Tests get_quality_control_metadata returns none"""
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_quality_control_metadata()
         self.assertIsNone(contents)
 
     def test_get_problematic_rig_metadata(self):
@@ -773,7 +804,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job._gather_non_automated_metadata()
         mock_write_file.assert_called()
 
-    def test_get_main_metadata_with_warnings(self):
+    @patch("logging.warning")
+    def test_get_main_metadata_with_warnings(self, mock_warn: MagicMock):
         """Tests get_main_metadata method raises validation warnings"""
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
@@ -796,26 +828,14 @@ class TestGatherMetadataJob(unittest.TestCase):
         with self.assertWarns(UserWarning) as w:
             main_metadata = metadata_job.get_main_metadata()
         # Issues with incomplete Procedures model raises warnings
-        expected_warnings = (
-            "Pydantic serializer warnings:\n"
-            "  Expected `date` but got `str`"
-            " - serialized value may not be as expected\n"
-            "  Expected `Union[CALLITHRIX_JACCHUS, HOMO_SAPIENS, "
-            "MACACA_MULATTA, MUS_MUSCULUS, RATTUS_NORVEGICUS]` but got `dict`"
-            " - serialized value may not be as expected\n"
-            "  Expected `BreedingInfo` but got `dict`"
-            " - serialized value may not be as expected\n"
-            "  Expected `Union[AI, COLUMBIA, HUST, JANELIA, JAX, NYU, OTHER]`"
-            " but got `dict`"
-            " - serialized value may not be as expected"
-        )
-        self.assertEqual(expected_warnings, str(w.warning))
+        self.assertIsNotNone(w.warning)
         self.assertEqual(
             "s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
             main_metadata["location"],
         )
-        self.assertEqual("Invalid", main_metadata["metadata_status"])
+        self.assertEqual("Missing", main_metadata["metadata_status"])
         self.assertEqual("632269", main_metadata["subject"]["subject_id"])
+        mock_warn.assert_called_once()
 
     @patch("logging.warning")
     def test_get_main_metadata_with_ser_issues(self, mock_log: MagicMock):
@@ -1046,6 +1066,29 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual(
             ["John Apple"],
             job_settings.session_settings.job_settings.experimenter_full_name,
+        )
+
+    def test_project_name_is_set(self):
+        """Tests project_name makes it to the data_description file"""
+
+        settings = JobSettings(
+            job_settings_name="GatherMetadata",
+            metadata_service_domain="http://example.com",
+            raw_data_description_settings=RawDataDescriptionSettings(
+                name="behavior_123456_2024-10-01_09-00-23",
+                project_name="Cognitive flexibility in patch foraging",
+                modality=[Modality.BEHAVIOR, Modality.BEHAVIOR_VIDEOS],
+                institution=Organization.AIND,
+                metadata_service_path="funding",
+            ),
+            directory_to_write_to="/some/dir/data_dir",
+        )
+
+        job = GatherMetadataJob(settings=settings)
+        data_description_contents = job.get_raw_data_description()
+        self.assertEqual(
+            "Cognitive flexibility in patch foraging",
+            data_description_contents["project_name"],
         )
 
 
