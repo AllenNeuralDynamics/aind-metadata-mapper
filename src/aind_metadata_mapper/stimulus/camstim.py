@@ -181,6 +181,7 @@ class Camstim:
         stimulus_name_map=constants.default_stimulus_renames,
         column_name_map=constants.default_column_renames,
     ):
+        assert not self.behavior, "Can't generate regular stim table from behavior pkl. USe build_behavior_table instead."
         """
         Builds a stimulus table from the stimulus pickle file, sync file, and
         the given parameters. Writes the table to a csv file.
@@ -222,7 +223,7 @@ class Camstim:
             duration_threshold=minimum_spontaneous_activity_duration,
         )
 
-        stimuli = pkl.get_stimuli(self.pkl_data)
+        stimuli = pkl.get_stimuli(self.pkl_data,self.behavior)
         stimuli = stim_utils.extract_blocks_from_stim(stimuli)
         stim_table_sweeps = stim_utils.create_stim_table(
             self.pkl_data, stimuli, stimulus_tabler, spon_tabler
