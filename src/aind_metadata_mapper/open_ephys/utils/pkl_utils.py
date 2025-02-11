@@ -112,6 +112,25 @@ def angular_wheel_velocity(pkl):
     return get_fps(pkl) * get_angular_wheel_rotation(pkl)
 
 
+def get_stage(pkl):
+    """
+    Returns the stage from a pkl file
+
+    Parameters
+    ----------
+    pkl : dict
+        pkl file.
+
+    Returns
+    -------
+    data: str
+        stage name
+    """
+    if 'stage' in pkl:
+        return pkl["stage"]
+    elif 'items' in pkl:
+        return pkl['items']["behavior"]['cl_params']["stage"]
+
 def get_angular_wheel_rotation(pkl):
     """
     Returns the wheel rotation from a pkl file
