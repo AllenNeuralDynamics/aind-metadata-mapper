@@ -61,6 +61,20 @@ class TestPKL(unittest.TestCase):
         with self.assertRaises(KeyError):
             pkl.get_fps(sample_pkl)
 
+    def test_get_stage(self):
+        """
+        Test the get_stage function
+        """
+        # Creating a sample pkl dictionary with a "stage" key
+        sample_pkl = {"stage": "stage1", "other_key": "other_value"}
+
+        # Calling the function with the sample pkl dictionary
+        result = pkl.get_stage(sample_pkl)
+
+        # Asserting that the result is the value associated with the "stage" key
+        self.assertEqual(result, sample_pkl["stage"])
+
+
     def test_get_pre_blank_sec(self):
         """
         Test the get_pre_blank_sec function

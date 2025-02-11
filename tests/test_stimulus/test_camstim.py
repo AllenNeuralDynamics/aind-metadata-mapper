@@ -18,7 +18,6 @@ class TestCamstim(unittest.TestCase):
     @patch("pathlib.Path.rglob")
     @patch("aind_metadata_mapper.stimulus.camstim.Camstim._get_sync_times")
     @patch("aind_metadata_mapper.stimulus.camstim.Camstim.get_session_uuid")
-    @patch("aind_metadata_mapper.stimulus.camstim.Camstim.get_mtrain")
     @patch("aind_metadata_mapper.stimulus.camstim.Camstim._is_behavior")
     @patch("aind_metadata_mapper.open_ephys.utils.pkl_utils.load_pkl")
     @patch("aind_metadata_mapper.open_ephys.utils.sync_utils.load_sync")
@@ -29,7 +28,6 @@ class TestCamstim(unittest.TestCase):
         mock_load_sync: MagicMock,
         mock_load_pkl: MagicMock,
         mock_is_behavior: MagicMock,
-        mock_mtrain: MagicMock,
         mock_session_uuid: MagicMock,
         mock_sync_times: MagicMock,
         mock_rglob: MagicMock,
@@ -48,10 +46,6 @@ class TestCamstim(unittest.TestCase):
             },
         }
         mock_is_behavior.return_value = True
-        mock_mtrain.return_value = {
-            "name": "test_name",
-            "script": "http://example.com/script",
-        }
         mock_session_uuid.return_value = "1234"
         mock_sync_times.return_value = (
             dt(2024, 11, 1, 15, 41, 32, 920082),
