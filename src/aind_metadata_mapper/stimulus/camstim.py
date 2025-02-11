@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-import requests
 from aind_data_schema.components.devices import Software
 from aind_data_schema.core.session import (
     StimulusEpoch,

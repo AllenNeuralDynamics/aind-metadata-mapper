@@ -71,7 +71,7 @@ class TestPKL(unittest.TestCase):
         # Calling the function with the sample pkl dictionary
         result = pkl.get_stage(sample_pkl)
 
-        # Asserting that the result is the value associated with the "stage" key
+        # Asserting the value associated with the "stage" key
         self.assertEqual(result, sample_pkl["stage"])
 
     def test_get_pre_blank_sec(self):
