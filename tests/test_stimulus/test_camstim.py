@@ -1,4 +1,5 @@
 """Test the camstim.py module"""
+
 import unittest
 from datetime import datetime as dt
 from pathlib import Path
@@ -22,6 +23,7 @@ class TestCamstim(unittest.TestCase):
     @patch("aind_metadata_mapper.open_ephys.utils.pkl_utils.load_pkl")
     @patch("aind_metadata_mapper.open_ephys.utils.sync_utils.load_sync")
     @patch("aind_metadata_mapper.open_ephys.utils.pkl_utils.get_fps")
+    @patch("aind_metadata_mapper.open_ephys.utils.pkl_utils.get_stage")
     def setUpClass(
         cls,
         mock_get_fps: MagicMock,

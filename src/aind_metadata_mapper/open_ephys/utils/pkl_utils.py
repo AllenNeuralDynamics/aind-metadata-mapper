@@ -126,10 +126,11 @@ def get_stage(pkl):
     data: str
         stage name
     """
-    if 'stage' in pkl:
+    if "stage" in pkl:
         return pkl["stage"]
-    elif 'items' in pkl:
-        return pkl['items']["behavior"]['cl_params']["stage"]
+    elif "items" in pkl:
+        return pkl["items"]["behavior"]["cl_params"]["stage"]
+
 
 def get_angular_wheel_rotation(pkl):
     """

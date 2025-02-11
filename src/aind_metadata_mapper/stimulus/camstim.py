@@ -130,8 +130,6 @@ class Camstim:
         """Returns the session uuid from the pickle file"""
         return pkl.load_pkl(self.pkl_path)["session_uuid"]
 
-
-
     def get_stim_table_seconds(
         self, stim_table_sweeps, frame_times, name_map
     ) -> pd.DataFrame:
@@ -304,10 +302,7 @@ class Camstim:
             url="https://eng-gitlab.corp.alleninstitute.org/braintv/camstim",
         )
 
-        script_obj = Software(
-            name=self.stage_name,
-            version="1.0"
-        )
+        script_obj = Software(name=self.stage_name, version="1.0")
 
         print("STIM PATH", self.stim_table_path)
         schema_epochs = []
