@@ -84,7 +84,7 @@ class TestMesoscope(unittest.TestCase):
             job_settings=job_settings_str,
         )
         self.assertEqual(
-            etl.job_settings, json.dumps(JobSettings(**self.user_input))
+            etl.job_settings, JobSettings(**self.user_input)
         )
 
     @patch("pathlib.Path.is_file")
