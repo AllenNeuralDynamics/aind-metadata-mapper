@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-import requests
 from aind_data_schema.components.devices import Software
 from aind_data_schema.core.session import (
     StimulusEpoch,
@@ -33,7 +32,6 @@ class CamstimSettings(BaseModel):
     sessions_root: Optional[Path] = None
     opto_conditions_map: Optional[dict] = None
     overwrite_tables: bool = False
-    mtrain_server: str = "http://mtrain:5000"
     input_source: Path
     output_directory: Optional[Path]
     session_id: str
@@ -61,7 +59,6 @@ class Camstim:
         self.sync_path = None
         self.sync_data = None
         self.camstim_settings = camstim_settings
-        self.mtrain_server = self.camstim_settings.mtrain_server
         self.input_source = Path(self.camstim_settings.input_source)
         session_id = self.camstim_settings.session_id
         self.pkl_path = next(self.input_source.rglob("*.pkl"))
@@ -73,11 +70,11 @@ class Camstim:
         )
         self.pkl_data = pkl.load_pkl(self.pkl_path)
         self.fps = pkl.get_fps(self.pkl_data)
+        self.stage_name = pkl.get_stage(self.pkl_data)
         self.session_start, self.session_end = self._get_sync_times()
         self.sync_data = sync.load_sync(self.sync_path)
         self.mouse_id = self.camstim_settings.subject_id
         self.session_uuid = self.get_session_uuid()
-        self.mtrain_regimen = self.get_mtrain()
         self.behavior = self._is_behavior()
         self.session_type = self._get_session_type()
 
@@ -131,13 +128,6 @@ class Camstim:
     def get_session_uuid(self) -> str:
         """Returns the session uuid from the pickle file"""
         return pkl.load_pkl(self.pkl_path)["session_uuid"]
-
-    def get_mtrain(self) -> dict:
-        """Returns dictionary containing 'id', 'name', 'stages', 'states'"""
-        server = self.mtrain_server
-        req = f"{server}/behavior_session/{self.session_uuid}/details"
-        mtrain_response = requests.get(req).json()
-        return mtrain_response["result"]["regimen"]
 
     def get_stim_table_seconds(
         self, stim_table_sweeps, frame_times, name_map
@@ -311,11 +301,7 @@ class Camstim:
             url="https://eng-gitlab.corp.alleninstitute.org/braintv/camstim",
         )
 
-        script_obj = Software(
-            name=self.mtrain_regimen["name"],
-            version="1.0",
-            url=self.mtrain_regimen["script"],
-        )
+        script_obj = Software(name=self.stage_name, version="1.0")
 
         print("STIM PATH", self.stim_table_path)
         schema_epochs = []
