@@ -26,6 +26,7 @@ class TestCamstim(unittest.TestCase):
     @patch("aind_metadata_mapper.open_ephys.utils.pkl_utils.get_stage")
     def setUpClass(
         cls,
+        mock_get_stage: MagicMock,
         mock_get_fps: MagicMock,
         mock_load_sync: MagicMock,
         mock_load_pkl: MagicMock,
@@ -53,6 +54,7 @@ class TestCamstim(unittest.TestCase):
             dt(2024, 11, 1, 15, 41, 32, 920082),
             dt(2024, 11, 1, 15, 41, 50, 648629),
         )
+        mock_get_stage.return_value = "stage"
         mock_rglob.return_value = iter([Path("some/path/file.pkl")])
         cls.camstim = Camstim(
             CamstimSettings(
