@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
-from aind_data_schema.core.metadata import Metadata
+from aind_data_schema.core.metadata import Metadata, MetadataStatus
 from aind_data_schema.core.processing import DataProcess, PipelineProcess
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
@@ -804,6 +804,63 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job._gather_non_automated_metadata()
         mock_write_file.assert_called()
 
+    def test_get_location(self):
+        """Tests _get_location method with no location_map"""
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_settings=MetadataSettings(
+                name="asset_name", location="some_bucket"
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        location = metadata_job._get_location(
+            metadata_status=MetadataStatus.VALID
+        )
+        self.assertEqual("some_bucket", location)
+
+    def test_get_location_with_location_map(self):
+        """Tests _get_location method with location_map"""
+
+        job_settings = JobSettings(
+            directory_to_write_to="abc",
+            metadata_settings=MetadataSettings(
+                name="asset_name",
+                location_map={
+                    "Valid": "valid_bucket",
+                    "Invalid": "invalid_bucket",
+                },
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        valid_location = metadata_job._get_location(
+            metadata_status=MetadataStatus.VALID
+        )
+        invalid_location = metadata_job._get_location(
+            metadata_status=MetadataStatus.INVALID
+        )
+        missing_location = metadata_job._get_location(
+            metadata_status=MetadataStatus.MISSING
+        )
+        self.assertEqual("valid_bucket", valid_location)
+        self.assertEqual("invalid_bucket", invalid_location)
+        # Check default falls back to the invalid value
+        self.assertEqual("invalid_bucket", missing_location)
+
+    def test_get_location_with_location_map_error(self):
+        """Tests _get_location method when location_map is corrupt"""
+
+        job_settings = JobSettings(
+            directory_to_write_to="abc",
+            metadata_settings=MetadataSettings(
+                name="asset_name", location_map={"Valid": "valid_bucket"}
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        with self.assertRaises(ValueError) as e:
+            metadata_job._get_location(metadata_status=MetadataStatus.INVALID)
+        self.assertIn("Unable to set location", str(e.exception))
+
     @patch("logging.warning")
     def test_get_main_metadata_with_warnings(self, mock_warn: MagicMock):
         """Tests get_main_metadata method raises validation warnings"""
@@ -1044,6 +1101,41 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job.run_job()
         json_contents = mock_json_dump.mock_calls[0].args[0]
         mock_write_file.assert_called()
+        self.assertIsNotNone(json_contents.get("_id"))
+        self.assertIsNone(json_contents.get("id"))
+
+    @patch("builtins.open", new_callable=mock_open())
+    @patch("json.dump")
+    def test_run_job_main_metadata_with_location_map(
+        self, mock_json_dump: MagicMock, mock_write_file: MagicMock
+    ):
+        """Tests run job writes metadata json correctly when location_map is
+        set"""
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_settings=MetadataSettings(
+                name="ecephys_632269_2023-10-10_10-10-10",
+                location_map={
+                    "Valid": (
+                        "s3://some-open-bucket/"
+                        "ecephys_632269_2023-10-10_10-10-10"
+                    ),
+                    "Invalid": (
+                        "s3://some-private-bucket/"
+                        "ecephys_632269_2023-10-10_10-10-10"
+                    ),
+                },
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        metadata_job.run_job()
+        json_contents = mock_json_dump.mock_calls[0].args[0]
+        mock_write_file.assert_called()
+        self.assertEqual(
+            "s3://some-private-bucket/ecephys_632269_2023-10-10_10-10-10",
+            json_contents.get("location"),
+        )
         self.assertIsNotNone(json_contents.get("_id"))
         self.assertIsNone(json_contents.get("id"))
 
