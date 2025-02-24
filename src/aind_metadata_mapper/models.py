@@ -3,7 +3,6 @@
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Union
 
-from aind_data_schema.core.metadata import MetadataStatus
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 from pydantic import Field
@@ -96,8 +95,8 @@ class MetadataSettings(BaseSettings, extra="allow"):
             "This will override the location_map field."
         ),
     )
-    location_map: Optional[Dict[MetadataStatus, str]] = Field(
-        default=None, description=("Maps metadata status to an s3 location.")
+    location_map: Optional[Dict[str, str]] = Field(
+        default=None, description="Maps metadata status to an s3 location."
     )
     subject_filepath: Optional[Path] = None
     data_description_filepath: Optional[Path] = None
