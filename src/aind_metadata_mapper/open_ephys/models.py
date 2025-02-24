@@ -76,7 +76,6 @@ class JobSettings(BaseJobSettings):
     opto_conditions_map: dict = DEFAULT_OPTO_CONDITIONS
     overwrite_tables: bool = False
     mtrain_server: str
-    input_source: Path
     session_id: str
     active_mouse_platform: bool = False
     mouse_platform_name: str = "Mouse Platform"

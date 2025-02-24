@@ -22,6 +22,9 @@ from aind_metadata_mapper.fip.models import (
 from aind_metadata_mapper.mesoscope.models import (
     JobSettings as MesoscopeSessionJobSettings,
 )
+from aind_metadata_mapper.open_ephys.models import (
+    JobSettings as OpenEphysJobSettings,
+)
 from aind_metadata_mapper.smartspim.models import (
     JobSettings as SmartSpimAcquisitionJobSettings,
 )
@@ -36,6 +39,7 @@ class SessionSettings(BaseSettings, extra="allow"):
             BrukerSessionJobSettings,
             FipSessionJobSettings,
             MesoscopeSessionJobSettings,
+            OpenEphysJobSettings,
         ],
         Field(discriminator="job_settings_name"),
     ]
