@@ -1,27 +1,32 @@
-"""Module defining JobSettings for FIP ETL"""
+"""Module defining JobSettings for Fiber Photometry ETL"""
 
 from datetime import datetime
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from aind_metadata_mapper.core_models import BaseJobSettings
 
 
 class JobSettings(BaseJobSettings):
-    """Data that needs to be input by user."""
+    """Settings for generating Fiber Photometry session metadata."""
 
-    job_settings_name: Literal["FIP"] = "FIP"
+    job_settings_name: Literal["FIB"] = "FIB"
 
-    string_to_parse: str
+    # Required Session fields
     experimenter_full_name: List[str]
     session_start_time: datetime
-    notes: str
-    labtracks_id: str
-    iacuc_protocol: str
+    session_end_time: Optional[datetime] = None
+    subject_id: str
+    rig_id: str
+    mouse_platform_name: str
+    active_mouse_platform: bool
+
+    # Fiber photometry specific configuration
     light_source_list: List[dict]
     detector_list: List[dict]
     fiber_connections_list: List[dict]
 
-    rig_id: str = "ophys_rig"
-    session_type: str = "Foraging_Photometry"
-    mouse_platform_name: str = "Disc"
-    active_mouse_platform: bool = False
+    # Optional Session fields with defaults
+    session_type: str = "Fiber_Photometry"
+    iacuc_protocol: Optional[str] = None
+    notes: Optional[str] = None
+    protocol_id: List[str] = []
