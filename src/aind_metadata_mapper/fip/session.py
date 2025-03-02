@@ -48,24 +48,27 @@ class FIBEtl(GenericEtl[JobSettings]):
         """Transform extracted data into a valid Session object"""
         settings = extracted_source.settings
 
-        # Create data stream for fiber photometry
-        data_stream = [
+        # Create data streams from the provided data_streams list
+        data_streams = [
             Stream(
-                stream_start_time=settings.session_start_time,
-                stream_end_time=settings.session_end_time,
+                stream_start_time=stream.get(
+                    "stream_start_time", settings.session_start_time
+                ),
+                stream_end_time=stream.get(
+                    "stream_end_time", settings.session_end_time
+                ),
                 light_sources=[
                     LightEmittingDiodeConfig(**ls)
-                    for ls in settings.light_source_list
+                    for ls in stream["light_sources"]
                 ],
                 stream_modalities=[Modality.FIB],
-                detectors=[
-                    DetectorConfig(**d) for d in settings.detector_list
-                ],
+                detectors=[DetectorConfig(**d) for d in stream["detectors"]],
                 fiber_connections=[
                     FiberConnectionConfig(**fc)
-                    for fc in settings.fiber_connections_list
+                    for fc in stream["fiber_connections"]
                 ],
             )
+            for stream in settings.data_streams
         ]
 
         # Create and return the session object
@@ -78,7 +81,7 @@ class FIBEtl(GenericEtl[JobSettings]):
             subject_id=settings.subject_id,
             iacuc_protocol=settings.iacuc_protocol,
             notes=settings.notes,
-            data_streams=data_stream,
+            data_streams=data_streams,
             mouse_platform_name=settings.mouse_platform_name,
             active_mouse_platform=settings.active_mouse_platform,
             # Other optional fields would be added here
