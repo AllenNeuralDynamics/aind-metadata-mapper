@@ -2,7 +2,7 @@ from pathlib import Path
 import json
 from datetime import datetime, timezone
 from aind_metadata_mapper.fip.session import FIBEtl
-from aind_metadata_mapper.fip.models import JobSettings
+from aind_metadata_mapper.fip.job_settings import JobSettings
 
 
 def test_fip_workflow():
