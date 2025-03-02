@@ -1,0 +1,49 @@
+{
+    "experimenter_full_name": ["Bryan MacLennan"],
+    "session_start_time": "2024-03-19T14:00:00-07:00",
+    "session_end_time": "2024-03-19T15:00:00-07:00",
+    "subject_id": "754280",
+    "rig_id": "428_1_FIP1",
+    "mouse_platform_name": "mouse_tube_foraging",
+    "active_mouse_platform": false,
+    "data_streams": [
+        {
+            "stream_start_time": "2024-03-19T14:00:00-07:00",
+            "stream_end_time": "2024-03-19T15:00:00-07:00",
+            "light_sources": [
+                {
+                    "name": "470nm LED",
+                    "device_type": "Light emitting diode",
+                    "excitation_power": 0.020,
+                    "excitation_power_unit": "milliwatt"
+                }
+            ],
+            "detectors": [
+                {
+                    "name": "Green CMOS",
+                    "exposure_time": 5230.42765,
+                    "exposure_time_unit": "millisecond",
+                    "trigger_type": "Internal"
+                }
+            ],
+            "fiber_connections": [
+                {
+                    "fiber_name": "Fiber 0",
+                    "patch_cord_name": "Patch Cord A",
+                    "patch_cord_output_power": 20,
+                    "output_power_unit": "microwatt"
+                }
+            ],
+            "stream_modalities": [
+                {
+                    "abbreviation": "fib",
+                    "name": "Fiber photometry"
+                }
+            ],
+            "notes": "Fib modality: fib mode: Normal"
+        }
+    ],
+    "session_type": "Fiber_Photometry",
+    "iacuc_protocol": "2115",
+    "notes": "Test session"
+}
