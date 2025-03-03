@@ -1,12 +1,12 @@
 """Module for creating Fiber Photometry session metadata.
 
 This module demonstrates a simple ETL pattern for creating session metadata,
-with hooks for future extension to fetch additional data from external services.
+with hooks for future extension to fetch additional data from external
+services.
 """
 
 import sys
 import json
-from dataclasses import dataclass
 
 from aind_data_schema.core.session import (
     DetectorConfig,
@@ -23,13 +23,14 @@ from aind_metadata_mapper.fip.job_settings import JobSettings
 
 
 class FIBEtl(GenericEtl[JobSettings]):
-    """Creates fiber photometry session metadata with extensible ETL pattern."""
+    """Creates fiber photometry session metadata with ETL pattern."""
 
     def __init__(self, job_settings: str | JobSettings):
         """Initialize ETL with job settings.
 
         Args:
-            job_settings: Either a JobSettings object or a JSON string that can be parsed into one
+            job_settings: Either a JobSettings object or a JSON string that can
+                be parsed into one
         """
         if isinstance(job_settings, str):
             job_settings = JobSettings(**json.loads(job_settings))
@@ -85,8 +86,8 @@ class FIBEtl(GenericEtl[JobSettings]):
             active_mouse_platform=settings.active_mouse_platform,
         )
 
-        # Future: Add any data from external sources here such as calls to endpoints
-        # to fetch additional data
+        # Future: Add any data from external sources here such as calls to
+        # endpoints to fetch additional data
 
         return session
 

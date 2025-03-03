@@ -3,7 +3,6 @@
 import json
 import unittest
 from datetime import datetime
-from pathlib import Path
 import zoneinfo
 
 from aind_data_schema.core.session import (
@@ -114,7 +113,8 @@ class TestFiberPhotometrySession(unittest.TestCase):
         etl0 = FIBEtl(job_settings=job_settings_str)
         etl1 = FIBEtl(job_settings=self.example_job_settings)
 
-        # Compare serialized versions to avoid timezone implementation differences
+        # Compare serialized versions to avoid timezone implementation
+        # differences
         self.assertEqual(
             etl0.job_settings.model_dump_json(),
             etl1.job_settings.model_dump_json(),
