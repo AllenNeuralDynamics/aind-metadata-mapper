@@ -4,7 +4,12 @@ from aind_metadata_mapper.fip.session import FIBEtl
 from aind_metadata_mapper.fip.job_settings import JobSettings
 
 
-def test_fip_workflow():
+def example_fip_workflow(dry_run: bool = False) -> None:
+    """Run example FIP workflow.
+
+    Args:
+        dry_run: If True, don't write output file
+    """
     # Get the directory where this script lives
     example_dir = Path(__file__).parent
 
@@ -20,13 +25,14 @@ def test_fip_workflow():
     etl = FIBEtl(job_settings)
     response = etl.run_job()
 
-    # Write the resulting session to JSON in same directory
-    output_path = example_dir / "generated_session.json"
-    with open(output_path, "w") as f:
-        json.dump(json.loads(response.data), f, indent=2)
+    if not dry_run:
+        # Write the resulting session to JSON in same directory
+        output_path = example_dir / "generated_session.json"
+        with open(output_path, "w") as f:
+            json.dump(json.loads(response.data), f, indent=2)
 
-    print(f"Generated session saved to: {output_path}")
+        print(f"Generated session saved to: {output_path}")
 
 
 if __name__ == "__main__":
-    test_fip_workflow()
+    example_fip_workflow()
