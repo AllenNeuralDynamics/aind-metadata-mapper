@@ -1,10 +1,10 @@
 from pathlib import Path
 import json
 from aind_metadata_mapper.fip.session import FIBEtl
-from aind_metadata_mapper.fip.job_settings import JobSettings
+from aind_metadata_mapper.fip.models import JobSettings
 
 
-def example_fip_workflow(dry_run: bool = False) -> None:
+def run_workflow(dry_run: bool = False) -> None:
     """Run example FIP workflow.
 
     Args:
@@ -34,5 +34,5 @@ def example_fip_workflow(dry_run: bool = False) -> None:
         print(f"Generated session saved to: {output_path}")
 
 
-if __name__ == "__main__":
-    example_fip_workflow()
+if __name__ == "__main__":  # pragma: no cover
+    run_workflow()

@@ -1,7 +1,7 @@
 """Tests for FIP example workflows."""
 
 import unittest
-from aind_metadata_mapper.fip.examples.fip_etl import example_fip_workflow
+from aind_metadata_mapper.fip.examples.fip_etl import run_workflow
 
 
 class TestFipExamples(unittest.TestCase):
@@ -9,7 +9,7 @@ class TestFipExamples(unittest.TestCase):
 
     def test_fip_workflow(self):
         """Test that example workflow runs without error."""
-        example_fip_workflow(dry_run=True)
+        run_workflow(dry_run=True)
 
 
 if __name__ == "__main__":

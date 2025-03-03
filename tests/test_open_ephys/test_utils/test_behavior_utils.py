@@ -475,7 +475,7 @@ class TestBehaviorUtils(unittest.TestCase):
         expected_df = pd.DataFrame(expected_data, columns=expected_columns)
 
         # Perform assertions
-        self.assertEquals(result_df["time"].all(), expected_df["time"].all())
+        self.assertEqual(result_df["time"].all(), expected_df["time"].all())
 
     def test_get_image_names(self):
         """
@@ -870,7 +870,7 @@ class TestBehaviorUtils(unittest.TestCase):
         expected_df = pd.DataFrame(expected_data, columns=expected_columns)
 
         # Assert that the result matches the expected DataFrame
-        self.assertEquals(
+        self.assertEqual(
             expected_df["movie_frame_index"].values.tolist(),
             result["movie_frame_index"].values.tolist(),
         )
@@ -1036,7 +1036,7 @@ class TestBehaviorUtils(unittest.TestCase):
         expected_df = pd.DataFrame(expected_data, columns=expected_columns)
 
         # Assert that the result matches the expected DataFrame
-        self.assertEquals(
+        self.assertEqual(
             expected_df["start_time"].all(), result["start_time"].all()
         )
 
@@ -1086,23 +1086,23 @@ class TestBehaviorUtils(unittest.TestCase):
 
         processed_presentations = pd.DataFrame(processed_presentations)
         # Assert that the result matches the expected DataFrame
-        self.assertEquals(
+        self.assertEqual(
             expected_df["duration"].all(),
             processed_presentations["duration"].all(),
         )
-        self.assertEquals(
+        self.assertEqual(
             expected_df["start_time"].all(),
             processed_presentations["start_time"].all(),
         )
-        self.assertEquals(
+        self.assertEqual(
             expected_df["image_name"].all(),
             processed_presentations["image_name"].all(),
         )
-        self.assertEquals(
+        self.assertEqual(
             expected_df["omitted"].all(),
             processed_presentations["omitted"].all(),
         )
-        self.assertEquals(
+        self.assertEqual(
             expected_df["boolean_col"].all(),
             processed_presentations["boolean_col"].all(),
         )
@@ -1130,7 +1130,7 @@ class TestBehaviorUtils(unittest.TestCase):
         }
         expected_df = pd.DataFrame(expected_data)
         # Assert that the result matches the expected DataFrame
-        self.assertEquals(
+        self.assertEqual(
             processed_df["omitted"].all(), expected_df["omitted"].all()
         )
 
@@ -1200,7 +1200,7 @@ class TestBehaviorUtils(unittest.TestCase):
         expected_df = pd.DataFrame(expected_data)
 
         # Assert that the result matches the expected DataFrame
-        self.assertEquals(
+        self.assertEqual(
             processed_df["start_frame"].all(), expected_df["start_frame"].all()
         )
 
@@ -1261,7 +1261,7 @@ class TestBehaviorUtils(unittest.TestCase):
         expected_df = pd.DataFrame(expected_data)
 
         # Assert that the result matches the expected DataFrame
-        self.assertEquals(
+        self.assertEqual(
             processed_df["start_frame"].all(), expected_df["start_frame"].all()
         )
 

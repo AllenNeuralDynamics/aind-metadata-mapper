@@ -13,7 +13,7 @@ This module generates standardized session metadata for fiber photometry experim
 from datetime import datetime
 import zoneinfo
 from aind_metadata_mapper.fip.session import FIBEtl
-from aind_metadata_mapper.fip.job_settings import JobSettings
+from aind_metadata_mapper.fip.models import JobSettings
 
 # Create example settings
 session_time = datetime(1999, 10, 4, tzinfo=zoneinfo.ZoneInfo("UTC"))
@@ -58,7 +58,7 @@ response = etl.run_job()
 import json
 from pathlib import Path
 from aind_metadata_mapper.fip.session import FIBEtl
-from aind_metadata_mapper.fip.job_settings import JobSettings
+from aind_metadata_mapper.fip.models import JobSettings
 
 # Load settings from JSON file
 settings_path = Path("job_settings.json")
