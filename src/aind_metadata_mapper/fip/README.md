@@ -3,12 +3,43 @@
 This module generates standardized session metadata for fiber photometry experiments using a simple ETL (Extract, Transform, Load) pattern.
 
 ## Overview
-- `job_settings.py`: Defines the required input settings via `JobSettings` class
+- `models.py`: Defines the required input settings via `JobSettings` class
 - `session.py`: Contains the ETL logic to generate a valid session.json file
+- The resulting `session.json` file is either written to the `output_directory` specified in the job settings, or returned as a JSON string in the ETL response
+
+The ETL process takes experiment settings from either a JSON file or `JobSettings` object and produces standardized session metadata that conforms to the AIND data schema.
 
 ## Usage
 
-### Example Usage (from tests)
+### Example usage from JSON file
+This example shows how to use the `FIBEtl` class to generate session metadata when the job settings are stored in a JSON file.
+```python
+import json
+from pathlib import Path
+from aind_metadata_mapper.fip.session import FIBEtl
+from aind_metadata_mapper.fip.models import JobSettings
+
+# Load settings from JSON file
+settings_path = Path("job_settings.json")
+with open(settings_path, "r") as f:
+    settings_data = json.load(f)
+
+# Create JobSettings instance
+job_settings = JobSettings(**settings_data)
+# Or pass JSON string directly
+# etl = FIBEtl(job_settings=json.dumps(settings_data))
+
+# Generate session metadata
+etl = FIBEtl(job_settings)
+response = etl.run_job()
+
+# If output_directory was specified in settings, the session file will be written there
+# Otherwise, access the session JSON string from the response
+session_json = response.data
+```
+
+### Example usage with JobSettings object
+This example shows how to use the `JobSettings` object directly to generate session metadata.
 ```python
 from datetime import datetime
 import zoneinfo
@@ -53,32 +84,6 @@ etl = FIBEtl(settings)
 response = etl.run_job()
 ```
 
-### Actual Usage (from JSON)
-```python
-import json
-from pathlib import Path
-from aind_metadata_mapper.fip.session import FIBEtl
-from aind_metadata_mapper.fip.models import JobSettings
-
-# Load settings from JSON file
-settings_path = Path("job_settings.json")
-with open(settings_path, "r") as f:
-    settings_data = json.load(f)
-
-# Create JobSettings instance
-job_settings = JobSettings(**settings_data)
-# Or pass JSON string directly
-# etl = FIBEtl(job_settings=json.dumps(settings_data))
-
-# Generate session metadata
-etl = FIBEtl(job_settings)
-response = etl.run_job()
-
-# If output_directory was specified in settings, the session file will be written there
-# Otherwise, access the session JSON string from the response
-session_json = response.data
-```
-
 ## Job Settings Structure
 The `JobSettings` class expects:
 - `experimenter_full_name`: List of experimenter names
@@ -100,3 +105,8 @@ The module can also be run from the command line:
 ```bash
 python -m aind_metadata_mapper.fip.session job_settings.json
 ```
+
+## Extending the ETL Process to Include Service Integrations
+The ETL implementation could be modified to extend the metadata generation process, particularly for incorporating data from external services. For example, we might want to add optional session metadata fields by querying another service using the subject_id.
+
+To add service integrations, add the service calls to the `_transform` method in `session.py` before the Session object is created. Any data returned from these services must correspond to optional fields defined in the Session schema.

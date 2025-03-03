@@ -72,7 +72,10 @@ class FIBEtl(GenericEtl[JobSettings]):
             for stream in settings.data_streams
         ]
 
-        # Create base session
+        # Future: Add any data from external sources here such as calls to
+        # endpoints to fetch additional data
+
+        # Create session with all available data
         session = Session(
             experimenter_full_name=settings.experimenter_full_name,
             session_start_time=settings.session_start_time,
@@ -85,10 +88,8 @@ class FIBEtl(GenericEtl[JobSettings]):
             data_streams=data_streams,
             mouse_platform_name=settings.mouse_platform_name,
             active_mouse_platform=settings.active_mouse_platform,
+            # Add any optional fields gathered from services here
         )
-
-        # Future: Add any data from external sources here such as calls to
-        # endpoints to fetch additional data
 
         return session
 
