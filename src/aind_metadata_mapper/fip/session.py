@@ -7,6 +7,7 @@ services.
 
 import sys
 import json
+from typing import Union
 
 from aind_data_schema.core.session import (
     DetectorConfig,
@@ -25,7 +26,7 @@ from aind_metadata_mapper.fip.models import JobSettings
 class FIBEtl(GenericEtl[JobSettings]):
     """Creates fiber photometry session metadata with ETL pattern."""
 
-    def __init__(self, job_settings: str | JobSettings):
+    def __init__(self, job_settings: Union[str, JobSettings]):
         """Initialize ETL with job settings.
 
         Args:
