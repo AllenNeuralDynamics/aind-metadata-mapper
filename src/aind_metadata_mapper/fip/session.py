@@ -5,6 +5,7 @@ with hooks for future extension to fetch additional data from external services.
 """
 
 import sys
+import json
 from dataclasses import dataclass
 
 from aind_data_schema.core.session import (
@@ -23,6 +24,16 @@ from aind_metadata_mapper.fip.job_settings import JobSettings
 
 class FIBEtl(GenericEtl[JobSettings]):
     """Creates fiber photometry session metadata with extensible ETL pattern."""
+
+    def __init__(self, job_settings: str | JobSettings):
+        """Initialize ETL with job settings.
+
+        Args:
+            job_settings: Either a JobSettings object or a JSON string that can be parsed into one
+        """
+        if isinstance(job_settings, str):
+            job_settings = JobSettings(**json.loads(job_settings))
+        super().__init__(job_settings)
 
     def _extract(self) -> JobSettings:
         """Extract metadata from job settings and external sources."""

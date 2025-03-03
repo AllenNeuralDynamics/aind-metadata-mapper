@@ -6,13 +6,16 @@ from datetime import datetime
 from pathlib import Path
 import zoneinfo
 
-from aind_data_schema.core.session import Session
+from aind_data_schema.core.session import (
+    Session,
+    Stream,
+    LightEmittingDiodeConfig,
+    DetectorConfig,
+    FiberConnectionConfig,
+)
+from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.fip.session import FIBEtl, JobSettings
-
-FIXTURES_DIR = Path(__file__).parent.parent / "resources" / "fip" / "fixtures"
-EXAMPLE_SETTINGS = FIXTURES_DIR / "example_fip_settings.json"
-EXPECTED_SESSION = FIXTURES_DIR / "example_fip_session.json"
 
 
 class TestFiberPhotometrySession(unittest.TestCase):
@@ -21,45 +24,88 @@ class TestFiberPhotometrySession(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up test fixtures."""
+        session_time = datetime(1999, 10, 4, tzinfo=zoneinfo.ZoneInfo("UTC"))
+
+        # Create job settings
         cls.example_job_settings = JobSettings(
-            experimenter_full_name=["Don Key"],
-            session_start_time=datetime(
-                1999, 10, 4, tzinfo=zoneinfo.ZoneInfo("UTC")
-            ),
+            experimenter_full_name=["Test User"],
+            session_start_time=session_time,
             subject_id="000000",
             rig_id="fiber_rig_01",
             mouse_platform_name="Disc",
             active_mouse_platform=False,
-            light_source_list=[
+            data_streams=[
                 {
-                    "name": "470nm LED",
-                    "excitation_power": 0.020,
-                    "excitation_power_unit": "milliwatt",
-                }
-            ],
-            detector_list=[
-                {
-                    "name": "Hamamatsu Camera",
-                    "exposure_time": 10,
-                    "trigger_type": "Internal",
-                }
-            ],
-            fiber_connections_list=[
-                {
-                    "patch_cord_name": "Patch Cord A",
-                    "patch_cord_output_power": 40,
-                    "output_power_unit": "microwatt",
-                    "fiber_name": "Fiber A",
+                    "stream_start_time": session_time,
+                    "stream_end_time": session_time,
+                    "light_sources": [
+                        {
+                            "name": "470nm LED",
+                            "excitation_power": 0.020,
+                            "excitation_power_unit": "milliwatt",
+                        }
+                    ],
+                    "detectors": [
+                        {
+                            "name": "Hamamatsu Camera",
+                            "exposure_time": 10,
+                            "trigger_type": "Internal",
+                        }
+                    ],
+                    "fiber_connections": [
+                        {
+                            "patch_cord_name": "Patch Cord A",
+                            "patch_cord_output_power": 40,
+                            "output_power_unit": "microwatt",
+                            "fiber_name": "Fiber A",
+                        }
+                    ],
                 }
             ],
             notes="Test session",
             iacuc_protocol="2115",
         )
 
-        with open(EXPECTED_SESSION, "r") as f:
-            expected_session_contents = json.load(f)
-        cls.expected_session = Session.model_validate(
-            expected_session_contents
+        # Create expected session
+        cls.expected_session = Session(
+            experimenter_full_name=["Test User"],
+            session_start_time=session_time,
+            session_type="Fiber_Photometry",
+            rig_id="fiber_rig_01",
+            subject_id="000000",
+            iacuc_protocol="2115",
+            notes="Test session",
+            mouse_platform_name="Disc",
+            active_mouse_platform=False,
+            data_streams=[
+                Stream(
+                    stream_start_time=session_time,
+                    stream_end_time=session_time,
+                    light_sources=[
+                        LightEmittingDiodeConfig(
+                            name="470nm LED",
+                            excitation_power=0.020,
+                            excitation_power_unit="milliwatt",
+                        )
+                    ],
+                    stream_modalities=[Modality.FIB],
+                    detectors=[
+                        DetectorConfig(
+                            name="Hamamatsu Camera",
+                            exposure_time=10,
+                            trigger_type="Internal",
+                        )
+                    ],
+                    fiber_connections=[
+                        FiberConnectionConfig(
+                            patch_cord_name="Patch Cord A",
+                            patch_cord_output_power=40,
+                            output_power_unit="microwatt",
+                            fiber_name="Fiber A",
+                        )
+                    ],
+                )
+            ],
         )
 
     def test_constructor_from_string(self) -> None:
@@ -67,7 +113,12 @@ class TestFiberPhotometrySession(unittest.TestCase):
         job_settings_str = self.example_job_settings.model_dump_json()
         etl0 = FIBEtl(job_settings=job_settings_str)
         etl1 = FIBEtl(job_settings=self.example_job_settings)
-        self.assertEqual(etl1.job_settings, etl0.job_settings)
+
+        # Compare serialized versions to avoid timezone implementation differences
+        self.assertEqual(
+            etl0.job_settings.model_dump_json(),
+            etl1.job_settings.model_dump_json(),
+        )
 
     def test_transform(self):
         """Test transformation to valid session metadata."""
