@@ -383,6 +383,52 @@ def extract_blocks_from_stim(stims):
     return stim_chunked_blocks
 
 
+def extract_frame_times_from_vsync(
+    sync_file,
+    photodiode_cycle=60,
+    frame_keys=FRAME_KEYS,
+    photodiode_keys=PHOTODIODE_KEYS,
+    trim_discontiguous_frame_times=True,
+):
+    """
+    Extracts frame times from a vsync signal
+
+    Parameters
+    ----------
+    sync_file : h5py.File
+        File containing sync data.
+    photodiode_cycle : numeric, optional
+        The number of frames between photodiode pulses. Defaults to 60.
+    frame_keys : tuple of str, optional
+        Keys to extract frame times from. Defaults to FRAME_KEYS.
+    photodiode_keys : tuple of str, optional
+        Keys to extract photodiode times from. Defaults to PHOTODIODE_KEYS.
+    trim_discontiguous_frame_times : bool, optional
+        If True, remove discontiguous frame times. Defaults to True.
+
+    Returns
+    -------
+    frame_start_times : np.ndarray
+        The start times of each frame.
+
+    """
+
+    photodiode_times = sync.get_edges(sync_file, "all", photodiode_keys)
+    vsync_times = sync.get_edges(sync_file, "falling", frame_keys)
+
+    if trim_discontiguous_frame_times:
+        vsync_times = sync.trim_discontiguous_vsyncs(vsync_times)
+
+    (
+        vsync_times_chunked,
+        pd_times_chunked,
+    ) = sync.separate_vsyncs_and_photodiode_times(
+        vsync_times, photodiode_times, photodiode_cycle
+    )
+
+
+    return vsync_times
+
 def extract_frame_times_from_photodiode(
     sync_file,
     photodiode_cycle=60,
