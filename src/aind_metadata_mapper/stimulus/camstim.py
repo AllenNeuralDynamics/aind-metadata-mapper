@@ -170,6 +170,7 @@ class Camstim:
         drop_const_params=stim_utils.DROP_PARAMS,
         stimulus_name_map=constants.default_stimulus_renames,
         column_name_map=constants.default_column_renames,
+        modality="ephys"
     ):
         """
         Builds a stimulus table from the stimulus pickle file, sync file, and
@@ -193,9 +194,14 @@ class Camstim:
             names.default_column_renames
 
         """
-        frame_times = stim_utils.extract_frame_times_from_photodiode(
-            self.sync_data
-        )
+        if modality == "ephys":
+            frame_times = stim_utils.extract_frame_times_from_photodiode(
+                self.sync_data
+            )
+        elif modality == "ophys":
+            frame_times = stim_utils.extract_vsync_times_from_photodiode(
+                self.sync_data
+            )
         minimum_spontaneous_activity_duration = (
             minimum_spontaneous_activity_duration / pkl.get_fps(self.pkl_data)
         )
