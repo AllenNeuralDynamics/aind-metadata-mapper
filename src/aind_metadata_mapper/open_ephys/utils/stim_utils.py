@@ -412,20 +412,10 @@ def extract_frame_times_from_vsync(
         The start times of each frame.
 
     """
-
-    photodiode_times = sync.get_edges(sync_file, "all", photodiode_keys)
     vsync_times = sync.get_edges(sync_file, "falling", frame_keys)
 
     if trim_discontiguous_frame_times:
         vsync_times = sync.trim_discontiguous_vsyncs(vsync_times)
-
-    (
-        vsync_times_chunked,
-        pd_times_chunked,
-    ) = sync.separate_vsyncs_and_photodiode_times(
-        vsync_times, photodiode_times, photodiode_cycle
-    )
-
 
     return vsync_times
 
