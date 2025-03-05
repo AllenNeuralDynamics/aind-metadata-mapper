@@ -199,7 +199,7 @@ class Camstim:
                 self.sync_data
             )
         elif modality == "ophys":
-            frame_times = stim_utils.extract_vsync_times_from_photodiode(
+            frame_times = stim_utils.extract_frame_times_from_vsync(
                 self.sync_data
             )
         minimum_spontaneous_activity_duration = (
