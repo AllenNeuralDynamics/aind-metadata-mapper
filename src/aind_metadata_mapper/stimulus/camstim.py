@@ -198,19 +198,20 @@ class Camstim:
             names.default_column_renames
 
         """
+
+        vsync_times = stim_utils.extract_frame_times_from_vsync(
+            self.sync_data
+        )
         if modality == "ephys":
             frame_times = stim_utils.extract_frame_times_from_photodiode(
                 self.sync_data
             )
-            times = [frame_times]
         elif modality == "ophys":
-            vsync_times = stim_utils.extract_frame_times_from_vsync(
-                self.sync_data
+            frame_times = stim_utils.extract_frame_times_with_monitor_delay(
+                self.sync_data, self.pkl_path
             )
-            frame_times = stim_utils.extract_frame_times_from_photodiode(
-                self.sync_data
-            )
-            times = [frame_times, vsync_times]
+        times = [frame_times, vsync_times]
+
 
         for i, time in enumerate(times):
             minimum_spontaneous_activity_duration = (
