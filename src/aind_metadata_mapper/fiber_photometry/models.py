@@ -9,7 +9,7 @@ from aind_metadata_mapper.core_models import BaseJobSettings
 class JobSettings(BaseJobSettings):
     """Settings for generating Fiber Photometry session metadata."""
 
-    job_settings_name: Literal["FIP"] = "FIP"
+    job_settings_name: Literal["fib"] = "fib"
 
     experimenter_full_name: List[str]
     session_start_time: datetime
