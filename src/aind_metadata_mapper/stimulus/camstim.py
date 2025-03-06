@@ -207,9 +207,13 @@ class Camstim:
                 self.sync_data
             )
         elif modality == "ophys":
-            frame_times = stim_utils.extract_frame_times_with_monitor_delay(
+            delay = stim_utils.extract_frame_times_with_monitor_delay(
                 self.sync_data, self.pkl_path
             )
+            frame_times = stim_utils.extract_frame_times_from_vsync(
+                self.sync_data
+            )
+            frame_times = frame_times + delay
         times = [frame_times, vsync_times]
 
 
