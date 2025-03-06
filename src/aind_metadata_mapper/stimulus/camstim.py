@@ -68,6 +68,10 @@ class Camstim:
             self.camstim_settings.output_directory
             / f"{session_id}_stim_table.csv"
         )
+        self.vsync_table_path = (
+            self.camstim_settings.output_directory
+            / f"{session_id}_vsync_table.csv"
+        )
         self.pkl_data = pkl.load_pkl(self.pkl_path)
         self.fps = pkl.get_fps(self.pkl_data)
         self.stage_name = pkl.get_stage(self.pkl_data)
@@ -198,40 +202,49 @@ class Camstim:
             frame_times = stim_utils.extract_frame_times_from_photodiode(
                 self.sync_data
             )
+            times = [frame_times]
         elif modality == "ophys":
-            frame_times = stim_utils.extract_frame_times_from_vsync(
+            vsync_times = stim_utils.extract_frame_times_from_vsync(
                 self.sync_data
             )
-        minimum_spontaneous_activity_duration = (
-            minimum_spontaneous_activity_duration / pkl.get_fps(self.pkl_data)
-        )
+            frame_times = stim_utils.extract_frame_times_from_photodiode(
+                self.sync_data
+            )
+            times = [frame_times, vsync_times]
 
-        stimulus_tabler = functools.partial(
-            stim_utils.build_stimuluswise_table,
-            seconds_to_frames=stim_utils.seconds_to_frames,
-            extract_const_params_from_repr=extract_const_params_from_repr,
-            drop_const_params=drop_const_params,
-        )
+        for i, time in enumerate(times):
+            minimum_spontaneous_activity_duration = (
+                minimum_spontaneous_activity_duration / pkl.get_fps(self.pkl_data)
+            )
 
-        spon_tabler = functools.partial(
-            stim_utils.make_spontaneous_activity_tables,
-            duration_threshold=minimum_spontaneous_activity_duration,
-        )
+            stimulus_tabler = functools.partial(
+                stim_utils.build_stimuluswise_table,
+                seconds_to_frames=stim_utils.seconds_to_frames,
+                extract_const_params_from_repr=extract_const_params_from_repr,
+                drop_const_params=drop_const_params,
+            )
 
-        stimuli = pkl.get_stimuli(self.pkl_data)
-        stimuli = stim_utils.extract_blocks_from_stim(stimuli)
-        stim_table_sweeps = stim_utils.create_stim_table(
-            self.pkl_data, stimuli, stimulus_tabler, spon_tabler
-        )
+            spon_tabler = functools.partial(
+                stim_utils.make_spontaneous_activity_tables,
+                duration_threshold=minimum_spontaneous_activity_duration,
+            )
 
-        stim_table_seconds = self.get_stim_table_seconds(
-            stim_table_sweeps, frame_times, stimulus_name_map
-        )
-        stim_table_final = names.map_column_names(
-            stim_table_seconds, column_name_map, ignore_case=False
-        )
+            stimuli = pkl.get_stimuli(self.pkl_data)
+            stimuli = stim_utils.extract_blocks_from_stim(stimuli)
+            stim_table_sweeps = stim_utils.create_stim_table(
+                self.pkl_data, stimuli, stimulus_tabler, spon_tabler
+            )
 
-        stim_table_final.to_csv(self.stim_table_path, index=False)
+            stim_table_seconds = self.get_stim_table_seconds(
+                stim_table_sweeps, time, stimulus_name_map
+            )
+            stim_table_final = names.map_column_names(
+                stim_table_seconds, column_name_map, ignore_case=False
+            )
+            if i == 0:
+                stim_table_final.to_csv(self.stim_table_path, index=False)
+            else:
+                stim_table_final.to_csv(self.vsync_table_path, index=False)
 
     def extract_stim_epochs(
         self, stim_table: pd.DataFrame
