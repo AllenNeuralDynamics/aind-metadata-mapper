@@ -8,6 +8,7 @@ services.
 import sys
 import json
 import glob
+import logging
 import os
 import pandas as pd
 from datetime import datetime, timedelta
@@ -154,7 +155,6 @@ class BehaviorEtl(GenericEtl[JobSettings]):
                     settings.notes = f"Original folder name: {folder_name}"
 
             except (FileNotFoundError, ValueError) as e:
-                import logging
 
                 logging.warning(f"Could not extract data from files: {e}")
                 # Continue with provided settings
@@ -260,20 +260,20 @@ class BehaviorEtl(GenericEtl[JobSettings]):
 
         # Convert to Path if it's a string
         if output_directory and isinstance(output_directory, str):
-            from pathlib import Path
 
             output_directory = Path(output_directory)
 
         # If we have a custom filename, write the file directly
         if output_directory and output_filename:
-            import os
+            # Write the file with custom filename
+            output_path = os.path.join(output_directory, output_filename)
 
             # Ensure output directory exists
             os.makedirs(output_directory, exist_ok=True)
 
-            # Write the file with custom filename
-            output_path = os.path.join(output_directory, output_filename)
-            transformed.write_standard_file(output_directory, output_filename)
+            # Write the file manually to ensure the correct filename is used
+            with open(output_path, "w") as f:
+                f.write(transformed.model_dump_json(indent=2))
 
             return JobResponse(
                 status_code=200,
