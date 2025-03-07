@@ -356,3 +356,4 @@ class Camstim:
             schema_epochs.append(epoch_obj)
 
         return schema_epochs
+
