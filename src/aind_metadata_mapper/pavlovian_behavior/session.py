@@ -10,7 +10,7 @@ import json
 import glob
 import os
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Union, Dict, Any, List, Optional, Tuple
 
@@ -74,7 +74,7 @@ class BehaviorEtl(GenericEtl[JobSettings]):
 
                 offset = -8 * 3600  # -08:00 timezone (Pacific)
                 parsed_time = parsed_time.replace(
-                    tzinfo=timezone(datetime.timedelta(seconds=offset))
+                    tzinfo=timezone(timedelta(seconds=offset))
                 )
         except ValueError:
             raise ValueError(
