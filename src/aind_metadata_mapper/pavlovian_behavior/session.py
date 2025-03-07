@@ -13,6 +13,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Union, Dict, Any, List, Optional, Tuple
+from zoneinfo import ZoneInfo
 
 from aind_data_schema.core.session import Session, StimulusEpoch
 from aind_data_schema_models.modalities import Modality
@@ -70,11 +71,8 @@ class BehaviorEtl(GenericEtl[JobSettings]):
             parsed_time = datetime.strptime(raw_time_part, "%Y-%m-%dT%H_%M_%S")
             # Add timezone info if needed
             if parsed_time.tzinfo is None:
-                from datetime import timezone
-
-                offset = -8 * 3600  # -08:00 timezone (Pacific)
                 parsed_time = parsed_time.replace(
-                    tzinfo=timezone(timedelta(seconds=offset))
+                    tzinfo=ZoneInfo("America/Los_Angeles")
                 )
         except ValueError:
             raise ValueError(
@@ -89,19 +87,30 @@ class BehaviorEtl(GenericEtl[JobSettings]):
         trial_file = trial_files[0]
         trial_data = pd.read_csv(trial_file)
 
+        # Calculate session duration from ITI values
+        total_session_duration = trial_data["ITI_s"].sum()
+
+        # Calculate end time based on actual session duration
+        end_time = parsed_time + timedelta(
+            seconds=float(total_session_duration)
+        )
+
         # Create stimulus epoch data
         stimulus_epochs = [
             {
                 "stimulus_name": "Pavlovian",
                 "stimulus_start_time": parsed_time,
-                "stimulus_end_time": None,  # End time not available
+                "stimulus_end_time": end_time,
+                "stimulus_modalities": ["Auditory"],
                 "trials_finished": int(trial_data["TrialNumber"].iloc[-1]),
                 "trials_total": int(trial_data["TrialNumber"].iloc[-1]),
                 "trials_rewarded": int(trial_data["TotalRewards"].iloc[-1]),
                 "reward_consumed_during_epoch": int(
                     trial_data["TotalRewards"].iloc[-1]
                 )
-                * 2,  # Assuming 2 units per reward
+                * float(
+                    getattr(self.job_settings, "reward_units_per_trial", 2.0)
+                ),  # Default to 2 units per reward if not specified
             }
         ]
 
@@ -125,6 +134,13 @@ class BehaviorEtl(GenericEtl[JobSettings]):
                 # Update settings with extracted data
                 if settings.session_start_time is None:
                     settings.session_start_time = session_time
+
+                # Set session_end_time if it's not already set
+                if settings.session_end_time is None and stimulus_epochs:
+                    # Use the end time from the first stimulus epoch
+                    settings.session_end_time = stimulus_epochs[0].get(
+                        "stimulus_end_time"
+                    )
 
                 # Only update stimulus_epochs if it's empty
                 if not settings.stimulus_epochs:
@@ -165,14 +181,29 @@ class BehaviorEtl(GenericEtl[JobSettings]):
         stimulus_epochs = []
 
         for epoch_data in settings.stimulus_epochs:
+            # Get start time, defaulting to session start time
+            start_time = epoch_data.get(
+                "stimulus_start_time", settings.session_start_time
+            )
+            if start_time is None:
+                raise ValueError(
+                    "stimulus_start_time is required but was not provided"
+                )
+
+            # Get end time, which should already be calculated in _extract_data_from_files
+            end_time = epoch_data.get(
+                "stimulus_end_time", settings.session_end_time
+            )
+            if end_time is None:
+                raise ValueError(
+                    "stimulus_end_time is required but was not provided or calculated"
+                )
+
             stimulus_epoch = StimulusEpoch(
                 stimulus_name=epoch_data.get("stimulus_name", "Pavlovian"),
-                stimulus_start_time=epoch_data.get(
-                    "stimulus_start_time", settings.session_start_time
-                ),
-                stimulus_end_time=epoch_data.get(
-                    "stimulus_end_time", settings.session_end_time
-                ),
+                stimulus_start_time=start_time,
+                stimulus_end_time=end_time,
+                stimulus_modalities=["Auditory"],  # Hardcoded as Auditory
                 trials_finished=epoch_data.get("trials_finished", 0),
                 trials_total=epoch_data.get("trials_total", 0),
                 trials_rewarded=epoch_data.get("trials_rewarded", 0),
@@ -193,14 +224,6 @@ class BehaviorEtl(GenericEtl[JobSettings]):
         Returns:
             Session object with transformed data
         """
-        # Hook for service integrations - gather any additional optional fields
-        # Example service calls:
-        # - Query LIMS for subject procedure history using settings.subject_id
-        # - Get configuration details from rig control system using settings.rig_id
-        # - Fetch task parameters from a task database
-        #
-        # These calls should gather data for optional Session fields defined in the schema
-
         # Create stimulus epochs
         stimulus_epochs = self._create_stimulus_epochs(settings)
 
@@ -214,11 +237,10 @@ class BehaviorEtl(GenericEtl[JobSettings]):
             subject_id=settings.subject_id,
             iacuc_protocol=settings.iacuc_protocol,
             notes=settings.notes,
-            task_name=settings.task_name,
-            task_version=settings.task_version,
-            stimulus_frame_rate=settings.stimulus_frame_rate,
+            mouse_platform_name=settings.mouse_platform_name,
+            active_mouse_platform=settings.active_mouse_platform,
+            data_streams=[],  # Empty list as we don't have data streams for behavior
             stimulus_epochs=stimulus_epochs,
-            # Add any optional fields gathered from services here
         )
 
         return session
@@ -231,7 +253,36 @@ class BehaviorEtl(GenericEtl[JobSettings]):
         """
         extracted = self._extract()
         transformed = self._transform(extracted)
-        return self._load(transformed, self.job_settings.output_directory)
+
+        # Get the output directory and filename from settings
+        output_directory = getattr(extracted, "output_directory", None)
+        output_filename = getattr(extracted, "output_filename", None)
+
+        # Convert to Path if it's a string
+        if output_directory and isinstance(output_directory, str):
+            from pathlib import Path
+
+            output_directory = Path(output_directory)
+
+        # If we have a custom filename, write the file directly
+        if output_directory and output_filename:
+            import os
+
+            # Ensure output directory exists
+            os.makedirs(output_directory, exist_ok=True)
+
+            # Write the file with custom filename
+            output_path = os.path.join(output_directory, output_filename)
+            transformed.write_standard_file(output_directory, output_filename)
+
+            return JobResponse(
+                status_code=200,
+                message=f"Session metadata saved to: {output_path}",
+                data=None,
+            )
+
+        # Otherwise use the standard _load method
+        return self._load(transformed, output_directory)
 
 
 if __name__ == "__main__":  # pragma: no cover

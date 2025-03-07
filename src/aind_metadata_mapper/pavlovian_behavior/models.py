@@ -24,10 +24,22 @@ class JobSettings(BaseJobSettings):
     # Path to data directory containing behavior files
     data_directory: Union[str, Path]
 
+    # Output directory and filename for generated files
+    output_directory: Optional[Union[str, Path]] = None
+    output_filename: Optional[str] = None
+
+    # Mouse platform information
+    mouse_platform_name: str
+    active_mouse_platform: bool
+
     # Behavior-specific fields
     task_name: str = "Pavlovian"
     task_version: str
     stimulus_frame_rate: float = 60.0  # Default value
+
+    # Stimulus configuration
+    stimulus_modality: str = "Auditory"  # Default stimulus modality
+    reward_units_per_trial: float = 2.0  # Default units of reward per trial
 
     # Stimulus epoch information - can be populated from data files
     stimulus_epochs: List[Dict[str, Any]] = []
