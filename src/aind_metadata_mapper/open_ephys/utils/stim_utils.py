@@ -502,8 +502,9 @@ def extract_frame_times_with_monitor_delay(
     photodiode_keys=PHOTODIODE_KEYS,
     trim_discontiguous_frame_times=True,
 ):
-    ASSUMED_DELAY = 0.0351
-    DELAY_THRESHOLD = 0.001
+    sample_freq = 100000.0
+    ASSUMED_DELAY = 0.0356
+    DELAY_THRESHOLD = 0.002
     FIRST_ELEMENT_INDEX = 0
     ROUND_PRECISION = 4
     ONE = 1
@@ -512,10 +513,9 @@ def extract_frame_times_with_monitor_delay(
 
     try:
         # photodiode transitions
-        photodiode_rise = sync.get_rising_edges(sync_file, 'stim_photodiode') / photodiode_cycle
+        photodiode_rise = np.array(sync.get_rising_edges(sync_file, 'stim_photodiode'), dtype=np.float64) / float(sample_freq)
 
-        stim_vsync_fall = sync.get_behavior_stim_timestamps(sync_file)
-
+        stim_vsync_fall = sync.get_edges(sync_file, "falling", frame_keys)
 
         # Find start and stop of stimulus
         # test and correct for photodiode transition errors
@@ -524,6 +524,8 @@ def extract_frame_times_with_monitor_delay(
         max_short_photodiode_rise = 0.3
         min_medium_photodiode_rise = 0.5
         max_medium_photodiode_rise = 1.5
+        min_large_photodiode_rise = 1.9
+        max_large_photodiode_rise = 2.1
 
         # find the short and medium length photodiode rises
         short_rise_indexes = np.where(np.logical_and(photodiode_rise_diff > min_short_photodiode_rise,
@@ -543,11 +545,24 @@ def extract_frame_times_with_monitor_delay(
         ptd_start = None
         ptd_end = None
 
-        for medium_rise_index in medium_rise_indexes:
-            if set(range(medium_rise_index - start_pattern_index, medium_rise_index)) <= short_set:
-                ptd_start = medium_rise_index + next_frame
-            elif set(range(medium_rise_index + next_frame, medium_rise_index + end_pattern_index)) <= short_set:
-                ptd_end = medium_rise_index
+        # if we can't use medium, we can apply a filter across large
+        if len(medium_rise_indexes) < 3:
+            large_rise_indexes = np.where(np.logical_and(photodiode_rise_diff > min_large_photodiode_rise,
+                                                photodiode_rise_diff < max_large_photodiode_rise))[FIRST_ELEMENT_INDEX]
+            print(large_rise_indexes)
+            for large_rise_index in large_rise_indexes:
+                if set(range(large_rise_index - start_pattern_index, large_rise_index)) <= short_set:
+                    ptd_start = large_rise_index + next_frame
+                elif set(range(large_rise_index + next_frame, large_rise_index + end_pattern_index)) <= short_set:
+                    ptd_end = large_rise_index
+
+        else:
+            for medium_rise_index in medium_rise_indexes:
+                if set(range(medium_rise_index - start_pattern_index, medium_rise_index)) <= short_set:
+                    ptd_start = medium_rise_index + next_frame
+                elif set(range(medium_rise_index + next_frame, medium_rise_index + end_pattern_index)) <= short_set:
+                    ptd_end = medium_rise_index
+
 
         # if the photodiode signal exists
         if ptd_start is not None and ptd_end is not None:
@@ -583,21 +598,22 @@ def extract_frame_times_with_monitor_delay(
             delay_std = np.std(delay_rise[:last_frame_index])
 
             if (delay_std > DELAY_THRESHOLD or np.isnan(delay)):
-
+                if np.abs((delay - 1) - ASSUMED_DELAY) < DELAY_THRESHOLD:
+                    logger.info("One second flip required")
+                    return delay - 1
                 logger.error("Sync photodiode error needs to be fixed. Using assumed monitor delay: {}".format(round(delay, ROUND_PRECISION)))
-                raise
+                return ASSUMED_DELAY
 
-            # assume delay
-            else:
-                raise
-                # delay = ASSUMED_DELAY
+
+            return delay
     except Exception as e:
-         logger.info(e)
-         delay = ASSUMED_DELAY
-         logger.error("Process without photodiode signal. Assumed delay: {}".format(round(delay, ROUND_PRECISION)))
+        print(e)
+        delay = ASSUMED_DELAY
+        logger.error("Process without photodiode signal. Assumed delay: {}".format(round(delay, ROUND_PRECISION)))
+        return delay
 
-    return delay
-
+    logger.info("monitor delay calculation failed, returning assumed delay")
+    return ASSUMED_DELAY
 
 def convert_frames_to_seconds(
     stimulus_table,
