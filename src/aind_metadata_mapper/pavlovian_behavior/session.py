@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo
 
 from aind_data_schema.core.session import Session, StimulusEpoch
 from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.units import VolumeUnit
 
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.core_models import JobResponse
@@ -99,7 +100,6 @@ class BehaviorEtl(GenericEtl[JobSettings]):
         # Create stimulus epoch data
         stimulus_epochs = [
             {
-                "stimulus_name": "Pavlovian",
                 "stimulus_start_time": parsed_time,
                 "stimulus_end_time": end_time,
                 "stimulus_modalities": ["Auditory"],
@@ -227,6 +227,11 @@ class BehaviorEtl(GenericEtl[JobSettings]):
         # Create stimulus epochs
         stimulus_epochs = self._create_stimulus_epochs(settings)
 
+        # Calculate total reward consumed across all stimulus epochs
+        reward_consumed_total = sum(
+            epoch.reward_consumed_during_epoch for epoch in stimulus_epochs
+        )
+
         # Create session with all available data
         session = Session(
             experimenter_full_name=settings.experimenter_full_name,
@@ -241,6 +246,8 @@ class BehaviorEtl(GenericEtl[JobSettings]):
             active_mouse_platform=settings.active_mouse_platform,
             data_streams=[],  # Empty list as we don't have data streams for behavior
             stimulus_epochs=stimulus_epochs,
+            reward_consumed_total=reward_consumed_total,
+            reward_consumed_unit=VolumeUnit.UL,  # Using the proper enum value for microliters
         )
 
         return session

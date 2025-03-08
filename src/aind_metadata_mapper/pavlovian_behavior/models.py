@@ -20,6 +20,11 @@ class JobSettings(BaseJobSettings):
     session_end_time: Optional[datetime] = None
     subject_id: str
     rig_id: str
+    task_version: str
+    iacuc_protocol: str
+    mouse_platform_name: str
+    active_mouse_platform: bool
+    session_type: str
 
     # Path to data directory containing behavior files
     data_directory: Union[str, Path]
@@ -28,27 +33,12 @@ class JobSettings(BaseJobSettings):
     output_directory: Optional[Union[str, Path]] = None
     output_filename: Optional[str] = None
 
-    # Mouse platform information
-    mouse_platform_name: str
-    active_mouse_platform: bool
-
-    # Behavior-specific fields
-    task_name: str = "Pavlovian"
-    task_version: str
-    stimulus_frame_rate: float = 60.0  # Default value
-
-    # Stimulus configuration
-    stimulus_modality: str = "Auditory"  # Default stimulus modality
-    reward_units_per_trial: float = 2.0  # Default units of reward per trial
+    # Optional fields with defaults
+    notes: str = ""
+    protocol_id: List[str] = []
 
     # Stimulus epoch information - can be populated from data files
     stimulus_epochs: List[Dict[str, Any]] = []
-
-    # Optional fields with defaults
-    session_type: str = "Behavior"
-    iacuc_protocol: str
-    notes: str = ""
-    protocol_id: List[str] = []
 
     @classmethod
     def from_args(cls, args: List[str]):
