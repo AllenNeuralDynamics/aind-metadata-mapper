@@ -69,6 +69,18 @@ def parse_args():
         help="Whether the mouse platform was active (defaults to True)",
     )
     parser.add_argument(
+        "--session-type",
+        type=str,
+        default="PavlovianConditioning",
+        help="Type of session (defaults to PavlovianConditioning)",
+    )
+    parser.add_argument(
+        "--task-name",
+        type=str,
+        default="Pavlovian",
+        help="Name of the task (defaults to Pavlovian)",
+    )
+    parser.add_argument(
         "--output-dir",
         type=str,
         default=None,
@@ -100,6 +112,8 @@ def main():
         output_filename=args.output_filename,
         mouse_platform_name=args.mouse_platform_name,
         active_mouse_platform=args.active_mouse_platform,
+        session_type=args.session_type,
+        task_name=args.task_name,
     )
 
     # Generate session metadata - data will be extracted from files
