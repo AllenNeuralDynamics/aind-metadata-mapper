@@ -1,0 +1,14 @@
+{
+    "subject_id": "000000",
+    "experimenter_full_name": ["Bryan MacLennan", "Kenta Hagihara"],
+    "rig_id": "428_9_A_20240617",
+    "task_version": "1.0.0",
+    "iacuc_protocol": "2115",
+    "mouse_platform_name": "mouse_tube_foraging",
+    "active_mouse_platform": false,
+    "session_type": "Foraging_Photometry",
+    "task_name": "Fiber Photometry",
+    "notes": "Example configuration for fiber photometry rig",
+    "reward_delivery": "water from left lick spout (DO0)",
+    "punishment_delivery": "airpuff with 25 psi for 1 s (DO2)"
+} 

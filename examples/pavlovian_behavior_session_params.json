@@ -1,0 +1,12 @@
+{
+    "subject_id": "000000",
+    "experimenter_full_name": ["Test User"],
+    "rig_id": "behavior_rig_01",
+    "task_version": "1.0.0",
+    "iacuc_protocol": "2115",
+    "mouse_platform_name": "mouse_tube_foraging",
+    "active_mouse_platform": true,
+    "session_type": "PavlovianConditioning",
+    "task_name": "Pavlovian",
+    "notes": "Example configuration for Pavlovian behavior rig"
+} 
