@@ -9,10 +9,33 @@ session metadata by extracting data from behavior files.
 import argparse
 import sys
 import os
+import json
 from pathlib import Path
+from typing import Dict, Any, Optional
 
 from aind_metadata_mapper.pavlovian_behavior.session import BehaviorEtl
 from aind_metadata_mapper.pavlovian_behavior.models import JobSettings
+
+
+def load_config(config_path: str) -> Dict[str, Any]:
+    """Load configuration from a JSON file.
+
+    Args:
+        config_path: Path to the configuration file
+
+    Returns:
+        Dictionary containing the configuration
+    """
+    try:
+        with open(config_path, "r") as f:
+            config = json.load(f)
+        return config
+    except FileNotFoundError:
+        print(f"Warning: Configuration file {config_path} not found.")
+        return {}
+    except json.JSONDecodeError:
+        print(f"Warning: Configuration file {config_path} is not valid JSON.")
+        return {}
 
 
 def parse_args():
@@ -29,56 +52,47 @@ def parse_args():
     parser.add_argument(
         "--subject-id",
         type=str,
-        required=True,
         help="Subject identifier",
     )
     parser.add_argument(
         "--experimenter",
         type=str,
-        required=True,
         help="Experimenter full name",
     )
     parser.add_argument(
         "--rig-id",
         type=str,
-        required=True,
         help="Identifier for the experimental rig",
     )
     parser.add_argument(
         "--task-version",
         type=str,
-        default="1.0.0",
         help="Version of the Pavlovian task",
     )
     parser.add_argument(
         "--iacuc-protocol",
         type=str,
-        default="2115",
-        help="IACUC protocol identifier (defaults to 2115)",
+        help="IACUC protocol identifier",
     )
     parser.add_argument(
         "--mouse-platform-name",
         type=str,
-        default="mouse_tube_foraging",
-        help="Name of the mouse platform used (defaults to mouse_tube_foraging)",
+        help="Name of the mouse platform used",
     )
     parser.add_argument(
         "--active-mouse-platform",
         action="store_true",
-        default=True,
-        help="Whether the mouse platform was active (defaults to True)",
+        help="Whether the mouse platform was active",
     )
     parser.add_argument(
         "--session-type",
         type=str,
-        default="PavlovianConditioning",
-        help="Type of session (defaults to PavlovianConditioning)",
+        help="Type of session",
     )
     parser.add_argument(
         "--task-name",
         type=str,
-        default="Pavlovian",
-        help="Name of the task (defaults to Pavlovian)",
+        help="Name of the task",
     )
     parser.add_argument(
         "--output-dir",
@@ -92,29 +106,128 @@ def parse_args():
         default="session_pavlovian_behavior.json",
         help="Name of the output file (defaults to session_pavlovian_behavior.json)",
     )
+    parser.add_argument(
+        "--session-params",
+        type=str,
+        help="Path to session parameters configuration file",
+    )
+    parser.add_argument(
+        "--data-streams",
+        type=str,
+        help="Path to data streams configuration file",
+    )
 
     return parser.parse_args()
+
+
+def resolve_parameters(args):
+    """Resolve parameters from command line args and config files.
+
+    Args:
+        args: Command line arguments
+
+    Returns:
+        Dictionary of resolved parameters
+    """
+    # Start with empty parameters
+    params = {}
+
+    # Load session parameters config if specified
+    if args.session_params:
+        session_config = load_config(args.session_params)
+        params.update(session_config)
+
+    # Load data streams config if specified
+    data_streams = []
+    if args.data_streams:
+        data_streams = load_config(args.data_streams)
+        # The data_streams file is now a direct list of stream objects
+
+        # Handle the case where the file is empty or not a list
+        if not isinstance(data_streams, list):
+            print(
+                f"Warning: Data streams file {args.data_streams} does not contain a valid list. Using empty list."
+            )
+            data_streams = []
+
+        # Process data streams to ensure required fields are set
+        for stream in data_streams:
+            # If stream_start_time or stream_end_time are null, they will be set later
+            # based on the session start and end times
+            pass
+
+    # Override with command line arguments (only if not None)
+    cmd_args = vars(args)
+    for key, value in cmd_args.items():
+        if value is not None and key not in ["session_params", "data_streams"]:
+            # Convert kebab-case to snake_case for parameter names
+            param_key = key.replace("-", "_")
+
+            # Check if this parameter is also in the config and warn if different
+            if param_key in params and params[param_key] != value:
+                print(
+                    f"Warning: Parameter '{param_key}' specified both in config ({params[param_key]}) "
+                    f"and command line ({value}). Using command line value."
+                )
+
+            params[param_key] = value
+
+    # Add data streams to parameters
+    if data_streams:
+        params["data_streams"] = data_streams
+
+    # Check for required parameters
+    required_params = [
+        "subject_id",
+        "experimenter_full_name",
+        "rig_id",
+        "task_version",
+        "iacuc_protocol",
+        "mouse_platform_name",
+        "session_type",
+        "task_name",
+    ]
+
+    missing_params = [
+        param for param in required_params if param not in params
+    ]
+
+    # Special handling for experimenter which is passed as "experimenter" but needed as "experimenter_full_name"
+    if "experimenter" in params and "experimenter_full_name" not in params:
+        params["experimenter_full_name"] = params["experimenter"]
+        missing_params = [
+            p for p in missing_params if p != "experimenter_full_name"
+        ]
+
+    if missing_params:
+        print(
+            f"Error: Missing required parameters: {', '.join(missing_params)}"
+        )
+        sys.exit(1)
+
+    return params
 
 
 def main():
     """Run the Pavlovian Behavior ETL process."""
     args = parse_args()
 
-    # Create settings with path to data directory
-    settings = JobSettings(
-        experimenter_full_name=[args.experimenter],
-        subject_id=args.subject_id,
-        rig_id=args.rig_id,
-        task_version=args.task_version,
-        data_directory=args.data_dir,
-        iacuc_protocol=args.iacuc_protocol,
-        output_directory=args.output_dir or args.data_dir,
-        output_filename=args.output_filename,
-        mouse_platform_name=args.mouse_platform_name,
-        active_mouse_platform=args.active_mouse_platform,
-        session_type=args.session_type,
-        task_name=args.task_name,
-    )
+    # Resolve parameters from command line and config files
+    try:
+        params = resolve_parameters(args)
+    except ValueError as e:
+        print(f"Error: {e}")
+        return 1
+
+    # Ensure data_directory is set
+    params["data_directory"] = args.data_dir
+
+    # Set output directory and filename
+    params["output_directory"] = args.output_dir or args.data_dir
+    params["output_filename"] = args.output_filename
+
+    # Create settings with resolved parameters
+    settings = JobSettings(**params)
 
     # Generate session metadata - data will be extracted from files
     print(f"Extracting data from {args.data_dir}")
