@@ -137,3 +137,6 @@ dmypy.json
 
 # MacOs
 **/.DS_Store
+
+# ignore the data folder in the root
+data/
