@@ -1,33 +1,28 @@
 #!/usr/bin/env python3
-"""
-Example script for generating Pavlovian Behavior session metadata.
-
-This script demonstrates how to use the BehaviorEtl class to generate
-session metadata by extracting data from behavior files.
-"""
+"""Script for generating Fiber Photometry session metadata."""
 
 import argparse
-import sys
-import os
 import json
+import os
+import sys
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
-from aind_metadata_mapper.pavlovian_behavior.session import BehaviorEtl
-from aind_metadata_mapper.pavlovian_behavior.models import JobSettings
+from aind_metadata_mapper.fiber_photometry.session import FIBEtl
+from aind_metadata_mapper.fiber_photometry.models import JobSettings
 from aind_metadata_mapper.utils.cli import load_config, resolve_parameters
 
 
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
-        description="Generate Pavlovian Behavior session metadata"
+        description="Generate Fiber Photometry session metadata"
     )
     parser.add_argument(
         "--data-dir",
         type=str,
         required=True,
-        help="Path to directory containing behavior data files",
+        help="Path to directory containing fiber photometry data files",
     )
     parser.add_argument(
         "--session-params",
@@ -57,7 +52,7 @@ def parse_args():
     parser.add_argument(
         "--task-version",
         type=str,
-        help="Version of the Pavlovian task",
+        help="Version of the task",
     )
     parser.add_argument(
         "--iacuc-protocol",
@@ -81,15 +76,10 @@ def parse_args():
         help="Type of session",
     )
     parser.add_argument(
-        "--task-name",
-        type=str,
-        help="Name of the task",
-    )
-    parser.add_argument(
         "--output-filename",
         type=str,
-        default="session_pavlovian_behavior.json",
-        help="Name of the output file (defaults to session_pavlovian_behavior.json)",
+        default="session_fiber_photometry.json",
+        help="Name of the output file (defaults to session_fiber_photometry.json)",
     )
     parser.add_argument(
         "--output-dir",
@@ -114,7 +104,6 @@ def main():
         "iacuc_protocol",
         "mouse_platform_name",
         "session_type",
-        "task_name",
     ]
 
     # Resolve parameters from command line args and config files
@@ -136,7 +125,7 @@ def main():
     job_settings = JobSettings(**params)
 
     # Generate session metadata
-    etl = BehaviorEtl(job_settings)
+    etl = FIBEtl(job_settings)
     response = etl.run_job()
 
     # Handle the response

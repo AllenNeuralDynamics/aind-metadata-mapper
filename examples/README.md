@@ -84,6 +84,8 @@ This ensures that no `null` values are written to the database, while allowing y
 
 ## Usage
 
+### Pavlovian Behavior
+
 You can use these configuration files with the `pavlovian_session_build.py` script:
 
 ```bash
@@ -100,10 +102,33 @@ python scripts/pavlovian_session_build.py \
   --data-dir /path/to/data \
   --session-params examples/pavlovian_behavior_session_params.json \
   --data-streams examples/pavlovian_behavior_data_streams.json \
-  --subject-id 123456
+  --subject-id 123456 \
+  --experimenter-full-name "John Doe" \
+  --active-mouse-platform true
 ```
 
-In this case, the `subject_id` from the command line will override the one in the session parameters file.
+### Fiber Photometry
+
+Similarly, you can use the `fiber_photometry_session_build.py` script for fiber photometry data:
+
+```bash
+python scripts/fiber_photometry_session_build.py \
+  --data-dir /path/to/fiber/data \
+  --session-params examples/fiber_photometry_session_params.json \
+  --data-streams examples/fiber_photometry_data_streams.json
+```
+
+With command-line overrides:
+
+```bash
+python scripts/fiber_photometry_session_build.py \
+  --data-dir /path/to/fiber/data \
+  --session-params examples/fiber_photometry_session_params.json \
+  --data-streams examples/fiber_photometry_data_streams.json \
+  --subject-id 123456 \
+  --experimenter-full-name "John Doe" \
+  --active-mouse-platform true
+```
 
 ## Parameter Resolution Order
 
