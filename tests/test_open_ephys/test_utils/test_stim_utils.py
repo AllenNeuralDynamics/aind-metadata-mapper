@@ -398,8 +398,8 @@ class TestStimUtils(unittest.TestCase):
         vsync_times_chunked = [vsync_times[:2], vsync_times[2:]]
         pd_times_chunked = [photodiode_times[:3], photodiode_times[3:]]
 
-        frame_starts_chunk_1 = np.array([0.1, 0.2])
-        frame_starts_chunk_2 = np.array([0.4, 0.5])
+        frame_starts_chunk_1 = np.array([0.5, 1.5])
+        frame_starts_chunk_2 = np.array([2.5, 3.5])
 
         final_frame_start_times = np.concatenate(
             (frame_starts_chunk_1, frame_starts_chunk_2)
