@@ -174,7 +174,7 @@ class Camstim:
         drop_const_params=stim_utils.DROP_PARAMS,
         stimulus_name_map=constants.default_stimulus_renames,
         column_name_map=constants.default_column_renames,
-        modality="ephys"
+        modality="ephys",
     ):
         """
         Builds a stimulus table from the stimulus pickle file, sync file, and
@@ -199,9 +199,7 @@ class Camstim:
 
         """
 
-        vsync_times = stim_utils.extract_frame_times_from_vsync(
-            self.sync_data
-        )
+        vsync_times = stim_utils.extract_frame_times_from_vsync(self.sync_data)
         if modality == "ephys":
             frame_times = stim_utils.extract_frame_times_from_photodiode(
                 self.sync_data
@@ -216,10 +214,10 @@ class Camstim:
             frame_times = frame_times + delay
         times = [frame_times, vsync_times]
 
-
         for i, time in enumerate(times):
             minimum_spontaneous_activity_duration = (
-                minimum_spontaneous_activity_duration / pkl.get_fps(self.pkl_data)
+                minimum_spontaneous_activity_duration
+                / pkl.get_fps(self.pkl_data)
             )
 
             stimulus_tabler = functools.partial(
@@ -356,4 +354,3 @@ class Camstim:
             schema_epochs.append(epoch_obj)
 
         return schema_epochs
-
