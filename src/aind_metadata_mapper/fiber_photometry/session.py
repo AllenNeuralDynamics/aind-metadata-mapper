@@ -27,7 +27,7 @@ from aind_metadata_mapper.core_models import JobResponse
 from aind_metadata_mapper.fiber_photometry.models import JobSettings
 
 
-class FIBEtl(GenericEtl[JobSettings]):
+class ETL(GenericEtl[JobSettings]):
     """Creates fiber photometry session metadata with ETL pattern."""
 
     def __init__(self, job_settings: Union[str, JobSettings]):
@@ -202,5 +202,5 @@ class FIBEtl(GenericEtl[JobSettings]):
 if __name__ == "__main__":
     sys_args = sys.argv[1:]
     main_job_settings = JobSettings.from_args(sys_args)
-    etl = FIBEtl(job_settings=main_job_settings)
+    etl = ETL(job_settings=main_job_settings)
     etl.run_job()
