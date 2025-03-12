@@ -25,7 +25,7 @@ from aind_metadata_mapper.core_models import JobResponse
 from aind_metadata_mapper.pavlovian_behavior.models import JobSettings
 
 
-class BehaviorEtl(GenericEtl[JobSettings]):
+class ETL(GenericEtl[JobSettings]):
     """Creates Pavlovian behavior session metadata with ETL pattern."""
 
     def __init__(self, job_settings: Union[str, JobSettings]):
@@ -306,5 +306,5 @@ class BehaviorEtl(GenericEtl[JobSettings]):
 if __name__ == "__main__":  # pragma: no cover
     sys_args = sys.argv[1:]
     main_job_settings = JobSettings.from_args(sys_args)
-    etl = BehaviorEtl(job_settings=main_job_settings)
+    etl = ETL(job_settings=main_job_settings)
     etl.run_job()

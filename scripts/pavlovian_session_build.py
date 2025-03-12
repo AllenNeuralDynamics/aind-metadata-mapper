@@ -2,7 +2,7 @@
 """
 Example script for generating Pavlovian Behavior session metadata.
 
-This script demonstrates how to use the BehaviorEtl class to generate
+This script demonstrates how to use the ETL class to generate
 session metadata by extracting data from behavior files.
 """
 
@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-from aind_metadata_mapper.pavlovian_behavior.session import BehaviorEtl
+from aind_metadata_mapper.pavlovian_behavior.session import ETL
 from aind_metadata_mapper.pavlovian_behavior.models import JobSettings
 from aind_metadata_mapper.utils.cli import (
     load_config,
@@ -63,7 +63,7 @@ def main():
     ]
 
     # Run the ETL process
-    run_etl(args, required_params, BehaviorEtl, JobSettings)
+    run_etl(args, required_params, ETL, JobSettings)
 
 
 if __name__ == "__main__":
