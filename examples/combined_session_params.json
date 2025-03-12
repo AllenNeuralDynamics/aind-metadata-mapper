@@ -1,0 +1,13 @@
+{
+    "subject_id": "000000",
+    "experimenter_full_name": ["Bryan MacLennan", "Kenta Hagihara"],
+    "rig_id": "428_9_A_20240617",
+    "task_version": "1.0.0",
+    "iacuc_protocol": "2115",
+    "mouse_platform_name": "mouse_tube_foraging",
+    "active_mouse_platform": false,
+    "notes": "Combined session for fiber photometry and pavlovian behavior",
+    "session_types": ["fiber_photometry", "pavlovian_behavior"],
+    "task_name": "Combined Experiment",
+    "reward_delivery": "water from left lick spout (DO0)"
+} 

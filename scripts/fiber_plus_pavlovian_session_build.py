@@ -23,6 +23,26 @@ def parse_args():
         help="Path to directory containing data files",
     )
 
+    # Session parameters
+    parser.add_argument(
+        "--session-params",
+        type=str,
+        required=True,
+        help="Path to combined session parameters JSON file",
+    )
+
+    # Data streams
+    parser.add_argument(
+        "--fiber-data-streams",
+        type=str,
+        help="Path to Fiber Photometry data streams JSON file",
+    )
+    parser.add_argument(
+        "--pavlovian-data-streams",
+        type=str,
+        help="Path to Pavlovian behavior data streams JSON file",
+    )
+
     # Output options
     parser.add_argument(
         "--output-dir",
@@ -39,64 +59,6 @@ def parse_args():
         "--overwrite",
         action="store_true",
         help="Overwrite output files if they exist",
-    )
-
-    # Fiber photometry specific arguments
-    parser.add_argument(
-        "--fiber-session-params",
-        type=str,
-        help="Path to Fiber Photometry session parameters JSON file",
-    )
-    parser.add_argument(
-        "--fiber-data-streams",
-        type=str,
-        help="Path to Fiber Photometry data streams JSON file",
-    )
-
-    # Pavlovian behavior specific arguments
-    parser.add_argument(
-        "--pavlovian-session-params",
-        type=str,
-        help="Path to Pavlovian behavior session parameters JSON file",
-    )
-    parser.add_argument(
-        "--pavlovian-data-streams",
-        type=str,
-        help="Path to Pavlovian behavior data streams JSON file",
-    )
-
-    # Common arguments that can be shared
-    parser.add_argument(
-        "--session-params",
-        type=str,
-        help="Path to common session parameters JSON file (will be used if modality-specific params not provided)",
-    )
-    parser.add_argument(
-        "--data-streams",
-        type=str,
-        help="Path to common data streams JSON file (will be used if modality-specific streams not provided)",
-    )
-
-    # Common parameters that can be passed to both scripts
-    parser.add_argument(
-        "--subject-id",
-        type=str,
-        help="Subject identifier",
-    )
-    parser.add_argument(
-        "--experimenter-full-name",
-        type=str,
-        help="Experimenter full name",
-    )
-    parser.add_argument(
-        "--rig-id",
-        type=str,
-        help="Identifier for the experimental rig",
-    )
-    parser.add_argument(
-        "--iacuc-protocol",
-        type=str,
-        help="IACUC protocol identifier",
     )
 
     return parser.parse_args()
@@ -131,7 +93,6 @@ def merge_json_files(file1, file2, output_file):
             merged_data[key] = value
         elif isinstance(value, list) and isinstance(merged_data[key], list):
             # If both are lists, combine them
-            # Remove duplicates by converting to a set and back to a list
             # Only works for simple types like strings
             if all(isinstance(item, str) for item in merged_data[key] + value):
                 merged_data[key] = list(set(merged_data[key] + value))
@@ -146,6 +107,31 @@ def merge_json_files(file1, file2, output_file):
         json.dump(merged_data, f, indent=2)
 
     print(f"Merged JSON saved to: {output_file}")
+
+
+def create_modality_specific_params(combined_params, modality):
+    """Create modality-specific parameters from combined parameters.
+
+    Args:
+        combined_params: Dictionary containing combined parameters
+        modality: String indicating which modality to extract ('fiber_photometry' or 'pavlovian_behavior')
+
+    Returns:
+        Dictionary with modality-specific parameters
+    """
+    # Start with common parameters
+    params = {
+        k: v
+        for k, v in combined_params.items()
+        if k not in ["fiber_photometry", "pavlovian_behavior"]
+    }
+
+    # Add modality-specific parameters
+    if modality in combined_params:
+        for k, v in combined_params[modality].items():
+            params[k] = v
+
+    return params
 
 
 def main():
@@ -169,91 +155,93 @@ def main():
         )
         sys.exit(1)
 
-    # Build Fiber Photometry command
-    fiber_cmd = f"python scripts/fiber_photometry_session_build.py --data-dir {args.data_dir}"
+    # Load combined parameters
+    with open(args.session_params, "r") as f:
+        combined_params = json.load(f)
 
-    if args.output_dir:
-        fiber_cmd += f" --output-dir {args.output_dir}"
+    # Create temporary files for each modality
+    fiber_params = create_modality_specific_params(
+        combined_params, "fiber_photometry"
+    )
+    pavlovian_params = create_modality_specific_params(
+        combined_params, "pavlovian_behavior"
+    )
 
-    # Add fiber-specific parameters
-    if args.fiber_session_params:
-        fiber_cmd += f" --session-params {args.fiber_session_params}"
-    elif args.session_params:
-        fiber_cmd += f" --session-params {args.session_params}"
+    # Write temporary files
+    fiber_params_file = os.path.join(output_dir, "_temp_fiber_params.json")
+    with open(fiber_params_file, "w") as f:
+        json.dump(fiber_params, f)
 
-    if args.fiber_data_streams:
-        fiber_cmd += f" --data-streams {args.fiber_data_streams}"
-    elif args.data_streams:
-        fiber_cmd += f" --data-streams {args.data_streams}"
-
-    # Add common parameters if provided
-    if args.subject_id:
-        fiber_cmd += f" --subject-id {args.subject_id}"
-    if args.experimenter_full_name:
-        fiber_cmd += (
-            f' --experimenter-full-name "{args.experimenter_full_name}"'
-        )
-    if args.rig_id:
-        fiber_cmd += f" --rig-id {args.rig_id}"
-    if args.iacuc_protocol:
-        fiber_cmd += f" --iacuc-protocol {args.iacuc_protocol}"
+    pavlovian_params_file = os.path.join(
+        output_dir, "_temp_pavlovian_params.json"
+    )
+    with open(pavlovian_params_file, "w") as f:
+        json.dump(pavlovian_params, f)
 
     # Run Fiber Photometry script
     print("\n=== Generating Fiber Photometry Session Metadata ===\n")
+
+    # Build fiber command
+    fiber_cmd = "python scripts/fiber_photometry_session_build.py"
+    fiber_cmd += f" --data-dir {args.data_dir}"
+    if args.output_dir:
+        fiber_cmd += f" --output-dir {args.output_dir}"
+    fiber_cmd += f" --session-params {fiber_params_file}"
+    if args.fiber_data_streams:
+        fiber_cmd += f" --data-streams {args.fiber_data_streams}"
+
     exit_code = run_command(fiber_cmd)
     if exit_code != 0:
         print(
             f"Error: Fiber photometry script failed with exit code {exit_code}"
         )
+        # Clean up temporary files
+        if os.path.exists(fiber_params_file):
+            os.remove(fiber_params_file)
+        if os.path.exists(pavlovian_params_file):
+            os.remove(pavlovian_params_file)
         sys.exit(exit_code)
 
-    # Build Pavlovian behavior command
+    # Run Pavlovian Behavior script
+    print("\n=== Generating Pavlovian Behavior Session Metadata ===\n")
+
+    # Determine behavior directory
     behavior_dir = os.path.join(args.data_dir, "behavior")
     if os.path.exists(behavior_dir):
         pavlovian_data_dir = behavior_dir
     else:
         pavlovian_data_dir = args.data_dir
 
-    pavlovian_cmd = f"python scripts/pavlovian_session_build.py --data-dir {pavlovian_data_dir}"
-
+    # Build pavlovian command
+    pavlovian_cmd = "python scripts/pavlovian_session_build.py"
+    pavlovian_cmd += f" --data-dir {pavlovian_data_dir}"
     if args.output_dir:
         pavlovian_cmd += f" --output-dir {args.output_dir}"
-
-    # Add pavlovian-specific parameters
-    if args.pavlovian_session_params:
-        pavlovian_cmd += f" --session-params {args.pavlovian_session_params}"
-    elif args.session_params:
-        pavlovian_cmd += f" --session-params {args.session_params}"
-
+    pavlovian_cmd += f" --session-params {pavlovian_params_file}"
     if args.pavlovian_data_streams:
         pavlovian_cmd += f" --data-streams {args.pavlovian_data_streams}"
-    elif args.data_streams:
-        pavlovian_cmd += f" --data-streams {args.data_streams}"
 
-    # Add common parameters if provided
-    if args.subject_id:
-        pavlovian_cmd += f" --subject-id {args.subject_id}"
-    if args.experimenter_full_name:
-        pavlovian_cmd += (
-            f' --experimenter-full-name "{args.experimenter_full_name}"'
-        )
-    if args.rig_id:
-        pavlovian_cmd += f" --rig-id {args.rig_id}"
-    if args.iacuc_protocol:
-        pavlovian_cmd += f" --iacuc-protocol {args.iacuc_protocol}"
-
-    # Run Pavlovian behavior script
-    print("\n=== Generating Pavlovian Behavior Session Metadata ===\n")
     exit_code = run_command(pavlovian_cmd)
     if exit_code != 0:
         print(
             f"Error: Pavlovian behavior script failed with exit code {exit_code}"
         )
+        # Clean up temporary files
+        if os.path.exists(fiber_params_file):
+            os.remove(fiber_params_file)
+        if os.path.exists(pavlovian_params_file):
+            os.remove(pavlovian_params_file)
         sys.exit(exit_code)
 
     # Merge the two JSON files
     print("\n=== Merging Session Metadata Files ===\n")
     merge_json_files(fiber_output, pavlovian_output, combined_output)
+
+    # Clean up temporary files
+    if os.path.exists(fiber_params_file):
+        os.remove(fiber_params_file)
+    if os.path.exists(pavlovian_params_file):
+        os.remove(pavlovian_params_file)
 
     print(f"\nCombined session metadata saved to: {combined_output}")
     print(f"Individual session files saved to:")
