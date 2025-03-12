@@ -34,10 +34,10 @@ from aind_metadata_mapper.bruker.models import (
     JobSettings as BrukerSessionJobSettings,
 )
 from aind_metadata_mapper.bruker.session import MRIEtl
-from aind_metadata_mapper.fip.models import (
+from aind_metadata_mapper.fiber_photometry.models import (
     JobSettings as FipSessionJobSettings,
 )
-from aind_metadata_mapper.fip.session import FIBEtl
+from aind_metadata_mapper.fiber_photometry.session import FIBEtl
 from aind_metadata_mapper.mesoscope.session import MesoscopeEtl
 from aind_metadata_mapper.models import JobSettings
 from aind_metadata_mapper.smartspim.acquisition import SmartspimETL
