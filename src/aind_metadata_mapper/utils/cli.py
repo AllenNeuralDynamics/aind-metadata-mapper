@@ -2,7 +2,9 @@
 
 import json
 import sys
-from typing import Dict, Any, List
+import os
+import argparse
+from typing import Dict, Any, List, Type, Callable
 
 
 def load_config(config_path: str) -> Dict[str, Any]:
@@ -24,6 +26,105 @@ def load_config(config_path: str) -> Dict[str, Any]:
     except json.JSONDecodeError:
         print(f"Warning: Configuration file {config_path} is not valid JSON.")
         return {}
+
+
+def create_common_parser(description: str) -> argparse.ArgumentParser:
+    """Create an argument parser with common arguments for ETL scripts.
+
+    Args:
+        description: Description of the script
+
+    Returns:
+        ArgumentParser with common arguments
+    """
+    parser = argparse.ArgumentParser(description=description)
+
+    # Required arguments
+    parser.add_argument(
+        "--data-dir",
+        type=str,
+        required=True,
+        help="Path to directory containing data files",
+    )
+
+    # Configuration files
+    parser.add_argument(
+        "--session-params",
+        type=str,
+        help="Path to session parameters JSON file",
+    )
+    parser.add_argument(
+        "--data-streams",
+        type=str,
+        help="Path to data streams JSON file",
+    )
+
+    # Common session parameters
+    parser.add_argument(
+        "--subject-id",
+        type=str,
+        help="Subject identifier",
+    )
+    parser.add_argument(
+        "--experimenter-full-name",
+        type=str,
+        help="Experimenter full name",
+    )
+    parser.add_argument(
+        "--rig-id",
+        type=str,
+        help="Identifier for the experimental rig",
+    )
+    parser.add_argument(
+        "--task-version",
+        type=str,
+        help="Version of the task",
+    )
+    parser.add_argument(
+        "--iacuc-protocol",
+        type=str,
+        help="IACUC protocol identifier",
+    )
+    parser.add_argument(
+        "--mouse-platform-name",
+        type=str,
+        help="Name of the mouse platform used",
+    )
+    parser.add_argument(
+        "--active-mouse-platform",
+        type=str,
+        choices=["true", "false"],
+        help="Whether the mouse platform was active (specify 'true' or 'false')",
+    )
+    parser.add_argument(
+        "--session-type",
+        type=str,
+        help="Type of session",
+    )
+
+    # Output options
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default=None,
+        help="Directory to write output file to (defaults to data directory)",
+    )
+
+    return parser
+
+
+def run_command(command: List[str]) -> int:
+    """Run a command and return the exit code.
+
+    Args:
+        command: Command to run
+
+    Returns:
+        Exit code of the command
+    """
+    print(f"Running command: {' '.join(command)}")
+    result = subprocess.run(command)
+    return result.returncode
 
 
 def resolve_parameters(args, required_params: List[str]) -> Dict[str, Any]:
@@ -92,3 +193,65 @@ def resolve_parameters(args, required_params: List[str]) -> Dict[str, Any]:
         sys.exit(1)
 
     return params
+
+
+def run_etl(args, required_params: List[str], etl_class, job_settings_class):
+    """Run an ETL process with the given arguments.
+
+    Args:
+        args: Command line arguments
+        required_params: List of required parameter names
+        etl_class: ETL class to instantiate
+        job_settings_class: JobSettings class to instantiate
+
+    Returns:
+        None
+    """
+    # Resolve parameters from command line args and config files
+    params = resolve_parameters(args, required_params)
+
+    # Set data_directory
+    params["data_directory"] = args.data_dir
+    print(f"Extracting data from {params['data_directory']}")
+
+    # Set output directory and filename
+    if args.output_dir:
+        params["output_directory"] = args.output_dir
+    else:
+        params["output_directory"] = args.data_dir
+
+    params["output_filename"] = args.output_filename
+
+    # Debug: Print params before creating JobSettings
+    print("\nDebug - Parameters being passed to JobSettings:")
+    for key, value in params.items():
+        print(f"  {key}: {value}")
+    print(f"JobSettings class: {job_settings_class.__name__}")
+    print(
+        f"job_settings_name in class: {getattr(job_settings_class, 'job_settings_name', 'Not found')}"
+    )
+
+    # Create JobSettings object
+    job_settings = job_settings_class(**params)
+
+    # Generate session metadata
+    etl = etl_class(job_settings)
+    response = etl.run_job()
+
+    # Handle the response
+    if response.message:
+        print(f"Response message: {response.message}")
+
+    if response.data:
+        # If we have data in the response, write it to the output file
+        output_path = os.path.join(
+            params["output_directory"], params["output_filename"]
+        )
+        with open(output_path, "w") as f:
+            f.write(response.data)
+        print(f"Session metadata saved to: {output_path}")
+    else:
+        # If no data in response, the file was likely written directly by the ETL process
+        print(
+            f"Session metadata saved to: {os.path.join(params['output_directory'], params['output_filename'])}"
+        )
