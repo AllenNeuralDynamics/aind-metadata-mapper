@@ -1,1 +1,1 @@
-"""Pavlovian Behavior ETL module for AIND metadata mapper."""
+"""Maps Pavlovian Behavior metadata into a session model"""

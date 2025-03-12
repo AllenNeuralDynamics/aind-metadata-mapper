@@ -232,23 +232,6 @@ class BehaviorEtl(GenericEtl[JobSettings]):
             epoch.reward_consumed_during_epoch for epoch in stimulus_epochs
         )
 
-        # Ensure session_end_time is set
-        if settings.session_end_time is None:
-            # If we have stimulus epochs, use the end time of the last epoch
-            if stimulus_epochs:
-                settings.session_end_time = max(
-                    epoch.stimulus_end_time for epoch in stimulus_epochs
-                )
-            # Otherwise, default to session_start_time + 1 hour
-            else:
-                settings.session_end_time = (
-                    settings.session_start_time + timedelta(hours=1)
-                )
-                logging.warning(
-                    "session_end_time was not provided or extracted. "
-                    f"Using default: {settings.session_end_time}"
-                )
-
         # Process data streams if they exist
         data_streams = []
         if hasattr(settings, "data_streams") and settings.data_streams:
