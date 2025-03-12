@@ -232,6 +232,17 @@ class BehaviorEtl(GenericEtl[JobSettings]):
             epoch.reward_consumed_during_epoch for epoch in stimulus_epochs
         )
 
+        # Process data streams if they exist
+        data_streams = []
+        if hasattr(settings, "data_streams") and settings.data_streams:
+            for stream in settings.data_streams:
+                # Set stream_start_time and stream_end_time if they are null
+                if stream.get("stream_start_time") is None:
+                    stream["stream_start_time"] = settings.session_start_time
+                if stream.get("stream_end_time") is None:
+                    stream["stream_end_time"] = settings.session_end_time
+                data_streams.append(stream)
+
         # Create session with all available data
         session = Session(
             experimenter_full_name=settings.experimenter_full_name,
@@ -244,7 +255,7 @@ class BehaviorEtl(GenericEtl[JobSettings]):
             notes=settings.notes,
             mouse_platform_name=settings.mouse_platform_name,
             active_mouse_platform=settings.active_mouse_platform,
-            data_streams=[],  # Empty list as we don't have data streams for behavior
+            data_streams=data_streams,  # Use processed data_streams
             stimulus_epochs=stimulus_epochs,
             reward_consumed_total=reward_consumed_total,
             reward_consumed_unit=VolumeUnit.UL,  # Using the proper enum value for microliters

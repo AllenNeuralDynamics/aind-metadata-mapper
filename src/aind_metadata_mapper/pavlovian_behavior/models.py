@@ -36,6 +36,7 @@ class JobSettings(BaseJobSettings):
     # Optional fields with defaults
     notes: str = ""
     protocol_id: List[str] = []
+    data_streams: List[Dict[str, Any]] = []
 
     # Stimulus epoch information - can be populated from data files
     stimulus_epochs: List[Dict[str, Any]] = []
