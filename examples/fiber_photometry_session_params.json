@@ -9,6 +9,5 @@
     "session_type": "Foraging_Photometry",
     "task_name": "Fiber Photometry",
     "notes": "Example configuration for fiber photometry rig",
-    "reward_delivery": "water from left lick spout (DO0)",
-    "punishment_delivery": "airpuff with 25 psi for 1 s (DO2)"
+    "reward_delivery": "water from left lick spout (DO0)"
 } 

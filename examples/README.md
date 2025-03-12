@@ -36,9 +36,9 @@ These files contain session-specific parameters like:
 - `pavlovian_behavior_data_streams.json`: Data stream configurations for behavior experiments
 - `fiber_photometry_data_streams.json`: Data stream configurations for fiber photometry experiments
 
-These files contain a list of data stream objects, each representing a collection of devices that are recorded simultaneously. Each data stream must include:
+These files contain a list of `Stream` objects, each representing a collection of devices that are recorded simultaneously. A session can have multiple streams if, for example, different devices are used at different times during the session.
 
-**Required Fields:**
+**Required Fields for Each Stream:**
 - `stream_start_time`: Start time of the stream (set to `null` in config, will be automatically set to session start time)
 - `stream_end_time`: End time of the stream (set to `null` in config, will be automatically set to session end time)
 - `stream_modalities`: List of modalities for this stream (e.g., ["Behavior"] or ["FIB"])
@@ -51,6 +51,11 @@ These files contain a list of data stream objects, each representing a collectio
 - `fiber_connections`: List of fiber connection configurations
 - `software`: List of software configurations
 - `notes`: Additional notes about the data stream
+
+**Modality-Specific Requirements:**
+- For `FIB` modality: Must include `light_sources`, `detectors`, and `fiber_connections`
+- For `Behavior_Videos` modality: Must include `camera_names`
+- For other modalities: See the schema for specific requirements
 
 **Note on Time Fields:**
 When `stream_start_time` and `stream_end_time` are set to `null` in the configuration file, the ETL process will automatically:
@@ -79,8 +84,6 @@ This ensures that no `null` values are written to the database, while allowing y
   }
 ]
 ```
-
-**Note:** For FIB modality, you must include `light_sources`, `detectors`, and `fiber_connections`.
 
 ## Usage
 
@@ -128,6 +131,56 @@ python scripts/fiber_photometry_session_build.py \
   --subject-id 123456 \
   --experimenter-full-name "John Doe" \
   --active-mouse-platform true
+```
+
+### Combined Experiments
+
+For experiments that combine Fiber Photometry with Pavlovian Behavior, you can use the `fiber+pavlovian_session_build.py` script to generate a combined session file in one step:
+
+```bash
+python scripts/fiber+pavlovian_session_build.py \
+  --data-dir /path/to/data \
+  --pavlovian-session-params examples/pavlovian_behavior_session_params.json \
+  --pavlovian-data-streams examples/pavlovian_behavior_data_streams.json \
+  --fiber-session-params examples/fiber_photometry_session_params.json \
+  --fiber-data-streams examples/fiber_photometry_data_streams.json \
+  --subject-id 123456 \
+  --experimenter-full-name "John Doe" \
+  --active-mouse-platform true \
+  --task-name "Pavlovian Conditioning"
+```
+
+This script will:
+1. Run the Pavlovian behavior ETL process with the specified parameters and config files
+2. Run the fiber photometry ETL process with the specified parameters and config files
+3. Merge the resulting session files
+4. Write the combined session to a new file
+
+You can customize the output filenames:
+
+```bash
+python scripts/fiber+pavlovian_session_build.py \
+  --data-dir /path/to/data \
+  --pavlovian-session-params examples/pavlovian_behavior_session_params.json \
+  --pavlovian-data-streams examples/pavlovian_behavior_data_streams.json \
+  --fiber-session-params examples/fiber_photometry_session_params.json \
+  --fiber-data-streams examples/fiber_photometry_data_streams.json \
+  --pavlovian-output-filename session_pavlovian.json \
+  --fiber-output-filename session_fiber.json \
+  --combined-output-filename session_combined.json
+```
+
+The script will generate three output files:
+1. The Pavlovian behavior session file
+2. The fiber photometry session file
+3. The combined session file that merges both modalities
+
+If you need to merge existing session files, you can use the `merge_session_files.py` script directly:
+
+```bash
+python scripts/merge_session_files.py \
+  --input-files /path/to/session_pavlovian_behavior.json /path/to/session_fiber_photometry.json \
+  --output-file /path/to/session_combined.json
 ```
 
 ## Parameter Resolution Order
