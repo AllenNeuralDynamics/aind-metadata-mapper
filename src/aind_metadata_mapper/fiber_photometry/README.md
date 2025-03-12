@@ -16,8 +16,8 @@ This example shows how to use the `FIBEtl` class to generate session metadata wh
 ```python
 import json
 from pathlib import Path
-from aind_metadata_mapper.fip.session import FIBEtl
-from aind_metadata_mapper.fip.models import JobSettings
+from aind_metadata_mapper.fiber_photometry.session import FIBEtl
+from aind_metadata_mapper.fiber_photometry.models import JobSettings
 
 # Load settings from JSON file
 settings_path = Path("job_settings.json")
@@ -43,8 +43,8 @@ This example shows how to use the `JobSettings` object directly to generate sess
 ```python
 from datetime import datetime
 import zoneinfo
-from aind_metadata_mapper.fip.session import FIBEtl
-from aind_metadata_mapper.fip.models import JobSettings
+from aind_metadata_mapper.fiber_photometry.session import FIBEtl
+from aind_metadata_mapper.fiber_photometry.models import JobSettings
 
 # Create example settings
 session_time = datetime(1999, 10, 4, tzinfo=zoneinfo.ZoneInfo("UTC"))
@@ -103,7 +103,7 @@ The `JobSettings` class expects:
 ## Command Line Usage
 The module can also be run from the command line:
 ```bash
-python -m aind_metadata_mapper.fip.session job_settings.json
+python -m aind_metadata_mapper.fiber_photometry.session job_settings.json
 ```
 
 ## Extending the ETL Process to Include Service Integrations
