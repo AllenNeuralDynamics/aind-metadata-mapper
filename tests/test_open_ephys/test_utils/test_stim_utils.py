@@ -452,6 +452,58 @@ class TestStimUtils(unittest.TestCase):
                                     final_frame_start_times,
                                 )
 
+
+    def test_extract_frame_times_with_delay(self):
+        """
+        Tests the extract_frame_times_with_delay function.
+        """
+        with patch("module_name.sync.get_edges") as mock_get_edges, \
+            patch("module_name.sync.get_rising_edges") as mock_get_rising_edges, \
+            patch("module_name.calculate_frame_mean_time") as mock_calculate_frame_mean_time:
+
+            # Mock return values
+            mock_get_edges.return_value = np.array([0, 5000, 10000, 15000, 20000])
+            mock_get_rising_edges.return_value = np.array([0, 10000, 20000, 30000, 40000])
+            mock_calculate_frame_mean_time.return_value = (1, 4)
+
+            # Define input parameters
+            sync_file = "dummy_sync_file"
+            frame_keys = ["key1", "key2"]
+
+            # Expected output (based on example values)
+            expected_delay = 0.0356  # Assumed delay in case of error
+
+            # Call the function
+            delay = stim.extract_frame_times_with_delay(sync_file, frame_keys)
+
+            # Assertions
+            self.assertEquals( np.isclose(delay, expected_delay, atol=0.002), f"Expected {expected_delay}, got {delay}")
+
+
+    def test_calculate_frame_mean_time(self):
+        """
+        Tests the calculate_frame_mean_time function.
+        """
+        # Mocking the sync.get_rising_edges function
+        with patch("module_name.sync.get_rising_edges") as mock_get_rising_edges:
+            # Define the mock return value (example values for photodiode rising edges)
+            mock_get_rising_edges.return_value = np.array([0, 10000, 20000, 35000, 45000, 60000])
+
+            # Define input parameters
+            sync_file = "dummy_sync_file"
+            frame_keys = ["key1", "key2"]  # Not used in the function but included for completeness
+
+            # Expected output (manually verified logic based on example input)
+            expected_ptd_start = 3
+            expected_ptd_end = 5
+
+            # Call the function
+            ptd_start, ptd_end = stim.calculate_frame_mean_time(sync_file, frame_keys)
+
+            # Assertions
+            self.assertEquals( ptd_start == expected_ptd_start, f"Expected {expected_ptd_start}, got {ptd_start}")
+            self.assertEquals( ptd_end == expected_ptd_end, f"Expected {expected_ptd_end}, got {ptd_end}")
+
     def test_convert_frames_to_seconds(self):
         """
         Tests the convert_frames_to_seconds function.
