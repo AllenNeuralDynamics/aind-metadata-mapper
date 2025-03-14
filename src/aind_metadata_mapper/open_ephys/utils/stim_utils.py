@@ -718,6 +718,9 @@ def extract_frame_times_with_delay(
                     logger.info("One second flip required")
                     return delay - 1
 
+            if delay == np.nan:
+                return ASSUMED_DELAY
+
             return delay
     except Exception as e:
         print(e)

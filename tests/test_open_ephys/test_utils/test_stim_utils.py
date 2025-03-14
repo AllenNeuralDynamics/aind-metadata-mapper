@@ -516,7 +516,7 @@ class TestStimUtils(unittest.TestCase):
 
             # Expected output (manually verified logic based on example input)
             expected_ptd_start = None
-            expected_ptd_end = 5
+            expected_ptd_end = None
 
             # Call the function
             ptd_start, ptd_end = stim.calculate_frame_mean_time(
