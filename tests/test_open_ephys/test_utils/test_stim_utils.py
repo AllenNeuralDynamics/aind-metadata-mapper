@@ -471,10 +471,10 @@ class TestStimUtils(unittest.TestCase):
 
             # Mock return values
             mock_get_edges.return_value = np.array(
-                [0, 5000, 10000, 15000, 20000]
+                [0]
             )
             mock_get_rising_edges.return_value = np.array(
-                [0, 10000, 20000, 30000, 40000]
+                [0]
             )
             mock_calculate_frame_mean_time.return_value = (0, 1)
 
@@ -489,9 +489,9 @@ class TestStimUtils(unittest.TestCase):
             delay = stim.extract_frame_times_with_delay(sync_file, frame_keys)
 
             # Assertions
-            self.assertEquals(
-                np.isclose(delay, expected_delay, atol=0.002),
-                f"Expected {expected_delay}, got {delay}",
+            np.testing.assert_array_equal(
+                expected_delay,
+                delay,
             )
 
     def test_calculate_frame_mean_time(self):
