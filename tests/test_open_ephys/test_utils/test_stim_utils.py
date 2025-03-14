@@ -457,12 +457,15 @@ class TestStimUtils(unittest.TestCase):
         Tests the extract_frame_times_with_delay function.
         """
         with (
-            patch("module_name.sync.get_edges") as mock_get_edges,
+            patch("aind_metadata_mapper.open_ephys.utils"
+            ".sync.get_edges") as mock_get_edges,
             patch(
-                "module_name.sync.get_rising_edges"
+                "aind_metadata_mapper.open_ephys.utils"
+                ".sync.get_rising_edges"
             ) as mock_get_rising_edges,
             patch(
-                "module_name.calculate_frame_mean_time"
+                "aind_metadata_mapper.open_ephys.utils"
+                ".stim.calculate_frame_mean_time"
             ) as mock_calculate_frame_mean_time,
         ):
 
@@ -497,7 +500,8 @@ class TestStimUtils(unittest.TestCase):
         """
         # Mocking the sync.get_rising_edges function
         with patch(
-            "module_name.sync.get_rising_edges"
+            "aind_metadata_mapper.open_ephys.utils"
+            ".sync.get_rising_edges"
         ) as mock_get_rising_edges:
             mock_get_rising_edges.return_value = np.array(
                 [0, 10000, 20000, 35000, 45000, 60000]
