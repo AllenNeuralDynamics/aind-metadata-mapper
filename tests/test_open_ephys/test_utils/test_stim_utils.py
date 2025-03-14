@@ -458,7 +458,7 @@ class TestStimUtils(unittest.TestCase):
         """
         with (
             patch("aind_metadata_mapper.open_ephys.utils"
-                  "sync_utils.get_edges") as mock_get_edges,
+                  ".sync_utils.get_edges") as mock_get_edges,
             patch(
                 "aind_metadata_mapper.open_ephys.utils"
                 ".stim_utils..sync.get_rising_edges"
@@ -501,7 +501,7 @@ class TestStimUtils(unittest.TestCase):
         # Mocking the sync.get_rising_edges function
         with patch(
             "aind_metadata_mapper.open_ephys.utils"
-            ".sync.get_rising_edges"
+            ".sync_utils.get_rising_edges"
         ) as mock_get_rising_edges:
             mock_get_rising_edges.return_value = np.array(
                 [0, 10000, 20000, 35000, 45000, 60000]
