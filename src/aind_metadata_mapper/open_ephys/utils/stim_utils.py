@@ -496,124 +496,141 @@ def extract_frame_times_from_photodiode(
     return frame_start_times
 
 
-def extract_frame_times_with_monitor_delay(
-    sync_file,
-    photodiode_cycle=60,
-    frame_keys=FRAME_KEYS,
-    photodiode_keys=PHOTODIODE_KEYS,
-    trim_discontiguous_frame_times=True,
-):
+def calculate_frame_mean_time(sync_file, frame_keys):
+
+    FIRST_ELEMENT_INDEX = 0
     sample_freq = 100000.0
+    ONE = 1
+    # photodiode transitions
+    photodiode_rise = np.array(
+        sync.get_rising_edges(sync_file, "stim_photodiode"),
+        dtype=np.float64,
+    ) / float(sample_freq)
+
+    # Find start and stop of stimulus
+    # test and correct for photodiode transition errors
+    photodiode_rise_diff = np.ediff1d(photodiode_rise)
+    min_short_photodiode_rise = 0.1
+    max_short_photodiode_rise = 0.3
+    min_medium_photodiode_rise = 0.5
+    max_medium_photodiode_rise = 1.5
+    min_large_photodiode_rise = 1.9
+    max_large_photodiode_rise = 2.1
+
+    # find the short and medium length photodiode rises
+    short_rise_indexes = np.where(
+        np.logical_and(
+            photodiode_rise_diff > min_short_photodiode_rise,
+            photodiode_rise_diff < max_short_photodiode_rise,
+        )
+    )[FIRST_ELEMENT_INDEX]
+    medium_rise_indexes = np.where(
+        np.logical_and(
+            photodiode_rise_diff > min_medium_photodiode_rise,
+            photodiode_rise_diff < max_medium_photodiode_rise,
+        )
+    )[FIRST_ELEMENT_INDEX]
+
+    short_set = set(short_rise_indexes)
+
+    # iterate through the medium photodiode rise indexes
+    # to find the start and stop indexes
+    # lookng for three rise pattern
+    next_frame = ONE
+    start_pattern_index = 2
+    end_pattern_index = 3
+    ptd_start = None
+    ptd_end = None
+
+    # if we can't use medium, we can apply a filter across large
+    if len(medium_rise_indexes) < 3:
+        large_rise_indexes = np.where(
+            np.logical_and(
+                photodiode_rise_diff > min_large_photodiode_rise,
+                photodiode_rise_diff < max_large_photodiode_rise,
+            )
+        )[FIRST_ELEMENT_INDEX]
+        print(large_rise_indexes)
+        for large_rise_index in large_rise_indexes:
+            if (
+                set(
+                    range(
+                        large_rise_index - start_pattern_index,
+                        large_rise_index,
+                    )
+                )
+                <= short_set
+            ):
+                ptd_start = large_rise_index + next_frame
+            elif (
+                set(
+                    range(
+                        large_rise_index + next_frame,
+                        large_rise_index + end_pattern_index,
+                    )
+                )
+                <= short_set
+            ):
+                ptd_end = large_rise_index
+
+    else:
+        for medium_rise_index in medium_rise_indexes:
+            if (
+                set(
+                    range(
+                        medium_rise_index - start_pattern_index,
+                        medium_rise_index,
+                    )
+                )
+                <= short_set
+            ):
+                ptd_start = medium_rise_index + next_frame
+            elif (
+                set(
+                    range(
+                        medium_rise_index + next_frame,
+                        medium_rise_index + end_pattern_index,
+                    )
+                )
+                <= short_set
+            ):
+                ptd_end = medium_rise_index
+    return ptd_start, ptd_end
+
+
+def extract_frame_times_with_delay(
+    sync_file,
+    frame_keys=FRAME_KEYS,
+):
+
     ASSUMED_DELAY = 0.0356
     DELAY_THRESHOLD = 0.002
     FIRST_ELEMENT_INDEX = 0
     ROUND_PRECISION = 4
-    ONE = 1
+    sample_freq = 100000.0
+
+    stim_vsync_fall = sync.get_edges(sync_file, "falling", frame_keys)
 
     logger.info("calculating monitor delay")
 
+    # photodiode transitions
+    photodiode_rise = np.array(
+        sync.get_rising_edges(sync_file, "stim_photodiode"),
+        dtype=np.float64,
+    ) / float(sample_freq)
+
+    # Find start and stop of stimulus
+    # test and correct for photodiode transition errors
+    photodiode_rise_diff = np.ediff1d(photodiode_rise)
+
     try:
-        # photodiode transitions
-        photodiode_rise = np.array(
-            sync.get_rising_edges(sync_file, "stim_photodiode"),
-            dtype=np.float64,
-        ) / float(sample_freq)
-
-        stim_vsync_fall = sync.get_edges(sync_file, "falling", frame_keys)
-
-        # Find start and stop of stimulus
-        # test and correct for photodiode transition errors
-        photodiode_rise_diff = np.ediff1d(photodiode_rise)
-        min_short_photodiode_rise = 0.1
-        max_short_photodiode_rise = 0.3
-        min_medium_photodiode_rise = 0.5
-        max_medium_photodiode_rise = 1.5
-        min_large_photodiode_rise = 1.9
-        max_large_photodiode_rise = 2.1
-
-        # find the short and medium length photodiode rises
-        short_rise_indexes = np.where(
-            np.logical_and(
-                photodiode_rise_diff > min_short_photodiode_rise,
-                photodiode_rise_diff < max_short_photodiode_rise,
-            )
-        )[FIRST_ELEMENT_INDEX]
-        medium_rise_indexes = np.where(
-            np.logical_and(
-                photodiode_rise_diff > min_medium_photodiode_rise,
-                photodiode_rise_diff < max_medium_photodiode_rise,
-            )
-        )[FIRST_ELEMENT_INDEX]
-
-        short_set = set(short_rise_indexes)
-
-        # iterate through the medium photodiode rise indexes to find the start and stop indexes
-        # lookng for three rise pattern
-        next_frame = ONE
-        start_pattern_index = 2
-        end_pattern_index = 3
-        ptd_start = None
-        ptd_end = None
-
-        # if we can't use medium, we can apply a filter across large
-        if len(medium_rise_indexes) < 3:
-            large_rise_indexes = np.where(
-                np.logical_and(
-                    photodiode_rise_diff > min_large_photodiode_rise,
-                    photodiode_rise_diff < max_large_photodiode_rise,
-                )
-            )[FIRST_ELEMENT_INDEX]
-            print(large_rise_indexes)
-            for large_rise_index in large_rise_indexes:
-                if (
-                    set(
-                        range(
-                            large_rise_index - start_pattern_index,
-                            large_rise_index,
-                        )
-                    )
-                    <= short_set
-                ):
-                    ptd_start = large_rise_index + next_frame
-                elif (
-                    set(
-                        range(
-                            large_rise_index + next_frame,
-                            large_rise_index + end_pattern_index,
-                        )
-                    )
-                    <= short_set
-                ):
-                    ptd_end = large_rise_index
-
-        else:
-            for medium_rise_index in medium_rise_indexes:
-                if (
-                    set(
-                        range(
-                            medium_rise_index - start_pattern_index,
-                            medium_rise_index,
-                        )
-                    )
-                    <= short_set
-                ):
-                    ptd_start = medium_rise_index + next_frame
-                elif (
-                    set(
-                        range(
-                            medium_rise_index + next_frame,
-                            medium_rise_index + end_pattern_index,
-                        )
-                    )
-                    <= short_set
-                ):
-                    ptd_end = medium_rise_index
-
+        ptd_start, ptd_end = calculate_frame_mean_time(sync_file, frame_keys)
         # if the photodiode signal exists
         if ptd_start is not None and ptd_end is not None:
             # check to make sure there are no there are no photodiode errors
-            # sometimes two consecutive photodiode events take place close to each other
-            # correct this case if it happens
+            # sometimes two consecutive photodiode events take place close
+            # to each other.
+            # Correct this case if it happens
             photodiode_rise_error_threshold = 1.8
             last_frame_index = -1
 
@@ -634,7 +651,6 @@ def extract_frame_times_with_monitor_delay(
                     photodiode_rise, error_frames[last_frame_index]
                 )
                 ptd_end -= 1
-                photodiode_rise_diff = np.ediff1d(photodiode_rise)
 
             # Find the delay
             # calculate monitor delay
@@ -658,7 +674,9 @@ def extract_frame_times_with_monitor_delay(
                     ]
                 )
 
-            # get a single delay value by finding the mean of all of the delays - skip the last element in the array (the end of the experimenet)
+            # get a single delay value by finding the mean of
+            # all of the delays -
+            # skip the last element in the array
             delay = np.mean(delay_rise[:last_frame_index])
             delay_std = np.std(delay_rise[:last_frame_index])
 
@@ -666,12 +684,6 @@ def extract_frame_times_with_monitor_delay(
                 if np.abs((delay - 1) - ASSUMED_DELAY) < DELAY_THRESHOLD:
                     logger.info("One second flip required")
                     return delay - 1
-                logger.error(
-                    "Sync photodiode error needs to be fixed. Using assumed monitor delay: {}".format(
-                        round(delay, ROUND_PRECISION)
-                    )
-                )
-                return ASSUMED_DELAY
 
             return delay
     except Exception as e:
