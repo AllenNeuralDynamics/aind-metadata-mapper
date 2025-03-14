@@ -476,7 +476,7 @@ class TestStimUtils(unittest.TestCase):
             mock_get_rising_edges.return_value = np.array(
                 [0, 10000, 20000, 30000, 40000]
             )
-            mock_calculate_frame_mean_time.return_value = (1, 4)
+            mock_calculate_frame_mean_time.return_value = (0, 1)
 
             # Define input parameters
             sync_file = "dummy_sync_file"
