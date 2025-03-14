@@ -458,7 +458,7 @@ class TestStimUtils(unittest.TestCase):
         """
         with (
             patch("aind_metadata_mapper.open_ephys.utils"
-            ".sync.get_edges") as mock_get_edges,
+                  ".sync.get_edges") as mock_get_edges,
             patch(
                 "aind_metadata_mapper.open_ephys.utils"
                 ".sync.get_rising_edges"
