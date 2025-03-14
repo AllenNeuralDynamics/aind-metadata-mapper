@@ -465,7 +465,7 @@ class TestStimUtils(unittest.TestCase):
             ) as mock_get_rising_edges,
             patch(
                 "aind_metadata_mapper.open_ephys.utils"
-                ".stim_utils.stim.calculate_frame_mean_time"
+                ".stim_utils.calculate_frame_mean_time"
             ) as mock_calculate_frame_mean_time,
         ):
 
@@ -524,14 +524,8 @@ class TestStimUtils(unittest.TestCase):
             )
 
             # Assertions
-            self.assertEquals(
-                ptd_start == expected_ptd_start,
-                f"Expected {expected_ptd_start}, got {ptd_start}",
-            )
-            self.assertEquals(
-                ptd_end == expected_ptd_end,
-                f"Expected {expected_ptd_end}, got {ptd_end}",
-            )
+            self.assertEqual(ptd_start, expected_ptd_start)
+            self.assertEqual(ptd_end, expected_ptd_end)
 
     def test_convert_frames_to_seconds(self):
         """
