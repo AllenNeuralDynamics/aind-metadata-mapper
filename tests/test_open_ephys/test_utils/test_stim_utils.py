@@ -407,17 +407,17 @@ class TestStimUtils(unittest.TestCase):
 
         with patch(
             "aind_metadata_mapper.open_ephys.utils"
-            ".stim_utils.sync.get_edges",
+            ".sync_utils.get_edges",
             side_effect=[photodiode_times, vsync_times],
         ):
             with patch(
                 "aind_metadata_mapper.open_ephys.utils"
-                ".stim_utils.sync.separate_vsyncs_and_photodiode_times",
+                ".sync_utils.separate_vsyncs_and_photodiode_times",
                 return_value=(vsync_times_chunked, pd_times_chunked),
             ):
                 with patch(
                     "aind_metadata_mapper.open_ephys.utils"
-                    ".stim_utils.sync.compute_frame_times",
+                    ".sync_utils.compute_frame_times",
                     side_effect=[
                         (None, frame_starts_chunk_1, None),
                         (None, frame_starts_chunk_2, None),
@@ -425,17 +425,17 @@ class TestStimUtils(unittest.TestCase):
                 ):
                     with patch(
                         "aind_metadata_mapper.open_ephys.utils"
-                        ".stim_utils.sync.remove_zero_frames",
+                        ".sync_utils.remove_zero_frames",
                         return_value=final_frame_start_times,
                     ):
                         with patch(
                             "aind_metadata_mapper.open_ephys.utils"
-                            ".stim_utils.sync.trimmed_stats",
+                            ".sync_utils.trimmed_stats",
                             return_value=[1.9, 2.2],
                         ):
                             with patch(
                                 "aind_metadata_mapper.open_ephys.utils"
-                                ".stim_utils.sync.correct_on_off_effects",
+                                ".sync_utils.correct_on_off_effects",
                                 return_value=[1.9, 2.2],
                             ):
                                 result_frame_start_times = (
@@ -458,14 +458,14 @@ class TestStimUtils(unittest.TestCase):
         """
         with (
             patch("aind_metadata_mapper.open_ephys.utils"
-                  ".sync.get_edges") as mock_get_edges,
+                  "sync_utils.get_edges") as mock_get_edges,
             patch(
                 "aind_metadata_mapper.open_ephys.utils"
-                ".sync.get_rising_edges"
+                ".stim_utils..sync.get_rising_edges"
             ) as mock_get_rising_edges,
             patch(
                 "aind_metadata_mapper.open_ephys.utils"
-                ".stim.calculate_frame_mean_time"
+                ".stim_utils.stim.calculate_frame_mean_time"
             ) as mock_calculate_frame_mean_time,
         ):
 
