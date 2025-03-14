@@ -497,7 +497,7 @@ def extract_frame_times_from_photodiode(
 
 
 def calculate_frame_mean_time(sync_file, frame_keys):
-    '''
+    """
     Calculate the mean monitor time of the photodiode signa
 
     Parameters
@@ -513,7 +513,7 @@ def calculate_frame_mean_time(sync_file, frame_keys):
         The start index of the photodiode signal.
     ptd_end : int
         The end index of the photodiode signal.
-    '''
+    """
     FIRST_ELEMENT_INDEX = 0
     sample_freq = 100000.0
     ONE = 1
@@ -618,7 +618,7 @@ def extract_frame_times_with_delay(
     sync_file,
     frame_keys=FRAME_KEYS,
 ):
-    '''
+    """
     Extracts frame times from a vsync signal
     Appends monitor delay
 
@@ -634,7 +634,7 @@ def extract_frame_times_with_delay(
     frame_start_times : np.ndarray
         The start times of each frame.
 
-    '''
+    """
 
     ASSUMED_DELAY = 0.0356
     DELAY_THRESHOLD = 0.002
