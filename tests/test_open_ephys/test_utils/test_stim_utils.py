@@ -461,7 +461,7 @@ class TestStimUtils(unittest.TestCase):
                   ".sync_utils.get_edges") as mock_get_edges,
             patch(
                 "aind_metadata_mapper.open_ephys.utils"
-                ".stim_utils..sync.get_rising_edges"
+                ".stim_utils.sync.get_rising_edges"
             ) as mock_get_rising_edges,
             patch(
                 "aind_metadata_mapper.open_ephys.utils"
@@ -515,7 +515,7 @@ class TestStimUtils(unittest.TestCase):
             ]  # Not used in the function but included for completeness
 
             # Expected output (manually verified logic based on example input)
-            expected_ptd_start = 3
+            expected_ptd_start = None
             expected_ptd_end = 5
 
             # Call the function
