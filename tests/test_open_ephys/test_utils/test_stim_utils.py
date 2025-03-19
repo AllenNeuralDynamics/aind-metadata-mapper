@@ -406,8 +406,7 @@ class TestStimUtils(unittest.TestCase):
         )
 
         with patch(
-            "aind_metadata_mapper.open_ephys.utils"
-            ".sync_utils.get_edges",
+            "aind_metadata_mapper.open_ephys.utils" ".sync_utils.get_edges",
             side_effect=[photodiode_times, vsync_times],
         ):
             with patch(
@@ -457,8 +456,9 @@ class TestStimUtils(unittest.TestCase):
         Tests the extract_frame_times_with_delay function.
         """
         with (
-            patch("aind_metadata_mapper.open_ephys.utils"
-                  ".sync_utils.get_edges") as mock_get_edges,
+            patch(
+                "aind_metadata_mapper.open_ephys.utils" ".sync_utils.get_edges"
+            ) as mock_get_edges,
             patch(
                 "aind_metadata_mapper.open_ephys.utils"
                 ".stim_utils.sync.get_rising_edges"
@@ -470,12 +470,8 @@ class TestStimUtils(unittest.TestCase):
         ):
 
             # Mock return values
-            mock_get_edges.return_value = np.array(
-                [0]
-            )
-            mock_get_rising_edges.return_value = np.array(
-                [0]
-            )
+            mock_get_edges.return_value = np.array([0])
+            mock_get_rising_edges.return_value = np.array([0])
             mock_calculate_frame_mean_time.return_value = (0, 1)
 
             # Define input parameters
