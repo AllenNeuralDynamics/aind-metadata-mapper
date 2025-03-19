@@ -220,14 +220,14 @@ class Camstim:
                 / pkl.get_fps(self.pkl_data)
             )
 
-            stimulus_tabler = functools.partial(
+            stimulus_table = functools.partial(
                 stim_utils.build_stimuluswise_table,
                 seconds_to_frames=stim_utils.seconds_to_frames,
                 extract_const_params_from_repr=extract_const_params_from_repr,
                 drop_const_params=drop_const_params,
             )
 
-            spon_tabler = functools.partial(
+            spon_table = functools.partial(
                 stim_utils.make_spontaneous_activity_tables,
                 duration_threshold=minimum_spontaneous_activity_duration,
             )
@@ -235,7 +235,7 @@ class Camstim:
             stimuli = pkl.get_stimuli(self.pkl_data)
             stimuli = stim_utils.extract_blocks_from_stim(stimuli)
             stim_table_sweeps = stim_utils.create_stim_table(
-                self.pkl_data, stimuli, stimulus_tabler, spon_tabler
+                self.pkl_data, stimuli, stimulus_table, spon_table
             )
 
             stim_table_seconds = self.get_stim_table_seconds(
