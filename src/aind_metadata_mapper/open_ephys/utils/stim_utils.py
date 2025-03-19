@@ -385,10 +385,7 @@ def extract_blocks_from_stim(stims):
 
 def extract_frame_times_from_vsync(
     sync_file,
-    photodiode_cycle=60,
     frame_keys=FRAME_KEYS,
-    photodiode_keys=PHOTODIODE_KEYS,
-    trim_discontiguous_frame_times=True,
 ):
     """
     Extracts frame times from a vsync signal
@@ -730,9 +727,6 @@ def extract_frame_times_with_delay(
             )
         )
         return delay
-
-    logger.info("monitor delay calculation failed, returning assumed delay")
-    return ASSUMED_DELAY
 
 
 def convert_frames_to_seconds(
