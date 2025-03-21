@@ -1,0 +1,215 @@
+{
+   "active_mouse_platform": false,
+   "anaesthesia": null,
+   "animal_weight_post": "",
+   "animal_weight_prior": "",
+   "calibrations": [],
+   "data_streams": [
+      {
+         "camera_names": [],
+         "daq_names": [
+            ""
+         ],
+         "detectors": [
+            {
+               "exposure_time": "5230.42765",
+               "exposure_time_unit": "millisecond",
+               "name": "Green CMOS",
+               "trigger_type": "Internal"
+            },
+            {
+               "exposure_time": "5230.42765",
+               "exposure_time_unit": "millisecond",
+               "name": "Red CMOS",
+               "trigger_type": "Internal"
+            }
+         ],
+         "ephys_modules": [],
+         "fiber_connections": [
+            {
+               "fiber_name": "Fiber 0",
+               "output_power_unit": "microwatt",
+               "patch_cord_name": "Patch Cord A",
+               "patch_cord_output_power": "20"
+            },
+            {
+               "fiber_name": "Fiber 1",
+               "output_power_unit": "microwatt",
+               "patch_cord_name": "Patch Cord B",
+               "patch_cord_output_power": "20"
+            },
+            {
+               "fiber_name": "Fiber 2",
+               "output_power_unit": "microwatt",
+               "patch_cord_name": "Patch Cord C",
+               "patch_cord_output_power": "20"
+            },
+            {
+               "fiber_name": "Fiber 3",
+               "output_power_unit": "microwatt",
+               "patch_cord_name": "Patch Cord D",
+               "patch_cord_output_power": "20"
+            }
+         ],
+         "fiber_modules": [],
+         "light_sources": [
+            {
+               "device_type": "Light emitting diode",
+               "excitation_power": null,
+               "excitation_power_unit": "milliwatt",
+               "name": "IR LED"
+            },
+            {
+               "device_type": "Light emitting diode",
+               "excitation_power": null,
+               "excitation_power_unit": "milliwatt",
+               "name": "470nm LED"
+            },
+            {
+               "device_type": "Light emitting diode",
+               "excitation_power": null,
+               "excitation_power_unit": "milliwatt",
+               "name": "415nm LED"
+            },
+            {
+               "device_type": "Light emitting diode",
+               "excitation_power": null,
+               "excitation_power_unit": "milliwatt",
+               "name": "565nm LED"
+            }
+         ],
+         "manipulator_modules": [],
+         "mri_scans": [],
+         "notes": "Fib modality: fib mode: Normal",
+         "ophys_fovs": [],
+         "slap_fovs": [],
+         "software": [
+            {
+               "name": "Bonsai",
+               "parameters": {},
+               "url": "",
+               "version": ""
+            }
+         ],
+         "stack_parameters": null,
+         "stick_microscopes": [],
+         "stream_end_time": "2024-12-12T14:09:26.914152-08:00",
+         "stream_modalities": [
+            {
+               "abbreviation": "fib",
+               "name": "Fiber photometry"
+            }
+         ],
+         "stream_start_time": "2024-12-12T12:42:16.486502-08:00"
+      }
+   ],
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/session.py",
+   "experimenter_full_name": [
+      "Bryan MacLennan",
+      "Kenta Hagihara"
+   ],
+   "headframe_registration": null,
+   "iacuc_protocol": "2115",
+   "maintenance": [],
+   "mouse_platform_name": "mouse_tube_foraging",
+   "notes": "",
+   "protocol_id": [
+      ""
+   ],
+   "reward_consumed_total": "",
+   "reward_consumed_unit": "microliter",
+   "reward_delivery": "water from left lick spout (DO0)",
+   "punishment_delivery": "airpuff with 25 psi for 1 s (DO2)",
+   "rig_id": "428_1_FIP1",
+   "schema_version": "1.0.1",
+   "session_end_time": "2024-12-12T14:09:26.914152-08:00",
+   "session_start_time": "2024-12-12T12:42:16.486502-08:00",
+   "session_type": "PavlovianConditioning",
+   "stimulus_epochs": [
+      {
+         "light_source_config": [],
+         "notes": "The duration of CSs is 1s. The frequency set:5kHz, 8kHz, 13kHz, WhiteNoise.",
+         "reward_consumed_during_epoch": "400.0",
+         "reward_consumed_unit": "microliter",
+         "script": null,
+         "session_number": null,
+         "software": [
+            {
+               "name": "Bonsai",
+               "parameters": {},
+               "url": "",
+               "version": ""
+            }
+         ],
+         "speaker_config": {
+            "name": "Stimulus Speaker",
+            "volume": "72",
+            "volume_unit": "decibels"
+         },
+         "stimulus_device_names": [
+            "Stimulus Speaker"
+         ],
+         "stimulus_end_time": "2024-12-12T14:06:07.667323-08:00",
+         "stimulus_modalities": [
+            "Auditory"
+         ],
+         "stimulus_name": "CS - auditory conditioned stimuli",
+         "stimulus_parameters": [
+            {
+               "amplitude_modulation_frequency": 5000,
+               "bandpass_filter_type": null,
+               "bandpass_high_frequency": null,
+               "bandpass_low_frequency": null,
+               "bandpass_order": null,
+               "frequency_unit": "hertz",
+               "notes": "assigned reward probability is 10%",
+               "sample_frequency": "96000",
+               "stimulus_name": "CS1",
+               "stimulus_type": "Auditory Stimulation"
+            },
+            {
+               "amplitude_modulation_frequency": 8000,
+               "bandpass_filter_type": null,
+               "bandpass_high_frequency": null,
+               "bandpass_low_frequency": null,
+               "bandpass_order": null,
+               "frequency_unit": "hertz",
+               "notes": "assigned reward probability is 50%",
+               "sample_frequency": "96000",
+               "stimulus_name": "CS2",
+               "stimulus_type": "Auditory Stimulation"
+            },
+            {
+               "amplitude_modulation_frequency": 13000,
+               "bandpass_filter_type": null,
+               "bandpass_high_frequency": null,
+               "bandpass_low_frequency": null,
+               "bandpass_order": null,
+               "frequency_unit": "hertz",
+               "notes": "assigned reward probability is 90%",
+               "sample_frequency": "96000",
+               "stimulus_name": "CS3",
+               "stimulus_type": "Auditory Stimulation"
+            },
+            {
+               "amplitude_modulation_frequency": null,
+               "bandpass_filter_type": "white",
+               "bandpass_high_frequency": null,
+               "bandpass_low_frequency": null,
+               "bandpass_order": null,
+               "frequency_unit": "hertz",
+               "notes": "assigned airpuff probability is 90%",
+               "sample_frequency": "96000",
+               "stimulus_name": "CS4",
+               "stimulus_type": "Auditory Stimulation (white noise)"
+            }
+         ],
+         "stimulus_start_time": "2024-12-12T12:42:16.671502-08:00",
+         "trials_finished": 498,
+         "trials_rewarded": 189,
+         "trials_total": 556
+      }
+   ],
+   "subject_id": "",
+   "weight_unit": "gram"
+}
