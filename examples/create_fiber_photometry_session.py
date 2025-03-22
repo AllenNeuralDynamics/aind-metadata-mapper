@@ -4,8 +4,9 @@ from aind_metadata_mapper.fiber_photometry.session import ETL
 from aind_metadata_mapper.fiber_photometry.models import JobSettings
 
 # Load settings from JSON file
-settings_path = Path(r"C:\Users\arjun.sridhar\source\repos\aind-metadata-mapper\examples\job_settings_fiber_photometry.json")
-with open(settings_path, "r") as f:
+settings_file_name = "job_settings_fiber_photometry.json"
+settings_path = Path(__file__).resolve().parent
+with open(settings_path / settings_file_name, "r") as f:
     settings_data = json.load(f)
 
 # Create JobSettings instance
