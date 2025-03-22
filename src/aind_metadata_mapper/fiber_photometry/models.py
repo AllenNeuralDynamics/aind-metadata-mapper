@@ -34,12 +34,3 @@ class JobSettings(BaseJobSettings):
     output_directory: Optional[Union[str, Path]] = None
     output_filename: Optional[str] = None
 
-
-# Debug print to verify class definition
-print("\nDebug - JobSettings class definition:")
-print(
-    f"  job_settings_name: {getattr(JobSettings, 'job_settings_name', 'Not found')}"
-)
-print(
-    f"  session_start_time is optional: {JobSettings.__annotations__['session_start_time']}"
-)
