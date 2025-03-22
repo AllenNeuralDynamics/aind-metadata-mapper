@@ -16,7 +16,7 @@ This example shows how to use the `FIBEtl` class to generate session metadata wh
 ```python
 import json
 from pathlib import Path
-from aind_metadata_mapper.fiber_photometry.session import FIBEtl
+from aind_metadata_mapper.fiber_photometry.session import ETL
 from aind_metadata_mapper.fiber_photometry.models import JobSettings
 
 # Load settings from JSON file
