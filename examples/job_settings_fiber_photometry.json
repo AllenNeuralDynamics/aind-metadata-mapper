@@ -1,0 +1,106 @@
+{
+    "subject_id": "000000",
+    "experimenter_full_name": ["Bryan MacLennan", "Kenta Hagihara"],
+    "rig_id": "428_9_A_20240617", 
+    "task_version": "1.0.0",
+    "iacuc_protocol": "2115",
+    "mouse_platform_name": "mouse_tube_foraging",
+    "active_mouse_platform": false,
+    "session_type": "Foraging_Photometry",
+    "task_name": "Fiber Photometry",
+    "notes": "Example configuration for fiber photometry rig",
+    "data_streams": [
+        {
+            "stream_start_time": null,
+            "stream_end_time": null,
+            "stream_modalities": [
+                "FIB"
+            ],
+            "camera_names": [],
+            "daq_names": [""],
+            "detectors": [
+                {
+                    "exposure_time": "5230.42765",
+                    "exposure_time_unit": "millisecond",
+                    "name": "Green CMOS",
+                    "trigger_type": "Internal"
+                },
+                {
+                    "exposure_time": "5230.42765",
+                    "exposure_time_unit": "millisecond",
+                    "name": "Red CMOS",
+                    "trigger_type": "Internal"
+                }
+            ],
+            "ephys_modules": [],
+            "fiber_connections": [
+                {
+                    "fiber_name": "Fiber 0",
+                    "output_power_unit": "microwatt",
+                    "patch_cord_name": "Patch Cord A",
+                    "patch_cord_output_power": "20"
+                },
+                {
+                    "fiber_name": "Fiber 1",
+                    "output_power_unit": "microwatt",
+                    "patch_cord_name": "Patch Cord B",
+                    "patch_cord_output_power": "20"
+                },
+                {
+                    "fiber_name": "Fiber 2",
+                    "output_power_unit": "microwatt",
+                    "patch_cord_name": "Patch Cord C",
+                    "patch_cord_output_power": "20"
+                },
+                {
+                    "fiber_name": "Fiber 3",
+                    "output_power_unit": "microwatt",
+                    "patch_cord_name": "Patch Cord D",
+                    "patch_cord_output_power": "20"
+                }
+            ],
+            "fiber_modules": [],
+            "light_sources": [
+                {
+                    "device_type": "Light emitting diode",
+                    "excitation_power": null,
+                    "excitation_power_unit": "milliwatt",
+                    "name": "IR LED"
+                },
+                {
+                    "device_type": "Light emitting diode",
+                    "excitation_power": null,
+                    "excitation_power_unit": "milliwatt",
+                    "name": "470nm LED"
+                },
+                {
+                    "device_type": "Light emitting diode",
+                    "excitation_power": null,
+                    "excitation_power_unit": "milliwatt",
+                    "name": "415nm LED"
+                },
+                {
+                    "device_type": "Light emitting diode",
+                    "excitation_power": null,
+                    "excitation_power_unit": "milliwatt",
+                    "name": "565nm LED"
+                }
+            ],
+            "manipulator_modules": [],
+            "mri_scans": [],
+            "notes": "Fib modality: fib mode: Normal",
+            "ophys_fovs": [],
+            "slap_fovs": [],
+            "software": [
+                {
+                    "name": "Bonsai",
+                    "parameters": {},
+                    "url": "",
+                    "version": ""
+                }
+            ],
+            "stack_parameters": null,
+            "stick_microscopes": []
+        }
+    ]  
+}
