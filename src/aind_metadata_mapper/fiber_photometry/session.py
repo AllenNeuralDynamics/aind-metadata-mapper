@@ -41,7 +41,7 @@ class ETL(GenericEtl[JobSettings]):
             job_settings = JobSettings(**json.loads(job_settings))
         super().__init__(job_settings)
 
-    def _extract_session_time_from_files(
+    def _extract_session_start_time_from_files(
         self, data_dir: Union[str, Path]
     ) -> Optional[datetime]:
         """Extract session start time from fiber photometry data files.
@@ -82,10 +82,10 @@ class ETL(GenericEtl[JobSettings]):
                         timestamp_str = timestamp_str.replace("_", ":")
                         try:
                             # Parse the timestamp and set timezone to UTC
-                            session_time = datetime.fromisoformat(
+                            session_start_time = datetime.fromisoformat(
                                 timestamp_str
                             ).replace(tzinfo=ZoneInfo("UTC"))
-                            return session_time
+                            return session_start_time
                         except ValueError:
                             continue
 
@@ -112,14 +112,18 @@ class ETL(GenericEtl[JobSettings]):
                 print(
                     f"Debug - Extracting session time from {settings.data_directory}"
                 )
-                session_time = self._extract_session_time_from_files(
-                    settings.data_directory
+                session_start_time = (
+                    self._extract_session_start_time_from_files(
+                        settings.data_directory
+                    )
                 )
-                if session_time:
-                    print(f"Debug - Extracted session time: {session_time}")
+                if session_start_time:
+                    print(
+                        f"Debug - Extracted session time: {session_start_time}"
+                    )
                     # Create a new JobSettings object with the extracted session_start_time
                     settings_dict = settings.model_dump()
-                    settings_dict["session_start_time"] = session_time
+                    settings_dict["session_start_time"] = session_start_time
                     return JobSettings(**settings_dict)
                 else:
                     logging.warning(
