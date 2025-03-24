@@ -1,6 +1,7 @@
 {
     "subject_id": "000000",
     "experimenter_full_name": ["Bryan MacLennan", "Kenta Hagihara"],
+    "data_directory": "/Users/doug.ollerenshaw/code/aind-metadata-mapper/data/sample_fiber_data/fib",
     "rig_id": "428_9_A_20240617", 
     "task_version": "1.0.0",
     "iacuc_protocol": "2115",
