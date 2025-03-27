@@ -4,7 +4,7 @@ import re
 import sys
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Union
+from typing import Union, List
 
 from aind_data_schema.components.stimulus import OptoStimulation, PulseShape
 from aind_data_schema.core.session import (
@@ -15,6 +15,7 @@ from aind_data_schema.core.session import (
     StimulusEpoch,
     StimulusModality,
     Stream,
+    Channel
 )
 from aind_data_schema_models.modalities import Modality
 
@@ -214,6 +215,43 @@ class FIBEtl(GenericEtl[JobSettings]):
             transformed, self.job_settings.output_directory
         )
         return job_response
+    
+    def integrate_intended_measurements(
+        intended_measurements_data: List[dict], session: Session
+    ) -> Session:
+        """Integrate intended measurements into the session model."""
+        
+        # Mapping channel names to their measurement keys
+        channel_definitions = [
+            ("Red", "intended_measurement_R"),
+            ("Green", "intended_measurement_G"),
+            ("Blue", "intended_measurement_B"),
+            ("Isobestic", "intended_measurement_Iso"),
+        ]
+        
+        for measurement in intended_measurements_data:
+            fiber_name = measurement.get("fiber_name")
+            for stream in session.data_streams:
+                for fiber_connection in stream.fiber_connections:
+                    if fiber_connection.fiber_name != fiber_name:
+                        continue
+                    if getattr(fiber_connection, "channel", None) is None:
+                        # Build channels only for non-None intended measurements
+                        channels = [
+                            Channel.model_construct(
+                                channel_name=name,
+                                intended_measurement=measurement.get(key)
+                            )
+                            for name, key in channel_definitions
+                            if measurement.get(key) is not None
+                        ]
+                        # overwrites field with list
+                        fiber_connection.channel = channels
+                    else:
+                        # TODO: do we need to handle if channels exist? 
+                        pass
+        return session
+
 
 
 if __name__ == "__main__":

@@ -61,6 +61,11 @@ class ProceduresSettings(BaseSettings, extra="allow"):
     subject_id: str
     metadata_service_path: str = "procedures"
 
+class IntendedMeasurementsSettings(BaseSettings, extra="allow"):
+    """Fields needed to retrieve intended measurements metadata"""
+
+    subject_id: str
+    metadata_service_path: str = "intended_measurements"
 
 class RawDataDescriptionSettings(BaseSettings, extra="allow"):
     """Fields needed to retrieve data description metadata"""
@@ -119,6 +124,7 @@ class JobSettings(BaseSettings, extra="allow"):
     acquisition_settings: Optional[AcquisitionSettings] = None
     raw_data_description_settings: Optional[RawDataDescriptionSettings] = None
     procedures_settings: Optional[ProceduresSettings] = None
+    intended_measurements_settings: Optional[IntendedMeasurementsSettings] = None
     processing_settings: Optional[ProcessingSettings] = None
     metadata_settings: Optional[MetadataSettings] = None
     directory_to_write_to: Path

@@ -5,7 +5,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Optional, Type
+from typing import Optional, Type, List
 
 import requests
 from aind_data_schema.base import AindCoreModel
@@ -148,6 +148,26 @@ class GatherMetadataJob:
                 file_name=file_name
             )
             return contents
+        
+    def get_intended_measurements(self) -> Optional[List[dict]]:
+        """Get intended measurements metadata"""
+        # TODO: Do we need to add user dir file check here?
+        intended_measurements_file_path = (
+                self.settings.intended_measurements_settings.metadata_service_path
+            )
+        response = requests.get(
+            self.settings.metadata_service_domain
+            + f"/{intended_measurements_file_path}/"
+            + f"{self.settings.intended_measurements_settings.subject_id}"
+        )
+        if response.status_code <= 300 or response.status_code == 406:
+            json_content = response.json()
+            return json_content["data"]
+        else:
+            logging.warning(
+                f"Intended measurements metadata is not valid! {response.status_code}"
+            )
+            return None
 
     def get_raw_data_description(self) -> dict:
         """Get raw data description metadata"""
@@ -278,17 +298,25 @@ class GatherMetadataJob:
             return contents
         elif self.settings.session_settings is not None:
             session_settings = self.settings.session_settings.job_settings
+            intended_measurements = None
             if isinstance(session_settings, BergamoSessionJobSettings):
                 session_job = BergamoEtl(job_settings=session_settings)
             elif isinstance(session_settings, BrukerSessionJobSettings):
                 session_job = MRIEtl(job_settings=session_settings)
             elif isinstance(session_settings, FipSessionJobSettings):
                 session_job = FIBEtl(job_settings=session_settings)
+                subject_id = session_settings.labtracks_id
+                intended_measurements = self.get_intended_measurements()
+                # TODO: some method to integrate intended measurement info back in 
             else:
                 session_job = MesoscopeEtl(job_settings=session_settings)
             job_response = session_job.run_job()
-            if job_response.status_code != 500:
+            if job_response.status_code != 500 and not intended_measurements:
                 return json.loads(job_response.data)
+            elif job_response.status_code != 500 and intended_measurements:
+                # FIP session job returns intended measurements as well
+                session = Session.model_construct(**job_response.data)
+                # 
             else:
                 return None
         else:
