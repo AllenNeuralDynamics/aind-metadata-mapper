@@ -1,3 +1,10 @@
+"""Utility functions for fiber photometry data processing.
+
+This module provides functions for handling timestamps and file operations
+specific to fiber photometry data, including conversion between milliseconds
+and datetime objects, and extraction of session times from data files.
+"""
+
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Union, Optional
