@@ -14,7 +14,7 @@ from aind_data_schema.core.session import (
 )
 from aind_data_schema_models.modalities import Modality
 
-from aind_metadata_mapper.fip.session import FIBEtl, JobSettings
+from aind_metadata_mapper.fib.session import ETL, JobSettings
 
 
 class TestFiberPhotometrySession(unittest.TestCase):
@@ -110,8 +110,8 @@ class TestFiberPhotometrySession(unittest.TestCase):
     def test_constructor_from_string(self) -> None:
         """Test construction from JSON string."""
         job_settings_str = self.example_job_settings.model_dump_json()
-        etl0 = FIBEtl(job_settings=job_settings_str)
-        etl1 = FIBEtl(job_settings=self.example_job_settings)
+        etl0 = ETL(job_settings=job_settings_str)
+        etl1 = ETL(job_settings=self.example_job_settings)
 
         # Compare serialized versions to avoid timezone implementation
         # differences
@@ -122,14 +122,14 @@ class TestFiberPhotometrySession(unittest.TestCase):
 
     def test_transform(self):
         """Test transformation to valid session metadata."""
-        etl = FIBEtl(job_settings=self.example_job_settings)
+        etl = ETL(job_settings=self.example_job_settings)
         parsed_info = etl._extract()
         actual_session = etl._transform(parsed_info)
         self.assertEqual(self.expected_session, actual_session)
 
     def test_run_job(self):
         """Test complete ETL workflow."""
-        etl = FIBEtl(job_settings=self.example_job_settings)
+        etl = ETL(job_settings=self.example_job_settings)
         job = etl.run_job()
         self.assertEqual(
             self.expected_session, Session(**json.loads(job.data))

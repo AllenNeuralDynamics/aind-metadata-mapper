@@ -1,7 +1,7 @@
 """Simple script to create fiber photometry metadata with default settings."""
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from aind_metadata_mapper.fib.session import ETL
 from aind_metadata_mapper.fib.models import JobSettings
@@ -12,7 +12,10 @@ def create_metadata(
     data_directory: Path,
     output_directory: Path,
     output_filename: str = "session_fib.json",
-    experimenter_full_name: List[str] = ["Bryan MacLennan", "Kenta Hagihara"],
+    experimenter_full_name: List[str] = [
+        "test_experimenter_1",
+        "test_experimenter_2",
+    ],
     rig_id: str = "428_9_A_20240617",
     task_version: str = "1.0.0",
     iacuc_protocol: str = "2115",
@@ -170,7 +173,10 @@ if __name__ == "__main__":
         "--output-directory",
         type=Path,
         default=Path.cwd(),
-        help="Directory where metadata will be saved (default: current directory)",
+        help=(
+            "Directory where metadata will be saved "
+            "(default: current directory)"
+        ),
     )
     parser.add_argument(
         "--output-filename",
