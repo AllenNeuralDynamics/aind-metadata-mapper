@@ -16,7 +16,7 @@ def create_metadata(
         "test_experimenter_1",
         "test_experimenter_2",
     ],
-    rig_id: str = "428_9_A_20240617",
+    rig_id: str = "428_9_0_20240617",
     task_version: str = "1.0.0",
     iacuc_protocol: str = "2115",
     mouse_platform_name: str = "mouse_tube_foraging",
@@ -83,36 +83,30 @@ def create_metadata(
                     {
                         "fiber_name": "Fiber 0",
                         "output_power_unit": "microwatt",
-                        "patch_cord_name": "Patch Cord A",
+                        "patch_cord_name": "Patch Cord 0",
                         "patch_cord_output_power": "20",
                     },
                     {
                         "fiber_name": "Fiber 1",
                         "output_power_unit": "microwatt",
-                        "patch_cord_name": "Patch Cord B",
+                        "patch_cord_name": "Patch Cord 1",
                         "patch_cord_output_power": "20",
                     },
                     {
                         "fiber_name": "Fiber 2",
                         "output_power_unit": "microwatt",
-                        "patch_cord_name": "Patch Cord C",
+                        "patch_cord_name": "Patch Cord 2",
                         "patch_cord_output_power": "20",
                     },
                     {
                         "fiber_name": "Fiber 3",
                         "output_power_unit": "microwatt",
-                        "patch_cord_name": "Patch Cord D",
+                        "patch_cord_name": "Patch Cord 3",
                         "patch_cord_output_power": "20",
                     },
                 ],
                 "fiber_modules": [],
                 "light_sources": [
-                    {
-                        "device_type": "Light emitting diode",
-                        "excitation_power": None,
-                        "excitation_power_unit": "milliwatt",
-                        "name": "IR LED",
-                    },
                     {
                         "device_type": "Light emitting diode",
                         "excitation_power": None,
@@ -160,7 +154,7 @@ def create_metadata(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(
+    parser = argparse.0rgumentParser(
         description="Create fiber photometry metadata with default settings"
     )
     parser.add_argument("subject_id", type=str, help="Subject identifier")
