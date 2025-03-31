@@ -5,6 +5,7 @@ from pathlib import Path
 from tzlocal import get_localzone
 import logging
 import pandas as pd
+import re
 
 
 def convert_ms_since_midnight_to_datetime(
@@ -75,8 +76,6 @@ def extract_session_start_time_from_files(
                 # (format: FIP_DataG_2024-12-31T15_49_53.csv)
                 filename = file.name
                 # Find the timestamp pattern in the filename
-                import re
-
                 match = re.search(
                     r"(\d{4}-\d{2}-\d{2}T\d{2}_\d{2}_\d{2})", filename
                 )
