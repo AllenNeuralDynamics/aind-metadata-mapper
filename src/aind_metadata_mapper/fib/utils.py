@@ -101,7 +101,8 @@ def extract_session_start_time_from_files(
                     # (replace _ with : for proper ISO format)
                     timestamp_str = timestamp_str.replace("_", ":")
                     try:
-                        # Parse the timestamp in local time zone and convert to UTC
+                        # Parse the timestamp in local time zone
+                        # and convert to UTC
                         tz = (
                             ZoneInfo(local_timezone)
                             if local_timezone
