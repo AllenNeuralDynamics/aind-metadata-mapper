@@ -16,7 +16,9 @@ import re
 
 
 def convert_ms_since_midnight_to_datetime(
-    ms_since_midnight: float, base_date: datetime
+    ms_since_midnight: float,
+    base_date: datetime,
+    local_timezone: Optional[str] = None,
 ) -> datetime:
     """Convert milliseconds since midnight to a datetime object in UTC.
 
@@ -24,6 +26,8 @@ def convert_ms_since_midnight_to_datetime(
         ms_since_midnight: Float representing milliseconds since midnight in
             local timezone
         base_date: Reference datetime to get the date from (must have tzinfo)
+        local_timezone: Optional timezone string (e.g., "America/Los_Angeles").
+            If not provided, will use system timezone.
 
     Returns:
         datetime object in UTC with the same date as base_date but time from
@@ -36,6 +40,9 @@ def convert_ms_since_midnight_to_datetime(
     seconds = int(total_seconds % 60)
     microseconds = int((total_seconds * 1000000) % 1000000)
 
+    # Get timezone
+    tz = ZoneInfo(local_timezone) if local_timezone else get_localzone()
+
     # Create new datetime in local timezone first
     local_dt = datetime(
         year=base_date.year,
@@ -45,7 +52,7 @@ def convert_ms_since_midnight_to_datetime(
         minute=minutes,
         second=seconds,
         microsecond=microseconds,
-        tzinfo=get_localzone(),
+        tzinfo=tz,
     )
 
     # Convert to UTC
@@ -53,12 +60,14 @@ def convert_ms_since_midnight_to_datetime(
 
 
 def extract_session_start_time_from_files(
-    data_dir: Union[str, Path],
+    data_dir: Union[str, Path], local_timezone: Optional[str] = None
 ) -> Optional[datetime]:
     """Extract session start time from fiber photometry data files.
 
     Args:
         data_dir: Path to the directory containing fiber photometry data
+        local_timezone: Optional timezone string (e.g., "America/Los_Angeles").
+            If not provided, will use system timezone.
 
     Returns:
         Extracted session time in UTC or None if not found
@@ -92,11 +101,15 @@ def extract_session_start_time_from_files(
                     # (replace _ with : for proper ISO format)
                     timestamp_str = timestamp_str.replace("_", ":")
                     try:
-                        # Parse the timestamp in local time zone
-                        # and convert to UTC
+                        # Parse the timestamp in local time zone and convert to UTC
+                        tz = (
+                            ZoneInfo(local_timezone)
+                            if local_timezone
+                            else get_localzone()
+                        )
                         local_time = datetime.fromisoformat(
                             timestamp_str
-                        ).replace(tzinfo=get_localzone())
+                        ).replace(tzinfo=tz)
                         return local_time.astimezone(ZoneInfo("UTC"))
                     except ValueError:
                         continue

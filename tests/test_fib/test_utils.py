@@ -23,14 +23,18 @@ class TestFiberPhotometryUtils(unittest.TestCase):
         base_date = datetime(2024, 1, 1, tzinfo=ZoneInfo("UTC"))
 
         # Test midnight (0 ms)
-        result = convert_ms_since_midnight_to_datetime(0.0, base_date)
+        result = convert_ms_since_midnight_to_datetime(
+            0.0, base_date, local_timezone="America/Los_Angeles"
+        )
         self.assertEqual(result.hour, 8)  # midnight PT = 08:00 UTC
         self.assertEqual(result.minute, 0)
         self.assertEqual(result.second, 0)
         self.assertEqual(result.microsecond, 0)
 
         # Test arbitrary time (3723456.789 ms = 01:02:03.456789)
-        result = convert_ms_since_midnight_to_datetime(3723456.789, base_date)
+        result = convert_ms_since_midnight_to_datetime(
+            3723456.789, base_date, local_timezone="America/Los_Angeles"
+        )
         self.assertEqual(result.hour, 9)  # 01:02 PT = 09:02 UTC
         self.assertEqual(result.minute, 2)
         self.assertEqual(result.second, 3)
