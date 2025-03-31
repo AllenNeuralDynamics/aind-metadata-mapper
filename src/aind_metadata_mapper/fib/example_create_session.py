@@ -154,7 +154,7 @@ def create_metadata(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.0rgumentParser(
+    parser = argparse.ArgumentParser(
         description="Create fiber photometry metadata with default settings"
     )
     parser.add_argument("subject_id", type=str, help="Subject identifier")
