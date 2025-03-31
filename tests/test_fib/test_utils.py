@@ -56,7 +56,9 @@ class TestFiberPhotometryUtils(unittest.TestCase):
             invalid_file.touch()
 
             # Test with valid file
-            result = extract_session_start_time_from_files(tmpdir)
+            result = extract_session_start_time_from_files(
+                tmpdir, local_timezone="America/Los_Angeles"
+            )
             self.assertIsNotNone(result)
             self.assertEqual(result.year, 2024)
             self.assertEqual(result.month, 1)
@@ -66,13 +68,17 @@ class TestFiberPhotometryUtils(unittest.TestCase):
             self.assertEqual(result.second, 53)
 
             # Test with non-existent directory
-            result = extract_session_start_time_from_files("/nonexistent/path")
+            result = extract_session_start_time_from_files(
+                "/nonexistent/path", local_timezone="America/Los_Angeles"
+            )
             self.assertIsNone(result)
 
             # Test with directory containing no valid files
             empty_dir = Path(tmpdir) / "empty"
             empty_dir.mkdir()
-            result = extract_session_start_time_from_files(empty_dir)
+            result = extract_session_start_time_from_files(
+                empty_dir, local_timezone="America/Los_Angeles"
+            )
             self.assertIsNone(result)
 
     def test_extract_session_end_time_from_files(self):
@@ -95,7 +101,9 @@ class TestFiberPhotometryUtils(unittest.TestCase):
             )  # 00:00 PT
 
             # Test with valid data
-            result = extract_session_end_time_from_files(tmpdir, session_start)
+            result = extract_session_end_time_from_files(
+                tmpdir, session_start, local_timezone="America/Los_Angeles"
+            )
             self.assertIsNotNone(result)
             self.assertEqual(result.hour, 9)  # 01:02 PT = 09:02 UTC
             self.assertEqual(result.minute, 2)
@@ -105,21 +113,27 @@ class TestFiberPhotometryUtils(unittest.TestCase):
             # Test with empty CSV
             empty_csv = fib_dir / "FIP_DataG_empty.csv"
             pd.DataFrame().to_csv(empty_csv, index=False, header=False)
-            result = extract_session_end_time_from_files(tmpdir, session_start)
+            result = extract_session_end_time_from_files(
+                tmpdir, session_start, local_timezone="America/Los_Angeles"
+            )
             self.assertIsNotNone(
                 result
             )  # Should still return result from valid file
 
             # Test with non-existent directory
             result = extract_session_end_time_from_files(
-                "/nonexistent/path", session_start
+                "/nonexistent/path",
+                session_start,
+                local_timezone="America/Los_Angeles",
             )
             self.assertIsNone(result)
 
             # Test with invalid CSV data
             invalid_csv = fib_dir / "FIP_DataG_invalid.csv"
             invalid_csv.write_text("invalid,data\n")
-            result = extract_session_end_time_from_files(tmpdir, session_start)
+            result = extract_session_end_time_from_files(
+                tmpdir, session_start, local_timezone="America/Los_Angeles"
+            )
             self.assertIsNotNone(
                 result
             )  # Should still return result from valid file

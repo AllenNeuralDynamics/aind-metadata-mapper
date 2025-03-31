@@ -118,14 +118,17 @@ def extract_session_start_time_from_files(
 
 
 def extract_session_end_time_from_files(
-    data_dir: Union[str, Path], session_start_time: datetime
+    data_dir: Union[str, Path],
+    session_start_time: datetime,
+    local_timezone: Optional[str] = None,
 ) -> Optional[datetime]:
     """Extract session end time from fiber photometry data files.
 
     Args:
         data_dir: Path to the directory containing fiber photometry data
-        session_start_time: Previously determined session start
-            time for validation (in UTC)
+        session_start_time: Previously determined session start time (in UTC)
+        local_timezone: Optional timezone string (e.g., "America/Los_Angeles").
+            If not provided, will use system timezone.
 
     Returns:
         Extracted session end time in UTC or None if not found
@@ -138,8 +141,11 @@ def extract_session_end_time_from_files(
     earliest_time = None
     latest_time = None
 
+    # Get timezone
+    tz = ZoneInfo(local_timezone) if local_timezone else get_localzone()
+
     # Convert session_start_time to local time for comparison
-    local_session_start = session_start_time.astimezone(get_localzone())
+    local_session_start = session_start_time.astimezone(tz)
 
     # Look for CSV files
     for csv_file in fib_dir.glob("FIP_Data*.csv"):
@@ -155,10 +161,10 @@ def extract_session_end_time_from_files(
 
             # Convert to datetime objects (will be in UTC)
             first_time = convert_ms_since_midnight_to_datetime(
-                first_ms, local_session_start
+                first_ms, local_session_start, local_timezone=local_timezone
             )
             last_time = convert_ms_since_midnight_to_datetime(
-                last_ms, local_session_start
+                last_ms, local_session_start, local_timezone=local_timezone
             )
 
             # Update earliest and latest times
