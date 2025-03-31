@@ -165,7 +165,3 @@ def extract_session_end_time_from_files(
             return None
 
     return latest_time
-
-
-# Use the function to get the timezone
-LOCAL_TIMEZONE = get_localzone()
