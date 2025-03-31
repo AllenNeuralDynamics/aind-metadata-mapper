@@ -33,4 +33,3 @@ class JobSettings(BaseJobSettings):
     # Output directory and filename for generated files
     output_directory: Optional[Union[str, Path]] = None
     output_filename: Optional[str] = None
-

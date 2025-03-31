@@ -25,7 +25,7 @@ from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.core_models import JobResponse
-from aind_metadata_mapper.fiber_photometry.models import JobSettings
+from aind_metadata_mapper.fib.models import JobSettings
 
 # Add timezone constant near top of file after imports
 LOCAL_TIMEZONE = ZoneInfo("America/Los_Angeles")  # Seattle is in Pacific Time
