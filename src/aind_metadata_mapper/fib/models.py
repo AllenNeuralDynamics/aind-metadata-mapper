@@ -20,7 +20,7 @@ class JobSettings(BaseJobSettings):
     mouse_platform_name: str
     active_mouse_platform: bool
     data_streams: List[dict]
-    session_type: str = "Fiber_Photometry"
+    session_type: str = "FIB"
     iacuc_protocol: str
     notes: str
 
