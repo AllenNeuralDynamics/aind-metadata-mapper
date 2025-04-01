@@ -2,9 +2,12 @@
 
 from pathlib import Path
 from typing import List
+import logging
+import sys
 
 from aind_metadata_mapper.fib.session import ETL
 from aind_metadata_mapper.fib.models import JobSettings
+from aind_metadata_mapper.fib.utils import verify_output_file
 
 
 def create_metadata(
@@ -24,7 +27,7 @@ def create_metadata(
     session_type: str = "Foraging_Photometry",
     task_name: str = "Fiber Photometry",
     notes: str = "Example configuration for fiber photometry rig",
-) -> None:
+) -> bool:
     """Create fiber photometry metadata with default settings.
 
     Args:
@@ -41,6 +44,9 @@ def create_metadata(
         session_type: Type of experimental session
         task_name: Name of the experimental task
         notes: Additional notes about the session
+
+    Returns:
+        bool: True if metadata was successfully created and verified, False otherwise
     """
     # Create settings with defaults for stream configuration
     settings = {
@@ -148,7 +154,13 @@ def create_metadata(
     # Create JobSettings instance and run ETL
     job_settings = JobSettings(**settings)
     etl = ETL(job_settings)
-    etl.run_job()
+    response = etl.run_job()
+
+    if response.status_code != 200:
+        logging.error(f"ETL job failed: {response.message}")
+        return False
+
+    return True  # If we get here, ETL job succeeded and file was verified
 
 
 if __name__ == "__main__":
@@ -181,10 +193,16 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    create_metadata(
+    success = create_metadata(
         subject_id=args.subject_id,
         data_directory=args.data_directory,
         output_directory=args.output_directory,
         output_filename=args.output_filename,
     )
-    print(f"Metadata saved to: {args.output_directory / args.output_filename}")
+
+    output_path = args.output_directory / args.output_filename
+    if success:
+        print(f"Metadata successfully saved and verified at: {output_path}")
+    else:
+        print(f"Failed to create or verify metadata at: {output_path}")
+        sys.exit(1)  # Exit with error code if verification fails

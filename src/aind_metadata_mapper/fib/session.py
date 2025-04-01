@@ -25,6 +25,7 @@ from aind_metadata_mapper.fib.models import JobSettings
 from aind_metadata_mapper.fib.utils import (
     extract_session_start_time_from_files,
     extract_session_end_time_from_files,
+    verify_output_file,
 )
 
 
@@ -57,38 +58,9 @@ class ETL(GenericEtl[JobSettings]):
                     "Extracting session start time from "
                     f"{settings.data_directory}"
                 )
-                session_start_time = extract_session_start_time_from_files(
-                    settings.data_directory
+                return update_job_settings_with_times(
+                    settings, settings.data_directory
                 )
-                if session_start_time:
-                    logging.info(
-                        "Found session start time: "
-                        f"{session_start_time.isoformat()}"
-                    )
-                    # Create a new JobSettings object
-                    # with the extracted session_start_time
-                    settings_dict = settings.model_dump()
-                    settings_dict["session_start_time"] = session_start_time
-
-                    # Now extract session end time
-                    logging.info("Extracting session end time")
-                    session_end_time = extract_session_end_time_from_files(
-                        settings.data_directory, session_start_time
-                    )
-                    if session_end_time:
-                        logging.info(
-                            "Found session end time: "
-                            f"{session_end_time.isoformat()}"
-                        )
-                        settings_dict["session_end_time"] = session_end_time
-                    else:
-                        logging.warning("Could not extract session end time")
-
-                    return JobSettings(**settings_dict)
-                else:
-                    logging.warning(
-                        "Could not extract session start time from data files"
-                    )
             else:
                 logging.warning(
                     "No data_directory provided and "
@@ -158,7 +130,56 @@ class ETL(GenericEtl[JobSettings]):
         """Run the ETL job and return a JobResponse."""
         extracted = self._extract()
         transformed = self._transform(extracted)
+
+        # If a custom filename is specified, save it directly
+        if self.job_settings.output_filename:
+            output_path = (
+                self.job_settings.output_directory
+                / self.job_settings.output_filename
+            )
+            try:
+                with open(output_path, "w") as f:
+                    f.write(transformed.model_dump_json(indent=2))
+                return JobResponse(
+                    status_code=200,
+                    message=f"Successfully wrote file to {output_path}",
+                    data=None,
+                )
+            except Exception as e:
+                return JobResponse(
+                    status_code=500,
+                    message=f"Error writing to {output_path}: {str(e)}",
+                    data=None,
+                )
+
+        # Otherwise use the default write_standard_file method
         return self._load(transformed, self.job_settings.output_directory)
+
+
+def update_job_settings_with_times(
+    settings: JobSettings, data_directory: str
+) -> JobSettings:
+    """Update JobSettings with extracted session start and end times.
+
+    Args:
+        settings: Original JobSettings object
+        data_directory: Directory containing the data files
+
+    Returns:
+        Updated JobSettings object with extracted times
+    """
+    settings_dict = settings.model_dump()
+    session_start_time = extract_session_start_time_from_files(data_directory)
+
+    if session_start_time:
+        settings_dict["session_start_time"] = session_start_time
+        session_end_time = extract_session_end_time_from_files(
+            data_directory, session_start_time
+        )
+        if session_end_time:
+            settings_dict["session_end_time"] = session_end_time
+
+    return JobSettings(**settings_dict)
 
 
 if __name__ == "__main__":

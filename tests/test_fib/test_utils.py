@@ -6,11 +6,13 @@ from pathlib import Path
 import tempfile
 import pandas as pd
 from zoneinfo import ZoneInfo
+import json
 
 from aind_metadata_mapper.fib.utils import (
     convert_ms_since_midnight_to_datetime,
     extract_session_start_time_from_files,
     extract_session_end_time_from_files,
+    verify_output_file,
 )
 
 
@@ -137,6 +139,47 @@ class TestFiberPhotometryUtils(unittest.TestCase):
             self.assertIsNotNone(
                 result
             )  # Should still return result from valid file
+
+
+class TestFileVerification(unittest.TestCase):
+    """Test file verification utilities."""
+
+    def test_verify_output_file(self):
+        """Test verification of output JSON files."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+
+            # Test with valid JSON file
+            valid_file = tmpdir / "valid.json"
+            valid_data = {"key": "value"}
+            with open(valid_file, "w") as f:
+                json.dump(valid_data, f)
+
+            self.assertTrue(verify_output_file(tmpdir, "valid.json"))
+
+            # Test with non-existent file
+            self.assertFalse(verify_output_file(tmpdir, "nonexistent.json"))
+
+            # Test with invalid JSON file
+            invalid_file = tmpdir / "invalid.json"
+            with open(invalid_file, "w") as f:
+                f.write("not valid json")
+
+            self.assertFalse(verify_output_file(tmpdir, "invalid.json"))
+
+            # Test with empty file
+            empty_file = tmpdir / "empty.json"
+            empty_file.touch()
+            self.assertFalse(verify_output_file(tmpdir, "empty.json"))
+
+            # Test with default filename
+            default_file = tmpdir / "session_fib.json"
+            with open(default_file, "w") as f:
+                json.dump(valid_data, f)
+
+            self.assertTrue(
+                verify_output_file(tmpdir)
+            )  # Using default filename
 
 
 if __name__ == "__main__":
