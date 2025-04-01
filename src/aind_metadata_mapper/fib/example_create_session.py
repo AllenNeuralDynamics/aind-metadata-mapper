@@ -7,7 +7,6 @@ import sys
 
 from aind_metadata_mapper.fib.session import ETL
 from aind_metadata_mapper.fib.models import JobSettings
-from aind_metadata_mapper.fib.utils import verify_output_file
 
 
 def create_metadata(
@@ -46,7 +45,8 @@ def create_metadata(
         notes: Additional notes about the session
 
     Returns:
-        bool: True if metadata was successfully created and verified, False otherwise
+        bool: True if metadata was successfully
+            created and verified, False otherwise
     """
     # Create settings with defaults for stream configuration
     settings = {
