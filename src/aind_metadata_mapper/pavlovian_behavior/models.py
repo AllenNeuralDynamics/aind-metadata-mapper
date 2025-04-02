@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Literal, Dict, Any, Union
 
+from aind_data_schema_models.units import VolumeUnit
 from aind_metadata_mapper.core_models import BaseJobSettings
 
 
@@ -41,7 +42,10 @@ class JobSettings(BaseJobSettings):
     # Optional configuration
     notes: str = ""
     protocol_id: List[str] = []
+
+    # Reward configuration
     reward_units_per_trial: float = 2.0  # Default reward amount
+    reward_consumed_unit: VolumeUnit = VolumeUnit.UL  # Default to microliters
 
     # Data containers (populated during ETL)
     data_streams: List[Dict[str, Any]] = []

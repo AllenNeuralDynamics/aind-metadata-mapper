@@ -13,6 +13,7 @@ import sys
 from aind_metadata_mapper.pavlovian_behavior.session import ETL
 from aind_metadata_mapper.pavlovian_behavior.models import JobSettings
 from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.units import VolumeUnit
 
 
 def create_metadata(
@@ -32,6 +33,7 @@ def create_metadata(
     task_name: str = "Pavlovian_Conditioning",
     notes: str = ("Example configuration for Pavlovian Conditioning behavior"),
     reward_units_per_trial: float = 2.0,
+    reward_consumed_unit: VolumeUnit = VolumeUnit.UL,
 ) -> bool:
     """Create Pavlovian behavior metadata with default settings.
 
@@ -49,6 +51,7 @@ def create_metadata(
         task_name: Name of the experimental task
         notes: Additional notes about the session
         reward_units_per_trial: Number of reward units per successful trial
+        reward_consumed_unit: Unit of reward consumed
 
     Returns:
         bool: True if metadata was successfully created and verified
@@ -68,6 +71,7 @@ def create_metadata(
         "task_name": task_name,
         "notes": notes,
         "reward_units_per_trial": reward_units_per_trial,
+        "reward_consumed_unit": reward_consumed_unit,
         "data_streams": [
             {
                 "stream_start_time": None,
