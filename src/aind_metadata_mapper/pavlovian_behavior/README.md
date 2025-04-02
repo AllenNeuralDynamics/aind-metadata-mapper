@@ -5,144 +5,123 @@ This module generates standardized session metadata for Pavlovian behavior exper
 ## Overview
 - `models.py`: Defines the required input settings via `JobSettings` class
 - `session.py`: Contains the ETL logic to generate a valid session.json file
-- The resulting `session.json` file is either written to the `output_directory` specified in the job settings, or returned as a JSON string in the ETL response
+- `utils.py`: Contains utility functions for handling timestamps and trial data extraction
+- `example_create_session.py`: Provides a simplified interface for creating session metadata
 
-The ETL process takes experiment settings from either a JSON file or `JobSettings` object and produces standardized session metadata that conforms to the AIND data schema. It can also extract data directly from behavior data files.
+The ETL process takes experiment settings and produces standardized session metadata that conforms to the AIND data schema.
 
 ## Usage
 
-### Example usage with data extraction from files
-This example shows how to use the `BehaviorEtl` class to generate session metadata by extracting data from behavior files.
+### Simplified Usage with Example Script
+The easiest way to generate session metadata is using the example script:
 
 ```python
 from pathlib import Path
-from aind_metadata_mapper.pavlovian_behavior.session import BehaviorEtl
-from aind_metadata_mapper.pavlovian_behavior.models import JobSettings
+from aind_metadata_mapper.pavlovian_behavior.example_create_session import create_metadata
 
-# Create settings with path to data directory
-settings = JobSettings(
-    experimenter_full_name=["Test User"],
+create_metadata(
     subject_id="000000",
-    rig_id="behavior_rig_01",
-    data_directory="/path/to/behavior/data",
+    data_directory=Path("/path/to/data"),
+    output_directory=Path("/path/to/output"),
+    output_filename="session_pavlovian.json",
+    # Optional parameters with defaults:
+    experimenter_full_name=["test_experimenter_1", "test_experimenter_2"],
+    rig_id="428_9_0_20240617",
     iacuc_protocol="2115",
+    mouse_platform_name="mouse_tube_pavlovian",
+    active_mouse_platform=False,
+    session_type="Pavlovian_Conditioning",
+    notes="Example configuration for Pavlovian behavior"
 )
-
-# Generate session metadata - data will be extracted from files
-etl = BehaviorEtl(settings)
-response = etl.run_job()
 ```
 
-### Example usage from JSON file
-This example shows how to use the `BehaviorEtl` class to generate session metadata when the job settings are stored in a JSON file.
-
-```python
-import json
-from pathlib import Path
-from aind_metadata_mapper.pavlovian_behavior.session import BehaviorEtl
-from aind_metadata_mapper.pavlovian_behavior.models import JobSettings
-
-# Load settings from JSON file
-settings_path = Path("job_settings.json")
-with open(settings_path, "r") as f:
-    settings_data = json.load(f)
-
-# Create JobSettings instance
-job_settings = JobSettings(**settings_data)
-# Or pass JSON string directly
-# etl = BehaviorEtl(job_settings=json.dumps(settings_data))
-
-# Generate session metadata
-etl = BehaviorEtl(job_settings)
-response = etl.run_job()
-
-# If output_directory was specified in settings, the session file will be written there
-# Otherwise, access the session JSON string from the response
-session_json = response.data
+Or from the command line:
+```bash
+python -m aind_metadata_mapper.pavlovian_behavior.example_create_session \
+    --subject-id 000000 \
+    --data-directory /path/to/data \
+    --output-directory /path/to/output \
+    --output-filename session_pavlovian.json
 ```
 
-### Example usage with JobSettings object
-This example shows how to use the `JobSettings` object directly to generate session metadata.
+### Direct ETL Usage
+For more control over the metadata generation, you can use the ETL class directly:
 
 ```python
-from datetime import datetime
-import zoneinfo
-from aind_metadata_mapper.pavlovian_behavior.session import BehaviorEtl
+from aind_metadata_mapper.pavlovian_behavior.session import ETL
 from aind_metadata_mapper.pavlovian_behavior.models import JobSettings
 
-# Create example settings
-session_time = datetime(2023, 10, 4, tzinfo=zoneinfo.ZoneInfo("UTC"))
+# Create settings with required fields
 settings = JobSettings(
-    experimenter_full_name=["Test User"],
-    session_start_time=session_time,
     subject_id="000000",
-    rig_id="behavior_rig_01",
-    stimulus_frame_rate=60.0,
-    stimulus_epochs=[{
-        "stimulus_name": "Pavlovian",
-        "stimulus_start_time": session_time,
-        "trials_finished": 100,
-        "trials_total": 100,
-        "trials_rewarded": 80,
-        "reward_consumed_during_epoch": 160
+    data_directory="/path/to/data",
+    experimenter_full_name=["Test User"],
+    rig_id="pav_rig_01",
+    iacuc_protocol="2115",
+    mouse_platform_name="mouse_tube_pavlovian",
+    active_mouse_platform=False,
+    data_streams=[{
+        "stream_modalities": [Modality.BEHAVIOR],
+        "light_sources": [{
+            "name": "IR LED",
+            "device_type": "Light emitting diode",
+            "excitation_power": None,
+            "excitation_power_unit": "milliwatt",
+        }],
+        "software": [{
+            "name": "Bonsai",
+            "version": "",
+            "url": "",
+            "parameters": {},
+        }]
     }],
-    notes="Test session",
-    iacuc_protocol="2115",
+    notes="Test session"
 )
 
 # Generate session metadata
-etl = BehaviorEtl(settings)
+etl = ETL(settings)
 response = etl.run_job()
 ```
 
-### Example job_settings.json
-Here's an example of a job settings JSON file:
+## Automatic Data Extraction
+The ETL process will automatically extract session timing and trial information from the behavior files. It looks for:
+- Session start time from filenames matching pattern: `TS_CS1_YYYY-MM-DDThh_mm_ss.csv`
+- Trial information from files matching: `TrialN_TrialType_ITI_*.csv`
+- Session end time calculated from trial ITIs
+- Number of trials and rewards from trial data
 
-```json
-{
-  "experimenter_full_name": ["Test User"],
-  "subject_id": "000000",
-  "rig_id": "behavior_rig_01",
-  "data_directory": "/path/to/behavior/data",
-  "iacuc_protocol": "2115"
-}
-```
+## File Format Requirements
+The ETL process expects specific file formats:
+- Behavior files must be named: `TS_CS1_YYYY-MM-DDThh_mm_ss.csv`
+  - Example: `TS_CS1_2024-01-01T15_49_53.csv`
+- Trial files must be named: `TrialN_TrialType_ITI_*.csv`
+  - Example: `TrialN_TrialType_ITI_001.csv`
+- Files should be in a `behavior` subdirectory or main data directory
+- Trial files must contain columns:
+  - `TrialNumber`: Sequential trial numbers
+  - `TotalRewards`: Cumulative rewards given
+  - `ITI_s`: Inter-trial intervals in seconds
 
 ## Job Settings Structure
-The `JobSettings` class expects:
-- `experimenter_full_name`: List of experimenter names
-- `session_start_time`: UTC datetime of session start (optional if `data_directory` is provided)
-- `session_end_time`: UTC datetime of session end (optional)
+The `JobSettings` class requires:
 - `subject_id`: Subject identifier
+- `data_directory`: Path to the behavior files
+- `experimenter_full_name`: List of experimenter names
 - `rig_id`: Identifier for the experimental rig
-- `data_directory`: Path to directory containing behavior files (optional, but required if `session_start_time` is not provided)
-- `task_name`: Name of the behavioral task (defaults to "Pavlovian")
-- `stimulus_frame_rate`: Frame rate of stimulus presentation in Hz (defaults to 60.0)
-- `stimulus_epochs`: List of stimulus epoch configurations (optional if `data_directory` is provided)
-  - `stimulus_name`: Name of the stimulus
-  - `stimulus_start_time`: Start time of the stimulus epoch
-  - `stimulus_end_time`: End time of the stimulus epoch (optional)
-  - `trials_finished`: Number of trials completed
-  - `trials_total`: Total number of trials
-  - `trials_rewarded`: Number of rewarded trials
-  - `reward_consumed_during_epoch`: Amount of reward consumed
-- `notes`: Additional session notes
 - `iacuc_protocol`: Protocol identifier
+- `mouse_platform_name`: Name of the mouse platform used
+- `active_mouse_platform`: Whether the platform was active
+- `data_streams`: List of stream configurations including:
+  - Light sources (IR LED)
+  - Software (Bonsai)
 
-## Data Extraction
-When a `data_directory` is provided, the ETL process will:
-1. Look for behavior files matching the pattern `TS_CS1_*.csv` in the `behavior` subdirectory
-2. Extract the session start time from the filename
-3. Look for trial files matching the pattern `TrialN_TrialType_ITI_*.csv`
-4. Extract trial information to populate stimulus epochs
-5. Add the original folder name to the notes field
+Optional fields:
+- `output_directory`: Where to save the session.json file
+- `output_filename`: Name of the output file (default: session_pavlovian.json)
+- `notes`: Additional session notes
+- `reward_units_per_trial`: Units of reward per successful trial (default: 2.0)
 
-## Command Line Usage
-The module can also be run from the command line:
-
-```bash
-python -m aind_metadata_mapper.pavlovian_behavior.session job_settings.json
-```
+Session timing and trial information will be automatically extracted from the behavior files.
 
 ## Extending the ETL Process to Include Service Integrations
 The ETL implementation could be modified to extend the metadata generation process, particularly for incorporating data from external services. For example, we might want to add optional session metadata fields by querying another service using the subject_id.
