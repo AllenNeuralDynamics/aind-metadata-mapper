@@ -15,6 +15,7 @@ from typing import List, Tuple, Optional
 from zoneinfo import ZoneInfo
 import pandas as pd
 from aind_data_schema.core.session import StimulusEpoch
+from tzlocal import get_localzone
 
 
 def find_behavior_files(
@@ -94,10 +95,9 @@ def parse_session_start_time(
         date_time_str = date_time_str.replace("_", ":")
         parsed_time = datetime.strptime(date_time_str, "%Y-%m-%dT%H:%M:%S")
 
-        # Convert to UTC
-        local_time = parsed_time.replace(
-            tzinfo=ZoneInfo(local_timezone if local_timezone else "UTC")
-        )
+        # Use get_localzone() as default
+        tz = ZoneInfo(local_timezone) if local_timezone else get_localzone()
+        local_time = parsed_time.replace(tzinfo=tz)
         return local_time.astimezone(ZoneInfo("UTC"))
 
     except (ValueError, IndexError) as e:

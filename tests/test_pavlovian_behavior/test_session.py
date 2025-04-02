@@ -25,10 +25,11 @@ class TestPavlovianBehaviorSession(unittest.TestCase):
         behavior_dir = Path(cls.temp_dir) / "behavior"
         behavior_dir.mkdir()
 
-        # Create test files with correct datetime format
-        # Use 8am UTC (not PT) to avoid timezone conversion issues
+        # Create test files with time that will convert to 8am UTC from PT
         session_time = datetime(1999, 10, 4, 8, 0, 0, tzinfo=ZoneInfo("UTC"))
-        ts_file = behavior_dir / "TS_CS1_1999-10-04T08_00_00.csv"
+        ts_file = (
+            behavior_dir / "TS_CS1_1999-10-04T01_00_00.csv"
+        )  # 1am PT = 8am UTC
         trial_file = behavior_dir / "TrialN_TrialType_ITI_001.csv"
 
         # Create and write trial data
@@ -67,6 +68,7 @@ class TestPavlovianBehaviorSession(unittest.TestCase):
             mouse_platform_name="mouse_tube_pavlovian",
             active_mouse_platform=False,
             data_directory=cls.temp_dir,
+            local_timezone="UTC",
             notes="Test session",
             data_streams=[
                 {
