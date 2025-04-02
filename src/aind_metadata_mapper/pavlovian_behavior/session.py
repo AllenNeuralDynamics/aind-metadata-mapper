@@ -155,7 +155,7 @@ class ETL(GenericEtl[JobSettings]):
             data_streams=data_streams,
             stimulus_epochs=stimulus_epochs,
             reward_consumed_total=reward_consumed_total,
-            reward_consumed_unit=VolumeUnit.UL,
+            reward_consumed_unit=settings.reward_consumed_unit,
         )
 
         return session
