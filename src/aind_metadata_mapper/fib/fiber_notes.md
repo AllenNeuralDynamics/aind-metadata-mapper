@@ -1,17 +1,26 @@
-excitation to emission mapping:
-blue excitation (470) to green emission
-UV (415) excitation to isosbestic emission
-yellow (560) excitation to red emission
+# Fiber Photometry Implementation Notes
 
-IR LED is for behavior. Has NOTHING TO DO WITH FIBER.
+## Excitation-Emission Mappings
+| Excitation | Wavelength (nm) | Emission Type |
+|------------|----------------|---------------|
+| Blue       | 470           | Green         |
+| UV         | 415           | Isosbestic    |
+| Yellow     | 560           | Red           |
 
-there are two cameras: green and red
+## Camera Configuration
+- Two cameras: green and red
+- IR LED is used for behavior recording only (face illumination), not fiber photometry
 
-fiber 0 is most anterior
-left side gets smaller number if matching anterior dimensions
+## Fiber Numbering Conventions
+- Fiber 0 is most anterior
+- For matching anterior dimensions, left side gets smaller number
+- File standard: Use "ROI0 (corresponding to fiber branch0) values" format
 
-patch coord A-D: Kenta doesn't remember how this came about. Seems like this should be removed.
+## Legacy Notes
+### Patch Cord Naming (A-D)
+Historical naming convention that should be deprecated. Origin unclear per Kenta.
 
-Is there a place in light sources to add notes? For example, can we explicitly state that the IR LED is for face illumination (behavior)?
-
-in file standards, we should say "ROI0 (corresponding to fiber branch0) values" instead of "ROI0 (corresponding to fiber branch1) values"
+## Future Considerations
+1. Consider adding notes field to light sources configuration to clarify purpose
+   - Example: Explicitly document that IR LED is for face illumination
+2. Review and standardize ROI-to-fiber branch mapping documentation
