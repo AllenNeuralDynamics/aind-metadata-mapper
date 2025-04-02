@@ -129,10 +129,22 @@ class ETL(GenericEtl[JobSettings]):
                     stream["stream_end_time"] = settings.session_end_time
                 data_streams.append(stream)
 
+        # Format timestamps as ISO with Z suffix
+        start_time = (
+            settings.session_start_time.replace(microsecond=0)
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+        end_time = (
+            settings.session_end_time.replace(microsecond=0)
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+
         session = Session(
             experimenter_full_name=settings.experimenter_full_name,
-            session_start_time=settings.session_start_time,
-            session_end_time=settings.session_end_time,
+            session_start_time=start_time,
+            session_end_time=end_time,
             session_type=settings.session_type,
             rig_id=settings.rig_id,
             subject_id=settings.subject_id,
