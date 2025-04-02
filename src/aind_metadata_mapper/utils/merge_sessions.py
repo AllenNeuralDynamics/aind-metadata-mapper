@@ -5,10 +5,27 @@ import argparse
 from pathlib import Path
 from typing import Any, Dict, List, Union
 import logging
+from datetime import datetime
+
+# Configure logging at INFO level with timestamp
+logging.basicConfig(
+    level=logging.INFO,
+    format="\n%(asctime)s - %(message)s\n",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 def _merge_lists(list1: List[Any], list2: List[Any]) -> List[Any]:
-    """Merge two lists, removing duplicates while preserving order."""
+    """Merge two lists, removing duplicates while preserving order.
+
+    For lists of dictionaries, merges based on content rather than identity.
+    For simple types (str, int, etc), removes duplicates using dict.fromkeys.
+    """
+    # If lists contain dictionaries, append all items
+    if any(isinstance(item, dict) for item in list1 + list2):
+        return list1 + list2
+
+    # For simple types, deduplicate while preserving order
     return list(dict.fromkeys(list1 + list2))
 
 
@@ -28,15 +45,143 @@ def _prompt_for_field(
         str: User's chosen value for the field
     """
     default = f"{value1} + {value2}"
-    print(f"\nConflict in '{field_name}':")
-    print(f"  {file1}: {value1}")
-    print(f"  {file2}: {value2}")
-    print(f"\nDefault merged value: {default}")
+    logging.info(
+        f"Conflict in '{field_name}':\n"
+        f"  {file1}: {value1}\n"
+        f"  {file2}: {value2}\n"
+        f"Default merged value: {default}"
+    )
     response = input("Accept default? [Y/n] or type new value: ").strip()
 
     if not response or response.lower() == "y":
         return default
     return response
+
+
+def _format_time_difference(diff_seconds: float) -> str:
+    """Format a time difference in seconds into a human readable string.
+
+    Args:
+        diff_seconds: Time difference in seconds
+
+    Returns:
+        Human readable string describing the time difference with appropriate units
+        and precision based on the magnitude of the difference.
+    """
+    if diff_seconds >= 3600:  # More than an hour
+        hours = int(diff_seconds // 3600)
+        minutes = int((diff_seconds % 3600) // 60)
+        diff_str = f"{hours} hour{'s' if hours != 1 else ''}"
+        if minutes > 0:
+            diff_str += f", {minutes} minute{'s' if minutes != 1 else ''}"
+    elif diff_seconds >= 60:  # More than a minute
+        minutes = int(diff_seconds // 60)
+        seconds = diff_seconds % 60
+        diff_str = f"{minutes} minute{'s' if minutes != 1 else ''}"
+        if seconds > 0:
+            if seconds.is_integer():
+                diff_str += (
+                    f", {int(seconds)} second{'s' if seconds != 1 else ''}"
+                )
+            else:
+                diff_str += f", {seconds:.3f} seconds"
+    elif diff_seconds >= 1:  # More than a second
+        if diff_seconds.is_integer():
+            diff_str = (
+                f"{int(diff_seconds)} second{'s' if diff_seconds != 1 else ''}"
+            )
+        else:
+            diff_str = f"{diff_seconds:.3f} seconds"
+    else:  # Less than a second
+        diff_str = f"{diff_seconds * 1000:.3f} milliseconds"
+
+    return diff_str
+
+
+def _merge_timestamps(
+    field: str,
+    time1: str,
+    time2: str,
+    tolerance_hours: float = 1.0,
+    file1: str | None = None,
+    file2: str | None = None,
+) -> str:
+    """Merge two ISO format UTC timestamps based on field name.
+
+    For start times (containing 'start'), takes earlier timestamp.
+    For end times (containing 'end'), takes later timestamp.
+    Raises error if timestamps differ by more than tolerance.
+
+    Args:
+        field: Name of field being merged (determines earlier/later logic)
+        time1: First timestamp in ISO format with Z suffix
+        time2: Second timestamp in ISO format with Z suffix
+        tolerance_hours: Maximum allowed difference in hours (default 1)
+        file1: Optional name of first file for logging clarity
+        file2: Optional name of second file for logging clarity
+
+    Returns:
+        Selected timestamp in ISO format
+
+    Raises:
+        ValueError: If timestamps differ by more than tolerance
+    """
+    t1 = datetime.fromisoformat(time1.replace("Z", "+00:00"))
+    t2 = datetime.fromisoformat(time2.replace("Z", "+00:00"))
+
+    # Calculate time difference in seconds
+    diff_seconds = abs((t1 - t2).total_seconds())
+    diff_str = _format_time_difference(diff_seconds)
+
+    if diff_seconds / 3600 > tolerance_hours:
+        raise ValueError(
+            f"Timestamps differ by {diff_str}, "
+            f"exceeding tolerance of {tolerance_hours} hours"
+        )
+
+    # Format the timestamp descriptions with file names if available
+    time1_desc = f"{time1} (from {file1})" if file1 else time1
+    time2_desc = f"{time2} (from {file2})" if file2 else time2
+
+    if "start" in field.lower():
+        result = min(time1, time2)
+        result_source = file1 if result == time1 else file2
+        result_desc = (
+            f"{result} (from {result_source})" if result_source else result
+        )
+        logging.info(
+            f"Two timestamps found for {field}:\n"
+            f"  1: {time1_desc}\n"
+            f"  2: {time2_desc}\n"
+            f"These differ by {diff_str}.\n"
+            f"Using earlier timestamp: {result_desc}"
+        )
+        return result
+    elif "end" in field.lower():
+        result = max(time1, time2)
+        result_source = file1 if result == time1 else file2
+        result_desc = (
+            f"{result} (from {result_source})" if result_source else result
+        )
+        logging.info(
+            f"Two timestamps found for {field}:\n"
+            f"  1: {time1_desc}\n"
+            f"  2: {time2_desc}\n"
+            f"These differ by {diff_str}.\n"
+            f"Using later timestamp: {result_desc}"
+        )
+        return result
+    else:
+        result = time1
+        result_desc = f"{result} (from {file1})" if file1 else result
+        logging.info(
+            f"Two timestamps found for {field}:\n"
+            f"  1: {time1_desc}\n"
+            f"  2: {time2_desc}\n"
+            f"These differ by {diff_str}.\n"
+            f"Field name does not indicate start/end, using first timestamp: {result_desc}"
+        )
+        return result
 
 
 def _merge_values(
@@ -64,19 +209,36 @@ def _merge_values(
     if val1 == val2:
         return val1
 
-    # Handle different types based on their Python type
+    # Handle timestamps specially
+    if (
+        isinstance(val1, str)
+        and isinstance(val2, str)
+        and (
+            "time" in field.lower()
+            and all(t.endswith("Z") for t in [val1, val2])
+        )
+    ):
+        try:
+            return _merge_timestamps(
+                field, val1, val2, file1=file1, file2=file2
+            )
+        except ValueError as e:
+            # If timestamps are invalid or difference exceeds tolerance,
+            # fall back to user prompt
+            return _prompt_for_field(field, val1, val2, file1, file2)
+
+    # Handle other types
     if isinstance(val1, list) and isinstance(val2, list):
         return _merge_lists(val1, val2)
     elif isinstance(val1, dict) and isinstance(val2, dict):
-        return merge_dicts(val1, val2, file1, file2)
+        return _merge_dicts(val1, val2, file1, file2)
     elif isinstance(val1, str) and isinstance(val2, str):
         return _prompt_for_field(field, val1, val2, file1, file2)
     else:
-        # For other types (numbers, booleans), prompt user
         return _prompt_for_field(field, str(val1), str(val2), file1, file2)
 
 
-def merge_dicts(
+def _merge_dicts(
     dict1: Dict[str, Any], dict2: Dict[str, Any], file1: str, file2: str
 ) -> Dict[str, Any]:
     """Recursively merge two dictionaries.
@@ -127,7 +289,7 @@ def merge_sessions(
     except Exception as e:
         raise ValueError(f"Error reading session files: {str(e)}")
 
-    return merge_dicts(
+    return _merge_dicts(
         session1, session2, Path(session_file1).name, Path(session_file2).name
     )
 
@@ -163,7 +325,7 @@ def main():
     with open(args.output, "w") as f:
         json.dump(merged_session, f, indent=2)
 
-    print(f"Merged session saved to: {args.output}")
+    logging.info(f"Merged session saved to: {args.output}")
 
 
 if __name__ == "__main__":
