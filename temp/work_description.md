@@ -33,7 +33,7 @@ class JobSettings(BaseJobSettings):
     
     # Behavior-specific fields
     task_name: str
-    task_version: str
+
     stimulus_frame_rate: float
     response_window: List[float]  # [start_time, end_time] in seconds
     
@@ -111,7 +111,6 @@ class BehaviorEtl(GenericEtl[JobSettings]):
             notes=settings.notes,
             # Add behavior-specific fields
             task_name=settings.task_name,
-            task_version=settings.task_version,
             stimulus_frame_rate=settings.stimulus_frame_rate,
             response_window=settings.response_window,
             # Add any optional fields gathered from services here
@@ -190,7 +189,6 @@ settings = JobSettings(
     subject_id="000000",
     rig_id="behavior_rig_01",
     task_name="VisualDiscrimination",
-    task_version="1.0.0",
     stimulus_frame_rate=60.0,
     response_window=[0.15, 1.0],
     notes="Test session",
@@ -209,7 +207,6 @@ The `JobSettings` class expects:
 - `subject_id`: Subject identifier
 - `rig_id`: Identifier for the experimental rig
 - `task_name`: Name of the behavioral task
-- `task_version`: Version of the task
 - `stimulus_frame_rate`: Frame rate of stimulus presentation in Hz
 - `response_window`: Time window for valid responses [start, end] in seconds
 - `notes`: Additional session notes

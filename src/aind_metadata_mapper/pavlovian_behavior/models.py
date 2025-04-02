@@ -22,7 +22,6 @@ class JobSettings(BaseJobSettings):
     experimenter_full_name: List[str]
     subject_id: str
     rig_id: str
-    task_version: str
     iacuc_protocol: str
 
     # Session timing (can be extracted from data files)

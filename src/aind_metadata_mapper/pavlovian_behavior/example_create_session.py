@@ -20,7 +20,6 @@ def create_metadata(
         "test_experimenter_2",
     ],
     rig_id: str = "428_9_0_20240617",
-    task_version: str = "1.0.0",
     iacuc_protocol: str = "2115",
     mouse_platform_name: str = "mouse_tube_foraging",
     active_mouse_platform: bool = False,
@@ -38,7 +37,6 @@ def create_metadata(
         output_filename: Name of the output JSON file
         experimenter_full_name: List of experimenter names
         rig_id: Identifier for the experimental rig
-        task_version: Version of the experimental task
         iacuc_protocol: Protocol identifier
         mouse_platform_name: Name of the mouse platform
         active_mouse_platform: Whether platform is active
@@ -59,7 +57,6 @@ def create_metadata(
         "output_directory": str(output_directory),
         "output_filename": output_filename,
         "rig_id": rig_id,
-        "task_version": task_version,
         "iacuc_protocol": iacuc_protocol,
         "mouse_platform_name": mouse_platform_name,
         "active_mouse_platform": active_mouse_platform,

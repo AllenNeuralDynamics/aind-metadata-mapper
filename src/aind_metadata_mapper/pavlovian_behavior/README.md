@@ -24,7 +24,6 @@ settings = JobSettings(
     experimenter_full_name=["Test User"],
     subject_id="000000",
     rig_id="behavior_rig_01",
-    task_version="1.0.0",
     data_directory="/path/to/behavior/data",
     iacuc_protocol="2115",
 )
@@ -78,7 +77,6 @@ settings = JobSettings(
     session_start_time=session_time,
     subject_id="000000",
     rig_id="behavior_rig_01",
-    task_version="1.0.0",
     stimulus_frame_rate=60.0,
     stimulus_epochs=[{
         "stimulus_name": "Pavlovian",
@@ -105,7 +103,6 @@ Here's an example of a job settings JSON file:
   "experimenter_full_name": ["Test User"],
   "subject_id": "000000",
   "rig_id": "behavior_rig_01",
-  "task_version": "1.0.0",
   "data_directory": "/path/to/behavior/data",
   "iacuc_protocol": "2115"
 }
@@ -120,7 +117,6 @@ The `JobSettings` class expects:
 - `rig_id`: Identifier for the experimental rig
 - `data_directory`: Path to directory containing behavior files (optional, but required if `session_start_time` is not provided)
 - `task_name`: Name of the behavioral task (defaults to "Pavlovian")
-- `task_version`: Version of the task
 - `stimulus_frame_rate`: Frame rate of stimulus presentation in Hz (defaults to 60.0)
 - `stimulus_epochs`: List of stimulus epoch configurations (optional if `data_directory` is provided)
   - `stimulus_name`: Name of the stimulus
