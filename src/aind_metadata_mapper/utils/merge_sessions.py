@@ -65,7 +65,8 @@ def _format_time_difference(diff_seconds: float) -> str:
         diff_seconds: Time difference in seconds
 
     Returns:
-        Human readable string describing the time difference with appropriate units
+        Human readable string describing the time
+        difference with appropriate units
         and precision based on the magnitude of the difference.
     """
     if diff_seconds >= 3600:  # More than an hour
@@ -179,7 +180,8 @@ def _merge_timestamps(
             f"  1: {time1_desc}\n"
             f"  2: {time2_desc}\n"
             f"These differ by {diff_str}.\n"
-            f"Field name does not indicate start/end, using first timestamp: {result_desc}"
+            f"Field name does not indicate start/end, "
+            f"using first timestamp: {result_desc}"
         )
         return result
 
@@ -222,7 +224,7 @@ def _merge_values(
             return _merge_timestamps(
                 field, val1, val2, file1=file1, file2=file2
             )
-        except ValueError as e:
+        except ValueError:
             # If timestamps are invalid or difference exceeds tolerance,
             # fall back to user prompt
             return _prompt_for_field(field, val1, val2, file1, file2)
@@ -268,13 +270,16 @@ def _merge_dicts(
 
 
 def merge_sessions(
-    session_file1: Union[str, Path], session_file2: Union[str, Path]
+    session_file1: Union[str, Path],
+    session_file2: Union[str, Path],
+    output_file: Union[str, Path],
 ) -> Dict[str, Any]:
     """Merge two session metadata files into a single session.
 
     Args:
         session_file1: Path to first session JSON file
         session_file2: Path to second session JSON file
+        output_file: Path where merged session JSON will be saved
 
     Returns:
         Dict containing merged session metadata
@@ -289,9 +294,18 @@ def merge_sessions(
     except Exception as e:
         raise ValueError(f"Error reading session files: {str(e)}")
 
-    return _merge_dicts(
+    merged = _merge_dicts(
         session1, session2, Path(session_file1).name, Path(session_file2).name
     )
+
+    # Write merged session to output file
+    try:
+        with open(output_file, "w") as f:
+            json.dump(merged, f, indent=2)
+    except Exception as e:
+        raise ValueError(f"Error writing merged session file: {str(e)}")
+
+    return merged
 
 
 def main():
@@ -320,10 +334,7 @@ def main():
 
     args = parser.parse_args()
 
-    merged_session = merge_sessions(args.file1, args.file2)
-
-    with open(args.output, "w") as f:
-        json.dump(merged_session, f, indent=2)
+    merge_sessions(args.file1, args.file2, args.output)
 
     logging.info(f"Merged session saved to: {args.output}")
 
