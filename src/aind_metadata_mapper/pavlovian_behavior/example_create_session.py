@@ -1,4 +1,9 @@
-"""Simple script to create Pavlovian behavior metadata with default settings."""
+"""
+Simple script to create Pavlovian behavior metadata with default settings.
+
+User should use this script to create a new session metadata file,
+modifying specific fields as needed.
+"""
 
 from pathlib import Path
 from typing import List
@@ -25,7 +30,7 @@ def create_metadata(
     active_mouse_platform: bool = False,
     session_type: str = "Pavlovian_Conditioning",
     task_name: str = "Pavlovian_Conditioning",
-    notes: str = "Example configuration for Pavlovian Conditioning behavior",
+    notes: str = ("Example configuration for Pavlovian Conditioning behavior"),
     reward_units_per_trial: float = 2.0,
 ) -> bool:
     """Create Pavlovian behavior metadata with default settings.
@@ -46,8 +51,7 @@ def create_metadata(
         reward_units_per_trial: Number of reward units per successful trial
 
     Returns:
-        bool: True if metadata was successfully
-            created and verified, False otherwise
+        bool: True if metadata was successfully created and verified
     """
     # Create settings with defaults
     settings = {
@@ -90,7 +94,7 @@ def create_metadata(
                 ],
             }
         ],
-        "stimulus_epochs": [],  # Initialize empty, will be populated from files
+        "stimulus_epochs": [],
     }
 
     # Create JobSettings instance and run ETL

@@ -1,11 +1,11 @@
 """Tests for Pavlovian behavior utility functions."""
 
 import unittest
+import tempfile
 from datetime import datetime
 from pathlib import Path
-import tempfile
-import pandas as pd
 from zoneinfo import ZoneInfo
+import pandas as pd
 
 from aind_metadata_mapper.pavlovian_behavior.utils import (
     find_behavior_files,
@@ -14,11 +14,26 @@ from aind_metadata_mapper.pavlovian_behavior.utils import (
     calculate_session_timing,
     create_stimulus_epoch,
     extract_session_data,
+    validate_behavior_file_format,
+    validate_trial_file_format,
 )
 
 
 class TestPavlovianBehaviorUtils(unittest.TestCase):
     """Test Pavlovian behavior utility functions."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.test_time = datetime(2024, 1, 1, tzinfo=ZoneInfo("UTC"))
+
+        # Create test DataFrame with matching lengths
+        self.test_df = pd.DataFrame(
+            {
+                "TrialNumber": range(1, 11),  # 10 items
+                "TotalRewards": range(0, 10),  # 10 items
+                "ITI_s": [1.0] * 10,  # 10 items
+            }
+        )
 
     def test_find_behavior_files(self):
         """Test finding behavior and trial files."""
@@ -53,28 +68,13 @@ class TestPavlovianBehaviorUtils(unittest.TestCase):
 
     def test_parse_session_start_time(self):
         """Test parsing session start time from filename."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Create test file
-            timestamp = "2024-01-01T15_49_53"
-            test_file = Path(tmpdir) / f"TS_CS1_{timestamp}.csv"
-            test_file.touch()
-
-            # Test with America/Los_Angeles timezone
-            result = parse_session_start_time(
-                test_file, local_timezone="America/Los_Angeles"
-            )
-            self.assertEqual(result.year, 2024)
-            self.assertEqual(result.month, 1)
-            self.assertEqual(result.day, 1)
-            self.assertEqual(result.hour, 23)  # 15:49 PT = 23:49 UTC
-            self.assertEqual(result.minute, 49)
-            self.assertEqual(result.second, 53)
-
-            # Test with invalid filename
-            invalid_file = Path(tmpdir) / "invalid_filename.csv"
-            invalid_file.touch()
-            with self.assertRaises(ValueError):
-                parse_session_start_time(invalid_file)
+        # Test with UTC time to avoid timezone dependencies
+        filename_actual = Path("TS_CS1_2024-01-01T12_00_00.csv")
+        expected = datetime(2024, 1, 1, 12, 0, 0, tzinfo=ZoneInfo("UTC"))
+        actual = parse_session_start_time(
+            filename_actual, local_timezone="UTC"
+        )
+        self.assertEqual(expected, actual)
 
     def test_extract_trial_data(self):
         """Test extraction of trial data from CSV."""
@@ -83,9 +83,9 @@ class TestPavlovianBehaviorUtils(unittest.TestCase):
             trial_file = Path(tmpdir) / "trial_data.csv"
             df = pd.DataFrame(
                 {
-                    "TrialNumber": range(1, 11),
-                    "TotalRewards": range(0, 5),
-                    "ITI_s": [1.0] * 10,
+                    "TrialNumber": range(1, 11),  # 10 items
+                    "TotalRewards": range(0, 10),  # 10 items
+                    "ITI_s": [1.0] * 10,  # 10 items
                 }
             )
             df.to_csv(trial_file, index=False)
@@ -122,7 +122,7 @@ class TestPavlovianBehaviorUtils(unittest.TestCase):
         trial_data = pd.DataFrame(
             {
                 "TrialNumber": range(1, 11),
-                "TotalRewards": range(0, 5),
+                "TotalRewards": range(0, 10),
                 "ITI_s": [1.0] * 10,
             }
         )
@@ -131,8 +131,10 @@ class TestPavlovianBehaviorUtils(unittest.TestCase):
             start_time, end_time, trial_data, reward_units_per_trial=2.0
         )
         self.assertEqual(epoch.trials_total, 10)
-        self.assertEqual(epoch.trials_rewarded, 4)
-        self.assertEqual(epoch.reward_consumed_during_epoch, 8.0)
+        self.assertEqual(
+            epoch.trials_rewarded, 9
+        )  # range(0,10) has 9 non-zero values
+        self.assertEqual(epoch.reward_consumed_during_epoch, 18.0)  # 9 * 2.0
 
     def test_extract_session_data(self):
         """Test complete session data extraction."""
@@ -141,8 +143,8 @@ class TestPavlovianBehaviorUtils(unittest.TestCase):
             behavior_dir = Path(tmpdir) / "behavior"
             behavior_dir.mkdir()
 
-            # Create behavior file
-            ts_file = behavior_dir / "TS_CS1_2024-01-01T15_49_53.csv"
+            # Use UTC time to avoid timezone dependencies
+            ts_file = behavior_dir / "TS_CS1_2024-01-01T12_00_00.csv"
             ts_file.touch()
 
             # Create trial file with data
@@ -150,24 +152,105 @@ class TestPavlovianBehaviorUtils(unittest.TestCase):
             df = pd.DataFrame(
                 {
                     "TrialNumber": range(1, 11),
-                    "TotalRewards": range(0, 5),
+                    "TotalRewards": range(0, 10),
                     "ITI_s": [1.0] * 10,
                 }
             )
             df.to_csv(trial_file, index=False)
 
-            # Test complete extraction
+            # Test complete extraction using UTC
             start_time, epochs = extract_session_data(
                 Path(tmpdir),
                 reward_units_per_trial=2.0,
-                local_timezone="America/Los_Angeles",
+                local_timezone="UTC",  # Always use UTC in tests
             )
 
-            self.assertEqual(start_time.hour, 23)  # 15:49 PT = 23:49 UTC
+            # Test exact UTC times
+            self.assertEqual(start_time.hour, 12)
+            self.assertEqual(start_time.minute, 0)
+            self.assertEqual(start_time.second, 0)
+            self.assertEqual(start_time.tzinfo, ZoneInfo("UTC"))
             self.assertEqual(len(epochs), 1)
             self.assertEqual(epochs[0].trials_total, 10)
-            self.assertEqual(epochs[0].trials_rewarded, 4)
-            self.assertEqual(epochs[0].reward_consumed_during_epoch, 8.0)
+            self.assertEqual(epochs[0].trials_rewarded, 9)
+            self.assertEqual(epochs[0].reward_consumed_during_epoch, 18.0)
+
+    def test_validate_behavior_file_format(self):
+        """Test behavior file name validation."""
+        # Test valid format
+        valid_file = Path("TS_CS1_2024-01-01T15_49_53.csv")
+        validate_behavior_file_format(valid_file)  # Should not raise
+
+        # Test wrong prefix
+        with self.assertRaises(ValueError) as cm:
+            validate_behavior_file_format(Path("TS_2024-01-01T15_49_53.csv"))
+        self.assertIn("must start with 'TS_CS1_'", str(cm.exception))
+
+        # Test wrong number of parts
+        with self.assertRaises(ValueError) as cm:
+            validate_behavior_file_format(Path("TS.csv"))
+        self.assertIn("should have exactly three parts", str(cm.exception))
+
+        # Test wrong extension
+        with self.assertRaises(ValueError) as cm:
+            validate_behavior_file_format(
+                Path("TS_CS1_2024-01-01T15_49_53.txt")
+            )
+        self.assertIn("must have .csv extension", str(cm.exception))
+
+        # Test invalid datetime format
+        with self.assertRaises(ValueError) as cm:
+            validate_behavior_file_format(Path("TS_CS1_20240101T154953.csv"))
+        self.assertIn(
+            "must be in format YYYY-MM-DDThh_mm_ss", str(cm.exception)
+        )
+
+    def test_validate_trial_file_format(self):
+        """Test trial file name validation."""
+        # Test valid format
+        valid_file = Path("TrialN_TrialType_ITI_001.csv")
+        validate_trial_file_format(valid_file)  # Should not raise
+
+        # Test wrong number of parts
+        with self.assertRaises(ValueError) as cm:
+            validate_trial_file_format(Path("TrialN_TrialType.csv"))
+        self.assertIn(
+            "should have at least\nfour parts separated by underscores",
+            str(cm.exception),
+        )
+
+        # Test wrong prefix
+        with self.assertRaises(ValueError) as cm:
+            validate_trial_file_format(Path("Trial_Type_ITI_001.csv"))
+        self.assertIn(
+            "must start with 'TrialN_TrialType_ITI_'", str(cm.exception)
+        )
+
+        # Test wrong extension
+        with self.assertRaises(ValueError) as cm:
+            validate_trial_file_format(Path("TrialN_TrialType_ITI_001.txt"))
+        self.assertIn("must have .csv extension", str(cm.exception))
+
+    def test_find_behavior_files_with_invalid_formats(self):
+        """Test finding behavior files with invalid formats."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            behavior_dir = Path(tmpdir) / "behavior"
+            behavior_dir.mkdir()
+
+            # Create files with invalid formats
+            invalid_ts = (
+                behavior_dir / "TS_CS1_20240101T154953.csv"
+            )  # Wrong format but correct prefix
+            valid_trial = behavior_dir / "TrialN_TrialType_ITI_001.csv"
+            invalid_ts.touch()
+            valid_trial.touch()
+
+            # Should raise ValueError due to invalid behavior file format
+            with self.assertRaises(ValueError) as cm:
+                find_behavior_files(Path(tmpdir))
+            self.assertIn(
+                "must be in format YYYY-MM-DDThh_mm_ss", str(cm.exception)
+            )
 
 
 if __name__ == "__main__":

@@ -1,7 +1,8 @@
 """Module for creating Pavlovian Behavior session metadata.
 
 This module implements an ETL (Extract, Transform, Load) pattern for generating
-standardized session metadata from Pavlovian conditioning experiments. It handles:
+standardized session metadata from Pavlovian conditioning experiments. It
+handles:
 
 - Extraction of session times and trial data from behavior files
 - Transformation of raw data into standardized session objects
@@ -11,18 +12,13 @@ The ETL class provides hooks for future extension to fetch additional data from
 external services or handle new data formats.
 """
 
-import sys
 import json
 import logging
-import os
-import pandas as pd
-from datetime import datetime, timedelta
+import sys
 from pathlib import Path
-from typing import Union, Dict, Any, List, Optional, Tuple
-from zoneinfo import ZoneInfo
+from typing import Union
 
-from aind_data_schema.core.session import Session, StimulusEpoch
-from aind_data_schema_models.modalities import Modality
+from aind_data_schema.core.session import Session
 from aind_data_schema_models.units import VolumeUnit
 
 from aind_metadata_mapper.core import GenericEtl
@@ -69,46 +65,38 @@ class ETL(GenericEtl[JobSettings]):
             JobSettings: Updated settings object with extracted data
 
         Raises:
-            ValueError: If required fields are missing and cannot be extracted
+            ValueError: If required files are missing
+                or data cannot be extracted
         """
         settings = self.job_settings
         logging.info("Starting metadata extraction")
 
-        if hasattr(settings, "data_directory") and settings.data_directory:
-            try:
-                data_dir = Path(settings.data_directory)
-                reward_units = getattr(settings, "reward_units_per_trial", 2.0)
-
-                session_time, stimulus_epochs = extract_session_data(
-                    data_dir, reward_units
-                )
-
-                # Update settings with extracted data
-                if settings.session_start_time is None:
-                    settings.session_start_time = session_time
-
-                if settings.session_end_time is None and stimulus_epochs:
-                    settings.session_end_time = stimulus_epochs[
-                        0
-                    ].stimulus_end_time
-
-                if not settings.stimulus_epochs:
-                    settings.stimulus_epochs = stimulus_epochs
-
-                # Add folder name to notes for provenance
-                folder_name = data_dir.name
-                if settings.notes:
-                    settings.notes += f"\nOriginal folder name: {folder_name}"
-                else:
-                    settings.notes = f"Original folder name: {folder_name}"
-
-            except (FileNotFoundError, ValueError) as e:
-                logging.warning(f"Could not extract data from files: {e}")
-
-        if settings.session_start_time is None:
+        if (
+            not hasattr(settings, "data_directory")
+            or not settings.data_directory
+        ):
             raise ValueError(
-                "session_start_time is required but was not provided or extracted"
+                "data_directory is required for metadata extraction"
             )
+
+        try:
+            data_dir = Path(settings.data_directory)
+            reward_units = getattr(settings, "reward_units_per_trial", 2.0)
+
+            session_time, stimulus_epochs = extract_session_data(
+                data_dir, reward_units
+            )
+
+            # Update settings with extracted data
+            settings.session_start_time = session_time
+            if stimulus_epochs:
+                settings.session_end_time = stimulus_epochs[
+                    0
+                ].stimulus_end_time
+                settings.stimulus_epochs = stimulus_epochs
+
+        except (FileNotFoundError, ValueError) as e:
+            raise ValueError(f"Failed to extract data from files: {str(e)}")
 
         return settings
 

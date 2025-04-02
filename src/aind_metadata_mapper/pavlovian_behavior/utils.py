@@ -1,19 +1,18 @@
 """Utility functions for Pavlovian behavior metadata extraction.
 
-This module provides functions for extracting and processing data from Pavlovian
-behavior files. Functions are organized by their specific tasks:
+This module provides functions for extracting and processing data
+from Pavlovian behavior files. Functions are organized
+by their specific tasks:
 - File discovery and validation
 - Timestamp parsing and manipulation
 - Trial data extraction and processing
 - Session timing calculations
 """
 
-import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Tuple, Dict, Any, Optional
+from typing import List, Tuple, Optional
 from zoneinfo import ZoneInfo
-from tzlocal import get_localzone
 import pandas as pd
 from aind_data_schema.core.session import StimulusEpoch
 
@@ -37,6 +36,7 @@ def find_behavior_files(
 
     Raises:
         FileNotFoundError: If required files are not found
+        ValueError: If file names do not match expected format
     """
     behavior_dir = data_dir / "behavior"
     if not behavior_dir.exists():
@@ -51,8 +51,15 @@ def find_behavior_files(
         )
     if not trial_files:
         raise FileNotFoundError(
-            f"No trial files (TrialN_TrialType_ITI_*.csv) found in {behavior_dir}"
+            "No trial files (TrialN_TrialType_ITI_*.csv) "
+            f"found in {behavior_dir}"
         )
+
+    # Validate all found files
+    for bf in behavior_files:
+        validate_behavior_file_format(bf)
+    for tf in trial_files:
+        validate_trial_file_format(tf)
 
     return behavior_files, trial_files
 
@@ -60,35 +67,43 @@ def find_behavior_files(
 def parse_session_start_time(
     behavior_file: Path, local_timezone: Optional[str] = None
 ) -> datetime:
-    """Extract and parse session start time from behavior filename.
+    """Parse session start time from behavior file name.
 
     Args:
-        behavior_file: Path to behavior file with timestamp in name
-        local_timezone: Optional timezone string. If not provided, will use
-            system timezone.
+        behavior_file: Path to behavior file
+        local_timezone: Optional timezone string. If not provided, UTC is used.
 
     Returns:
-        Timezone-aware datetime object in UTC
+        datetime: Session start time in UTC
 
     Raises:
-        ValueError: If timestamp cannot be parsed from filename
+        ValueError: If datetime cannot be parsed from filename
     """
-    raw_time_part = "_".join(behavior_file.stem.split("_")[2:])
-
     try:
-        parsed_time = datetime.strptime(raw_time_part, "%Y-%m-%dT%H_%M_%S")
-        if parsed_time.tzinfo is None:
-            # Get timezone
-            tz = (
-                ZoneInfo(local_timezone) if local_timezone else get_localzone()
-            )
-            # Set to local time then convert to UTC
-            local_time = parsed_time.replace(tzinfo=tz)
-            return local_time.astimezone(ZoneInfo("UTC"))
-    except ValueError:
+        # Extract timestamp part from filename
+        # (e.g. TS_CS1_2024-12-31T15_49_53.csv)
+        parts = behavior_file.stem.split(
+            "_", 2
+        )  # Split on first two underscores only
+        if len(parts) < 3:
+            raise ValueError(f"Invalid filename format: {behavior_file.name}")
+
+        # Get the datetime part and parse it
+        date_time_str = parts[2]  # e.g. "2024-12-31T15_49_53"
+        # Replace underscores with colons for proper datetime parsing
+        date_time_str = date_time_str.replace("_", ":")
+        parsed_time = datetime.strptime(date_time_str, "%Y-%m-%dT%H:%M:%S")
+
+        # Convert to UTC
+        local_time = parsed_time.replace(
+            tzinfo=ZoneInfo(local_timezone if local_timezone else "UTC")
+        )
+        return local_time.astimezone(ZoneInfo("UTC"))
+
+    except (ValueError, IndexError) as e:
         raise ValueError(
             f"Could not parse datetime from filename: {behavior_file.name}"
-        )
+        ) from e
 
 
 def extract_trial_data(
@@ -220,3 +235,107 @@ def extract_session_data(
     )
 
     return start_time, [stimulus_epoch]
+
+
+def validate_behavior_file_format(behavior_file: Path) -> None:
+    """Validate that behavior file name matches expected format.
+
+    Expected format:
+    - TS_CS1_YYYY-MM-DDThh_mm_ss.csv
+    Example: TS_CS1_2024-01-01T15_49_53.csv
+
+    Args:
+        behavior_file: Path to behavior file
+
+    Raises:
+        ValueError: If file name does not match expected format, with detailed
+            explanation of what was wrong
+    """
+    name = behavior_file.name
+    parts = name.split("_", 2)
+
+    # Check basic structure
+    if len(parts) != 3:
+        raise ValueError(
+            f"Invalid behavior file name: {name}\n"
+            "Expected format: TS_CS1_YYYY-MM-DDThh_mm_ss.csv\n"
+            "Example: TS_CS1_2024-01-01T15_49_53.csv\n"
+            "Error: File name should have exactly three parts\n"
+            "separated by underscores"
+        )
+
+    if parts[0] != "TS" or parts[1] != "CS1":
+        raise ValueError(
+            f"Invalid behavior file name: {name}\n"
+            "Expected format: TS_CS1_YYYY-MM-DDThh_mm_ss.csv\n"
+            "Example: TS_CS1_2024-01-01T15_49_53.csv\n"
+            "Error: File name must start with 'TS_CS1_'"
+        )
+
+    # Check datetime part
+    datetime_part = parts[2]
+    if not datetime_part.endswith(".csv"):
+        raise ValueError(
+            f"Invalid behavior file name: {name}\n"
+            "Expected format: TS_CS1_YYYY-MM-DDThh_mm_ss.csv\n"
+            "Example: TS_CS1_2024-01-01T15_49_53.csv\n"
+            "Error: File must have .csv extension"
+        )
+
+    datetime_str = datetime_part[:-4]  # Remove .csv
+
+    # Check date format
+    try:
+        # Try to parse the datetime to validate format
+        date_time_str = datetime_str.replace("_", ":")
+        datetime.strptime(date_time_str, "%Y-%m-%dT%H:%M:%S")
+    except ValueError:
+        raise ValueError(
+            f"Invalid behavior file name: {name}\n"
+            "Expected format: TS_CS1_YYYY-MM-DDThh_mm_ss.csv\n"
+            "Example: TS_CS1_2024-01-01T15_49_53.csv\n"
+            "Error: Date/time part must be in format YYYY-MM-DDThh_mm_ss"
+        )
+
+
+def validate_trial_file_format(trial_file: Path) -> None:
+    """Validate that trial file name matches expected format.
+
+    Expected format:
+    - TrialN_TrialType_ITI_*.csv
+    Example: TrialN_TrialType_ITI_001.csv
+
+    Args:
+        trial_file: Path to trial file
+
+    Raises:
+        ValueError: If file name does not match expected format, with detailed
+            explanation of what was wrong
+    """
+    name = trial_file.name
+    parts = name.split("_")
+
+    if len(parts) < 4:
+        raise ValueError(
+            f"Invalid trial file name: {name}\n"
+            "Expected format: TrialN_TrialType_ITI_*.csv\n"
+            "Example: TrialN_TrialType_ITI_001.csv\n"
+            "Error: File name should have at least\n"
+            "four parts separated by underscores"
+        )
+
+    if parts[0] != "TrialN" or parts[1] != "TrialType" or parts[2] != "ITI":
+        raise ValueError(
+            f"Invalid trial file name: {name}\n"
+            "Expected format: TrialN_TrialType_ITI_*.csv\n"
+            "Example: TrialN_TrialType_ITI_001.csv\n"
+            "Error: File name must start with 'TrialN_TrialType_ITI_'"
+        )
+
+    if not name.endswith(".csv"):
+        raise ValueError(
+            f"Invalid trial file name: {name}\n"
+            "Expected format: TrialN_TrialType_ITI_*.csv\n"
+            "Example: TrialN_TrialType_ITI_001.csv\n"
+            "Error: File must have .csv extension"
+        )

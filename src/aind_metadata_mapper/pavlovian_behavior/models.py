@@ -46,4 +46,3 @@ class JobSettings(BaseJobSettings):
     # Data containers (populated during ETL)
     data_streams: List[Dict[str, Any]] = []
     stimulus_epochs: List[Dict[str, Any]] = []
-
