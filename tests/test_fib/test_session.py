@@ -69,7 +69,7 @@ class TestFiberPhotometrySession(unittest.TestCase):
         cls.expected_session = Session(
             experimenter_full_name=["Test User"],
             session_start_time=session_time,
-            session_type="Fiber_Photometry",
+            session_type="FIB",
             rig_id="fiber_rig_01",
             subject_id="000000",
             iacuc_protocol="2115",
