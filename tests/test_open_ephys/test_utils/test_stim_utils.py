@@ -398,26 +398,25 @@ class TestStimUtils(unittest.TestCase):
         vsync_times_chunked = [vsync_times[:2], vsync_times[2:]]
         pd_times_chunked = [photodiode_times[:3], photodiode_times[3:]]
 
-        frame_starts_chunk_1 = np.array([0.1, 0.2])
-        frame_starts_chunk_2 = np.array([0.4, 0.5])
+        frame_starts_chunk_1 = np.array([0.5, 1.5])
+        frame_starts_chunk_2 = np.array([2.5, 3.5])
 
         final_frame_start_times = np.concatenate(
             (frame_starts_chunk_1, frame_starts_chunk_2)
         )
 
         with patch(
-            "aind_metadata_mapper.open_ephys.utils"
-            ".stim_utils.sync.get_edges",
+            "aind_metadata_mapper.open_ephys.utils" ".sync_utils.get_edges",
             side_effect=[photodiode_times, vsync_times],
         ):
             with patch(
                 "aind_metadata_mapper.open_ephys.utils"
-                ".stim_utils.sync.separate_vsyncs_and_photodiode_times",
+                ".sync_utils.separate_vsyncs_and_photodiode_times",
                 return_value=(vsync_times_chunked, pd_times_chunked),
             ):
                 with patch(
                     "aind_metadata_mapper.open_ephys.utils"
-                    ".stim_utils.sync.compute_frame_times",
+                    ".sync_utils.compute_frame_times",
                     side_effect=[
                         (None, frame_starts_chunk_1, None),
                         (None, frame_starts_chunk_2, None),
@@ -425,17 +424,17 @@ class TestStimUtils(unittest.TestCase):
                 ):
                     with patch(
                         "aind_metadata_mapper.open_ephys.utils"
-                        ".stim_utils.sync.remove_zero_frames",
+                        ".sync_utils.remove_zero_frames",
                         return_value=final_frame_start_times,
                     ):
                         with patch(
                             "aind_metadata_mapper.open_ephys.utils"
-                            ".stim_utils.sync.trimmed_stats",
+                            ".sync_utils.trimmed_stats",
                             return_value=[1.9, 2.2],
                         ):
                             with patch(
                                 "aind_metadata_mapper.open_ephys.utils"
-                                ".stim_utils.sync.correct_on_off_effects",
+                                ".sync_utils.correct_on_off_effects",
                                 return_value=[1.9, 2.2],
                             ):
                                 result_frame_start_times = (
@@ -451,6 +450,78 @@ class TestStimUtils(unittest.TestCase):
                                     result_frame_start_times,
                                     final_frame_start_times,
                                 )
+
+    def test_extract_frame_times_with_delay(self):
+        """
+        Tests the extract_frame_times_with_delay function.
+        """
+        with (
+            patch(
+                "aind_metadata_mapper.open_ephys.utils" ".sync_utils.get_edges"
+            ) as mock_get_edges,
+            patch(
+                "aind_metadata_mapper.open_ephys.utils"
+                ".stim_utils.sync.get_rising_edges"
+            ) as mock_get_rising_edges,
+            patch(
+                "aind_metadata_mapper.open_ephys.utils"
+                ".stim_utils.calculate_frame_mean_time"
+            ) as mock_calculate_frame_mean_time,
+        ):
+
+            # Mock return values
+            mock_get_edges.return_value = np.array([0])
+            mock_get_rising_edges.return_value = np.array([0])
+            mock_calculate_frame_mean_time.return_value = (0, 1)
+
+            # Define input parameters
+            sync_file = "dummy_sync_file"
+            frame_keys = ["key1", "key2"]
+
+            # Expected output (based on example values)
+            expected_delay = 0.0356  # Assumed delay in case of error
+
+            # Call the function
+            delay = stim.extract_frame_times_with_delay(sync_file, frame_keys)
+
+            # Assertions
+            np.testing.assert_array_equal(
+                expected_delay,
+                delay,
+            )
+
+    def test_calculate_frame_mean_time(self):
+        """
+        Tests the calculate_frame_mean_time function.
+        """
+        # Mocking the sync.get_rising_edges function
+        with patch(
+            "aind_metadata_mapper.open_ephys.utils"
+            ".sync_utils.get_rising_edges"
+        ) as mock_get_rising_edges:
+            mock_get_rising_edges.return_value = np.array(
+                [0, 10000, 20000, 35000, 45000, 60000]
+            )
+
+            # Define input parameters
+            sync_file = "dummy_sync_file"
+            frame_keys = [
+                "key1",
+                "key2",
+            ]  # Not used in the function but included for completeness
+
+            # Expected output (manually verified logic based on example input)
+            expected_ptd_start = None
+            expected_ptd_end = None
+
+            # Call the function
+            ptd_start, ptd_end = stim.calculate_frame_mean_time(
+                sync_file, frame_keys
+            )
+
+            # Assertions
+            self.assertEqual(ptd_start, expected_ptd_start)
+            self.assertEqual(ptd_end, expected_ptd_end)
 
     def test_convert_frames_to_seconds(self):
         """

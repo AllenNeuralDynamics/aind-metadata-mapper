@@ -35,8 +35,10 @@ default_stimulus_renames = {
 default_column_renames = {
     "Contrast": "contrast",
     "Ori": "orientation",
+    "Oris": "orientation",
     "SF": "spatial_frequency",
     "TF": "temporal_frequency",
+    "Size": "size",
     "Phase": "phase",
     "Color": "color",
     "Image": "frame",
