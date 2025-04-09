@@ -273,7 +273,7 @@ class CamstimEphysSessionEtl(
                 arc_angle=0.0,
                 module_angle=0.0,
                 rotation_angle=0.0,
-                primary_targeted_structure="none",
+                primary_targeted_structure="root",
                 manipulator_coordinates=manipulator_coordinates,
                 notes=notes,
             )
