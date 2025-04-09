@@ -15,7 +15,7 @@ from aind_data_schema.core.data_description import (
     RawDataDescription,
 )
 from aind_data_schema.core.instrument import Instrument
-from aind_data_schema.core.metadata import Metadata
+from aind_data_schema.core.metadata import Metadata, MetadataStatus
 from aind_data_schema.core.procedures import Procedures
 from aind_data_schema.core.processing import PipelineProcess, Processing
 from aind_data_schema.core.quality_control import QualityControl
@@ -362,6 +362,39 @@ class GatherMetadataJob:
         else:
             return None
 
+    def _get_location(self, metadata_status: MetadataStatus) -> str:
+        """
+        Get location where to upload the data to.
+        Parameters
+        ----------
+        metadata_status : Metadata
+
+        Returns
+        -------
+        str
+
+        """
+        location_map = self.settings.metadata_settings.location_map
+        if self.settings.metadata_settings.location is not None:
+            return self.settings.metadata_settings.location
+        elif (
+            location_map is not None
+            and metadata_status is MetadataStatus.VALID
+        ):
+            return location_map[MetadataStatus.VALID]
+        elif (
+            location_map is not None
+            and metadata_status != MetadataStatus.VALID
+            and MetadataStatus.INVALID in location_map.keys()
+        ):
+            invalid_value = location_map[MetadataStatus.INVALID]
+            return location_map.get(metadata_status, invalid_value)
+        else:
+            raise ValueError(
+                f"Unable to set location from "
+                f"{self.settings.metadata_settings}!"
+            )
+
     def get_main_metadata(self) -> dict:
         """Get serialized main Metadata model"""
 
@@ -428,11 +461,10 @@ class GatherMetadataJob:
         processing = load_model(
             self.settings.metadata_settings.processing_filepath, Processing
         )
-
         try:
             metadata = Metadata(
                 name=self.settings.metadata_settings.name,
-                location=self.settings.metadata_settings.location,
+                location="placeholder",
                 subject=subject,
                 data_description=data_description,
                 procedures=procedures,
@@ -443,14 +475,21 @@ class GatherMetadataJob:
                 instrument=instrument,
                 quality_control=quality_control,
             )
+            location = self._get_location(
+                metadata_status=metadata.metadata_status
+            )
+            metadata.location = location
             metadata_json = json.loads(metadata.model_dump_json(by_alias=True))
             return metadata_json
         except Exception as e:
             logging.warning(f"Issue with metadata construction! {e.args}")
             # Set basic parameters
+            location = self._get_location(
+                metadata_status=MetadataStatus.INVALID
+            )
             metadata = Metadata(
                 name=self.settings.metadata_settings.name,
-                location=self.settings.metadata_settings.location,
+                location=location,
             )
             metadata_json = json.loads(metadata.model_dump_json(by_alias=True))
             # Attach dict objects
