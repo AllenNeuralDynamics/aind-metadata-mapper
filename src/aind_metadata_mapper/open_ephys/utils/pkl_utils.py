@@ -34,7 +34,7 @@ def load_img_pkl(pstream):
         image pkl file.
 
     """
-    return pickle.load(pstream, encoding="bytes")
+    return pickle.load(pstream, encoding="Latin-1")
 
 
 def get_stimuli(pkl):
@@ -110,6 +110,26 @@ def angular_wheel_velocity(pkl):
 
     """
     return get_fps(pkl) * get_angular_wheel_rotation(pkl)
+
+
+def get_stage(pkl):
+    """
+    Returns the stage from a pkl file
+
+    Parameters
+    ----------
+    pkl : dict
+        pkl file.
+
+    Returns
+    -------
+    data: str
+        stage name
+    """
+    if "stage" in pkl:
+        return pkl["stage"]
+    elif "items" in pkl:
+        return pkl["items"]["behavior"]["cl_params"]["stage"]
 
 
 def get_angular_wheel_rotation(pkl):

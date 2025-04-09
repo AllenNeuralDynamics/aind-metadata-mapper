@@ -9,6 +9,8 @@ import pandas as pd
 
 import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
 import aind_metadata_mapper.open_ephys.utils.stim_utils as stim
+import aind_metadata_mapper.open_ephys.utils.naming_utils as names
+import aind_metadata_mapper.open_ephys.utils.constants as constants
 
 INT_NULL = -99
 
@@ -90,13 +92,13 @@ def get_images_dict(pkl_dict) -> Dict:
     images_meta = []
 
     for cat, cat_images in image_set.items():
-        cat_decoded = cat.decode("utf-8")
         for img_index, (img_name, img) in enumerate(cat_images.items()):
             meta = {
-                "image_category": cat_decoded,
-                "image_name": img_name.decode("utf-8"),
+                "image_category": cat,
+                "image_name": img_name,
                 "orientation": np.NaN,
                 "phase": np.NaN,
+                "size": np.NaN,
                 "spatial_frequency": np.NaN,
                 "image_index": img_index,
             }
@@ -157,6 +159,26 @@ def get_gratings_metadata(stimuli: Dict, start_idx: int = 0) -> pd.DataFrame:
             "image_index": range(start_idx, start_idx + len(unique_oris), 1),
         }
         grating_df = pd.DataFrame.from_dict(grating_dict)
+    elif stimuli.get("images"):
+        correct_freq = stimuli["images"]["correct_freq"]
+        image_set = stimuli["images"]["image_set"]
+        set_logs = stimuli["images"]["set_log"]
+        unique_oris = set([set_log[2] for set_log in set_logs])
+        size = stimuli["images"]["size"]
+        image_names = [name for name in list([set_log[1] for set_log in set_logs][: len(unique_oris)])]
+
+
+        grating_dict = {
+            "image_category": ["grating"] * len(unique_oris),
+            "image_name": image_names,
+            "orientation": list(unique_oris),
+            "image_set": [image_set] * len(unique_oris),
+            "size": [size] * len(unique_oris),
+            "spatial_frequency": [correct_freq] * len(unique_oris),
+            "image_index": range(start_idx, start_idx + len(unique_oris), 1),
+        }
+        grating_df = pd.DataFrame.from_dict(grating_dict)
+
     else:
         grating_df = pd.DataFrame(
             columns=[
@@ -169,6 +191,7 @@ def get_gratings_metadata(stimuli: Dict, start_idx: int = 0) -> pd.DataFrame:
                 "image_index",
             ]
         )
+    print(grating_df)
     return grating_df
 
 
@@ -208,6 +231,8 @@ def get_stimulus_metadata(pkl) -> pd.DataFrame:
                 "image_category",
                 "image_set",
                 "phase",
+                "size",
+                "orientation",
                 "spatial_frequency",
                 "image_index",
             ]
@@ -218,6 +243,8 @@ def get_stimulus_metadata(pkl) -> pd.DataFrame:
                 "image_category": str,
                 "image_set": str,
                 "phase": float,
+                "size": float,
+                "orientation": float,
                 "spatial_frequency": float,
                 "image_index": int,
             }
@@ -230,7 +257,6 @@ def get_stimulus_metadata(pkl) -> pd.DataFrame:
     stimulus_index_df = pd.concat(
         [stimulus_index_df, grating_df], ignore_index=True, sort=False
     )
-
     # Add an entry for omitted stimuli
     omitted_df = pd.DataFrame(
         {
@@ -239,6 +265,7 @@ def get_stimulus_metadata(pkl) -> pd.DataFrame:
             "image_set": ["omitted"],
             "orientation": np.NaN,
             "phase": np.NaN,
+            "size": np.NaN,
             "spatial_frequency": np.NaN,
             "image_index": len(stimulus_index_df),
         }
@@ -526,6 +553,16 @@ def is_change_event(stimulus_presentations: pd.DataFrame) -> pd.Series:
 
     is_change = stimuli != prev_stimuli
 
+    stimulus_presentations = stimulus_presentations[~stimulus_presentations.index.duplicated(keep="first")]
+    print("DUPES")
+    print(stimulus_presentations.index.duplicated().sum())  # Should be 0
+    print(stimulus_presentations.index.is_unique)  # Should be True
+
+    print(is_change)
+
+    print(is_change.index.duplicated().sum())  # Should be 0
+    is_change = is_change[~is_change.index.duplicated(keep="first")]
+
     # reset back to original index
     is_change = is_change.reindex(stimulus_presentations.index).rename(
         "is_change"
@@ -804,7 +841,7 @@ def compute_is_sham_change(
 
 
 def fingerprint_from_stimulus_file(
-    stimulus_presentations: pd.DataFrame, stimulus_file, stimulus_timestamps
+    stimulus_presentations: pd.DataFrame, stimulus_file, stimulus_timestamps, fingerprint_name
 ):
     """
     Instantiates `fingerprintStimulus` from stimulus file
@@ -823,15 +860,13 @@ def fingerprint_from_stimulus_file(
     `fingerprintStimulus`
         Instantiated fingerprintStimulus
     """
-    fingerprint_stim = stimulus_file["items"]["behavior"]["items"][
-        "fingerprint"
-    ]["static_stimulus"]
+    fingerprint_stim = stimulus_file["items"]["behavior"]["items"][fingerprint_name]['static_stimulus']
 
     n_repeats = fingerprint_stim["runs"]
 
     # spontaneous + fingerprint indices relative to start of session
     stimulus_session_frame_indices = np.array(
-        stimulus_file["items"]["behavior"]["items"]["fingerprint"][
+        stimulus_file["items"]["behavior"]["items"][fingerprint_name][
             "frame_indices"
         ]
     )
@@ -843,46 +878,50 @@ def fingerprint_from_stimulus_file(
         1 for frame in fingerprint_stim["frame_list"] if frame == -1
     )
     res = []
-    for repeat in range(n_repeats):
-        for frame in range(movie_length):
-            # 0-indexed frame indices relative to start of fingerprint
-            # movie
-            stimulus_frame_indices = np.array(
-                fingerprint_stim["sweep_frames"][
-                    frame + (repeat * movie_length)
-                ]
-            )
-            start_frame, end_frame = stimulus_session_frame_indices[
-                stimulus_frame_indices + movie_start_index
-            ]
-            start_time = stimulus_timestamps[start_frame]
-            stop_time = stimulus_timestamps[
-                min(end_frame + 1, len(stimulus_timestamps) - 1)
-            ]
-            res.append(
-                {
-                    "movie_frame_index": frame,
-                    "start_time": start_time,
-                    "stop_time": stop_time,
-                    "start_frame": start_frame,
-                    "end_frame": end_frame,
-                    "movie_repeat": repeat,
-                    "duration": stop_time - start_time,
-                }
-            )
+
+
+    sweep_frames = fingerprint_stim["sweep_frames"]
+    sweep_table = [fingerprint_stim["sweep_table"][i] for i in fingerprint_stim["sweep_order"]]
+    dimnames = fingerprint_stim["dimnames"]
+
+    res = []
+
+    for i, stimulus_frame_indices in enumerate(sweep_frames):
+        stimulus_frame_indices = np.array(stimulus_frame_indices).astype(int)
+
+        # Adjust for spontaneous block offset
+        valid_indices = np.clip(
+            stimulus_frame_indices + movie_start_index,
+            0,
+            len(stimulus_session_frame_indices) - 1
+        )
+
+        start_frame, end_frame = stimulus_session_frame_indices[valid_indices]
+        start_time = stimulus_timestamps[start_frame]
+        stop_time = stimulus_timestamps[min(end_frame + 1, len(stimulus_timestamps) - 1)]
+
+        stim_row = sweep_table[i]
+        stim_info = dict(zip(dimnames, stim_row))
+
+        res.append({
+            "start_time": start_time,
+            "stop_time": stop_time,
+            "start_frame": start_frame,
+            "end_frame": end_frame,
+            "duration": stop_time - start_time,
+            **stim_info  # unpack stimulus parameters
+        })
+
     table = pd.DataFrame(res)
 
-    table["stim_block"] = (
-        stimulus_presentations["stim_block"].max() + 2
-    )  # + 2 since there is a gap before this stimulus
-    table["stim_name"] = "natural_movie_one"
+    # Add static columns
+    table["stim_block"] = stimulus_presentations["stim_block"].max() + 2
+    table["stim_name"] = fingerprint_name
 
-    table = table.astype(
-        {c: "int64" for c in table.select_dtypes(include="int")}
-    )
+    # Coerce ints cleanly
+    table = table.astype({c: "int64" for c in table.select_dtypes(include="int")})
 
     return table
-
 
 def from_stimulus_file(
     stimulus_file,
@@ -936,7 +975,7 @@ def from_stimulus_file(
     #   2. Gratings are only present (or need to be fixed) when all
     #      values for `image_name` are null.
     if pd.isnull(raw_stim_pres_df["image_name"]).all():
-        if ~pd.isnull(raw_stim_pres_df["orientation"]).all():
+        if not pd.isnull(raw_stim_pres_df["orientation"]).all():
             raw_stim_pres_df["image_name"] = raw_stim_pres_df[
                 "orientation"
             ].apply(lambda x: f"gratings_{x}")
@@ -950,12 +989,17 @@ def from_stimulus_file(
     idx_name = raw_stim_pres_df.index.name
     if idx_name is None:
         return raw_stim_pres_df
+    print("stimulus_metadata_df")
+    print(stimulus_metadata_df['orientation'])
+    raw_stim_pres_df = raw_stim_pres_df.drop(columns=["orientation"])
 
     stimulus_index_df = (
         raw_stim_pres_df.reset_index()
-        .merge(stimulus_metadata_df.reset_index(), on=["image_name"])
+        .merge(stimulus_metadata_df.reset_index(), on=["image_name"],how="outer")
         .set_index(idx_name)
     )
+    print("stimulus_index_df")
+    print(stimulus_index_df.columns)
 
     stimulus_index_df = (
         stimulus_index_df[
@@ -964,6 +1008,8 @@ def from_stimulus_file(
                 "image_index",
                 "start_time",
                 "phase",
+                "size",
+                "orientation",
                 "spatial_frequency",
             ]
         ]
@@ -980,19 +1026,22 @@ def from_stimulus_file(
         right_index=True,
         how="left",
     )
-    if len(raw_stim_pres_df) != len(stim_pres_df):
-        raise ValueError(
-            "Length of `stim_pres_df` should not change after"
-            f" merge; was {len(raw_stim_pres_df)}, now "
-            f" {len(stim_pres_df)}."
-        )
+    #if len(raw_stim_pres_df) != len(stim_pres_df):
+    #    raise ValueError(
+    #        "Length of `stim_pres_df` should not change after"
+    #        f" merge; was {len(raw_stim_pres_df)}, now "
+    #        f" {len(stim_pres_df)}."
+    #    )
+
 
     stim_pres_df["is_change"] = is_change_event(
         stimulus_presentations=stim_pres_df
     )
+
     stim_pres_df["flashes_since_change"] = get_flashes_since_change(
         stimulus_presentations=stim_pres_df
     )
+
 
     # Sort columns then drop columns which contain only all NaN values
     stim_pres_df = stim_pres_df[sorted(stim_pres_df)].dropna(axis=1, how="all")
@@ -1009,22 +1058,61 @@ def from_stimulus_file(
 
     stim_pres_df = fix_omitted_end_frame(stim_pres_df)
 
-    has_fingerprint_stimulus = (
-        "fingerprint" in data["items"]["behavior"]["items"]
-    )
-    if has_fingerprint_stimulus:
-        stim_pres_df = add_fingerprint_stimulus(
-            stimulus_presentations=stim_pres_df,
-            stimulus_file=data,
-            stimulus_timestamps=stimulus_timestamps,
-        )
+    for fingerprint_name, stim_data in data["items"]["behavior"]["items"].items():
+        if "static_stimulus" in stim_data:
+            stim_pres_df = add_fingerprint_stimulus(
+                stimulus_presentations=stim_pres_df,
+                stimulus_file=data,
+                stimulus_timestamps=stimulus_timestamps,
+                fingerprint_name=fingerprint_name
+            )
     stim_pres_df = postprocess(
         presentations=stim_pres_df,
         fill_omitted_values=fill_omitted_values,
         coerce_bool_to_boolean=True,
     )
+    df = stim_pres_df
 
-    return (stim_pres_df, column_list)
+    # Identify duplicates based on "start_time" and "image_name"
+    dupes = df[df.duplicated(subset=["start_time", "image_name"], keep=False)]
+
+    # Separate rows with and without "pkl"
+    with_pkl = dupes[dupes["image_set"].str.contains("pkl", na=False)]
+    without_pkl = dupes[~dupes["image_set"].str.contains("pkl", na=False)]
+
+    # Merge to replace "image_set" of "pkl" rows with the other row's value
+    merged = with_pkl.merge(without_pkl[["start_time", "image_name", "image_set"]],
+                            on=["start_time", "image_name"],
+                            suffixes=("_with_pkl", "_without_pkl"))
+
+    # Replace "pkl" row's image_set with non-pkl version
+    df.loc[merged.index, "image_set"] = merged["image_set_without_pkl"]
+
+    # Drop the original non-"pkl" rows
+    df = df[~df.index.isin(without_pkl.index)]
+
+    # Reset index for clarity
+    df.reset_index(drop=True, inplace=True)
+    df["image_set"] = df["image_set"].where(
+        ~(df["image_set"].fillna("").str.endswith(".pkl")),
+        df["image_set"].str.extract(r'([^/]+)\.pkl$')[0]  # Extracted values are in the first column
+    )
+    df = names.map_column_names(df, constants.default_column_renames)
+    duplicates = df.columns[df.columns.duplicated()].unique()
+    # Merge each group of duplicated columns
+    for col in duplicates:
+        # Select all duplicate columns with this name
+        dup_cols = df.loc[:, df.columns == col]
+
+        # Merge: pick the first non-null value in the row
+        merged = dup_cols.bfill(axis=1).iloc[:, 0]
+
+        # Drop all the duplicate columns
+        df = df.drop(columns=dup_cols.columns)
+
+        # Add back the merged column
+        df[col] = merged
+    return (df, column_list)
 
 
 def get_is_image_novel(
@@ -1094,13 +1182,17 @@ def postprocess(
             df=df, omitted_time_duration=omitted_time_duration
         )
     if coerce_bool_to_boolean:
-        df = df.astype(
-            {
-                c: "boolean"
-                for c in df.select_dtypes("O")
-                if set(df[c][~df[c].isna()].unique()).issubset({True, False})
-            }
-        )
+        bool_like_cols = {}
+        for c in df.select_dtypes("O").columns:
+            non_na_values = df[c][~df[c].isna()]
+            # Skip columns with list-like elements
+            if non_na_values.apply(lambda x: isinstance(x, list)).any():
+                continue
+            unique_vals = set(non_na_values.unique())
+            if unique_vals.issubset({True, False}):
+                bool_like_cols[c] = "boolean"
+        df = df.astype(bool_like_cols)
+
     df = check_for_errant_omitted_stimulus(input_df=df)
     return df
 
@@ -1280,10 +1372,63 @@ def get_spontaneous_stimulus(
     )
 
 
+def make_spontaneous_stimulus(stimulus_presentations_table: pd.DataFrame) -> pd.DataFrame:
+    """Identifies spontaneous stimulus (gray screen shown in between stimulus blocks)
+    by detecting gaps in stimulus presentations.
+
+    Parameters
+    ----------
+    stimulus_presentations_table : pd.DataFrame
+        Input stimulus presentations table.
+
+    Returns
+    -------
+    pd.DataFrame
+        The stimulus presentations table with added spontaneous stimulus blocks.
+    """
+
+    # Ensure the table is sorted by start time
+    stimulus_presentations_table = stimulus_presentations_table.sort_values("start_time").reset_index(drop=True)
+
+    # Identify gaps between consecutive stimulus presentations
+    gaps = stimulus_presentations_table["start_time"].iloc[1:].values - stimulus_presentations_table["stop_time"].iloc[:-1].values
+    gap_indices = np.where(gaps > 0)[0]  # Indices where gaps exist
+
+    spontaneous_entries = []
+
+    for idx in gap_indices:
+        prev_row = stimulus_presentations_table.iloc[idx]
+        next_row = stimulus_presentations_table.iloc[idx + 1]
+
+        spontaneous_entries.append({
+            "start_time": prev_row["stop_time"],
+            "stop_time": next_row["start_time"],
+            "duration": next_row["start_time"] - prev_row["stop_time"],
+            "start_frame": prev_row["end_frame"],
+            "end_frame": next_row["start_frame"],
+            "stim_block": prev_row["stim_block"] + 1,  # Assign new block number
+            "stim_name": "spontaneous",
+        })
+
+    # Convert spontaneous entries into a DataFrame
+    spontaneous_df = pd.DataFrame(spontaneous_entries)
+
+    if spontaneous_df.empty:
+        return stimulus_presentations_table  # No gaps found, return original table
+
+    # Adjust the stim_block values in the original table to account for inserted spontaneous blocks
+    stimulus_presentations_table["stim_block"] += (
+        stimulus_presentations_table["stim_block"] >= spontaneous_df["stim_block"].min()
+    ).astype(int)
+
+    # Merge and return sorted table
+    return pd.concat([stimulus_presentations_table, spontaneous_df]).sort_values("start_frame").reset_index(drop=True)
+
 def add_fingerprint_stimulus(
     stimulus_presentations: pd.DataFrame,
     stimulus_file,
     stimulus_timestamps,
+    fingerprint_name
 ) -> pd.DataFrame:
     """Adds the fingerprint stimulus and the preceding gray screen to
     the stimulus presentations table
@@ -1297,16 +1442,17 @@ def add_fingerprint_stimulus(
         stimulus_presentations=stimulus_presentations,
         stimulus_file=stimulus_file,
         stimulus_timestamps=stimulus_timestamps,
+        fingerprint_name=fingerprint_name
     )
 
     stimulus_presentations = pd.concat(
         [stimulus_presentations, fingerprint_stimulus]
     )
-    stimulus_presentations = get_spontaneous_stimulus(
-        stimulus_presentations_table=stimulus_presentations
-    )
-
+    #stimulus_presentations = get_spontaneous_stimulus(
+    #    stimulus_presentations_table=stimulus_presentations
+    #)
     # reset index to go from 0...end
+    stimulus_presentations = make_spontaneous_stimulus(stimulus_presentations)
     stimulus_presentations.index = pd.Index(
         np.arange(0, stimulus_presentations.shape[0]),
         name=stimulus_presentations.index.name,
@@ -1371,6 +1517,13 @@ def get_stimulus_name(stim_file) -> str:
             stim_file["items"]["behavior"]["images"]["image_set"]
         ).stem.split(".")[0]
     except KeyError:
+        try:
+            stimulus_name = Path(
+                stim_file['items']['behavior']['stimuli']['images']['image_set']
+            ).stem.split(".")[0]
+        except KeyError:
+            print("No image set found in stimulus file")
+            stimulus_name = "behavior"
         # if we can't find the images key in the stimuli, check for the
         # name ``grating`` as the stimulus. If not add generic
         # ``behavior``.

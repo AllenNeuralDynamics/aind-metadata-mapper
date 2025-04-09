@@ -203,7 +203,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
         if self.camstim.behavior:
             self.camstim.build_behavior_table()
         else:
-            self.camstim.build_stimulus_table()
+            self.camstim.build_stimulus_table(modality="ophys")
         return self.camstim.epochs_from_stim_table(), self.camstim.session_type
 
     def _transform(self, extracted_source: dict, meta: dict) -> Session:

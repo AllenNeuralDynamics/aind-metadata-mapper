@@ -1,7 +1,7 @@
 """Module to define models for Gather Metadata Job"""
 
 from pathlib import Path
-from typing import List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
@@ -88,7 +88,16 @@ class MetadataSettings(BaseSettings, extra="allow"):
     """Fields needed to retrieve main Metadata"""
 
     name: str
-    location: str
+    location: Optional[str] = Field(
+        default=None,
+        description=(
+            "S3 location where data will be written to. "
+            "This will override the location_map field."
+        ),
+    )
+    location_map: Optional[Dict[str, str]] = Field(
+        default=None, description="Maps metadata status to an s3 location."
+    )
     subject_filepath: Optional[Path] = None
     data_description_filepath: Optional[Path] = None
     procedures_filepath: Optional[Path] = None
