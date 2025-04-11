@@ -120,7 +120,7 @@ class CamstimEphysSessionEtl(
 
         self.session_uuid = self.get_session_uuid()
         self.mtrain_server = job_settings.mtrain_server
-        self.mtrain_regimen = self.get_mtrain()
+        self.stage_name = pkl.get_stage(self.pkl_data)
         self.behavior = self._is_behavior()
 
         if not self.stim_table_path.exists() or (
@@ -403,7 +403,7 @@ class CamstimEphysSessionEtl(
             names.append(condition["name"])
             conditions.append(condition["condition"])
         optotagging_table["stop_time"] = stop_times
-        optotagging_table["stimulus_name"] = names
+        optotagging_table["laser_stim_name"] = names
         optotagging_table["condition"] = conditions
         optotagging_table["duration"] = (
             optotagging_table["stop_time"] - optotagging_table["start_time"]
@@ -418,11 +418,9 @@ class CamstimEphysSessionEtl(
         parameters, and include the set of all of that column's values as the
         parameter values.
         """
-
         script_obj = Software(
-            name=self.mtrain_regimen["name"],
+            name=self.stage_name,
             version="1.0",
-            url=self.mtrain_regimen["script"],
         )
 
         opto_table = pd.read_csv(self.opto_table_path)

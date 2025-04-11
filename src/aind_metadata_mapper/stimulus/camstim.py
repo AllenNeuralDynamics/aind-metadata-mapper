@@ -268,6 +268,8 @@ class Camstim:
         current_epoch = [None, 0.0, 0.0, {}, set()]
         epoch_start_idx = 0
         for current_idx, row in stim_table.iterrows():
+            if row['stim_name'] == 'spontaneous':
+                continue
             # if the stim name changes, summarize current epoch's parameters
             # and start a new epoch
             if row["stim_name"] != current_epoch[0]:
@@ -277,6 +279,8 @@ class Camstim:
                         "stop_time",
                         "stim_name",
                         "stim_type",
+                        "start_frame",
+                        "end_frame",
                         "frame",
                     ):
                         param_set = set(
@@ -284,7 +288,10 @@ class Camstim:
                                 epoch_start_idx:current_idx
                             ].dropna()
                         )
-                        current_epoch[3][column] = param_set
+                        if len(param_set) > 1000:
+                            current_epoch[3][column] = ["Error: too many values to usefully encode here (over 1000)"]
+                        elif len(param_set) > 0:
+                            current_epoch[3][column] = param_set
                 epochs.append(current_epoch)
                 epoch_start_idx = current_idx
                 current_epoch = [
