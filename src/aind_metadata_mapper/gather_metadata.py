@@ -318,6 +318,28 @@ class GatherMetadataJob:
 
     def get_acquisition_metadata(self) -> Optional[dict]:
         """Get acquisition metadata"""
+
+        def get_smartspim_imaging_info(domain: str, url_path: str, subject_id: str, start_date_gte: str = None, end_date_lte: str = None):
+            """Utility method to retrieve info from metadata service"""
+            query_params = urlencode({"subject_id": subject_id})
+            if start_date_gte:
+                query_params["start_date_gte"] = start_date_gte
+            if end_date_lte:
+                query_params["end_date_lte"] = end_date_lte
+            url = f"{domain.rstrip('/')}/{url_path.lstrip('/')}?{query_params}"
+            response = requests.get(url)
+            if response.status_code == 200:
+                imaging_info = response.json().get("data")
+            else:
+                imaging_info = []
+            return imaging_info
+        
+        def integrate_imaging_info_in_acquisition_metadata(acquisition_metadata: dict, imaging_info: list) -> dict:
+            """Integrate imaging info into acquisition metadata"""
+            acquisition_model = Acquisition.model_construct(**acquisition_metadata)
+            if imaging_info:
+                acquisition_model.chamber_immersion = acquisition_model.chamber_immersion.model_copy(update={"immersion": imaging_info[0].get("chamber_immersion")})
+
         file_name = Acquisition.default_filename()
         if self._does_file_exist_in_user_defined_dir(file_name=file_name):
             contents = self._get_file_from_user_defined_directory(
@@ -330,6 +352,17 @@ class GatherMetadataJob:
             )
             job_response = acquisition_job.run_job()
             if job_response.status_code != 500:
+                acquisition_metadata = json.loads(job_response.data)
+                start_time = acquisition_metadata["session_start_time"]
+                end_time = acquisition_metadata["session_end_time"]
+                imaging_info = get_smartspim_imaging_info(
+                    domain=self.settings.metadata_service_domain,
+                    url_path=self.settings.acquisition_settings.metadata_service_path,
+                    subject_id=self.settings.acquisition_settings.job_settings.subject_id,
+                    start_date_gte=start_time,
+                    end_date_lte=end_time,
+                )
+
                 return json.loads(job_response.data)
             else:
                 return None
