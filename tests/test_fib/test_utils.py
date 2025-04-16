@@ -42,6 +42,43 @@ class TestFiberPhotometryUtils(unittest.TestCase):
         self.assertEqual(result.second, 3)
         self.assertEqual(result.microsecond, 456789)
 
+        # Test DST transition (2025-03-09 in America/Los_Angeles)
+        # At 2 AM, clock jumps forward to 3 AM
+        dst_base_date = datetime(
+            2025, 3, 9, tzinfo=ZoneInfo("America/Los_Angeles")
+        )
+
+        # Test 2:30 AM (which doesn't exist due to DST jump)
+        two_thirty_am = 1000 * 60 * 60 * 2.5  # 2.5 hours in milliseconds
+        result_two_thirty = convert_ms_since_midnight_to_datetime(
+            two_thirty_am, dst_base_date, local_timezone="America/Los_Angeles"
+        )
+
+        # Test 3:30 AM (after DST jump)
+        three_thirty_am = 1000 * 60 * 60 * 3.5  # 3.5 hours in milliseconds
+        result_three_thirty = convert_ms_since_midnight_to_datetime(
+            three_thirty_am,
+            dst_base_date,
+            local_timezone="America/Los_Angeles",
+        )
+
+        # The times should be an hour apart in UTC
+        time_difference = (
+            result_three_thirty - result_two_thirty
+        ).total_seconds()
+        self.assertEqual(
+            time_difference, 3600
+        )  # Should be exactly 1 hour (3600 seconds)
+
+        # Verify specific UTC times
+        # 2:30 AM PST (before DST) = 10:30 UTC
+        self.assertEqual(result_two_thirty.hour, 10)
+        self.assertEqual(result_two_thirty.minute, 30)
+
+        # 3:30 AM PDT (after DST) = 11:30 UTC
+        self.assertEqual(result_three_thirty.hour, 11)
+        self.assertEqual(result_three_thirty.minute, 30)
+
     def test_extract_session_start_time_from_files(self):
         """Test extraction of session start time from filenames."""
         with tempfile.TemporaryDirectory() as tmpdir:

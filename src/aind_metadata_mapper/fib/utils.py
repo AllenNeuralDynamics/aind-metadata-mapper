@@ -5,7 +5,7 @@ specific to fiber photometry data, including conversion between milliseconds
 and datetime objects, and extraction of session times from data files.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from typing import Union, Optional
 from pathlib import Path
@@ -34,30 +34,23 @@ def convert_ms_since_midnight_to_datetime(
         datetime object in UTC with the same date as base_date but time from
         ms_since_midnight
     """
-    # Convert milliseconds to hours, minutes, seconds, microseconds
-    total_seconds = ms_since_midnight / 1000
-    hours = int(total_seconds // 3600)
-    minutes = int((total_seconds % 3600) // 60)
-    seconds = int(total_seconds % 60)
-    microseconds = int((total_seconds * 1000000) % 1000000)
-
-    # Get timezone
+    # Get timezone (either specified or system default)
     tz = ZoneInfo(local_timezone) if local_timezone else get_localzone()
 
-    # Create new datetime in local timezone first
-    local_dt = datetime(
-        year=base_date.year,
-        month=base_date.month,
-        day=base_date.day,
-        hour=hours,
-        minute=minutes,
-        second=seconds,
-        microsecond=microseconds,
-        tzinfo=tz,
+    # Get midnight of base_date in local time
+    base_date_local = base_date.astimezone(tz)
+    base_midnight_local = datetime.combine(
+        base_date_local.date(), datetime.min.time()
     )
+    base_midnight_local = base_midnight_local.replace(tzinfo=tz)
 
-    # Convert to UTC
-    return local_dt.astimezone(ZoneInfo("UTC"))
+    # Convert local midnight to UTC
+    base_midnight_utc = base_midnight_local.astimezone(ZoneInfo("UTC"))
+
+    # Add milliseconds as timedelta
+    delta = timedelta(milliseconds=ms_since_midnight)
+
+    return base_midnight_utc + delta
 
 
 def extract_session_start_time_from_files(
