@@ -358,8 +358,8 @@ class CamstimEphysSessionEtl(
         """
         data_streams = []
         data_streams.append(self.ephys_stream())
-        data_streams.append(self.sync_stream())
-        data_streams.append(self.video_stream())
+        # data_streams.append(self.sync_stream())
+        # data_streams.append(self.video_stream())
         return tuple(data_streams)
 
     def build_optogenetics_table(self):
@@ -389,22 +389,26 @@ class CamstimEphysSessionEtl(
         optotagging_table = pd.DataFrame(
             {
                 "start_time": start_times,
-                "condition": conditions,
+                "condition_name": conditions,
                 "level": levels,
             }
         )
         optotagging_table = optotagging_table.sort_values(by="start_time", axis=0)
         stop_times = []
-        names = []
+        pulse_types = []
+        pulse_durs = []
         conditions = []
         for _, row in optotagging_table.iterrows():
-            condition = self.opto_conditions_map[row["condition"]]
+            condition = self.opto_conditions_map[row["condition_name"]]
             stop_times.append(row["start_time"] + condition["duration"])
-            names.append(condition["name"])
+            pulse_type, pulse_dur = condition["name"].split("_")
+            pulse_types.append(pulse_type)
+            pulse_durs.append(pulse_dur)
             conditions.append(condition["condition"])
         optotagging_table["stop_time"] = stop_times
-        optotagging_table["laser_stim_name"] = names
-        optotagging_table["condition"] = conditions
+        optotagging_table["pulse_type"] = pulse_types
+        optotagging_table["pulse_duration"] = pulse_durs
+        optotagging_table["condition_name"] = conditions
         optotagging_table["duration"] = (
             optotagging_table["stop_time"] - optotagging_table["start_time"]
         )

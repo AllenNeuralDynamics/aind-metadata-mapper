@@ -282,6 +282,13 @@ class Camstim:
                         "start_frame",
                         "end_frame",
                         "frame",
+                        "duration",
+                        "image_set",
+                        "stim_block",
+                        "flashes_since_change",
+                        "image_index",
+                        "is_change",
+                        "omitted"
                     ):
                         param_set = set(
                             stim_table[column][
@@ -311,6 +318,9 @@ class Camstim:
             stim_name = row.get("stim_name", "")
             if pd.isnull(stim_name):
                 stim_name = ""
+            image_set = row.get("image_set", "")
+            if not pd.isnull(image_set):
+                stim_name = image_set
 
             if "image" in stim_name.lower() or "movie" in stim_name.lower():
                 current_epoch[4].add(row["stim_name"])
