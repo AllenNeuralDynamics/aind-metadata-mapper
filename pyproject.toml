@@ -49,7 +49,7 @@ all = [
 ]
 
 schema = [
-    "aind-data-schema>=1.2.0,<1.3.0",
+    "aind-data-schema>=1.4.0",
 ]
 
 bergamo = [
