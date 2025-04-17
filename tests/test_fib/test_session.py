@@ -4,6 +4,7 @@ import json
 import unittest
 from datetime import datetime
 import zoneinfo
+from unittest.mock import patch, mock_open
 
 from aind_data_schema.core.session import (
     Session,
@@ -127,13 +128,38 @@ class TestFiberPhotometrySession(unittest.TestCase):
         actual_session = etl._transform(parsed_info)
         self.assertEqual(self.expected_session, actual_session)
 
-    def test_run_job(self):
+    @patch("pathlib.Path.exists")
+    @patch("builtins.open", new_callable=mock_open)
+    def test_run_job(self, mock_file, mock_exists):
         """Test complete ETL workflow."""
-        etl = ETL(job_settings=self.example_job_settings)
-        job = etl.run_job()
-        self.assertEqual(
-            self.expected_session, Session(**json.loads(job.data))
-        )
+        # Create job settings with output directory and filename
+        job_settings = self.example_job_settings.model_copy()
+        job_settings.output_directory = "/dummy/path"
+        job_settings.output_filename = "session.json"
+
+        # Make Path.exists() return True
+        mock_exists.return_value = True
+
+        # Create ETL and run job
+        etl = ETL(job_settings=job_settings)
+        etl.run_job()  # Run the job without storing the return value
+
+        # Get the data that was written to the file
+        written_data = None
+        for call in mock_file().write.call_args_list:
+            written_data = call[0][
+                0
+            ]  # Get the first argument of the write call
+            break
+
+        # Verify the written data matches our expected session
+        self.assertIsNotNone(written_data)
+        written_session = Session(**json.loads(written_data))
+        self.assertEqual(self.expected_session, written_session)
+
+        # Verify that write operations were called
+        mock_file.assert_called()
+        mock_file().write.assert_called()
 
 
 if __name__ == "__main__":

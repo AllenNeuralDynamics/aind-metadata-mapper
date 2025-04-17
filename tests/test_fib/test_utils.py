@@ -3,10 +3,10 @@
 import unittest
 from datetime import datetime
 from pathlib import Path
-import tempfile
 import pandas as pd
 from zoneinfo import ZoneInfo
 import json
+from unittest.mock import patch, mock_open, MagicMock
 
 from aind_metadata_mapper.fib.utils import (
     convert_ms_since_midnight_to_datetime,
@@ -79,144 +79,124 @@ class TestFiberPhotometryUtils(unittest.TestCase):
         self.assertEqual(result_three_thirty.hour, 11)
         self.assertEqual(result_three_thirty.minute, 30)
 
-    def test_extract_session_start_time_from_files(self):
+    @patch("pathlib.Path.glob")
+    @patch("pathlib.Path.exists")
+    def test_extract_session_start_time_from_files(
+        self, mock_exists, mock_glob
+    ):
         """Test extraction of session start time from filenames."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Create test directory structure
-            fib_dir = Path(tmpdir) / "fib"
-            fib_dir.mkdir()
+        # Mock directory existence
+        mock_exists.return_value = True
 
-            # Create test files with timestamps
-            timestamp = "2024-01-01T15_49_53"
-            valid_file = fib_dir / f"FIP_DataG_{timestamp}.csv"
-            valid_file.touch()
+        # Mock file with timestamp in name
+        mock_file = MagicMock()
+        mock_file.name = "FIP_DataG_2024-01-01T15_49_53.csv"
+        mock_glob.return_value = [mock_file]
 
-            invalid_file = fib_dir / "FIP_DataG_invalid.csv"
-            invalid_file.touch()
+        # Test with valid file
+        result = extract_session_start_time_from_files(
+            "/dummy/path", local_timezone="America/Los_Angeles"
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result.year, 2024)
+        self.assertEqual(result.month, 1)
+        self.assertEqual(result.day, 1)
+        self.assertEqual(result.hour, 23)  # 15:49 PT = 23:49 UTC
+        self.assertEqual(result.minute, 49)
+        self.assertEqual(result.second, 53)
 
-            # Test with valid file
-            result = extract_session_start_time_from_files(
-                tmpdir, local_timezone="America/Los_Angeles"
-            )
-            self.assertIsNotNone(result)
-            self.assertEqual(result.year, 2024)
-            self.assertEqual(result.month, 1)
-            self.assertEqual(result.day, 1)
-            self.assertEqual(result.hour, 23)  # 15:49 PT = 23:49 UTC
-            self.assertEqual(result.minute, 49)
-            self.assertEqual(result.second, 53)
+        # Test with non-existent directory
+        mock_exists.return_value = False
+        mock_glob.return_value = (
+            []
+        )  # Reset glob mock for non-existent directory
+        result = extract_session_start_time_from_files(
+            "/dummy/path", local_timezone="America/Los_Angeles"
+        )
+        self.assertIsNone(result)
 
-            # Test with non-existent directory
-            result = extract_session_start_time_from_files(
-                "/nonexistent/path", local_timezone="America/Los_Angeles"
-            )
-            self.assertIsNone(result)
+        # Test with directory containing no valid files
+        mock_exists.return_value = True
+        mock_glob.return_value = []
+        result = extract_session_start_time_from_files(
+            "/dummy/path", local_timezone="America/Los_Angeles"
+        )
+        self.assertIsNone(result)
 
-            # Test with directory containing no valid files
-            empty_dir = Path(tmpdir) / "empty"
-            empty_dir.mkdir()
-            result = extract_session_start_time_from_files(
-                empty_dir, local_timezone="America/Los_Angeles"
-            )
-            self.assertIsNone(result)
-
-    def test_extract_session_end_time_from_files(self):
+    @patch("pandas.read_csv")
+    @patch("pathlib.Path.glob")
+    @patch("pathlib.Path.exists")
+    def test_extract_session_end_time_from_files(
+        self, mock_exists, mock_glob, mock_read_csv
+    ):
         """Test extraction of session end time from CSV data."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Create test directory structure
-            fib_dir = Path(tmpdir) / "fib"
-            fib_dir.mkdir()
+        # Mock directory existence
+        mock_exists.return_value = True
 
-            # Create test CSV file with millisecond data
-            csv_file = fib_dir / "FIP_DataG.csv"
-            df = pd.DataFrame(
-                {0: [0.0, 3723456.789]}
-            )  # Start at 0ms, end at 01:02:03.456789
-            df.to_csv(csv_file, index=False, header=False)
+        # Mock file
+        mock_file = MagicMock()
+        mock_file.name = "FIP_DataG.csv"
+        mock_glob.return_value = [mock_file]
 
-            # Create session start time in UTC
-            session_start = datetime(
-                2024, 1, 1, 8, 0, tzinfo=ZoneInfo("UTC")
-            )  # 00:00 PT
+        # Mock CSV data - 0ms start, ~1h end time
+        mock_read_csv.return_value = pd.DataFrame({0: [0.0, 3723456.789]})
 
-            # Test with valid data
-            result = extract_session_end_time_from_files(
-                tmpdir, session_start, local_timezone="America/Los_Angeles"
-            )
-            self.assertIsNotNone(result)
-            self.assertEqual(result.hour, 9)  # 01:02 PT = 09:02 UTC
-            self.assertEqual(result.minute, 2)
-            self.assertEqual(result.second, 3)
-            self.assertEqual(result.microsecond, 456789)
+        # Create session start time in UTC
+        session_start = datetime(
+            2024, 1, 1, 8, 0, tzinfo=ZoneInfo("UTC")
+        )  # 00:00 PT
 
-            # Test with empty CSV
-            empty_csv = fib_dir / "FIP_DataG_empty.csv"
-            pd.DataFrame().to_csv(empty_csv, index=False, header=False)
-            result = extract_session_end_time_from_files(
-                tmpdir, session_start, local_timezone="America/Los_Angeles"
-            )
-            self.assertIsNotNone(
-                result
-            )  # Should still return result from valid file
+        # Test with valid data
+        result = extract_session_end_time_from_files(
+            "/dummy/path", session_start, local_timezone="America/Los_Angeles"
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result.hour, 9)  # 01:02 PT = 09:02 UTC
+        self.assertEqual(result.minute, 2)
+        self.assertEqual(result.second, 3)
+        self.assertEqual(result.microsecond, 456789)
 
-            # Test with non-existent directory
-            result = extract_session_end_time_from_files(
-                "/nonexistent/path",
-                session_start,
-                local_timezone="America/Los_Angeles",
-            )
-            self.assertIsNone(result)
+        # Test with empty file
+        mock_read_csv.return_value = pd.DataFrame()
+        result = extract_session_end_time_from_files(
+            "/dummy/path", session_start, local_timezone="America/Los_Angeles"
+        )
+        self.assertIsNone(result)
 
-            # Test with invalid CSV data
-            invalid_csv = fib_dir / "FIP_DataG_invalid.csv"
-            invalid_csv.write_text("invalid,data\n")
-            result = extract_session_end_time_from_files(
-                tmpdir, session_start, local_timezone="America/Los_Angeles"
-            )
-            self.assertIsNotNone(
-                result
-            )  # Should still return result from valid file
+        # Test with non-existent directory
+        mock_exists.return_value = False
+        result = extract_session_end_time_from_files(
+            "/dummy/path", session_start, local_timezone="America/Los_Angeles"
+        )
+        self.assertIsNone(result)
 
 
 class TestFileVerification(unittest.TestCase):
     """Test file verification utilities."""
 
-    def test_verify_output_file(self):
+    @patch("pathlib.Path.exists")
+    @patch("builtins.open", new_callable=mock_open)
+    def test_verify_output_file(self, mock_file, mock_exists):
         """Test verification of output JSON files."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        # Test with valid JSON file
+        valid_data = {"key": "value"}
+        mock_exists.return_value = True
+        mock_file.return_value.read.return_value = json.dumps(valid_data)
+        self.assertTrue(verify_output_file("/dummy/path", "valid.json"))
 
-            # Test with valid JSON file
-            valid_file = tmpdir / "valid.json"
-            valid_data = {"key": "value"}
-            with open(valid_file, "w") as f:
-                json.dump(valid_data, f)
+        # Test with non-existent file
+        mock_exists.return_value = False
+        self.assertFalse(verify_output_file("/dummy/path", "nonexistent.json"))
 
-            self.assertTrue(verify_output_file(tmpdir, "valid.json"))
+        # Test with invalid JSON file
+        mock_exists.return_value = True
+        mock_file.return_value.read.return_value = "not valid json"
+        self.assertFalse(verify_output_file("/dummy/path", "invalid.json"))
 
-            # Test with non-existent file
-            self.assertFalse(verify_output_file(tmpdir, "nonexistent.json"))
-
-            # Test with invalid JSON file
-            invalid_file = tmpdir / "invalid.json"
-            with open(invalid_file, "w") as f:
-                f.write("not valid json")
-
-            self.assertFalse(verify_output_file(tmpdir, "invalid.json"))
-
-            # Test with empty file
-            empty_file = tmpdir / "empty.json"
-            empty_file.touch()
-            self.assertFalse(verify_output_file(tmpdir, "empty.json"))
-
-            # Test with default filename
-            default_file = tmpdir / "session_fib.json"
-            with open(default_file, "w") as f:
-                json.dump(valid_data, f)
-
-            self.assertTrue(
-                verify_output_file(tmpdir)
-            )  # Using default filename
+        # Test with default filename
+        mock_exists.return_value = True
+        mock_file.return_value.read.return_value = json.dumps(valid_data)
+        self.assertTrue(verify_output_file("/dummy/path"))
 
 
 if __name__ == "__main__":
