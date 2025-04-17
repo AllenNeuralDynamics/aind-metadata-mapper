@@ -59,6 +59,33 @@ def get_stimulus_presentations(data, stimulus_timestamps) -> pd.DataFrame:
     return stimulus_table
 
 
+def remove_short_sandwiched_spontaneous(df, duration_thresh=(0.3, 0.5)):
+    # Sort by start_time to ensure order
+    df = df.sort_values(by="start_time").reset_index(drop=True)
+
+    # Find spontaneous rows
+    is_spont = df["image_name"] == "spontaneous"
+    duration_ok = df["duration"].between(*duration_thresh)
+
+    # Iterate over spontaneous rows with short duration
+    drop_indices = []
+    for idx in df[is_spont & duration_ok].index:
+        if idx == 0 or idx == len(df) - 1:
+            continue  # Can't check neighbors if on edge
+
+        prev_row = df.loc[idx - 1]
+        next_row = df.loc[idx + 1]
+
+        if (
+            prev_row["image_name"] == next_row["image_name"]
+            and prev_row["stim_name"] == next_row["stim_name"]
+            and prev_row["image_name"] != "spontaneous"
+        ):
+            drop_indices.append(idx)
+
+    return df.drop(index=drop_indices).reset_index(drop=True)
+
+
 def get_images_dict(pkl_dict) -> Dict:
     """
     Gets the dictionary of images that were presented during an experiment
@@ -1112,6 +1139,7 @@ def from_stimulus_file(
 
         # Add back the merged column
         df[col] = merged
+    df = remove_short_sandwiched_spontaneous(df)
     return (df, column_list)
 
 
