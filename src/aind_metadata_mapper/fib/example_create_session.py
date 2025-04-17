@@ -1,4 +1,47 @@
-"""Simple script to create fiber photometry metadata with default settings."""
+"""
+Simple script to create fiber photometry metadata with default settings.
+
+Example command to run the script from the command line,
+assuming data is in data/sample_fiber_data relative to the root of the repo:
+
+```bash
+python src/aind_metadata_mapper/fib/example_create_session.py \
+    --subject-id 000000 \
+    --data-directory data/sample_fiber_data \
+    --output-directory data/sample_fiber_data \
+    --output-filename session_fib.json
+```
+=======
+Example python code which could be saved to some local file and run from the
+command line with asimple `python <filename>.py`
+
+```python
+from pathlib import Path
+from aind_metadata_mapper.fib.example_create_session import create_metadata
+
+create_metadata(
+    subject_id="000000",
+    data_directory=Path(
+        r"/Users/doug.ollerenshaw/code/aind-metadata-mapper/data/sample_fiber_data"
+    ),
+    output_directory=Path(
+        r"/Users/doug.ollerenshaw/code/aind-metadata-mapper/data/sample_fiber_data"
+    ),
+    output_filename="session_fib2.json",
+    # Optional parameters with defaults:
+    experimenter_full_name=["test_experimenter_1", "test_experimenter_2"],
+    rig_id="428_9_B_20240617",
+    task_version="1.0.0",
+    iacuc_protocol="2115",
+    mouse_platform_name="mouse_tube_foraging",
+    active_mouse_platform=False,
+    session_type="Foraging_Photometry",
+    task_name="Fiber Photometry",
+    notes="Example configuration for fiber photometry rig",
+)
+```
+
+"""
 
 from pathlib import Path
 from typing import List
@@ -169,10 +212,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Create fiber photometry metadata with default settings"
     )
-    parser.add_argument("subject_id", type=str, help="Subject identifier")
     parser.add_argument(
-        "data_directory",
+        "--subject-id", type=str, required=True, help="Subject identifier"
+    )
+    parser.add_argument(
+        "--data-directory",
         type=Path,
+        required=True,
         help="Path to fiber photometry data directory",
     )
     parser.add_argument(
