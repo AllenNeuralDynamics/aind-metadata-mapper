@@ -50,15 +50,20 @@ class ETL(GenericEtl[JobSettings]):
     def __init__(self, job_settings: Union[str, JobSettings]):
         """Initialize ETL with job settings.
 
-        Args:
-            job_settings: Either a JobSettings object or a JSON string that can
-                be parsed into one. The settings define all required parameters
-                for the session metadata, including experimenter info, subject
-                ID, data paths, etc.
+        Parameters
+        ----------
+        job_settings : Union[str, JobSettings]
+            Either a JobSettings object or a JSON string that can
+            be parsed into one. The settings define all required parameters
+            for the session metadata, including experimenter info, subject
+            ID, data paths, etc.
 
-        Raises:
-            ValidationError: If the provided settings fail schema validation
-            JSONDecodeError: If job_settings is a string but not valid JSON
+        Raises
+        ------
+        ValidationError
+            If the provided settings fail schema validation
+        JSONDecodeError
+            If job_settings is a string but not valid JSON
         """
         if isinstance(job_settings, str):
             job_settings = JobSettings(**json.loads(job_settings))
@@ -72,12 +77,15 @@ class ETL(GenericEtl[JobSettings]):
         It looks for timestamps in file names and CSV data to determine the
         temporal bounds of the session.
 
-        Returns:
-            JobSettings: Updated settings object with extracted timing info
+        Returns
+        -------
+        JobSettings
+            Updated settings object with extracted timing info
 
-        Notes:
-            If data_directory is not provided or no valid timestamps are found,
-            the original settings are returned unchanged.
+        Notes
+        -----
+        If data_directory is not provided or no valid timestamps are found,
+        the original settings are returned unchanged.
         """
         settings = self.job_settings
         logging.info("Starting metadata extraction")
@@ -107,20 +115,26 @@ class ETL(GenericEtl[JobSettings]):
     ) -> Stream:
         """Create a Stream object from stream configuration data.
 
-        Args:
-            stream_data: Dictionary containing stream configuration including
-                light sources, detectors, and fiber connections
-            settings: JobSettings object containing session-level settings
-                that may be used as defaults for stream-level attributes
+        Parameters
+        ----------
+        stream_data : dict
+            Dictionary containing stream configuration including
+            light sources, detectors, and fiber connections
+        settings : JobSettings
+            JobSettings object containing session-level settings
+            that may be used as defaults for stream-level attributes
 
-        Returns:
-            Stream: A fully configured Stream object representing a single
-                data stream within the session
+        Returns
+        -------
+        Stream
+            A fully configured Stream object representing a single
+            data stream within the session
 
-        Notes:
-            If stream timing information is not provided in stream_data,
-            it falls back to session-level timing. If session end time is
-            also not available, it defaults to the session start time.
+        Notes
+        -----
+        If stream timing information is not provided in stream_data,
+        it falls back to session-level timing. If session end time is
+        also not available, it defaults to the session start time.
         """
         # Ensure stream_start_time and stream_end_time
         # are valid datetime objects
@@ -205,16 +219,19 @@ class ETL(GenericEtl[JobSettings]):
         3. Saves the session metadata to the specified output location
         4. Verifies the output file was written correctly
 
-        Returns:
-            JobResponse: Object containing status code, message, and optional
-                data. Status codes:
-                - 200: Success
-                - 406: Validation errors
-                - 500: File writing errors
+        Returns
+        -------
+        JobResponse
+            Object containing status code, message, and optional data.
+            Status codes:
+            - 200: Success
+            - 406: Validation errors
+            - 500: File writing errors
 
-        Notes:
-            If a custom output filename is specified in job_settings, it will
-            be used instead of the default filename.
+        Notes
+        -----
+        If a custom output filename is specified in job_settings, it will
+        be used instead of the default filename.
         """
         extracted = self._extract()
         transformed = self._transform(extracted)
@@ -262,17 +279,23 @@ def update_job_settings_with_times(
     This helper function attempts to extract session timing information from
     data files and updates the provided settings accordingly.
 
-    Args:
-        settings: Original JobSettings object
-        data_directory: Directory containing the fiber photometry data files
+    Parameters
+    ----------
+    settings : JobSettings
+        Original JobSettings object
+    data_directory : str
+        Directory containing the fiber photometry data files
 
-    Returns:
-        JobSettings: Updated settings object with extracted timing information
+    Returns
+    -------
+    JobSettings
+        Updated settings object with extracted timing information
 
-    Notes:
-        If timing information cannot be extracted, the original settings are
-        returned unchanged. Successful extraction will update both start and
-        end times if available.
+    Notes
+    -----
+    If timing information cannot be extracted, the original settings are
+    returned unchanged. Successful extraction will update both start and
+    end times if available.
     """
     settings_dict = settings.model_dump()
     session_start_time = extract_session_start_time_from_files(data_directory)

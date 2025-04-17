@@ -23,14 +23,19 @@ def convert_ms_since_midnight_to_datetime(
 ) -> datetime:
     """Convert milliseconds since midnight to a datetime object in UTC.
 
-    Args:
-        ms_since_midnight: Float representing milliseconds since midnight in
-            local timezone
-        base_date: Reference datetime to get the date from (must have tzinfo)
-        local_timezone: Optional timezone string (e.g., "America/Los_Angeles").
-            If not provided, will use system timezone.
+    Parameters
+    ----------
+    ms_since_midnight : float
+        Float representing milliseconds since midnight in local timezone
+    base_date : datetime
+        Reference datetime to get the date from (must have tzinfo)
+    local_timezone : Optional[str], optional
+        Timezone string (e.g., "America/Los_Angeles").
+        If not provided, will use system timezone.
 
-    Returns:
+    Returns
+    -------
+    datetime
         datetime object in UTC with the same date as base_date but time from
         ms_since_midnight
     """
@@ -58,12 +63,17 @@ def extract_session_start_time_from_files(
 ) -> Optional[datetime]:
     """Extract session start time from fiber photometry data files.
 
-    Args:
-        data_dir: Path to the directory containing fiber photometry data
-        local_timezone: Optional timezone string (e.g., "America/Los_Angeles").
-            If not provided, will use system timezone.
+    Parameters
+    ----------
+    data_dir : Union[str, Path]
+        Path to the directory containing fiber photometry data
+    local_timezone : Optional[str], optional
+        Timezone string (e.g., "America/Los_Angeles").
+        If not provided, will use system timezone.
 
-    Returns:
+    Returns
+    -------
+    Optional[datetime]
         Extracted session time in UTC or None if not found
     """
     data_dir = Path(data_dir)
@@ -119,13 +129,19 @@ def extract_session_end_time_from_files(
 ) -> Optional[datetime]:
     """Extract session end time from fiber photometry data files.
 
-    Args:
-        data_dir: Path to the directory containing fiber photometry data
-        session_start_time: Previously determined session start time (in UTC)
-        local_timezone: Optional timezone string (e.g., "America/Los_Angeles").
-            If not provided, will use system timezone.
+    Parameters
+    ----------
+    data_dir : Union[str, Path]
+        Path to the directory containing fiber photometry data
+    session_start_time : datetime
+        Previously determined session start time (in UTC)
+    local_timezone : Optional[str], optional
+        Timezone string (e.g., "America/Los_Angeles").
+        If not provided, will use system timezone.
 
-    Returns:
+    Returns
+    -------
+    Optional[datetime]
         Extracted session end time in UTC or None if not found
     """
     data_dir = Path(data_dir)
@@ -193,12 +209,17 @@ def verify_output_file(
 ) -> bool:
     """Verify that the output JSON file exists and contains valid JSON.
 
-    Args:
-        output_directory: Directory where the file should be located
-        filename: Name of the JSON file (default: session_fib.json)
+    Parameters
+    ----------
+    output_directory : Union[str, Path]
+        Directory where the file should be located
+    filename : str, optional
+        Name of the JSON file (default: session_fib.json)
 
-    Returns:
-        bool: True if file exists and contains valid JSON, False otherwise
+    Returns
+    -------
+    bool
+        True if file exists and contains valid JSON, False otherwise
     """
     output_directory = Path(output_directory)
     output_file = output_directory / filename
