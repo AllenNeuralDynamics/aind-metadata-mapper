@@ -209,46 +209,13 @@ class ETL(GenericEtl[JobSettings]):
 
         Notes
         -----
-        If a custom output filename is specified in job_settings, it will
-        be used instead of the default filename. Otherwise, uses the parent
-        class's _load method which saves to 'session_fib.json'.
+        Uses the parent class's _load method which handles validation and writing.
         """
         fiber_data = self._extract()
-        transformed = self._transform(fiber_data)
-
-        # If a custom filename is specified, save it directly
-        if self.job_settings.output_filename:
-            output_path = (
-                self.job_settings.output_directory
-                / self.job_settings.output_filename
-            )
-            try:
-                with open(output_path, "w") as f:
-                    f.write(transformed.model_dump_json(indent=2))
-                if verify_output_file(
-                    self.job_settings.output_directory,
-                    self.job_settings.output_filename,
-                ):
-                    return JobResponse(
-                        status_code=200,
-                        message=f"Successfully wrote file to {output_path}",
-                        data=None,
-                    )
-                else:
-                    return JobResponse(
-                        status_code=500,
-                        message=f"File verification failed for {output_path}",
-                        data=None,
-                    )
-            except Exception as e:
-                return JobResponse(
-                    status_code=500,
-                    message=f"Error writing to {output_path}: {str(e)}",
-                    data=None,
-                )
-
-        # Use parent class's _load method to write with default filename (session_fib.json)
-        return self._load(transformed, self.job_settings.output_directory)
+        transformed_session = self._transform(fiber_data)
+        return self._load(
+            transformed_session, self.job_settings.output_directory
+        )
 
 
 def update_job_settings_with_times(
