@@ -39,7 +39,8 @@ class JobSettings(BaseJobSettings):
     protocol_id : List[str], optional
         List of protocol identifiers, defaults to empty list
     data_directory : Optional[Union[str, Path]], optional
-        Path to data directory containing fiber photometry files, by default None
+        Path to data directory containing fiber photometry files,
+        by default None
     output_directory : Optional[Union[str, Path]], optional
         Output directory for generated files, by default None
     output_filename : Optional[str], optional

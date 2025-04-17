@@ -13,8 +13,11 @@ external services or handle new data formats.
 
 import sys
 import json
-from typing import Union
-import logging
+from typing import Union, Optional, List
+from dataclasses import dataclass
+from pathlib import Path
+from datetime import datetime
+import pandas as pd
 
 from aind_data_schema.core.session import (
     DetectorConfig,
@@ -35,6 +38,26 @@ from aind_metadata_mapper.fib.utils import (
 )
 
 
+@dataclass
+class FiberData:
+    """Intermediate data model for fiber photometry data."""
+
+    start_time: datetime
+    end_time: Optional[datetime]
+    data_files: List[Path]
+    timestamps: List[float]
+    light_source_configs: List[dict]
+    detector_configs: List[dict]
+    fiber_configs: List[dict]
+    subject_id: str
+    experimenter_full_name: List[str]
+    rig_id: str
+    iacuc_protocol: str
+    notes: str
+    mouse_platform_name: str
+    active_mouse_platform: bool
+
+
 class ETL(GenericEtl[JobSettings]):
     """Creates fiber photometry session metadata using an ETL pattern.
 
@@ -45,6 +68,10 @@ class ETL(GenericEtl[JobSettings]):
 
     The ETL process ensures that all required metadata fields are populated
     and validates the output against the AIND data schema.
+
+    This class inherits from GenericEtl which provides the _load method
+    for writing session metadata to a JSON file using a standard filename
+    format (session_fib.json).
     """
 
     def __init__(self, job_settings: Union[str, JobSettings]):
@@ -69,143 +96,95 @@ class ETL(GenericEtl[JobSettings]):
             job_settings = JobSettings(**json.loads(job_settings))
         super().__init__(job_settings)
 
-    def _extract(self) -> JobSettings:
-        """Extract metadata from job settings and data files.
+    def _extract(self) -> FiberData:
+        """Extract metadata and raw data from fiber photometry files.
 
-        This method attempts to extract session start and end times from the
-        data files if they are not explicitly provided in the job settings.
-        It looks for timestamps in file names and CSV data to determine the
-        temporal bounds of the session.
+        This method parses the raw data files to create an
+        intermediate data model containing all necessary
+        information for creating a Session object.
 
         Returns
         -------
-        JobSettings
-            Updated settings object with extracted timing info
-
-        Notes
-        -----
-        If data_directory is not provided or no valid timestamps are found,
-        the original settings are returned unchanged.
+        FiberData
+            Intermediate data model containing parsed file data and metadata
         """
         settings = self.job_settings
-        logging.info("Starting metadata extraction")
+        data_dir = Path(settings.data_directory)
 
-        if (
-            not hasattr(settings, "session_start_time")
-            or settings.session_start_time is None
-        ):
-            if hasattr(settings, "data_directory") and settings.data_directory:
-                logging.info(
-                    "Extracting session start time from "
-                    f"{settings.data_directory}"
-                )
-                return update_job_settings_with_times(
-                    settings, settings.data_directory
-                )
-            else:
-                logging.warning(
-                    "No data_directory provided and "
-                    "no session_start_time specified"
-                )
+        data_files = list(data_dir.glob("FIP_Data*.csv"))
+        start_time = extract_session_start_time_from_files(data_dir)
+        end_time = (
+            extract_session_end_time_from_files(data_dir, start_time)
+            if start_time
+            else None
+        )
 
-        return settings
+        timestamps = []
+        for file in data_files:
+            df = pd.read_csv(file, header=None)
+            timestamps.extend(df[0].tolist())
 
-    def _create_stream(
-        self, stream_data: dict, settings: JobSettings
-    ) -> Stream:
-        """Create a Stream object from stream configuration data.
+        stream_data = settings.data_streams[0]
+
+        return FiberData(
+            start_time=start_time,
+            end_time=end_time,
+            data_files=data_files,
+            timestamps=timestamps,
+            light_source_configs=stream_data["light_sources"],
+            detector_configs=stream_data["detectors"],
+            fiber_configs=stream_data["fiber_connections"],
+            subject_id=settings.subject_id,
+            experimenter_full_name=settings.experimenter_full_name,
+            rig_id=settings.rig_id,
+            iacuc_protocol=settings.iacuc_protocol,
+            notes=settings.notes,
+            mouse_platform_name=settings.mouse_platform_name,
+            active_mouse_platform=settings.active_mouse_platform,
+        )
+
+    def _transform(self, fiber_data: FiberData) -> Session:
+        """Transform extracted data into a valid Session object.
 
         Parameters
         ----------
-        stream_data : dict
-            Dictionary containing stream configuration including
-            light sources, detectors, and fiber connections
-        settings : JobSettings
-            JobSettings object containing session-level settings
-            that may be used as defaults for stream-level attributes
+        fiber_data : FiberData
+            Intermediate data model containing parsed file data and metadata
 
         Returns
         -------
-        Stream
-            A fully configured Stream object representing a single
-            data stream within the session
-
-        Notes
-        -----
-        If stream timing information is not provided in stream_data,
-        it falls back to session-level timing. If session end time is
-        also not available, it defaults to the session start time.
+        Session
+            A fully configured Session object that
+            conforms to the AIND data schema
         """
-        # Ensure stream_start_time and stream_end_time
-        # are valid datetime objects
-        stream_start_time = stream_data.get("stream_start_time")
-        if stream_start_time is None:
-            stream_start_time = settings.session_start_time
-
-        stream_end_time = stream_data.get("stream_end_time")
-        if stream_end_time is None:
-            stream_end_time = settings.session_end_time
-            # If session_end_time is also None, set it to session_start_time
-            if stream_end_time is None:
-                stream_end_time = settings.session_start_time
-
-        return Stream(
-            stream_start_time=stream_start_time,
-            stream_end_time=stream_end_time,
+        stream = Stream(
+            stream_start_time=fiber_data.start_time,
+            stream_end_time=fiber_data.end_time,
             light_sources=[
                 LightEmittingDiodeConfig(**ls)
-                for ls in stream_data["light_sources"]
+                for ls in fiber_data.light_source_configs
             ],
             stream_modalities=[Modality.FIB],
-            detectors=[DetectorConfig(**d) for d in stream_data["detectors"]],
+            detectors=[
+                DetectorConfig(**d) for d in fiber_data.detector_configs
+            ],
             fiber_connections=[
-                FiberConnectionConfig(**fc)
-                for fc in stream_data["fiber_connections"]
+                FiberConnectionConfig(**fc) for fc in fiber_data.fiber_configs
             ],
         )
 
-    def _transform(self, settings: JobSettings) -> Session:
-        """Transform extracted data into a valid Session object.
-
-        This method creates a standardized Session object from the provided
-        settings, including all data streams and their configurations. It
-        ensures that all required fields are populated and properly formatted.
-
-        Args:
-            settings: JobSettings object containing all necessary session
-                configuration data
-
-        Returns:
-            Session: A fully configured Session object that conforms to the
-                AIND data schema
-
-        Notes:
-            The resulting Session object includes:
-            - Experimenter information
-            - Session timing
-            - Subject and protocol IDs
-            - Data stream configurations
-            - Platform settings
-        """
-        # Create data streams from configuration
-        data_streams = [
-            self._create_stream(stream, settings)
-            for stream in settings.data_streams
-        ]
-
-        # Create session with all available data
         session = Session(
-            experimenter_full_name=settings.experimenter_full_name,
-            session_start_time=settings.session_start_time,
-            session_end_time=settings.session_end_time,
-            session_type=settings.session_type,
-            rig_id=settings.rig_id,
-            subject_id=settings.subject_id,
-            iacuc_protocol=settings.iacuc_protocol,
-            notes=settings.notes,
-            data_streams=data_streams,
-            mouse_platform_name=settings.mouse_platform_name,
-            active_mouse_platform=settings.active_mouse_platform,
+            experimenter_full_name=fiber_data.experimenter_full_name,
+            session_start_time=fiber_data.start_time,
+            session_end_time=fiber_data.end_time,
+            session_type="FIB",
+            rig_id=fiber_data.rig_id,
+            subject_id=fiber_data.subject_id,
+            iacuc_protocol=fiber_data.iacuc_protocol,
+            notes=fiber_data.notes,
+            data_streams=[stream],
+            mouse_platform_name=fiber_data.mouse_platform_name,
+            active_mouse_platform=fiber_data.active_mouse_platform,
         )
 
         return session
@@ -231,10 +210,11 @@ class ETL(GenericEtl[JobSettings]):
         Notes
         -----
         If a custom output filename is specified in job_settings, it will
-        be used instead of the default filename.
+        be used instead of the default filename. Otherwise, uses the parent
+        class's _load method which saves to 'session_fib.json'.
         """
-        extracted = self._extract()
-        transformed = self._transform(extracted)
+        fiber_data = self._extract()
+        transformed = self._transform(fiber_data)
 
         # If a custom filename is specified, save it directly
         if self.job_settings.output_filename:
@@ -267,7 +247,7 @@ class ETL(GenericEtl[JobSettings]):
                     data=None,
                 )
 
-        # Otherwise use the default write_standard_file method
+        # Use parent class's _load method to write with default filename (session_fib.json)
         return self._load(transformed, self.job_settings.output_directory)
 
 
