@@ -334,6 +334,7 @@ class GatherMetadataJob:
                 imaging_info = []
             return imaging_info
         
+        #TODO:Move integrate method to ETL class
         def integrate_imaging_info_in_acquisition_metadata(acquisition_metadata: dict, imaging_info: list) -> dict:
             """Integrate imaging info into acquisition metadata"""
             acquisition_model = Acquisition.model_construct(**acquisition_metadata)
