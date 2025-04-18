@@ -119,7 +119,7 @@ class TestSchemaWriter(unittest.TestCase):
         )
 
     def test_extract(self):
-        """Tests that the teensy response and experiment data is extracted correctly"""
+        """Tests that data files and metadata are extracted correctly"""
         etl_job1 = FIBEtl(job_settings=self.example_job_settings)
         with patch.object(etl_job1, "_extract") as mock_extract:
             mock_extract.return_value = FiberData(
