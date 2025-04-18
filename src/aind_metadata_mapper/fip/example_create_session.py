@@ -7,8 +7,8 @@ assuming data is in data/sample_fiber_data relative to the root of the repo:
 ```bash
 python src/aind_metadata_mapper/fip/example_create_session.py \
     --subject-id 000000 \
-    --data-directory data/sample_fiber_data \
-    --output-directory data/sample_fiber_data \
+    --data-directory /Users/doug.ollerenshaw/code/aind-metadata-mapper/data/sample_fiber_data \
+    --output-directory /Users/doug.ollerenshaw/code/aind-metadata-mapper/data/sample_fiber_data \
     --output-filename session_fip.json
 ```
 =======
@@ -48,7 +48,7 @@ from typing import List, Optional
 import logging
 import sys
 
-from aind_metadata_mapper.fip.session import ETL
+from aind_metadata_mapper.fip.session import FIBEtl
 from aind_metadata_mapper.fip.models import JobSettings
 
 
@@ -115,13 +115,13 @@ def create_metadata(
                 "daq_names": [""],
                 "detectors": [
                     {
-                        "exposure_time": "15650,
+                        "exposure_time": "15650",
                         "exposure_time_unit": "microsecond",
                         "name": "Green CMOS",
                         "trigger_type": "Internal",
                     },
                     {
-                        "exposure_time": "15650,
+                        "exposure_time": "15650",
                         "exposure_time_unit": "microsecond",
                         "name": "Red CMOS",
                         "trigger_type": "Internal",
@@ -196,7 +196,7 @@ def create_metadata(
 
     # Create JobSettings instance and run ETL
     job_settings = JobSettings(**settings)
-    etl = ETL(job_settings)
+    etl = FIBEtl(job_settings)
     response = etl.run_job()
 
     if response.status_code != 200:
