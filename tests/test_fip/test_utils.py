@@ -6,7 +6,7 @@ import pandas as pd
 from zoneinfo import ZoneInfo
 from unittest.mock import patch, MagicMock
 
-from aind_metadata_mapper.fib.utils import (
+from aind_metadata_mapper.fip.utils import (
     convert_ms_since_midnight_to_datetime,
     extract_session_start_time_from_files,
     extract_session_end_time_from_files,

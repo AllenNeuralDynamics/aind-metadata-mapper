@@ -15,7 +15,7 @@ from aind_data_schema.core.session import (
 )
 from aind_data_schema_models.modalities import Modality
 
-from aind_metadata_mapper.fib.session import ETL, JobSettings, FiberData
+from aind_metadata_mapper.fip.session import ETL, JobSettings, FiberData
 
 
 class TestFiberPhotometrySession(unittest.TestCase):

@@ -5,11 +5,11 @@ Example command to run the script from the command line,
 assuming data is in data/sample_fiber_data relative to the root of the repo:
 
 ```bash
-python src/aind_metadata_mapper/fib/example_create_session.py \
+python src/aind_metadata_mapper/fip/example_create_session.py \
     --subject-id 000000 \
     --data-directory data/sample_fiber_data \
     --output-directory data/sample_fiber_data \
-    --output-filename session_fib.json
+    --output-filename session_fip.json
 ```
 =======
 Example python code which could be saved to some local file and run from the
@@ -17,7 +17,7 @@ command line with asimple `python <filename>.py`
 
 ```python
 from pathlib import Path
-from aind_metadata_mapper.fib.example_create_session import create_metadata
+from aind_metadata_mapper.fip.example_create_session import create_metadata
 
 create_metadata(
     subject_id="000000",
@@ -27,7 +27,7 @@ create_metadata(
     output_directory=Path(
         r"/Users/doug.ollerenshaw/code/aind-metadata-mapper/data/sample_fiber_data"
     ),
-    output_filename="session_fib2.json",
+    output_filename="session_fip.json",
     # Optional parameters with defaults:
     experimenter_full_name=["test_experimenter_1", "test_experimenter_2"],
     rig_id="428_9_B_20240617",
@@ -44,19 +44,19 @@ create_metadata(
 """
 
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 import logging
 import sys
 
-from aind_metadata_mapper.fib.session import ETL
-from aind_metadata_mapper.fib.models import JobSettings
+from aind_metadata_mapper.fip.session import ETL
+from aind_metadata_mapper.fip.models import JobSettings
 
 
 def create_metadata(
     subject_id: str,
     data_directory: Path,
-    output_directory: Path,
-    output_filename: str = "session_fib.json",
+    output_directory: Optional[Path] = None,
+    output_filename: str = "session_fip.json",
     experimenter_full_name: List[str] = [
         "test_experimenter_1",
         "test_experimenter_2",
@@ -224,17 +224,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output-directory",
         type=Path,
-        default=Path.cwd(),
-        help=(
-            "Directory where metadata will be saved "
-            "(default: current directory)"
-        ),
+        help="Directory where metadata will be saved (default: same as data directory)",  # noqa E501
     )
     parser.add_argument(
         "--output-filename",
         type=str,
-        default="session_fib.json",
-        help="Name of the output JSON file (default: session_fib.json)",
+        default="session_fip.json",
+        help="Name of the output JSON file (default: session_fip.json)",
     )
 
     args = parser.parse_args()

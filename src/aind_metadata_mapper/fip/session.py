@@ -19,6 +19,7 @@ from pathlib import Path
 from datetime import datetime
 import pandas as pd
 
+from aind_data_schema.base import AindCoreModel
 from aind_data_schema.core.session import (
     DetectorConfig,
     FiberConnectionConfig,
@@ -30,8 +31,8 @@ from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.core_models import JobResponse
-from aind_metadata_mapper.fib.models import JobSettings
-from aind_metadata_mapper.fib.utils import (
+from aind_metadata_mapper.fip.models import JobSettings
+from aind_metadata_mapper.fip.utils import (
     extract_session_start_time_from_files,
     extract_session_end_time_from_files,
 )
@@ -70,7 +71,7 @@ class ETL(GenericEtl[JobSettings]):
 
     This class inherits from GenericEtl which provides the _load method
     for writing session metadata to a JSON file using a standard filename
-    format (session_fib.json).
+    format (session_fip.json).
     """
 
     def __init__(self, job_settings: Union[str, JobSettings]):
@@ -187,6 +188,46 @@ class ETL(GenericEtl[JobSettings]):
         )
 
         return session
+
+    def _load(
+        self, output_model: AindCoreModel, output_directory: Optional[Path]
+    ) -> JobResponse:
+        """Override parent _load to handle custom
+        filenames and default directories.
+
+        This implementation differs from the parent GenericEtl._load
+        in that it:
+        1. Uses the filename specified in job_settings rather
+        than model's default
+        2. Falls back to data_directory if no output_directory specified
+        3. Maintains validation and error handling from parent class
+
+        Parameters
+        ----------
+        output_model : AindCoreModel
+            The final model that has been constructed and validated
+        output_directory : Optional[Path]
+            Directory where the file should be written. If None,
+            defaults to job_settings.data_directory
+
+        Returns
+        -------
+        JobResponse
+            Object containing status code, message, and optional data.
+            Status codes:
+            - 200: Success
+            - 500: File writing errors
+        """
+        # If no output directory specified, use the data directory
+        if output_directory is None:
+            output_directory = Path(self.job_settings.data_directory)
+
+        output_path = output_directory / self.job_settings.output_filename
+        with open(output_path, "w") as f:
+            f.write(output_model.model_dump_json(indent=3))
+        return JobResponse(
+            status_code=200, message=f"Write model to {output_path}"
+        )
 
     def run_job(self) -> JobResponse:
         """Run the complete ETL job and return a JobResponse.

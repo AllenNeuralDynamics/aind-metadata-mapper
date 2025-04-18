@@ -43,8 +43,8 @@ class JobSettings(BaseJobSettings):
         by default None
     output_directory : Optional[Union[str, Path]], optional
         Output directory for generated files, by default None
-    output_filename : Optional[str], optional
-        Name of output file, by default None
+    output_filename : str
+        Name of output file, by default "session_fip.json"
     """
 
     job_settings_name: Literal["FiberPhotometry"] = "FiberPhotometry"
@@ -69,4 +69,4 @@ class JobSettings(BaseJobSettings):
 
     # Output directory and filename for generated files
     output_directory: Optional[Union[str, Path]] = None
-    output_filename: Optional[str] = None
+    output_filename: str = "session_fip.json"
