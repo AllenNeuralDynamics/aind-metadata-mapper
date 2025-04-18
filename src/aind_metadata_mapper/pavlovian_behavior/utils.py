@@ -1,19 +1,23 @@
 """Utility functions for Pavlovian behavior metadata extraction.
 
 This module provides functions for extracting and processing data
-from Pavlovian behavior files. Functions are organized
-by their specific tasks:
+from Pavlovian behavior files.
+
+Notes
+-----
+Functions are organized by their specific tasks:
 - File discovery and validation
 - Timestamp parsing and manipulation
 - Trial data extraction and processing
 - Session timing calculations
 """
 
+import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Tuple, Optional
 from zoneinfo import ZoneInfo
-import pandas as pd
+
 from aind_data_schema.core.session import StimulusEpoch
 from tzlocal import get_localzone
 
@@ -23,21 +27,29 @@ def find_behavior_files(
 ) -> Tuple[List[Path], List[Path]]:
     """Find behavior and trial files in the data directory.
 
+    Parameters
+    ----------
+    data_dir : Path
+        Base directory to search for files
+
+    Returns
+    -------
+    Tuple[List[Path], List[Path]]
+        - List of paths to behavior files
+        - List of paths to trial files
+
+    Raises
+    ------
+    FileNotFoundError
+        If required files are not found
+    ValueError
+        If file names do not match expected format
+
+    Notes
+    -----
     Searches for behavior files (TS_CS1_*.csv) and trial files
     (TrialN_TrialType_ITI_*.csv) in the provided directory or its 'behavior'
     subdirectory.
-
-    Args:
-        data_dir: Base directory to search for files
-
-    Returns:
-        Tuple containing:
-            - List of paths to behavior files
-            - List of paths to trial files
-
-    Raises:
-        FileNotFoundError: If required files are not found
-        ValueError: If file names do not match expected format
     """
     behavior_dir = data_dir / "behavior"
     if not behavior_dir.exists():
@@ -48,12 +60,13 @@ def find_behavior_files(
 
     if not behavior_files:
         raise FileNotFoundError(
-            f"No behavior files (TS_CS1_*.csv) found in {behavior_dir}"
+            f"No behavior files found in {behavior_dir}. "
+            "Expected files matching pattern: TS_CS1_*.csv"
         )
     if not trial_files:
         raise FileNotFoundError(
-            "No trial files (TrialN_TrialType_ITI_*.csv) "
-            f"found in {behavior_dir}"
+            f"No trial files found in {behavior_dir}. "
+            "Expected files matching pattern: TrialN_TrialType_ITI_*.csv"
         )
 
     # Validate all found files
@@ -70,15 +83,26 @@ def parse_session_start_time(
 ) -> datetime:
     """Parse session start time from behavior file name.
 
-    Args:
-        behavior_file: Path to behavior file
-        local_timezone: Optional timezone string. If not provided, UTC is used.
+    Parameters
+    ----------
+    behavior_file : Path
+        Path to behavior file
+    local_timezone : Optional[str], optional
+        Timezone string. If not provided, system timezone is used.
 
-    Returns:
-        datetime: Session start time in UTC
+    Returns
+    -------
+    datetime
+        Session start time in UTC
 
-    Raises:
-        ValueError: If datetime cannot be parsed from filename
+    Raises
+    ------
+    ValueError
+        If datetime cannot be parsed from filename
+
+    Notes
+    -----
+    Expects filename format: TS_CS1_YYYY-MM-DDThh_mm_ss.csv
     """
     try:
         # Extract timestamp part from filename
@@ -111,14 +135,24 @@ def extract_trial_data(
 ) -> pd.DataFrame:
     """Read and validate trial data from CSV file.
 
-    Args:
-        trial_file: Path to trial data CSV file
+    Parameters
+    ----------
+    trial_file : Path
+        Path to trial data CSV file
 
-    Returns:
+    Returns
+    -------
+    pd.DataFrame
         DataFrame containing trial data
 
-    Raises:
-        ValueError: If required columns are missing
+    Raises
+    ------
+    ValueError
+        If required columns are missing
+
+    Notes
+    -----
+    Required columns are: TrialNumber, TotalRewards, ITI_s
     """
     trial_data = pd.read_csv(trial_file)
     required_columns = ["TrialNumber", "TotalRewards", "ITI_s"]
@@ -138,14 +172,18 @@ def calculate_session_timing(
 ) -> Tuple[datetime, float]:
     """Calculate session end time and duration from trial data.
 
-    Args:
-        start_time: Session start time (in UTC)
-        trial_data: DataFrame containing trial information
+    Parameters
+    ----------
+    start_time : datetime
+        Session start time (in UTC)
+    trial_data : pd.DataFrame
+        DataFrame containing trial information
 
-    Returns:
-        Tuple containing:
-            - Session end time (in UTC)
-            - Total session duration in seconds
+    Returns
+    -------
+    Tuple[datetime, float]
+        - Session end time (in UTC)
+        - Total session duration in seconds
     """
     total_duration = float(trial_data["ITI_s"].sum())
     end_time = start_time + timedelta(seconds=total_duration)
@@ -162,14 +200,22 @@ def create_stimulus_epoch(
 ) -> StimulusEpoch:
     """Create a StimulusEpoch object from trial information.
 
-    Args:
-        start_time: Epoch start time
-        end_time: Epoch end time
-        trial_data: DataFrame containing trial information
-        reward_units_per_trial: Units of reward given per successful trial
-        stimulus_name: Name of the stimulus protocol
+    Parameters
+    ----------
+    start_time : datetime
+        Epoch start time
+    end_time : datetime
+        Epoch end time
+    trial_data : pd.DataFrame
+        DataFrame containing trial information
+    reward_units_per_trial : float, optional
+        Units of reward given per successful trial, by default 2.0
+    stimulus_name : str, optional
+        Name of the stimulus protocol, by default "Pavlovian"
 
-    Returns:
+    Returns
+    -------
+    StimulusEpoch
         StimulusEpoch object with trial and reward information
     """
     total_trials = int(trial_data["TrialNumber"].iloc[-1])
@@ -194,23 +240,32 @@ def extract_session_data(
 ) -> Tuple[datetime, List[StimulusEpoch]]:
     """Extract all session data from behavior files.
 
+    Parameters
+    ----------
+    data_dir : Path
+        Directory containing behavior files
+    reward_units_per_trial : float, optional
+        Units of reward given per successful trial, by default 2.0
+    local_timezone : Optional[str], optional
+        Timezone string. If not provided, system timezone is used
+
+    Returns
+    -------
+    Tuple[datetime, List[StimulusEpoch]]
+        - Session start time (in UTC)
+        - List of StimulusEpoch objects
+
+    Raises
+    ------
+    FileNotFoundError
+        If required files are not found
+    ValueError
+        If data parsing or extraction fails
+
+    Notes
+    -----
     This is the main entry point for data extraction, coordinating the use of
     other utility functions to gather all required session information.
-
-    Args:
-        data_dir: Directory containing behavior files
-        reward_units_per_trial: Units of reward given per successful trial
-        local_timezone: Optional timezone string. If not provided, will use
-            system timezone.
-
-    Returns:
-        Tuple containing:
-            - Session start time (in UTC)
-            - List of StimulusEpoch objects
-
-    Raises:
-        FileNotFoundError: If required files are not found
-        ValueError: If data parsing or extraction fails
     """
     # Find required files
     behavior_files, trial_files = find_behavior_files(data_dir)
@@ -240,16 +295,21 @@ def extract_session_data(
 def validate_behavior_file_format(behavior_file: Path) -> None:
     """Validate that behavior file name matches expected format.
 
+    Parameters
+    ----------
+    behavior_file : Path
+        Path to behavior file
+
+    Raises
+    ------
+    ValueError
+        If file name does not match expected format
+
+    Notes
+    -----
     Expected format:
     - TS_CS1_YYYY-MM-DDThh_mm_ss.csv
     Example: TS_CS1_2024-01-01T15_49_53.csv
-
-    Args:
-        behavior_file: Path to behavior file
-
-    Raises:
-        ValueError: If file name does not match expected format, with detailed
-            explanation of what was wrong
     """
     name = behavior_file.name
     parts = name.split("_", 2)
@@ -301,16 +361,21 @@ def validate_behavior_file_format(behavior_file: Path) -> None:
 def validate_trial_file_format(trial_file: Path) -> None:
     """Validate that trial file name matches expected format.
 
+    Parameters
+    ----------
+    trial_file : Path
+        Path to trial file
+
+    Raises
+    ------
+    ValueError
+        If file name does not match expected format
+
+    Notes
+    -----
     Expected format:
     - TrialN_TrialType_ITI_*.csv
     Example: TrialN_TrialType_ITI_001.csv
-
-    Args:
-        trial_file: Path to trial file
-
-    Raises:
-        ValueError: If file name does not match expected format, with detailed
-            explanation of what was wrong
     """
     name = trial_file.name
     parts = name.split("_")

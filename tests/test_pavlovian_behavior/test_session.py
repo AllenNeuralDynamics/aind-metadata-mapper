@@ -1,11 +1,11 @@
 """Tests for Pavlovian behavior session metadata generation."""
 
 import unittest
-import tempfile
-import pandas as pd
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import patch, Mock
 from zoneinfo import ZoneInfo
+import pandas as pd
 
 from aind_data_schema.core.session import Session
 from aind_data_schema_models.modalities import Modality
@@ -17,40 +17,18 @@ from aind_metadata_mapper.pavlovian_behavior.session import ETL, JobSettings
 class TestPavlovianBehaviorSession(unittest.TestCase):
     """Test Pavlovian behavior session metadata generation."""
 
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         """Set up test fixtures."""
-        # Create a temporary directory for test files
-        cls.temp_dir = tempfile.mkdtemp()
-        behavior_dir = Path(cls.temp_dir) / "behavior"
-        behavior_dir.mkdir()
-
-        # Create test files with time that will convert to 8am UTC from PT
-        session_time = datetime(1999, 10, 4, 8, 0, 0, tzinfo=ZoneInfo("UTC"))
-        ts_file = (
-            behavior_dir / "TS_CS1_1999-10-04T01_00_00.csv"
-        )  # 1am PT = 8am UTC
-        trial_file = behavior_dir / "TrialN_TrialType_ITI_001.csv"
-
-        # Create and write trial data
-        df = pd.DataFrame(
-            {
-                "TrialNumber": range(1, 101),  # 100 trials
-                "TotalRewards": [50] * 100,  # 50 rewards
-                "ITI_s": [1.0] * 100,  # 1 second ITI
-            }
+        self.data_dir = Path("/mock/data/dir")
+        self.session_time = datetime(
+            1999, 10, 4, 8, 0, 0, tzinfo=ZoneInfo("UTC")
         )
-        df.to_csv(trial_file, index=False)
-        ts_file.touch()
-
-        end_time = session_time + pd.Timedelta(
-            seconds=100
-        )  # 100 trials * 1s ITI
+        self.end_time = self.session_time + pd.Timedelta(seconds=100)
 
         # Create stimulus epoch as a dictionary
-        stimulus_epoch_dict = {
-            "stimulus_start_time": session_time,
-            "stimulus_end_time": end_time,
+        self.stimulus_epoch_dict = {
+            "stimulus_start_time": self.session_time,
+            "stimulus_end_time": self.end_time,
             "stimulus_name": "Pavlovian",
             "stimulus_modalities": ["Auditory"],
             "trials_total": 100,
@@ -60,20 +38,22 @@ class TestPavlovianBehaviorSession(unittest.TestCase):
         }
 
         # Create job settings with all required fields
-        cls.example_job_settings = JobSettings(
+        self.example_job_settings = JobSettings(
             experimenter_full_name=["Test User"],
             subject_id="000000",
             rig_id="pav_rig_01",
             iacuc_protocol="2115",
             mouse_platform_name="mouse_tube_pavlovian",
             active_mouse_platform=False,
-            data_directory=cls.temp_dir,
+            data_directory=self.data_dir,
+            output_directory=self.data_dir,
+            output_filename="session_pavlovian.json",
             local_timezone="UTC",
             notes="Test session",
             data_streams=[
                 {
-                    "stream_start_time": session_time,
-                    "stream_end_time": end_time,
+                    "stream_start_time": self.session_time,
+                    "stream_end_time": self.end_time,
                     "stream_modalities": [Modality.BEHAVIOR],
                     "light_sources": [
                         {
@@ -96,29 +76,35 @@ class TestPavlovianBehaviorSession(unittest.TestCase):
         )
 
         # Create expected session object
-        cls.expected_session = Session(
+        self.expected_session = Session(
             experimenter_full_name=["Test User"],
-            session_start_time=session_time,
-            session_end_time=end_time,
+            session_start_time=self.session_time,
+            session_end_time=self.end_time,
             subject_id="000000",
             rig_id="pav_rig_01",
             iacuc_protocol="2115",
             mouse_platform_name="mouse_tube_pavlovian",
             active_mouse_platform=False,
             session_type="Pavlovian_Conditioning",
-            data_streams=cls.example_job_settings.data_streams,
-            stimulus_epochs=[stimulus_epoch_dict],
+            data_streams=self.example_job_settings.data_streams,
+            stimulus_epochs=[self.stimulus_epoch_dict],
             reward_consumed_total=100.0,
             reward_consumed_unit=VolumeUnit.UL,
             notes="Test session",
         )
 
-    @classmethod
-    def tearDownClass(cls):
-        """Clean up test files."""
-        import shutil
+        # Mock file paths
+        self.behavior_file = self.data_dir / "TS_CS1_1999-10-04T01_00_00.csv"
+        self.trial_file = self.data_dir / "TrialN_TrialType_ITI_001.csv"
 
-        shutil.rmtree(cls.temp_dir)
+        # Create mock trial data
+        self.trial_data = pd.DataFrame(
+            {
+                "TrialNumber": range(1, 101),  # 100 trials
+                "TotalRewards": [50] * 100,  # 50 rewards
+                "ITI_s": [1.0] * 100,  # 1 second ITI
+            }
+        )
 
     def test_constructor_from_string(self):
         """Test construction from JSON string."""
@@ -133,16 +119,84 @@ class TestPavlovianBehaviorSession(unittest.TestCase):
 
     def test_transform(self):
         """Test transformation to valid session metadata."""
-        etl = ETL(job_settings=self.example_job_settings)
-        parsed_info = etl._extract()
-        actual_session = etl._transform(parsed_info)
-        self.assertEqual(self.expected_session, actual_session)
+        # Create simple mocks with explicit return values
+        mock_exists = Mock(
+            return_value=False
+        )  # Use data_dir instead of behavior subdir
+        mock_glob = Mock(
+            side_effect=lambda pattern: {
+                "TS_CS1_*.csv": [self.behavior_file],
+                "TrialN_TrialType_ITI_*.csv": [self.trial_file],
+            }[pattern]
+        )
+
+        mock_read_csv = Mock(return_value=self.trial_data)
+        mock_extract = Mock(
+            return_value=(self.session_time, [self.stimulus_epoch_dict])
+        )
+
+        # Patch with explicit mocks
+        with (
+            patch.multiple(Path, exists=mock_exists, glob=mock_glob),
+            patch("pandas.read_csv", mock_read_csv),
+            patch(
+                "aind_metadata_mapper.pavlovian_behavior.utils"
+                ".extract_session_data",
+                mock_extract,
+            ),
+        ):
+            etl = ETL(job_settings=self.example_job_settings)
+            parsed_info = etl._extract()
+            actual_session = etl._transform(parsed_info)
+            self.assertEqual(self.expected_session, actual_session)
 
     def test_run_job(self):
         """Test complete ETL workflow."""
-        etl = ETL(job_settings=self.example_job_settings)
-        job = etl.run_job()
-        self.assertEqual(job.status_code, 200)
+        # Create simple mocks with explicit return values
+        mock_exists = Mock(return_value=True)
+        mock_glob = Mock(
+            side_effect=lambda pattern: {
+                "TS_CS1_*.csv": [self.behavior_file],
+                "TrialN_TrialType_ITI_*.csv": [self.trial_file],
+            }[pattern]
+        )
+
+        # Create explicit mock for file operations that
+        # returns an empty list of lines
+        mock_file = Mock()
+        mock_file.readlines = Mock(
+            return_value=[]
+        )  # Empty list of lines for tzlocal to iterate
+        mock_open = Mock()
+        mock_open.return_value.__enter__ = Mock(return_value=mock_file)
+        mock_open.return_value.__exit__ = Mock()
+
+        mock_read_csv = Mock(return_value=self.trial_data)
+        mock_extract = Mock(
+            return_value=(self.session_time, [self.stimulus_epoch_dict])
+        )
+
+        # Patch with explicit mocks
+        with (
+            patch.multiple(Path, exists=mock_exists, glob=mock_glob),
+            patch("builtins.open", mock_open),
+            patch("pandas.read_csv", mock_read_csv),
+            patch(
+                "aind_metadata_mapper.pavlovian_behavior.utils"
+                ".extract_session_data",
+                mock_extract,
+            ),
+            # Add explicit mock for timezone to avoid file reading
+            patch("tzlocal.get_localzone", return_value=ZoneInfo("UTC")),
+        ):
+            etl = ETL(job_settings=self.example_job_settings)
+            job = etl.run_job()
+
+            # Verify the job succeeded and file was written
+            self.assertEqual(job.status_code, 200)
+            mock_open.assert_any_call(
+                self.data_dir / "session_pavlovian.json", "w"
+            )
 
 
 if __name__ == "__main__":
