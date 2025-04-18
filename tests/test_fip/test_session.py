@@ -1,4 +1,4 @@
-"""Tests for fiber photometry session metadata generation."""
+"""Tests parsing of session information from fip rig."""
 
 import unittest
 from datetime import datetime
@@ -111,15 +111,15 @@ class TestSchemaWriter(unittest.TestCase):
     def test_constructor_from_string(self) -> None:
         """Tests that the settings can be constructed from a json string"""
         job_settings_str = self.example_job_settings.model_dump_json()
-        etl_job0 = FIBEtl(job_settings=job_settings_str)
-        etl_job1 = FIBEtl(job_settings=self.example_job_settings)
+        etl0 = FIBEtl(job_settings=job_settings_str)
+        etl1 = FIBEtl(job_settings=self.example_job_settings)
         self.assertEqual(
-            etl_job1.job_settings.model_dump_json(),
-            etl_job0.job_settings.model_dump_json(),
+            etl1.job_settings.model_dump_json(),
+            etl0.job_settings.model_dump_json(),
         )
 
     def test_extract(self):
-        """Tests that the data files are extracted correctly"""
+        """Tests that the teensy response and experiment data is extracted correctly"""
         etl_job1 = FIBEtl(job_settings=self.example_job_settings)
         with patch.object(etl_job1, "_extract") as mock_extract:
             mock_extract.return_value = FiberData(
