@@ -22,9 +22,9 @@ from aind_metadata_mapper.fip.example_create_session import create_metadata
 create_metadata(
     subject_id="000000",
     data_directory=Path("/path/to/data"),
-    output_directory=Path("/path/to/output"),
-    output_filename="session_fip.json",
     # Optional parameters with defaults:
+    output_directory=None,  # defaults to data_directory if not specified
+    output_filename="session_fip.json",  # default filename
     experimenter_full_name=["test_experimenter_1", "test_experimenter_2"],
     rig_id="428_9_A_20240617",
     task_version="1.0.0",
@@ -42,23 +42,24 @@ Or from the command line:
 python -m aind_metadata_mapper.fip.example_create_session \
     --subject-id 000000 \
     --data-directory /path/to/data \
-    --output-directory /path/to/output \
-    --output-filename session_fip.json
+    --output-directory /path/to/output  # optional, defaults to data directory
+    --output-filename session_fip.json  # optional, this is the default
 ```
 
 ### Direct ETL Usage
-For more control over the metadata generation, you can use the ETL class directly:
+For more control over the metadata generation, you can use the FIBEtl class directly:
 
 ```python
-from aind_metadata_mapper.fip.session import ETL
+from aind_metadata_mapper.fip.session import FIBEtl
 from aind_metadata_mapper.fip.models import JobSettings
 
 # Create settings with required fields
 settings = JobSettings(
     subject_id="000000",
     data_directory="/path/to/data",
-    output_directory="/path/to/output",
-    output_filename="session_fip.json",
+    # output_directory and output_filename are optional:
+    output_directory="/path/to/output",  # defaults to data_directory if not specified
+    output_filename="session_fip.json",  # this is the default
     experimenter_full_name=["Test User"],
     rig_id="fiber_rig_01",
     mouse_platform_name="mouse_tube_foraging",
@@ -88,7 +89,7 @@ settings = JobSettings(
 )
 
 # Generate session metadata
-etl = ETL(settings)
+etl = FIBEtl(settings)
 response = etl.run_job()
 ```
 
@@ -101,8 +102,6 @@ The ETL process will automatically extract session start and end times from the 
 The `JobSettings` class requires:
 - `subject_id`: Subject identifier
 - `data_directory`: Path to the data files
-- `output_directory`: Where to save the session.json file
-- `output_filename`: Name of the output file (default: session_fip.json)
 - `experimenter_full_name`: List of experimenter names
 - `rig_id`: Identifier for the experimental rig
 - `mouse_platform_name`: Name of the mouse platform used
@@ -113,5 +112,9 @@ The `JobSettings` class requires:
   - Fiber connections
 - `notes`: Additional session notes
 - `iacuc_protocol`: Protocol identifier
+
+Optional settings with defaults:
+- `output_directory`: Where to save the session.json file (defaults to data_directory)
+- `output_filename`: Name of the output file (defaults to "session_fip.json")
 
 Session start and end times will be automatically extracted from the data files if not provided.

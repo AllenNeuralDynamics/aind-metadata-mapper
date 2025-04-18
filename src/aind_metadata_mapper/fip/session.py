@@ -254,9 +254,10 @@ class FIBEtl(GenericEtl[JobSettings]):
         """
         fiber_data = self._extract()
         transformed_session = self._transform(fiber_data)
-        return self._load(
+        job_response = self._load(
             transformed_session, self.job_settings.output_directory
         )
+        return job_response
 
 
 if __name__ == "__main__":

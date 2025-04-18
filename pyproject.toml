@@ -32,7 +32,7 @@ dev = [
     "furo",
 ]
 
-fib = [
+fip = [
     "aind-metadata-mapper[schema]",
     "tzlocal>=5.3.1",
     "pandas>=2.2.2"
@@ -45,7 +45,7 @@ all = [
     "aind-metadata-mapper[openephys]",
     "aind-metadata-mapper[dynamicrouting]",
     "aind-metadata-mapper[u19]",
-    "aind-metadata-mapper[fib]",
+    "aind-metadata-mapper[fip]",
 ]
 
 schema = [
