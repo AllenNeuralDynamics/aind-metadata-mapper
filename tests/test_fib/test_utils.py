@@ -4,14 +4,12 @@ import unittest
 from datetime import datetime
 import pandas as pd
 from zoneinfo import ZoneInfo
-import json
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import patch, MagicMock
 
 from aind_metadata_mapper.fib.utils import (
     convert_ms_since_midnight_to_datetime,
     extract_session_start_time_from_files,
     extract_session_end_time_from_files,
-    verify_output_file,
 )
 
 
@@ -168,34 +166,6 @@ class TestFiberPhotometryUtils(unittest.TestCase):
             "/dummy/path", session_start, local_timezone="America/Los_Angeles"
         )
         self.assertIsNone(result)
-
-
-class TestFileVerification(unittest.TestCase):
-    """Test file verification utilities."""
-
-    @patch("pathlib.Path.exists")
-    @patch("builtins.open", new_callable=mock_open)
-    def test_verify_output_file(self, mock_file, mock_exists):
-        """Test verification of output JSON files."""
-        # Test with valid JSON file
-        valid_data = {"key": "value"}
-        mock_exists.return_value = True
-        mock_file.return_value.read.return_value = json.dumps(valid_data)
-        self.assertTrue(verify_output_file("/dummy/path", "valid.json"))
-
-        # Test with non-existent file
-        mock_exists.return_value = False
-        self.assertFalse(verify_output_file("/dummy/path", "nonexistent.json"))
-
-        # Test with invalid JSON file
-        mock_exists.return_value = True
-        mock_file.return_value.read.return_value = "not valid json"
-        self.assertFalse(verify_output_file("/dummy/path", "invalid.json"))
-
-        # Test with default filename
-        mock_exists.return_value = True
-        mock_file.return_value.read.return_value = json.dumps(valid_data)
-        self.assertTrue(verify_output_file("/dummy/path"))
 
 
 if __name__ == "__main__":

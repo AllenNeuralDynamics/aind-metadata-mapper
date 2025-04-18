@@ -34,7 +34,6 @@ from aind_metadata_mapper.fib.models import JobSettings
 from aind_metadata_mapper.fib.utils import (
     extract_session_start_time_from_files,
     extract_session_end_time_from_files,
-    verify_output_file,
 )
 
 
@@ -209,53 +208,14 @@ class ETL(GenericEtl[JobSettings]):
 
         Notes
         -----
-        Uses the parent class's _load method which handles validation and writing.
+        Uses the parent class's _load method which
+        handles validation and writing.
         """
         fiber_data = self._extract()
         transformed_session = self._transform(fiber_data)
         return self._load(
             transformed_session, self.job_settings.output_directory
         )
-
-
-def update_job_settings_with_times(
-    settings: JobSettings, data_directory: str
-) -> JobSettings:
-    """Update JobSettings with extracted session start and end times.
-
-    This helper function attempts to extract session timing information from
-    data files and updates the provided settings accordingly.
-
-    Parameters
-    ----------
-    settings : JobSettings
-        Original JobSettings object
-    data_directory : str
-        Directory containing the fiber photometry data files
-
-    Returns
-    -------
-    JobSettings
-        Updated settings object with extracted timing information
-
-    Notes
-    -----
-    If timing information cannot be extracted, the original settings are
-    returned unchanged. Successful extraction will update both start and
-    end times if available.
-    """
-    settings_dict = settings.model_dump()
-    session_start_time = extract_session_start_time_from_files(data_directory)
-
-    if session_start_time:
-        settings_dict["session_start_time"] = session_start_time
-        session_end_time = extract_session_end_time_from_files(
-            data_directory, session_start_time
-        )
-        if session_end_time:
-            settings_dict["session_end_time"] = session_end_time
-
-    return JobSettings(**settings_dict)
 
 
 if __name__ == "__main__":

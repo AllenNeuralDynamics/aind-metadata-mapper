@@ -13,7 +13,6 @@ from tzlocal import get_localzone
 import logging
 import pandas as pd
 import re
-import json
 
 
 def convert_ms_since_midnight_to_datetime(
@@ -202,40 +201,3 @@ def extract_session_end_time_from_files(
             return None
 
     return latest_time
-
-
-def verify_output_file(
-    output_directory: Union[str, Path], filename: str = "session_fib.json"
-) -> bool:
-    """Verify that the output JSON file exists and contains valid JSON.
-
-    Parameters
-    ----------
-    output_directory : Union[str, Path]
-        Directory where the file should be located
-    filename : str, optional
-        Name of the JSON file (default: session_fib.json)
-
-    Returns
-    -------
-    bool
-        True if file exists and contains valid JSON, False otherwise
-    """
-    output_directory = Path(output_directory)
-    output_file = output_directory / filename
-
-    if not output_file.exists():
-        logging.warning(f"Output file not found: {output_file}")
-        return False
-
-    try:
-        with open(output_file, "r") as f:
-            json.load(f)  # Try to parse JSON
-        logging.info(f"Successfully verified output file: {output_file}")
-        return True
-    except json.JSONDecodeError:
-        logging.error(f"Invalid JSON in output file: {output_file}")
-        return False
-    except Exception as e:
-        logging.error(f"Error reading output file {output_file}: {str(e)}")
-        return False
