@@ -7,8 +7,8 @@ assuming data is in data/sample_fiber_data relative to the root of the repo:
 ```bash
 python src/aind_metadata_mapper/fip/example_create_session.py \
     --subject-id 000000 \
-    --data-directory /Users/doug.ollerenshaw/code/aind-metadata-mapper/data/sample_fiber_data \
-    --output-directory /Users/doug.ollerenshaw/code/aind-metadata-mapper/data/sample_fiber_data \
+    --data-directory data/sample_fiber_data \
+    --output-directory data/sample_fiber_data \
     --output-filename session_fip.json
 ```
 =======
