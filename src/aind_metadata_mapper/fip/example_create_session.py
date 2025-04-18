@@ -13,7 +13,7 @@ python src/aind_metadata_mapper/fip/example_create_session.py \
 ```
 =======
 Example python code which could be saved to some local file and run from the
-command line with asimple `python <filename>.py`
+command line with a simple `python <filename>.py`
 
 ```python
 from pathlib import Path
@@ -115,14 +115,14 @@ def create_metadata(
                 "daq_names": [""],
                 "detectors": [
                     {
-                        "exposure_time": "5230.42765",
-                        "exposure_time_unit": "millisecond",
+                        "exposure_time": "15650,
+                        "exposure_time_unit": "microsecond",
                         "name": "Green CMOS",
                         "trigger_type": "Internal",
                     },
                     {
-                        "exposure_time": "5230.42765",
-                        "exposure_time_unit": "millisecond",
+                        "exposure_time": "15650,
+                        "exposure_time_unit": "microsecond",
                         "name": "Red CMOS",
                         "trigger_type": "Internal",
                     },
@@ -158,20 +158,20 @@ def create_metadata(
                 "light_sources": [
                     {
                         "device_type": "Light emitting diode",
-                        "excitation_power": None,
-                        "excitation_power_unit": "milliwatt",
+                        "excitation_power": 20,
+                        "excitation_power_unit": "microwatt",
                         "name": "470nm LED",
                     },
                     {
                         "device_type": "Light emitting diode",
-                        "excitation_power": None,
-                        "excitation_power_unit": "milliwatt",
+                        "excitation_power": 20,
+                        "excitation_power_unit": "microwatt",
                         "name": "415nm LED",
                     },
                     {
                         "device_type": "Light emitting diode",
-                        "excitation_power": None,
-                        "excitation_power_unit": "milliwatt",
+                        "excitation_power": 20,
+                        "excitation_power_unit": "microwatt",
                         "name": "565nm LED",
                     },
                 ],
