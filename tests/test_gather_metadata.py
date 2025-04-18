@@ -534,7 +534,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual({"some_key": "some_value"}, contents)
         mock_run_job.assert_called_once()
 
-    @patch("aind_metadata_mapper.fip.session.ETL.run_job")
+    @patch("aind_metadata_mapper.fip.session.FIBETL.run_job")
     def test_get_session_metadata_fip_success(self, mock_run_job: MagicMock):
         """Tests ETL"""
         mock_run_job.return_value = JobResponse(

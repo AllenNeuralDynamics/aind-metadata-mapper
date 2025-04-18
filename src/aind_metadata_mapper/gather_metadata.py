@@ -37,7 +37,7 @@ from aind_metadata_mapper.bruker.session import MRIEtl
 from aind_metadata_mapper.fip.models import (
     JobSettings as FipSessionJobSettings,
 )
-from aind_metadata_mapper.fip.session import ETL as FIPEtl
+from aind_metadata_mapper.fip.session import FIBETL
 from aind_metadata_mapper.mesoscope.session import MesoscopeEtl
 from aind_metadata_mapper.models import JobSettings
 from aind_metadata_mapper.smartspim.acquisition import SmartspimETL
@@ -283,7 +283,7 @@ class GatherMetadataJob:
             elif isinstance(session_settings, BrukerSessionJobSettings):
                 session_job = MRIEtl(job_settings=session_settings)
             elif isinstance(session_settings, FipSessionJobSettings):
-                session_job = FIPEtl(job_settings=session_settings)
+                session_job = FIBEtl(job_settings=session_settings)
             else:
                 session_job = MesoscopeEtl(job_settings=session_settings)
             job_response = session_job.run_job()
