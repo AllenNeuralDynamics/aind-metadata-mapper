@@ -3,10 +3,10 @@ User Guide
 Thank you for using ``aind-metadata-mapper``! This guide is intended for scientists and engineers in AIND that wish to generate metadata models (particularly the session model) from specific acquisition machines.
 This repository is designed to centralize code to Extract, Transform, and Load data from multiple acquisition machines. 
 
-Installation
-------------
+1. Installation
+----------------
 Because the metadata-mapper supports multiple acquisition machines and data files, there are large and acquisition-specific dependencies.
-To mitigate this, we recommend installing only the packages you need. For example, if you are using the Bergamo acquisition machine, you can install the package like so:
+To mitigate this, we recommend installing only the packages you need. For example, if you are using the Bergamo acquisition machine and would like to use this package to generate a session.json after an experiment, you can install the package like so:
 .. code:: bash
     pip install aind-metadata-mapper[bergamo]
 
@@ -23,11 +23,15 @@ If you need to install all the packages, you can do so with the following comman
 .. code:: bash
     pip install aind-metadata-mapper[all]
 
-Generating a Session with an ETL
+
+2. Generating a Session with an ETL
 --------------------------------
 This repository is split up into different packages by acquisition machine. Each package defines a ``JobSettings`` object and an ``ETL`` to generate a desired model.
-Each JobSettings defines the information necessary to compile metadata, and varies by machine. For example, a bergamo session model can be generated directly like so:
+- ``JobSettings`` defines the information necessary to compile metadata, such as the input source, experimenter name, subject ID, and other machine-specific fields. It is defined in the ``models.py`` file in the appropriate package. The fields that can be set in the JobSettings object vary by machine, so consult the models.py file for more information on the fields that can be set for your acquisition machine.
+- ``ETL`` is a class that takes in the JobSettings object and generates the desired model. It is defined in the ``session.py`` file in the appropriate package. The ETL is responsible for extracting data from the input source, transforming it into the desired format, and loading it into the output directory.
 
+To generate a session.json after the end of an experiment, you should edit the necessary fields in the models.py file.
+For example, to generate a session.json for a bergamo experiment, edit the fields defined in the JobSettings in bergamo/models.py file like so:
 .. code:: python
     from pathlib import Path
     from aind_metadata_mapper.bergamo.models import JobSettings
@@ -47,8 +51,9 @@ Each JobSettings defines the information necessary to compile metadata, and vari
             bergamo_job = BergamoEtl(job_settings=job_settings)
             response = bergamo_job.run_job()
 
-Consult the models.py files in the appropriate package for more information on the fields that can be set in the JobSettings object.
-Once the JobSettings object is defined, the ETL can be run directly to generate the desired model.
+Alternatively, you could set up your script to pull information automatically from local config files or from your experiment control software. For example, if you've already saved the subject_id in a config file to start your experiment, you might wish to configure your script to scrape that information directly rather than having to re-enter it.
+
+Once the JobSettings object is defined with the necessary information, the ETL can be run directly using ``run_job()`` to generate the desired model.
 .. code:: python
 
     from aind_metadata_mapper.bergamo.session import BergamoEtl
@@ -59,14 +64,15 @@ Once the JobSettings object is defined, the ETL can be run directly to generate 
     message = response.message # a message describing the status of the job, e.g. validation errors
     status = response.status # the status of the job
 
-Note that if an output directory is specified in the JobSettings object, the generated model will be written to that directory as a json file.
+In this example, we did not specify an output directory so our method returns a ``Session`` model. However, you can configure an output directory in the JobSettings object to have the session written to that directory as a json file.
 
 Gather Metadata Job
 --------------------
-The ``GatherMetadataJob`` is a wrapper around the ETLs that allows for the generation of multiple metadata models at once. It takes in model-specific JobSettings objects and generates the desired models in parallel. The generated models are written to the specified output directory.
-It does so with the "GatherMetadata" ``JobSettings``, defined in the ``aind_metadata_mapper.models`` package. This JobSettings object takes in a list of model-specific JobSettings objects and generates the desired models in parallel.
-We can generate a bergamo session model with the GatherMetadataJob like so:
+In our previous example, we used the Bergamo ETL to generate a session.json file. However, you may want to generate multiple metadata models (ex: procedures, subject, processing, etc.) at once after your experiment. 
+To facilitate this, we have created a ``GatherMetadataJob`` class that allows for the generation of multiple metadata models at once. It takes in model-specific JobSettings objects and generates the desired models in parallel.
+It does so with the "GatherMetadata" ``JobSettings``, defined in the ``aind_metadata_mapper.models`` package. This JobSettings object takes in a list of model-specific JobSettings objects and writes the models to a specified output_directory. It also generates a complete meteadata.json file that contains all the models generated by the job.
 
+We can generate a bergamo session model with the GatherMetadataJob like so:
 .. code:: python
 
     from aind_metadata_mapper.bergamo.models import JobSettings as BergamoJobSettings
