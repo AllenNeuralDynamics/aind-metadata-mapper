@@ -15,7 +15,7 @@ from aind_data_schema.core.session import (
 )
 from aind_data_schema_models.modalities import Modality
 
-from aind_metadata_mapper.fip.session import ETL, JobSettings, FiberData
+from aind_metadata_mapper.fip.session import FIBEtl, JobSettings, FiberData
 
 
 class TestFiberPhotometrySession(unittest.TestCase):
@@ -112,12 +112,12 @@ class TestFiberPhotometrySession(unittest.TestCase):
     def test_constructor_from_string(self) -> None:
         """Test construction from JSON string.
 
-        Verifies that the ETL class can be initialized with either a
+        Verifies that the FIBEtl class can be initialized with either a
         JobSettings object or a JSON string.
         """
         job_settings_str = self.example_job_settings.model_dump_json()
-        etl0 = ETL(job_settings=job_settings_str)
-        etl1 = ETL(job_settings=self.example_job_settings)
+        etl0 = FIBEtl(job_settings=job_settings_str)
+        etl1 = FIBEtl(job_settings=self.example_job_settings)
 
         # Compare serialized versions to avoid timezone implementation
         # differences
@@ -203,7 +203,7 @@ class TestFiberPhotometrySession(unittest.TestCase):
         job_settings.output_filename = "session.json"
 
         # Create ETL instance
-        etl = ETL(job_settings=job_settings)
+        etl = FIBEtl(job_settings=job_settings)
 
         # Mock the internal ETL methods to isolate the test from file system
         session_time = datetime(1999, 10, 4, tzinfo=zoneinfo.ZoneInfo("UTC"))

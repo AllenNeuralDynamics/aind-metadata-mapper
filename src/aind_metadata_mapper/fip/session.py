@@ -58,7 +58,7 @@ class FiberData:
     active_mouse_platform: bool
 
 
-class FIBETL(GenericEtl[JobSettings]):
+class FIBEtl(GenericEtl[JobSettings]):
     """Creates fiber photometry session metadata using an ETL pattern.
 
     This class handles the full lifecycle of session metadata creation:
@@ -262,5 +262,5 @@ class FIBETL(GenericEtl[JobSettings]):
 if __name__ == "__main__":
     sys_args = sys.argv[1:]
     main_job_settings = JobSettings.from_args(sys_args)
-    etl = FIBETL(job_settings=main_job_settings)
+    etl = FIBEtl(job_settings=main_job_settings)
     etl.run_job()

@@ -37,7 +37,7 @@ from aind_metadata_mapper.bruker.session import MRIEtl
 from aind_metadata_mapper.fip.models import (
     JobSettings as FipSessionJobSettings,
 )
-from aind_metadata_mapper.fip.session import FIBETL
+from aind_metadata_mapper.fip.session import FIBEtl
 from aind_metadata_mapper.mesoscope.session import MesoscopeEtl
 from aind_metadata_mapper.models import JobSettings
 from aind_metadata_mapper.smartspim.acquisition import SmartspimETL
