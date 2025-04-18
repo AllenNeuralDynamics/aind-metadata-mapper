@@ -1140,6 +1140,8 @@ def from_stimulus_file(
         # Add back the merged column
         df[col] = merged
     df = remove_short_sandwiched_spontaneous(df)
+    if "pos" in df.columns and df["pos"].apply(lambda x: isinstance(x, (list, tuple)) and len(x) == 2).all():
+        df[["pos_x", "pos_y"]] = pd.DataFrame(df["pos"].tolist(), index=df.index)
     return (df, column_list)
 
 
