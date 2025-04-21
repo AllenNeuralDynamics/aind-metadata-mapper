@@ -22,8 +22,8 @@ from aind_metadata_mapper.bruker.models import (
     JobSettings as BrukerSessionJobSettings,
 )
 from aind_metadata_mapper.core_models import JobResponse
-from aind_metadata_mapper.fib.models import (
-    JobSettings as FibSessionJobSettings,
+from aind_metadata_mapper.fip.models import (
+    JobSettings as FipSessionJobSettings,
 )
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
 from aind_metadata_mapper.mesoscope.models import (
@@ -534,17 +534,17 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual({"some_key": "some_value"}, contents)
         mock_run_job.assert_called_once()
 
-    @patch("aind_metadata_mapper.fib.session.ETL.run_job")
-    def test_get_session_metadata_fib_success(self, mock_run_job: MagicMock):
+    @patch("aind_metadata_mapper.fip.session.FIBEtl.run_job")
+    def test_get_session_metadata_fip_success(self, mock_run_job: MagicMock):
         """Tests ETL"""
         mock_run_job.return_value = JobResponse(
             status_code=200, data=json.dumps({"some_key": "some_value"})
         )
-        fib_session_settings = FibSessionJobSettings.model_construct()
+        fip_session_settings = FipSessionJobSettings.model_construct()
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             session_settings=SessionSettings(
-                job_settings=fib_session_settings,
+                job_settings=fip_session_settings,
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)

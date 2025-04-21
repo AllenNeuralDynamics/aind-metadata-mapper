@@ -15,8 +15,8 @@ from aind_metadata_mapper.bergamo.models import (
 from aind_metadata_mapper.bruker.models import (
     JobSettings as BrukerSessionJobSettings,
 )
-from aind_metadata_mapper.fib.models import (
-    JobSettings as FibSessionJobSettings,
+from aind_metadata_mapper.fip.models import (
+    JobSettings as FipSessionJobSettings,
 )
 from aind_metadata_mapper.mesoscope.models import (
     JobSettings as MesoscopeSessionJobSettings,
@@ -33,7 +33,7 @@ class SessionSettings(BaseSettings, extra="allow"):
         Union[
             BergamoSessionJobSettings,
             BrukerSessionJobSettings,
-            FibSessionJobSettings,
+            FipSessionJobSettings,
             MesoscopeSessionJobSettings,
         ],
         Field(discriminator="job_settings_name"),

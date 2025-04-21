@@ -1,19 +1,62 @@
-"""Simple script to create fiber photometry metadata with default settings."""
+"""
+Simple script to create fiber photometry metadata with default settings.
+
+Example command to run the script from the command line,
+assuming data is in data/sample_fiber_data relative to the root of the repo:
+
+```bash
+python src/aind_metadata_mapper/fip/example_create_session.py \
+    --subject-id 000000 \
+    --data-directory data/sample_fiber_data \
+    --output-directory data/sample_fiber_data \
+    --output-filename session_fip.json
+```
+=======
+Example python code which could be saved to some local file and run from the
+command line with a simple `python <filename>.py`
+
+```python
+from pathlib import Path
+from aind_metadata_mapper.fip.example_create_session import create_metadata
+
+create_metadata(
+    subject_id="000000",
+    data_directory=Path(
+        r"/Users/doug.ollerenshaw/code/aind-metadata-mapper/data/sample_fiber_data"
+    ),
+    output_directory=Path(
+        r"/Users/doug.ollerenshaw/code/aind-metadata-mapper/data/sample_fiber_data"
+    ),
+    output_filename="session_fip.json",
+    # Optional parameters with defaults:
+    experimenter_full_name=["test_experimenter_1", "test_experimenter_2"],
+    rig_id="428_9_B_20240617",
+    task_version="1.0.0",
+    iacuc_protocol="2115",
+    mouse_platform_name="mouse_tube_foraging",
+    active_mouse_platform=False,
+    session_type="Foraging_Photometry",
+    task_name="Fiber Photometry",
+    notes="Example configuration for fiber photometry rig",
+)
+```
+
+"""
 
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 import logging
 import sys
 
-from aind_metadata_mapper.fib.session import ETL
-from aind_metadata_mapper.fib.models import JobSettings
+from aind_metadata_mapper.fip.session import FIBEtl
+from aind_metadata_mapper.fip.models import JobSettings
 
 
 def create_metadata(
     subject_id: str,
     data_directory: Path,
-    output_directory: Path,
-    output_filename: str = "session_fib.json",
+    output_directory: Optional[Path] = None,
+    output_filename: str = "session_fip.json",
     experimenter_full_name: List[str] = [
         "test_experimenter_1",
         "test_experimenter_2",
@@ -72,14 +115,14 @@ def create_metadata(
                 "daq_names": [""],
                 "detectors": [
                     {
-                        "exposure_time": "5230.42765",
-                        "exposure_time_unit": "millisecond",
+                        "exposure_time": "15650",
+                        "exposure_time_unit": "microsecond",
                         "name": "Green CMOS",
                         "trigger_type": "Internal",
                     },
                     {
-                        "exposure_time": "5230.42765",
-                        "exposure_time_unit": "millisecond",
+                        "exposure_time": "15650",
+                        "exposure_time_unit": "microsecond",
                         "name": "Red CMOS",
                         "trigger_type": "Internal",
                     },
@@ -115,20 +158,20 @@ def create_metadata(
                 "light_sources": [
                     {
                         "device_type": "Light emitting diode",
-                        "excitation_power": None,
-                        "excitation_power_unit": "milliwatt",
+                        "excitation_power": 20,
+                        "excitation_power_unit": "microwatt",
                         "name": "470nm LED",
                     },
                     {
                         "device_type": "Light emitting diode",
-                        "excitation_power": None,
-                        "excitation_power_unit": "milliwatt",
+                        "excitation_power": 20,
+                        "excitation_power_unit": "microwatt",
                         "name": "415nm LED",
                     },
                     {
                         "device_type": "Light emitting diode",
-                        "excitation_power": None,
-                        "excitation_power_unit": "milliwatt",
+                        "excitation_power": 20,
+                        "excitation_power_unit": "microwatt",
                         "name": "565nm LED",
                     },
                 ],
@@ -153,7 +196,7 @@ def create_metadata(
 
     # Create JobSettings instance and run ETL
     job_settings = JobSettings(**settings)
-    etl = ETL(job_settings)
+    etl = FIBEtl(job_settings)
     response = etl.run_job()
 
     if response.status_code != 200:
@@ -169,26 +212,25 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Create fiber photometry metadata with default settings"
     )
-    parser.add_argument("subject_id", type=str, help="Subject identifier")
     parser.add_argument(
-        "data_directory",
+        "--subject-id", type=str, required=True, help="Subject identifier"
+    )
+    parser.add_argument(
+        "--data-directory",
         type=Path,
+        required=True,
         help="Path to fiber photometry data directory",
     )
     parser.add_argument(
         "--output-directory",
         type=Path,
-        default=Path.cwd(),
-        help=(
-            "Directory where metadata will be saved "
-            "(default: current directory)"
-        ),
+        help="Directory where metadata will be saved (default: same as data directory)",  # noqa E501
     )
     parser.add_argument(
         "--output-filename",
         type=str,
-        default="session_fib.json",
-        help="Name of the output JSON file (default: session_fib.json)",
+        default="session_fip.json",
+        help="Name of the output JSON file (default: session_fip.json)",
     )
 
     args = parser.parse_args()

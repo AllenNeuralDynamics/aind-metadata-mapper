@@ -5,7 +5,7 @@ specific to fiber photometry data, including conversion between milliseconds
 and datetime objects, and extraction of session times from data files.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from typing import Union, Optional
 from pathlib import Path
@@ -13,7 +13,6 @@ from tzlocal import get_localzone
 import logging
 import pandas as pd
 import re
-import json
 
 
 def convert_ms_since_midnight_to_datetime(
@@ -23,41 +22,39 @@ def convert_ms_since_midnight_to_datetime(
 ) -> datetime:
     """Convert milliseconds since midnight to a datetime object in UTC.
 
-    Args:
-        ms_since_midnight: Float representing milliseconds since midnight in
-            local timezone
-        base_date: Reference datetime to get the date from (must have tzinfo)
-        local_timezone: Optional timezone string (e.g., "America/Los_Angeles").
-            If not provided, will use system timezone.
+    Parameters
+    ----------
+    ms_since_midnight : float
+        Float representing milliseconds since midnight in local timezone
+    base_date : datetime
+        Reference datetime to get the date from (must have tzinfo)
+    local_timezone : Optional[str], optional
+        Timezone string (e.g., "America/Los_Angeles").
+        If not provided, will use system timezone.
 
-    Returns:
+    Returns
+    -------
+    datetime
         datetime object in UTC with the same date as base_date but time from
         ms_since_midnight
     """
-    # Convert milliseconds to hours, minutes, seconds, microseconds
-    total_seconds = ms_since_midnight / 1000
-    hours = int(total_seconds // 3600)
-    minutes = int((total_seconds % 3600) // 60)
-    seconds = int(total_seconds % 60)
-    microseconds = int((total_seconds * 1000000) % 1000000)
-
-    # Get timezone
+    # Get timezone (either specified or system default)
     tz = ZoneInfo(local_timezone) if local_timezone else get_localzone()
 
-    # Create new datetime in local timezone first
-    local_dt = datetime(
-        year=base_date.year,
-        month=base_date.month,
-        day=base_date.day,
-        hour=hours,
-        minute=minutes,
-        second=seconds,
-        microsecond=microseconds,
-        tzinfo=tz,
+    # Get midnight of base_date in local time
+    base_date_local = base_date.astimezone(tz)
+    base_midnight_local = datetime.combine(
+        base_date_local.date(), datetime.min.time()
     )
+    base_midnight_local = base_midnight_local.replace(tzinfo=tz)
 
-    # Convert to UTC
-    return local_dt.astimezone(ZoneInfo("UTC"))
+    # Convert local midnight to UTC
+    base_midnight_utc = base_midnight_local.astimezone(ZoneInfo("UTC"))
+
+    # Add milliseconds as timedelta
+    delta = timedelta(milliseconds=ms_since_midnight)
+
+    return base_midnight_utc + delta
 
 
 def extract_session_start_time_from_files(
@@ -65,12 +62,17 @@ def extract_session_start_time_from_files(
 ) -> Optional[datetime]:
     """Extract session start time from fiber photometry data files.
 
-    Args:
-        data_dir: Path to the directory containing fiber photometry data
-        local_timezone: Optional timezone string (e.g., "America/Los_Angeles").
-            If not provided, will use system timezone.
+    Parameters
+    ----------
+    data_dir : Union[str, Path]
+        Path to the directory containing fiber photometry data
+    local_timezone : Optional[str], optional
+        Timezone string (e.g., "America/Los_Angeles").
+        If not provided, will use system timezone.
 
-    Returns:
+    Returns
+    -------
+    Optional[datetime]
         Extracted session time in UTC or None if not found
     """
     data_dir = Path(data_dir)
@@ -126,13 +128,19 @@ def extract_session_end_time_from_files(
 ) -> Optional[datetime]:
     """Extract session end time from fiber photometry data files.
 
-    Args:
-        data_dir: Path to the directory containing fiber photometry data
-        session_start_time: Previously determined session start time (in UTC)
-        local_timezone: Optional timezone string (e.g., "America/Los_Angeles").
-            If not provided, will use system timezone.
+    Parameters
+    ----------
+    data_dir : Union[str, Path]
+        Path to the directory containing fiber photometry data
+    session_start_time : datetime
+        Previously determined session start time (in UTC)
+    local_timezone : Optional[str], optional
+        Timezone string (e.g., "America/Los_Angeles").
+        If not provided, will use system timezone.
 
-    Returns:
+    Returns
+    -------
+    Optional[datetime]
         Extracted session end time in UTC or None if not found
     """
     data_dir = Path(data_dir)
@@ -193,35 +201,3 @@ def extract_session_end_time_from_files(
             return None
 
     return latest_time
-
-
-def verify_output_file(
-    output_directory: Union[str, Path], filename: str = "session_fib.json"
-) -> bool:
-    """Verify that the output JSON file exists and contains valid JSON.
-
-    Args:
-        output_directory: Directory where the file should be located
-        filename: Name of the JSON file (default: session_fib.json)
-
-    Returns:
-        bool: True if file exists and contains valid JSON, False otherwise
-    """
-    output_directory = Path(output_directory)
-    output_file = output_directory / filename
-
-    if not output_file.exists():
-        logging.warning(f"Output file not found: {output_file}")
-        return False
-
-    try:
-        with open(output_file, "r") as f:
-            json.load(f)  # Try to parse JSON
-        logging.info(f"Successfully verified output file: {output_file}")
-        return True
-    except json.JSONDecodeError:
-        logging.error(f"Invalid JSON in output file: {output_file}")
-        return False
-    except Exception as e:
-        logging.error(f"Error reading output file {output_file}: {str(e)}")
-        return False
