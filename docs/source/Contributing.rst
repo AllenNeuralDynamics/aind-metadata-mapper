@@ -26,7 +26,7 @@ Then in bash, run
 
     pip install -e .[dev]
 
-to set up your environment. Once these steps are complete, you can get developing🚀.
+to set up your environment. Once these steps are complete, you can get developing.
 
 Project Organization
 --------------------
@@ -35,13 +35,63 @@ This codebase is organized by acquisition machine, so if you're adding a new mac
 
 .. code:: bash
 
-    acquisition_machine/
+    my_acquisition_machine/
     |
     ├──__init__.py
     ├──{desired_model_type}.py (ex: session.py)
     ├──models.py
 
-Please define a JobSettings class in the models module which will be used by your ETL to produce the desired model. The JobSettings in the bergamo dir can be used as reference.  
+
+The models.py file should contain the ``JobSettings`` class that will be used by your ETL to produce the desired model. We've provided a ``BaseJobSettings`` class that can be used as a base class for your JobSettings. 
+The ``JobSettings`` class can be used to define the fields that the user needs to input and default values for fields that will usually remain the same. It may look like this:
+.. code:: python
+   
+      from aind_metadata_mapper.core_models import BaseJobSettings
+   
+      class JobSettings(BaseJobSettings):
+         """Data that needs to be input by the user"
+         job_settings_name: str = "my_acquisition_machine"
+         # mandatory fields
+         experimenter_full_name: List[str]
+         subject_id: str
+
+         # fields with default values
+         some_field: str = "default_value"
+         some_other_field: str = "default_value"
+
+The {desired_model_type}.py file should contain the ``ETL`` class that will be used to extract, transform, and load the data into the desired model. 
+The class should inherit from the ``GenericEtl`` class and implement the ``run_job`` method. that calls any other class methods that needed to extract, transform, and load the data into the desired model.
+
+.. code:: python
+   
+   from aind_metadata_mapper.core import GenericEtl
+   from aind_metadata_mapper.my_acquisition_machine.models import JobSettings
+   
+      class MyAcquisitionMachineETL(GenericEtl[JobSettings]):
+         """Class to manage transforming data files from my_acquisition_machine into the desired model"""
+         
+         def __init__(self, job_settings: Union[JobSettings, str]):
+            if isinstance(job_settings, str):
+               job_settings_model = JobSettings.model_validate_json(job_settings)
+            else:
+                  job_settings_model = job_settings
+            super().__init__(job_settings=job_settings_model)
+
+         # Enter methods to extract, transform, and load the data into the desired model
+         
+         def run_job(self):
+               # Call any other class methods that needed to extract, transform, and load the data into the desired model
+               pass
+
+Please see the bergamo package for a more complete example of how to structure your code.
+Each package should also have it's own package dependencies. These should be added in the in the ``pyproject.toml`` file in the root of the repository like so:
+
+.. code:: bash
+   [project.optional-dependencies]
+   my_acquisition_machine = [
+       "aind-metadata-mapper[schema]",
+       "some-other-package",
+   ]
 
 Unit Testing
 ------------
@@ -52,6 +102,9 @@ Testing is required to open a PR in this repository to ensure robustness and rel
   - For every package in the src directory, there should be a corresponding test package.
   - For every module in a package, there should be a corresponding unit test module.
   - For every method in a module, there should be a corresponding unit test.
+- **Test Naming**: Use the following naming convention for test files and test methods:
+   - Test files should be named ``test_<module_name>.py`` (e.g., ``test_session.py``).
+   - Test methods should be named ``test_<method_name>_<description>`` (e.g., ``test_run_job_success``).
 - **Mocking Writes**: Your unit tests should not write anything out. You can use the unittest.mock library to intercept file operations and test your method without actually creating a file.
 - **Test Coverage**: Aim for comprehensive test coverage to validate all critical paths and edge cases within the module. To open a PR, you will need at least 80% coverage.
   - Please test your changes using the coverage library, which will run the tests and log a coverage report:
@@ -64,7 +117,7 @@ Testing is required to open a PR in this repository to ensure robustness and rel
 
     coverage html
 
-    and find the report in the htmlcov/index.html.
+   and find the report in the htmlcov/index.html.
 
 Linters
 -------
