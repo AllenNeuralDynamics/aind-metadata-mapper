@@ -89,6 +89,42 @@ def get_anatomical_direction(anatomical_direction: str) -> AnatomicalDirection:
 
     return anatomical_direction
 
+def make_tile_acq_channel(
+        wavelength_config: dict,
+        tile_info: dict
+) -> dict:
+    """
+    For a given tile config info and the wavelength_config,
+    create a tile.Channel object for use in acquisition.json
+
+    This is necessary to get the left/right specific power setting for
+    each tile.
+    """
+    wavelength = tile_info.get("Laser")
+    side = tile_info.get("Side")
+    filter_wheel_index = int(tile_info.get("Filter"))
+    side_map = {
+        "0": "left",
+        "1": "right"
+    }
+    excitation_power = (
+        wavelength_config
+        .get(wavelength,)
+        .get(f"power_{side_map[side]}")
+    )
+    channel = tile.Channel(
+        channel_name=wavelength,
+        light_source_name=wavelength,
+        filter_names=[""],  # Filter names are in instrument JSON
+        detector_name="",  # Detector is in instrument JSON
+        additional_device_names=[],
+        excitation_wavelength=int(wavelength),
+        excitation_wavelength_unit=SizeUnit.NM,
+        excitation_power=excitation_power,
+        excitation_power_unit=PowerUnit.PERCENT,
+        filter_wheel_index=filter_wheel_index,
+    )
+    return channel
 
 def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
     """
@@ -110,39 +146,18 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
         List with the metadata for the tiles
     """
 
-    channels = {}
-
     # List where the metadata of the acquired
     # tiles is stored
     tile_acquisitions = []
 
-    filter_wheel_idx = 0
-    for wavelength, value in metadata_dict["wavelength_config"].items():
-        channel = tile.Channel(
-            channel_name=str(wavelength),
-            light_source_name=str(wavelength),
-            filter_names=[""],  # We don't have filter names at the moment
-            detector_name="",  # We don't have detector names at the moment
-            additional_device_names=[],
-            # Excitation wavelengths
-            excitation_wavelength=int(wavelength),
-            excitation_wavelength_unit=SizeUnit.NM,
-            # Excitation power
-            excitation_power=value[
-                "power_left"
-            ],  # [value["power_left"], value["power_right"]]
-            excitation_power_unit=PowerUnit.PERCENT,
-            filter_wheel_index=filter_wheel_idx,
-        )
-        filter_wheel_idx += 1
-
-        channels[wavelength] = channel
+    # Wavelength config
+    wavelength_config = metadata_dict.get("wavelength_config")
 
     # Scale metadata
     session_config = metadata_dict.get("session_config")
 
-    x_res = y_res = session_config.get("µm/pix")
-    z_res = session_config.get("z_step_um")
+    x_res = y_res = session_config.get("um/pix")
+    z_res = session_config.get("Z step (um)")
 
     # utf-8 error with micron symbol
     if x_res is None:
@@ -158,6 +173,8 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
         if z_res is None:
             raise KeyError("Failed to get the Z step in microns")
 
+        z_res = float(z_res)
+
     x_res = float(x_res)
     y_res = float(y_res)
     z_res = float(z_res)
@@ -171,6 +188,7 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
     )
 
     for tile_key, tile_info in metadata_dict["tile_config"].items():
+
         tile_info_x = tile_info.get("x")
         tile_info_y = tile_info.get("y")
         tile_info_z = tile_info.get("z")
@@ -197,7 +215,11 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
             ]
         )
 
-        channel = channels[tile_info["Laser"]]
+        # print("Keys before breaking: ", tile_info.keys())
+        channel = make_tile_acq_channel(
+            wavelength_config=wavelength_config,
+            tile_info=tile_info
+        )
         exaltation_wave = int(tile_info["Laser"])
         emission_wave = filter_mapping[exaltation_wave]
 
@@ -207,8 +229,11 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
                 "\nLaser power is in percentage of total, it needs calibration"
             ),
             coordinate_transformations=[tile_transform, scale],
-            file_name=f"Ex_{exaltation_wave}_Em_{emission_wave}/"
-            f"{tile_info_x}/{tile_info_x}_{tile_info_y}/",
+            file_name=(
+                f"Ex_{exaltation_wave}_"
+                f"Em_{emission_wave}/"
+                f"{int(tile_info_x)}/{int(tile_info_x)}_{int(tile_info_y)}/"
+            ),
         )
 
         tile_acquisitions.append(tile_acquisition)
@@ -276,7 +301,6 @@ def get_session_end(asi_file: os.PathLike) -> datetime:
         idx -= 1
 
     return result
-
 
 def get_excitation_emission_waves(channels: List) -> dict:
     """

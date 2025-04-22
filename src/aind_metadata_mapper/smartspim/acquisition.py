@@ -109,7 +109,6 @@ class SmartspimETL(GenericEtl[JobSettings]):
         processing_manifest = read_json_as_dict(processing_manifest_path)
 
         filter_mapping = get_excitation_emission_waves(channels)
-
         session_config = metadata_info["session_config"]
         wavelength_config = metadata_info["wavelength_config"]
         tile_config = metadata_info["tile_config"]
@@ -210,6 +209,8 @@ class SmartspimETL(GenericEtl[JobSettings]):
         else:
             spl_medium = "other"
 
+        active_objective = metadata_dict["session_config"].get("Obj", None)
+
         acquisition_model = acquisition.Acquisition(
             experimenter_full_name=processing_manifest.get(
                 "experimenter_full_name"
@@ -236,6 +237,7 @@ class SmartspimETL(GenericEtl[JobSettings]):
                 "local_storage_directory"
             ),
             external_storage_directory="",
+            active_objectives=[active_objective] if active_objective else None,
             # processing_steps=[],
             notes=notes,
         )
