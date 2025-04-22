@@ -536,7 +536,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     @patch("aind_metadata_mapper.fip.session.FIBEtl.run_job")
     def test_get_session_metadata_fip_success(self, mock_run_job: MagicMock):
-        """Tests get_session_metadata bruker creates FibEtl"""
+        """Tests ETL"""
         mock_run_job.return_value = JobResponse(
             status_code=200, data=json.dumps({"some_key": "some_value"})
         )
