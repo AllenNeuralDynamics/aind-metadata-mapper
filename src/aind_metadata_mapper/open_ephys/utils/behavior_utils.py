@@ -7,10 +7,10 @@ from typing import Dict, List, Optional, Set, Tuple, Union
 import numpy as np
 import pandas as pd
 
+import aind_metadata_mapper.open_ephys.utils.constants as constants
+import aind_metadata_mapper.open_ephys.utils.naming_utils as names
 import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
 import aind_metadata_mapper.open_ephys.utils.stim_utils as stim
-import aind_metadata_mapper.open_ephys.utils.naming_utils as names
-import aind_metadata_mapper.open_ephys.utils.constants as constants
 
 INT_NULL = -99
 
@@ -192,8 +192,12 @@ def get_gratings_metadata(stimuli: Dict, start_idx: int = 0) -> pd.DataFrame:
         set_logs = stimuli["images"]["set_log"]
         unique_oris = set([set_log[2] for set_log in set_logs])
         size = stimuli["images"]["size"]
-        image_names = [name for name in list([set_log[1] for set_log in set_logs][: len(unique_oris)])]
-
+        image_names = [
+            name
+            for name in list(
+                [set_log[1] for set_log in set_logs][: len(unique_oris)]
+            )
+        ]
 
         grating_dict = {
             "image_category": ["grating"] * len(unique_oris),
@@ -579,7 +583,9 @@ def is_change_event(stimulus_presentations: pd.DataFrame) -> pd.Series:
 
     is_change = stimuli != prev_stimuli
 
-    stimulus_presentations = stimulus_presentations[~stimulus_presentations.index.duplicated(keep="first")]
+    stimulus_presentations = stimulus_presentations[
+        ~stimulus_presentations.index.duplicated(keep="first")
+    ]
     is_change = is_change[~is_change.index.duplicated(keep="first")]
 
     # reset back to original index
@@ -860,7 +866,10 @@ def compute_is_sham_change(
 
 
 def fingerprint_from_stimulus_file(
-    stimulus_presentations: pd.DataFrame, stimulus_file, stimulus_timestamps, fingerprint_name
+    stimulus_presentations: pd.DataFrame,
+    stimulus_file,
+    stimulus_timestamps,
+    fingerprint_name,
 ):
     """
     Instantiates `fingerprintStimulus` from stimulus file
@@ -879,9 +888,12 @@ def fingerprint_from_stimulus_file(
     `fingerprintStimulus`
         Instantiated fingerprintStimulus
     """
-    fingerprint_stim = stimulus_file["items"]["behavior"]["items"][fingerprint_name]['static_stimulus']
+    fingerprint_stim = stimulus_file["items"]["behavior"]["items"][
+        fingerprint_name
+    ]["static_stimulus"]
 
-    n_repeats = fingerprint_stim["runs"]
+    # not sure why this was here
+    # n_repeats = fingerprint_stim["runs"]
 
     # spontaneous + fingerprint indices relative to start of session
     stimulus_session_frame_indices = np.array(
@@ -890,7 +902,8 @@ def fingerprint_from_stimulus_file(
         ]
     )
 
-    movie_length = int(len(fingerprint_stim["sweep_frames"]) / n_repeats)
+    # not sure why this was here
+    # movie_length = int(len(fingerprint_stim["sweep_frames"]) / n_repeats)
 
     # Start index within the spontaneous + fingerprint block
     movie_start_index = sum(
@@ -898,9 +911,11 @@ def fingerprint_from_stimulus_file(
     )
     res = []
 
-
     sweep_frames = fingerprint_stim["sweep_frames"]
-    sweep_table = [fingerprint_stim["sweep_table"][i] for i in fingerprint_stim["sweep_order"]]
+    sweep_table = [
+        fingerprint_stim["sweep_table"][i]
+        for i in fingerprint_stim["sweep_order"]
+    ]
     dimnames = fingerprint_stim["dimnames"]
 
     res = []
@@ -912,24 +927,28 @@ def fingerprint_from_stimulus_file(
         valid_indices = np.clip(
             stimulus_frame_indices + movie_start_index,
             0,
-            len(stimulus_session_frame_indices) - 1
+            len(stimulus_session_frame_indices) - 1,
         )
 
         start_frame, end_frame = stimulus_session_frame_indices[valid_indices]
         start_time = stimulus_timestamps[start_frame]
-        stop_time = stimulus_timestamps[min(end_frame + 1, len(stimulus_timestamps) - 1)]
+        stop_time = stimulus_timestamps[
+            min(end_frame + 1, len(stimulus_timestamps) - 1)
+        ]
 
         stim_row = sweep_table[i]
         stim_info = dict(zip(dimnames, stim_row))
 
-        res.append({
-            "start_time": start_time,
-            "stop_time": stop_time,
-            "start_frame": start_frame,
-            "end_frame": end_frame,
-            "duration": stop_time - start_time,
-            **stim_info  # unpack stimulus parameters
-        })
+        res.append(
+            {
+                "start_time": start_time,
+                "stop_time": stop_time,
+                "start_frame": start_frame,
+                "end_frame": end_frame,
+                "duration": stop_time - start_time,
+                **stim_info,  # unpack stimulus parameters
+            }
+        )
 
     table = pd.DataFrame(res)
 
@@ -938,9 +957,12 @@ def fingerprint_from_stimulus_file(
     table["stim_name"] = fingerprint_name
 
     # Coerce ints cleanly
-    table = table.astype({c: "int64" for c in table.select_dtypes(include="int")})
+    table = table.astype(
+        {c: "int64" for c in table.select_dtypes(include="int")}
+    )
 
     return table
+
 
 def from_stimulus_file(
     stimulus_file,
@@ -1012,7 +1034,9 @@ def from_stimulus_file(
 
     stimulus_index_df = (
         raw_stim_pres_df.reset_index()
-        .merge(stimulus_metadata_df.reset_index(), on=["image_name"],how="outer")
+        .merge(
+            stimulus_metadata_df.reset_index(), on=["image_name"], how="outer"
+        )
         .set_index(idx_name)
     )
 
@@ -1041,13 +1065,12 @@ def from_stimulus_file(
         right_index=True,
         how="left",
     )
-    #if len(raw_stim_pres_df) != len(stim_pres_df):
+    # if len(raw_stim_pres_df) != len(stim_pres_df):
     #    raise ValueError(
     #        "Length of `stim_pres_df` should not change after"
     #        f" merge; was {len(raw_stim_pres_df)}, now "
     #        f" {len(stim_pres_df)}."
     #    )
-
 
     stim_pres_df["is_change"] = is_change_event(
         stimulus_presentations=stim_pres_df
@@ -1056,7 +1079,6 @@ def from_stimulus_file(
     stim_pres_df["flashes_since_change"] = get_flashes_since_change(
         stimulus_presentations=stim_pres_df
     )
-
 
     # Sort columns then drop columns which contain only all NaN values
     stim_pres_df = stim_pres_df[sorted(stim_pres_df)].dropna(axis=1, how="all")
@@ -1073,13 +1095,15 @@ def from_stimulus_file(
 
     stim_pres_df = fix_omitted_end_frame(stim_pres_df)
 
-    for fingerprint_name, stim_data in data["items"]["behavior"]["items"].items():
+    for fingerprint_name, stim_data in data["items"]["behavior"][
+        "items"
+    ].items():
         if "static_stimulus" in stim_data:
             stim_pres_df = add_fingerprint_stimulus(
                 stimulus_presentations=stim_pres_df,
                 stimulus_file=data,
                 stimulus_timestamps=stimulus_timestamps,
-                fingerprint_name=fingerprint_name
+                fingerprint_name=fingerprint_name,
             )
     stim_pres_df = postprocess(
         presentations=stim_pres_df,
@@ -1096,9 +1120,11 @@ def from_stimulus_file(
     without_pkl = dupes[~dupes["image_set"].str.contains("pkl", na=False)]
 
     # Merge to replace "image_set" of "pkl" rows with the other row's value
-    merged = with_pkl.merge(without_pkl[["start_time", "image_name", "image_set"]],
-                            on=["start_time", "image_name"],
-                            suffixes=("_with_pkl", "_without_pkl"))
+    merged = with_pkl.merge(
+        without_pkl[["start_time", "image_name", "image_set"]],
+        on=["start_time", "image_name"],
+        suffixes=("_with_pkl", "_without_pkl"),
+    )
 
     # Replace "pkl" row's image_set with non-pkl version
     df.loc[merged.index, "image_set"] = merged["image_set_without_pkl"]
@@ -1110,7 +1136,9 @@ def from_stimulus_file(
     df.reset_index(drop=True, inplace=True)
     df["image_set"] = df["image_set"].where(
         ~(df["image_set"].fillna("").str.endswith(".pkl")),
-        df["image_set"].str.extract(r'([^/]+)\.pkl$')[0]  # Extracted values are in the first column
+        df["image_set"].str.extract(r"([^/]+)\.pkl$")[
+            0
+        ],  # Extracted values are in the first column
     )
     df = names.map_column_names(df, constants.default_column_renames)
     duplicates = df.columns[df.columns.duplicated()].unique()
@@ -1130,11 +1158,16 @@ def from_stimulus_file(
     df = remove_short_sandwiched_spontaneous(df)
 
     def safe_split_pos(x):
+        """
+        Try to split the 'position' value, which should take
+        the form of a tuple, into two floats.
+        If value is nan, split into two nans.
+        """
         if isinstance(x, (list, tuple)) and len(x) == 2:
             return pd.Series([float(x[0]), float(x[1])])
         else:
             return pd.Series([np.nan, np.nan])
- 
+
     if "Pos" in df.columns:
         df[["pos_x", "pos_y"]] = df["Pos"].apply(safe_split_pos)
         df.drop(columns=["Pos"], inplace=True)
@@ -1399,8 +1432,11 @@ def get_spontaneous_stimulus(
     )
 
 
-def make_spontaneous_stimulus(stimulus_presentations_table: pd.DataFrame) -> pd.DataFrame:
-    """Identifies spontaneous stimulus (gray screen shown in between stimulus blocks)
+def make_spontaneous_stimulus(
+    stimulus_presentations_table: pd.DataFrame,
+) -> pd.DataFrame:
+    """Identifies spontaneous stimulus
+    (gray screen shown in between stimulus blocks)
     by detecting gaps in stimulus presentations.
 
     Parameters
@@ -1411,14 +1447,20 @@ def make_spontaneous_stimulus(stimulus_presentations_table: pd.DataFrame) -> pd.
     Returns
     -------
     pd.DataFrame
-        The stimulus presentations table with added spontaneous stimulus blocks.
+        The stimulus presentations table with added spontaneous stimulus
+        blocks.
     """
 
     # Ensure the table is sorted by start time
-    stimulus_presentations_table = stimulus_presentations_table.sort_values("start_time").reset_index(drop=True)
+    stimulus_presentations_table = stimulus_presentations_table.sort_values(
+        "start_time"
+    ).reset_index(drop=True)
 
     # Identify gaps between consecutive stimulus presentations
-    gaps = stimulus_presentations_table["start_time"].iloc[1:].values - stimulus_presentations_table["stop_time"].iloc[:-1].values
+    gaps = (
+        stimulus_presentations_table["start_time"].iloc[1:].values
+        - stimulus_presentations_table["stop_time"].iloc[:-1].values
+    )
     gap_indices = np.where(gaps > 0)[0]  # Indices where gaps exist
 
     spontaneous_entries = []
@@ -1427,35 +1469,46 @@ def make_spontaneous_stimulus(stimulus_presentations_table: pd.DataFrame) -> pd.
         prev_row = stimulus_presentations_table.iloc[idx]
         next_row = stimulus_presentations_table.iloc[idx + 1]
 
-        spontaneous_entries.append({
-            "start_time": prev_row["stop_time"],
-            "stop_time": next_row["start_time"],
-            "duration": next_row["start_time"] - prev_row["stop_time"],
-            "start_frame": prev_row["end_frame"],
-            "end_frame": next_row["start_frame"],
-            "stim_block": prev_row["stim_block"] + 1,  # Assign new block number
-            "stim_name": "spontaneous",
-        })
+        spontaneous_entries.append(
+            {
+                "start_time": prev_row["stop_time"],
+                "stop_time": next_row["start_time"],
+                "duration": next_row["start_time"] - prev_row["stop_time"],
+                "start_frame": prev_row["end_frame"],
+                "end_frame": next_row["start_frame"],
+                "stim_block": prev_row["stim_block"]
+                + 1,  # Assign new block number
+                "stim_name": "spontaneous",
+            }
+        )
 
     # Convert spontaneous entries into a DataFrame
     spontaneous_df = pd.DataFrame(spontaneous_entries)
 
     if spontaneous_df.empty:
-        return stimulus_presentations_table  # No gaps found, return original table
+        # No gaps found, return original table
+        return stimulus_presentations_table
 
-    # Adjust the stim_block values in the original table to account for inserted spontaneous blocks
+    # Adjust the stim_block values in the original table to account for
+    # inserted spontaneous blocks
     stimulus_presentations_table["stim_block"] += (
-        stimulus_presentations_table["stim_block"] >= spontaneous_df["stim_block"].min()
+        stimulus_presentations_table["stim_block"]
+        >= spontaneous_df["stim_block"].min()
     ).astype(int)
 
     # Merge and return sorted table
-    return pd.concat([stimulus_presentations_table, spontaneous_df]).sort_values("start_frame").reset_index(drop=True)
+    return (
+        pd.concat([stimulus_presentations_table, spontaneous_df])
+        .sort_values("start_frame")
+        .reset_index(drop=True)
+    )
+
 
 def add_fingerprint_stimulus(
     stimulus_presentations: pd.DataFrame,
     stimulus_file,
     stimulus_timestamps,
-    fingerprint_name
+    fingerprint_name,
 ) -> pd.DataFrame:
     """Adds the fingerprint stimulus and the preceding gray screen to
     the stimulus presentations table
@@ -1469,15 +1522,15 @@ def add_fingerprint_stimulus(
         stimulus_presentations=stimulus_presentations,
         stimulus_file=stimulus_file,
         stimulus_timestamps=stimulus_timestamps,
-        fingerprint_name=fingerprint_name
+        fingerprint_name=fingerprint_name,
     )
 
     stimulus_presentations = pd.concat(
         [stimulus_presentations, fingerprint_stimulus]
     )
-    #stimulus_presentations = get_spontaneous_stimulus(
+    # stimulus_presentations = get_spontaneous_stimulus(
     #    stimulus_presentations_table=stimulus_presentations
-    #)
+    # )
     # reset index to go from 0...end
     stimulus_presentations = make_spontaneous_stimulus(stimulus_presentations)
     stimulus_presentations.index = pd.Index(
@@ -1546,7 +1599,9 @@ def get_stimulus_name(stim_file) -> str:
     except KeyError:
         try:
             stimulus_name = Path(
-                stim_file['items']['behavior']['stimuli']['images']['image_set']
+                stim_file["items"]["behavior"]["stimuli"]["images"][
+                    "image_set"
+                ]
             ).stem.split(".")[0]
         except KeyError:
             print("No image set found in stimulus file")

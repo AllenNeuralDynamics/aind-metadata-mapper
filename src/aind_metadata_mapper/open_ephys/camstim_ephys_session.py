@@ -47,9 +47,7 @@ class CamstimEphysSessionEtl(
     session_path: Path
     recording_dir: Path
 
-    def __init__(
-        self, job_settings: Union[JobSettings, str, dict]
-    ) -> None:
+    def __init__(self, job_settings: Union[JobSettings, str, dict]) -> None:
         """
         Determine needed input filepaths from np-exp and lims, get session
         start and end times from sync file, write stim tables and extract
@@ -89,8 +87,10 @@ class CamstimEphysSessionEtl(
         )
         self.pkl_path = self.session_path / f"{self.folder_name}.stim.pkl"
         if not self.pkl_path.exists():
-            self.pkl_path = self.session_path / f"{self.folder_name}.behavior.pkl"
-        logger.debug("Using pickle:",self.pkl_path)
+            self.pkl_path = (
+                self.session_path / f"{self.folder_name}.behavior.pkl"
+            )
+        logger.debug("Using pickle:", self.pkl_path)
         self.pkl_data = pkl.load_pkl(self.pkl_path)
         self.fps = pkl.get_fps(self.pkl_data)
 
@@ -377,7 +377,9 @@ class CamstimEphysSessionEtl(
         """
         opto_file = pkl.load_pkl(self.opto_pkl_path)
         sync_file = sync.load_sync(self.sync_path)
-        start_times = sync.extract_led_times(sync_file, self.opto_conditions_map)
+        start_times = sync.extract_led_times(
+            sync_file, self.opto_conditions_map
+        )
         conditions = [str(item) for item in opto_file["opto_conditions"]]
         levels = opto_file["opto_levels"]
         assert len(conditions) == len(levels)
@@ -393,7 +395,9 @@ class CamstimEphysSessionEtl(
                 "level": levels,
             }
         )
-        optotagging_table = optotagging_table.sort_values(by="start_time", axis=0)
+        optotagging_table = optotagging_table.sort_values(
+            by="start_time", axis=0
+        )
         stop_times = []
         pulse_types = []
         pulse_durs = []

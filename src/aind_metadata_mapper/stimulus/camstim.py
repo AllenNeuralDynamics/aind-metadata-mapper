@@ -176,7 +176,6 @@ class Camstim:
         column_name_map=constants.default_column_renames,
         modality="ephys",
     ):
-        assert not self.behavior, "Can't generate regular stim table from behavior pkl. USe build_behavior_table instead."
         """
         Builds a stimulus table from the stimulus pickle file, sync file, and
         the given parameters. Writes the table to a csv file.
@@ -199,6 +198,11 @@ class Camstim:
             names.default_column_renames
 
         """
+        assert (
+            not self.behavior
+        ), "Can't generate regular stim table from behavior pkl. \
+            Use build_behavior_table instead."
+
 
         vsync_times = stim_utils.extract_frame_times_from_vsync(self.sync_data)
         if modality == "ephys":
@@ -206,9 +210,7 @@ class Camstim:
                 self.sync_data
             )
         elif modality == "ophys":
-            delay = stim_utils.extract_frame_times_with_delay(
-                self.sync_data
-            )
+            delay = stim_utils.extract_frame_times_with_delay(self.sync_data)
             frame_times = stim_utils.extract_frame_times_from_vsync(
                 self.sync_data
             )
@@ -268,7 +270,7 @@ class Camstim:
         current_epoch = [None, 0.0, 0.0, {}, set()]
         epoch_start_idx = 0
         for current_idx, row in stim_table.iterrows():
-            if row['stim_name'] == 'spontaneous':
+            if row["stim_name"] == "spontaneous":
                 continue
             # if the stim name changes, summarize current epoch's parameters
             # and start a new epoch
@@ -288,7 +290,7 @@ class Camstim:
                         "flashes_since_change",
                         "image_index",
                         "is_change",
-                        "omitted"
+                        "omitted",
                     ):
                         param_set = set(
                             stim_table[column][
@@ -296,7 +298,9 @@ class Camstim:
                             ].dropna()
                         )
                         if len(param_set) > 1000:
-                            current_epoch[3][column] = ["Error: too many values to usefully encode here (over 1000)"]
+                            current_epoch[3][column] = [
+                                "Error: over 1000 parameter values"
+                            ]
                         elif len(param_set) > 0:
                             current_epoch[3][column] = param_set
                 epochs.append(current_epoch)
