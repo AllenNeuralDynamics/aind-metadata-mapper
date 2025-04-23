@@ -203,7 +203,6 @@ class Camstim:
         ), "Can't generate regular stim table from behavior pkl. \
             Use build_behavior_table instead."
 
-
         vsync_times = stim_utils.extract_frame_times_from_vsync(self.sync_data)
         if modality == "ephys":
             frame_times = stim_utils.extract_frame_times_from_photodiode(
