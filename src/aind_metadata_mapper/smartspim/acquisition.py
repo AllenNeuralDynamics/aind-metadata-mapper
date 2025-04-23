@@ -3,11 +3,14 @@
 import os
 import re
 import sys
+import requests
 from datetime import datetime
-from typing import Dict, Union, List
+from typing import Dict, Union, List, Any
+from urllib.parse import quote
 
 from aind_data_schema.components.coordinates import ImageAxis
-from aind_data_schema.core.acquisition import Acquisition, Immersion
+from aind_data_schema.core.acquisition import Acquisition, Immersion, ProcessingSteps
+from aind_data_schema_models.process_names import ProcessName
 from aind_data_schema.components.devices import ImmersionMedium
 
 from aind_metadata_mapper.core import GenericEtl
@@ -21,7 +24,6 @@ from aind_metadata_mapper.smartspim.utils import (
     read_json_as_dict,
 )
 from enum import Enum
-from pydantic import BaseModel
 
 #TODO: consider moving Slims Handlers to utils 
 class SlimsImmersionMedium(Enum):
@@ -32,7 +34,7 @@ class SlimsImmersionMedium(Enum):
     CARGILLE_OIL_153 = "Cargille Oil 1.5300"
     ETHYL_CINNAMATE = "ethyl cinnamate"
     OPTIPLEX_DMSO = "Optiplex and DMSO"
-
+    EASYINDEX = "EasyIndex"
 class SmartspimETL(GenericEtl[JobSettings]):
     """
     This class contains the methods to write the metadata
@@ -100,10 +102,6 @@ class SmartspimETL(GenericEtl[JobSettings]):
             self.job_settings.mdata_filename_json
         )
 
-        # processing_manifest_path = self.job_settings.input_source.joinpath(
-        #     self.job_settings.processing_manifest_path
-        # )
-
         # ASI file does not exist, needed for acquisition
         if not asi_file_path_txt.exists():
             raise FileNotFoundError(f"File {asi_file_path_txt} does not exist")
@@ -111,14 +109,8 @@ class SmartspimETL(GenericEtl[JobSettings]):
         if not mdata_path_json.exists():
             raise FileNotFoundError(f"File {mdata_path_json} does not exist")
 
-        # if not processing_manifest_path.exists():
-        #     raise FileNotFoundError(
-        #         f"File {processing_manifest_path} does not exist"
-        #     )
-
         # Getting acquisition metadata from the microscope
         metadata_info = read_json_as_dict(mdata_path_json)
-        # processing_manifest = read_json_as_dict(processing_manifest_path)
 
         filter_mapping = get_excitation_emission_waves(channels)
         session_config = metadata_info["session_config"]
@@ -136,7 +128,6 @@ class SmartspimETL(GenericEtl[JobSettings]):
             "tile_config": tile_config,
             "session_end_time": session_end_time,
             "filter_mapping": filter_mapping,
-            # "processing_manifest": processing_manifest,
         }
 
         return metadata_dict
@@ -176,85 +167,43 @@ class SmartspimETL(GenericEtl[JobSettings]):
         else:
             raise ValueError("Error while getting mouse date and ID")
 
-        # processing_manifest = metadata_dict["processing_manifest"][
-        #     "prelim_acquisition"
-        # ]
-        # axes = processing_manifest.get("axes")
-
-        # if axes is None:
-        #     raise ValueError("Please, check the axes orientation")
-
-        # # Getting axis orientation
-        # axes = [
-        #     ImageAxis(
-        #         name=ax["name"],
-        #         dimension=ax["dimension"],
-        #         direction=get_anatomical_direction(ax["direction"]),
-        #     )
-        #     for ax in axes
-        # ]
-
-        # chamber_immersion = processing_manifest.get("chamber_immersion")
-        # sample_immersion = processing_manifest.get("sample_immersion")
-
-        # if chamber_immersion is None or sample_immersion is None:
-        #     raise ValueError("Please, provide the immersion mediums.")
-
-        # chm_medium = chamber_immersion.get("medium")
-        # spl_medium = sample_immersion.get("medium")
-
-        # # Parsing the mediums the operator gives
-        # notes = (
-        #     f"Chamber immersion: {chm_medium} - Sample immersion: {spl_medium}"
-        # )
-        # notes += f" - Operator notes: {processing_manifest.get('notes')}"
-
-        # if "cargille" in chm_medium.lower():
-        #     chm_medium = "oil"
-
-        # else:
-        #     chm_medium = "other"
-
-        # if "cargille" in spl_medium.lower():
-        #     spl_medium = "oil"
-
-        # else:
-        #     spl_medium = "other"
-
         active_objective = metadata_dict["session_config"].get("Obj", None)
 
+        # create incomplete acquisition model
         acquisition_model = Acquisition.model_construct(
-            # experimenter_full_name=processing_manifest.get(
-            #     "experimenter_full_name"
-            # ),
             specimen_id="",
             subject_id=mouse_id,
-            # instrument_id=processing_manifest.get("instrument_id"),
             session_start_time=mouse_date,
             session_end_time=metadata_dict["session_end_time"],
             tiles=make_acq_tiles(
                 metadata_dict=metadata_dict,
                 filter_mapping=metadata_dict["filter_mapping"],
             ),
-            # axes=axes,
-            # chamber_immersion=acquisition.Immersion(
-            #     medium=chm_medium,
-            #     refractive_index=chamber_immersion.get("refractive_index"),
-            # ),
-            # sample_immersion=acquisition.Immersion(
-            #     medium=spl_medium,
-            #     refractive_index=sample_immersion.get("refractive_index"),
-            # ),
-            # local_storage_directory=processing_manifest.get(
-            #     "local_storage_directory"
-            # ),
             external_storage_directory="",
             active_objectives=[active_objective] if active_objective else None,
             processing_steps=[],
-            # notes=notes,
         )
 
         return acquisition_model
+    
+    @staticmethod
+    def get_smartspim_imaging_info(
+                domain: str, url_path: str, subject_id: str,
+                start_date_gte: str = None, end_date_lte: str = None
+            ):
+            """Utility method to retrieve smartspim imaging info from metadata service"""
+            query_params = {"subject_id": subject_id}
+            if start_date_gte:
+                query_params["start_date_gte"] = start_date_gte
+            if end_date_lte:
+                query_params["end_date_lte"] = end_date_lte
+            response = requests.get(f"{domain}/{url_path}", params=query_params)
+            response.raise_for_status()
+            if response.status_code == 200:
+                imaging_info = response.json().get("data")
+            else:
+                imaging_info = []
+            return imaging_info
 
     def _integrate_data_from_slims(
             self,
@@ -278,14 +227,13 @@ class SmartspimETL(GenericEtl[JobSettings]):
             The integrated acquisition model.
         """
         protocol_id = slims_data.get("protocol_id", None)
+        experimenter_name = slims_data.get("experimenter_name", None)
         acquisition_model.specimen_id = slims_data.get("specimen_id", None)
         acquisition_model.instrument_id = slims_data.get(
             "instrument_id", None
         )
-        acquisition_model.experimenter_full_name = slims_data.get(
-            "experimenter_full_name", None
-        )
-        acquisition_model.protocol_id = protocol_id if protocol_id else []
+        acquisition_model.experimenter_full_name = [experimenter_name] if experimenter_name else []
+        acquisition_model.protocol_id = [protocol_id] if protocol_id else []
         chamber_immersion_medium = slims_data.get("chamber_immersion_medium", None)
         chamber_refractive_index = slims_data.get(
             "chamber_refractive_index", None
@@ -307,20 +255,107 @@ class SmartspimETL(GenericEtl[JobSettings]):
             y = slims_data.get("y_direction", None),
             z = slims_data.get("z_direction", None),
         )
+        acquisition_model.processing_steps = self._map_processing_steps(
+            slims_data=slims_data
+        )
+        return Acquisition.model_validate(acquisition_model)
 
-        # TODO: some method to handle channels -> processing steps
-        channels = []
-        imaging_channels = slims_data.get("imaging_channels", None)
-        stitching_channels = slims_data.get("stitching_channels", None)
-        ccf_registration_channels = slims_data.get("ccf_registration_channels", None)
-        cell_segmentation_channels = slims_data.get("cell_segmentation_channels", None)
+    # Definitely move this to utils 
+    @staticmethod
+    def _ensure_list(raw: Any) -> List[Any]:
+        """
+        Turn a value that might be a list, a single string, or None
+        into a proper list of strings (or an empty list).
+        """
+        if isinstance(raw, list):
+            return raw
+        if isinstance(raw, str) and raw.strip():
+            return [raw]
+        return []
+    
+    def _map_processing_steps(self, slims_data: Dict) -> List[ProcessingSteps]:
+        """
+        Maps the channel info from SLIMS to the ProcessingSteps model.
+
+        Parameters
+        ----------
+        slims_data: Dict
+            Dictionary with the data from the SLIMS database.
+
+        Returns
+        -------
+        List[ProcessingSteps]
+            List of processing steps mapped from SLIMS data.
+        """
+        imaging = self._ensure_list(slims_data.get("imaging_channels"))
+        stitching = self._ensure_list(slims_data.get("stitching_channels"))
+        ccf_registration = self._ensure_list(slims_data.get("ccf_registration_channels"))
+        cell_segmentation = self._ensure_list(slims_data.get("cell_segmentation_channels"))
+
+        list_to_steps = [
+            (imaging, [
+                ProcessName.IMAGE_DESTRIPING,
+                ProcessName.IMAGE_FLAT_FIELD_CORRECTION,
+                ProcessName.IMAGE_TILE_FUSING,
+            ]),
+            (stitching, [ ProcessName.IMAGE_TILE_ALIGNMENT ]),
+            (ccf_registration, [ ProcessName.IMAGE_ATLAS_ALIGNMENT ]),
+            (cell_segmentation, [ ProcessName.IMAGE_CELL_SEGMENTATION ]),
+        ]
+        step_map: dict[str, set[ProcessName]] = {}
+
+        for channel_list, process_names in list_to_steps:
+            for raw_ch in channel_list:
+                parsed = self._parse_channel_name(raw_ch)
+                if parsed not in step_map:
+                    step_map[parsed] = set()
+                step_map[parsed].update(process_names)
+
+        processing_steps: List[ProcessingSteps] = []
+        for channel_name, names_set in step_map.items():
+            processing_steps.append(
+                ProcessingSteps(
+                    channel_name=channel_name,
+                    process_name=list(names_set)
+                )
+            )
+
+        return processing_steps
+    
+    @staticmethod
+    def _parse_channel_name(channel_str: str) -> str:
+        """
+        Parses the channel string from SLIMS to a standard format.
+
+        Parameters
+        ----------
+        channel_str: str
+            The channel name to be parsed (ex: "Laser = 445; Emission Filter = 469/35").
+
+        Returns
+        -------
+        str
+            The parsed channel name (ex: "Ex_445_Em_469").
+        """
+        s = channel_str.replace("Laser", "Ex") \
+                   .replace("Emission Filter", "Em")
+        parts = [p.strip() for p in re.split(r"[;,]", s) if p.strip()]
+        segments = []
+        for part in parts:
+            key, val = [t.strip() for t in part.split("=", 1)]
+            # discard any bandwidth info after slash
+            core = val.split("/", 1)[0]
+            segments.append(f"{key}_{core}")
+
+        return "_".join(segments)
+
 
     @staticmethod
     def _map_axes(x: str, y: str, z: str) -> List[ImageAxis]:
         """Maps the axes directions to the ImageAxis enum."""
-        x_axis = ImageAxis(name="x", dimension=2, direction=get_anatomical_direction(x))
-        y_axis = ImageAxis(name="y", dimension=1, direction=get_anatomical_direction(y))
-        z_axis = ImageAxis(name="z", dimension=0, direction=get_anatomical_direction(z))
+        x_axis = ImageAxis(name="X", dimension=2, direction=get_anatomical_direction(x))
+        y_axis = ImageAxis(name="Y", dimension=1, direction=get_anatomical_direction(y))
+        z_axis = ImageAxis(name="Z", dimension=0, direction=get_anatomical_direction(z))
         return [x_axis, y_axis, z_axis]
 
 
@@ -345,6 +380,8 @@ class SmartspimETL(GenericEtl[JobSettings]):
             return ImmersionMedium.OIL
         elif medium == SlimsImmersionMedium.ETHYL_CINNAMATE.value:
             return ImmersionMedium.ECI
+        elif medium == SlimsImmersionMedium.EASYINDEX.value:
+            return ImmersionMedium.EASYINDEX
         else:
             return ImmersionMedium.OTHER
 
@@ -365,6 +402,20 @@ class SmartspimETL(GenericEtl[JobSettings]):
         """
         metadata_dict = self._extract()
         acquisition_model = self._transform(metadata_dict=metadata_dict)
+        slims_data=self.get_smartspim_imaging_info(
+                domain=self.job_settings.metadata_service_domain,
+                url_path=self.job_settings.metadata_service_path,
+                subject_id=self.job_settings.subject_id,
+                start_date_gte=acquisition_model.session_start_time.isoformat(),
+                end_date_lte=acquisition_model.session_end_time.isoformat(),
+        )
+        if slims_data and len(slims_data) == 1:
+            slims_data = slims_data[0]
+            acquisition_model = self._integrate_data_from_slims(
+                slims_data=slims_data,
+                acquisition_model=acquisition_model,
+            )
+
         job_response = self._load(
             acquisition_model, self.job_settings.output_directory
         )

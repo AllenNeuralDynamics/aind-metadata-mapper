@@ -22,5 +22,6 @@ class JobSettings(BaseJobSettings):
     asi_filename: str = "derivatives/ASI_logging.txt"
     mdata_filename_json: str = "derivatives/metadata.json"
 
-    # Metadata provided by microscope operators
-    processing_manifest_path: str = "derivatives/processing_manifest.json"
+    # Metadata service to fetch metadata provided by microscope operators in SLIMS
+    metadata_service_domain: str
+    metadata_service_path: str = "slims/smartspim_imaging"

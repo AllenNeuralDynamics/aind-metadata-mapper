@@ -4,6 +4,7 @@ import argparse
 import json
 import logging
 import sys
+import urllib.parse as urlencode
 from pathlib import Path
 from typing import Optional, Type
 
@@ -318,22 +319,6 @@ class GatherMetadataJob:
 
     def get_acquisition_metadata(self) -> Optional[dict]:
         """Get acquisition metadata"""
-
-        def get_smartspim_imaging_info(domain: str, url_path: str, subject_id: str, start_date_gte: str = None, end_date_lte: str = None):
-            """Utility method to retrieve smartspim imaging info from metadata service"""
-            query_params = urlencode({"subject_id": subject_id})
-            if start_date_gte:
-                query_params["start_date_gte"] = start_date_gte
-            if end_date_lte:
-                query_params["end_date_lte"] = end_date_lte
-            url = f"{domain.rstrip('/')}/{url_path.lstrip('/')}?{query_params}"
-            response = requests.get(url)
-            if response.status_code == 200:
-                imaging_info = response.json().get("data")
-            else:
-                imaging_info = []
-            return imaging_info
-        
         file_name = Acquisition.default_filename()
         if self._does_file_exist_in_user_defined_dir(file_name=file_name):
             contents = self._get_file_from_user_defined_directory(
@@ -346,21 +331,6 @@ class GatherMetadataJob:
             )
             job_response = acquisition_job.run_job()
             if job_response.status_code != 500:
-                acquisition_metadata = json.loads(job_response.data)
-                start_time = acquisition_metadata["session_start_time"]
-                end_time = acquisition_metadata["session_end_time"]
-                slims_imaging_info = get_smartspim_imaging_info(
-                    domain=self.settings.metadata_service_domain,
-                    url_path=self.settings.acquisition_settings.metadata_service_path,
-                    subject_id=self.settings.acquisition_settings.job_settings.subject_id,
-                    start_date_gte=start_time,
-                    end_date_lte=end_time,
-                )
-                acquisition_job._integrate_data_from_slims(
-                    acquisition_metadata=acquisition_metadata,
-                    slims_imaging_info=slims_imaging_info,
-                )
-
                 return json.loads(job_response.data)
             else:
                 return None
