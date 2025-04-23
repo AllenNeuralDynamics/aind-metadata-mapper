@@ -62,13 +62,7 @@ def get_anatomical_direction(anatomical_direction: str) -> AnatomicalDirection:
         Corresponding enum defined in the anatomical
         direction class
     """
-
-    anatomical_direction = anatomical_direction.lower()
-
-    # Note: I could have done str.capitalize and then get
-    # the anatomical direction directly from the class
-    # but we have multiple versions now and I want to make this
-    # robust
+    anatomical_direction = anatomical_direction.strip().lower().replace(" ", "_")
     if anatomical_direction == "left_to_right":
         anatomical_direction = AnatomicalDirection.LR
 
@@ -88,6 +82,7 @@ def get_anatomical_direction(anatomical_direction: str) -> AnatomicalDirection:
         anatomical_direction = AnatomicalDirection.SI
 
     return anatomical_direction
+
 
 def make_tile_acq_channel(
         wavelength_config: dict,
@@ -112,6 +107,7 @@ def make_tile_acq_channel(
         .get(wavelength,)
         .get(f"power_{side_map[side]}")
     )
+    # TODO: channel name should be "Ex_488" + "_Em_525"
     channel = tile.Channel(
         channel_name=wavelength,
         light_source_name=wavelength,

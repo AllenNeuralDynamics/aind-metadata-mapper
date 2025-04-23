@@ -320,7 +320,7 @@ class GatherMetadataJob:
         """Get acquisition metadata"""
 
         def get_smartspim_imaging_info(domain: str, url_path: str, subject_id: str, start_date_gte: str = None, end_date_lte: str = None):
-            """Utility method to retrieve info from metadata service"""
+            """Utility method to retrieve smartspim imaging info from metadata service"""
             query_params = urlencode({"subject_id": subject_id})
             if start_date_gte:
                 query_params["start_date_gte"] = start_date_gte
@@ -334,13 +334,6 @@ class GatherMetadataJob:
                 imaging_info = []
             return imaging_info
         
-        #TODO:Move integrate method to ETL class
-        def integrate_imaging_info_in_acquisition_metadata(acquisition_metadata: dict, imaging_info: list) -> dict:
-            """Integrate imaging info into acquisition metadata"""
-            acquisition_model = Acquisition.model_construct(**acquisition_metadata)
-            if imaging_info:
-                acquisition_model.chamber_immersion = acquisition_model.chamber_immersion.model_copy(update={"immersion": imaging_info[0].get("chamber_immersion")})
-
         file_name = Acquisition.default_filename()
         if self._does_file_exist_in_user_defined_dir(file_name=file_name):
             contents = self._get_file_from_user_defined_directory(
@@ -356,12 +349,16 @@ class GatherMetadataJob:
                 acquisition_metadata = json.loads(job_response.data)
                 start_time = acquisition_metadata["session_start_time"]
                 end_time = acquisition_metadata["session_end_time"]
-                imaging_info = get_smartspim_imaging_info(
+                slims_imaging_info = get_smartspim_imaging_info(
                     domain=self.settings.metadata_service_domain,
                     url_path=self.settings.acquisition_settings.metadata_service_path,
                     subject_id=self.settings.acquisition_settings.job_settings.subject_id,
                     start_date_gte=start_time,
                     end_date_lte=end_time,
+                )
+                acquisition_job._integrate_data_from_slims(
+                    acquisition_metadata=acquisition_metadata,
+                    slims_imaging_info=slims_imaging_info,
                 )
 
                 return json.loads(job_response.data)

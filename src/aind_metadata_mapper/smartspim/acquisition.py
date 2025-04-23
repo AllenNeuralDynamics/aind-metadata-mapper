@@ -4,10 +4,11 @@ import os
 import re
 import sys
 from datetime import datetime
-from typing import Dict, Union
+from typing import Dict, Union, List
 
 from aind_data_schema.components.coordinates import ImageAxis
-from aind_data_schema.core import acquisition
+from aind_data_schema.core.acquisition import Acquisition, Immersion
+from aind_data_schema.components.devices import ImmersionMedium
 
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.core_models import JobResponse
@@ -19,7 +20,18 @@ from aind_metadata_mapper.smartspim.utils import (
     make_acq_tiles,
     read_json_as_dict,
 )
+from enum import Enum
+from pydantic import BaseModel
 
+#TODO: consider moving Slims Handlers to utils 
+class SlimsImmersionMedium(Enum):
+    """Enum for the immersion medium used in SLIMS."""
+
+    DIH2O = "diH2O"
+    CARGILLE_OIL_152 = "Cargille Oil 1.5200"
+    CARGILLE_OIL_153 = "Cargille Oil 1.5300"
+    ETHYL_CINNAMATE = "ethyl cinnamate"
+    OPTIPLEX_DMSO = "Optiplex and DMSO"
 
 class SmartspimETL(GenericEtl[JobSettings]):
     """
@@ -88,9 +100,9 @@ class SmartspimETL(GenericEtl[JobSettings]):
             self.job_settings.mdata_filename_json
         )
 
-        processing_manifest_path = self.job_settings.input_source.joinpath(
-            self.job_settings.processing_manifest_path
-        )
+        # processing_manifest_path = self.job_settings.input_source.joinpath(
+        #     self.job_settings.processing_manifest_path
+        # )
 
         # ASI file does not exist, needed for acquisition
         if not asi_file_path_txt.exists():
@@ -99,14 +111,14 @@ class SmartspimETL(GenericEtl[JobSettings]):
         if not mdata_path_json.exists():
             raise FileNotFoundError(f"File {mdata_path_json} does not exist")
 
-        if not processing_manifest_path.exists():
-            raise FileNotFoundError(
-                f"File {processing_manifest_path} does not exist"
-            )
+        # if not processing_manifest_path.exists():
+        #     raise FileNotFoundError(
+        #         f"File {processing_manifest_path} does not exist"
+        #     )
 
         # Getting acquisition metadata from the microscope
         metadata_info = read_json_as_dict(mdata_path_json)
-        processing_manifest = read_json_as_dict(processing_manifest_path)
+        # processing_manifest = read_json_as_dict(processing_manifest_path)
 
         filter_mapping = get_excitation_emission_waves(channels)
         session_config = metadata_info["session_config"]
@@ -124,12 +136,12 @@ class SmartspimETL(GenericEtl[JobSettings]):
             "tile_config": tile_config,
             "session_end_time": session_end_time,
             "filter_mapping": filter_mapping,
-            "processing_manifest": processing_manifest,
+            # "processing_manifest": processing_manifest,
         }
 
         return metadata_dict
 
-    def _transform(self, metadata_dict: Dict) -> acquisition.Acquisition:
+    def _transform(self, metadata_dict: Dict) -> Acquisition:
         """
         Transforms the raw metadata from the acquisition
         to create the acquisition.json defined on the
@@ -164,86 +176,179 @@ class SmartspimETL(GenericEtl[JobSettings]):
         else:
             raise ValueError("Error while getting mouse date and ID")
 
-        processing_manifest = metadata_dict["processing_manifest"][
-            "prelim_acquisition"
-        ]
-        axes = processing_manifest.get("axes")
+        # processing_manifest = metadata_dict["processing_manifest"][
+        #     "prelim_acquisition"
+        # ]
+        # axes = processing_manifest.get("axes")
 
-        if axes is None:
-            raise ValueError("Please, check the axes orientation")
+        # if axes is None:
+        #     raise ValueError("Please, check the axes orientation")
 
-        # Getting axis orientation
-        axes = [
-            ImageAxis(
-                name=ax["name"],
-                dimension=ax["dimension"],
-                direction=get_anatomical_direction(ax["direction"]),
-            )
-            for ax in axes
-        ]
+        # # Getting axis orientation
+        # axes = [
+        #     ImageAxis(
+        #         name=ax["name"],
+        #         dimension=ax["dimension"],
+        #         direction=get_anatomical_direction(ax["direction"]),
+        #     )
+        #     for ax in axes
+        # ]
 
-        chamber_immersion = processing_manifest.get("chamber_immersion")
-        sample_immersion = processing_manifest.get("sample_immersion")
+        # chamber_immersion = processing_manifest.get("chamber_immersion")
+        # sample_immersion = processing_manifest.get("sample_immersion")
 
-        if chamber_immersion is None or sample_immersion is None:
-            raise ValueError("Please, provide the immersion mediums.")
+        # if chamber_immersion is None or sample_immersion is None:
+        #     raise ValueError("Please, provide the immersion mediums.")
 
-        chm_medium = chamber_immersion.get("medium")
-        spl_medium = sample_immersion.get("medium")
+        # chm_medium = chamber_immersion.get("medium")
+        # spl_medium = sample_immersion.get("medium")
 
-        # Parsing the mediums the operator gives
-        notes = (
-            f"Chamber immersion: {chm_medium} - Sample immersion: {spl_medium}"
-        )
-        notes += f" - Operator notes: {processing_manifest.get('notes')}"
+        # # Parsing the mediums the operator gives
+        # notes = (
+        #     f"Chamber immersion: {chm_medium} - Sample immersion: {spl_medium}"
+        # )
+        # notes += f" - Operator notes: {processing_manifest.get('notes')}"
 
-        if "cargille" in chm_medium.lower():
-            chm_medium = "oil"
+        # if "cargille" in chm_medium.lower():
+        #     chm_medium = "oil"
 
-        else:
-            chm_medium = "other"
+        # else:
+        #     chm_medium = "other"
 
-        if "cargille" in spl_medium.lower():
-            spl_medium = "oil"
+        # if "cargille" in spl_medium.lower():
+        #     spl_medium = "oil"
 
-        else:
-            spl_medium = "other"
+        # else:
+        #     spl_medium = "other"
 
         active_objective = metadata_dict["session_config"].get("Obj", None)
 
-        acquisition_model = acquisition.Acquisition(
-            experimenter_full_name=processing_manifest.get(
-                "experimenter_full_name"
-            ),
+        acquisition_model = Acquisition.model_construct(
+            # experimenter_full_name=processing_manifest.get(
+            #     "experimenter_full_name"
+            # ),
             specimen_id="",
             subject_id=mouse_id,
-            instrument_id=processing_manifest.get("instrument_id"),
+            # instrument_id=processing_manifest.get("instrument_id"),
             session_start_time=mouse_date,
             session_end_time=metadata_dict["session_end_time"],
             tiles=make_acq_tiles(
                 metadata_dict=metadata_dict,
                 filter_mapping=metadata_dict["filter_mapping"],
             ),
-            axes=axes,
-            chamber_immersion=acquisition.Immersion(
-                medium=chm_medium,
-                refractive_index=chamber_immersion.get("refractive_index"),
-            ),
-            sample_immersion=acquisition.Immersion(
-                medium=spl_medium,
-                refractive_index=sample_immersion.get("refractive_index"),
-            ),
-            local_storage_directory=processing_manifest.get(
-                "local_storage_directory"
-            ),
+            # axes=axes,
+            # chamber_immersion=acquisition.Immersion(
+            #     medium=chm_medium,
+            #     refractive_index=chamber_immersion.get("refractive_index"),
+            # ),
+            # sample_immersion=acquisition.Immersion(
+            #     medium=spl_medium,
+            #     refractive_index=sample_immersion.get("refractive_index"),
+            # ),
+            # local_storage_directory=processing_manifest.get(
+            #     "local_storage_directory"
+            # ),
             external_storage_directory="",
             active_objectives=[active_objective] if active_objective else None,
-            # processing_steps=[],
-            notes=notes,
+            processing_steps=[],
+            # notes=notes,
         )
 
         return acquisition_model
 
+    def _integrate_data_from_slims(
+            self,
+            slims_data: Dict,
+            acquisition_model: Acquisition,
+    ) -> Acquisition:
+        """
+        Integrates the data from the SLIMS database into the acquisition model.
+
+        Parameters
+        ----------
+        slims_data: Dict
+            Dictionary with the data from the SLIMS database.
+
+        acquisition_model: Acquisition
+            Acquisition model to be integrated with the SLiMS data.
+
+        Returns
+        -------
+        Acquisition
+            The integrated acquisition model.
+        """
+        protocol_id = slims_data.get("protocol_id", None)
+        acquisition_model.specimen_id = slims_data.get("specimen_id", None)
+        acquisition_model.instrument_id = slims_data.get(
+            "instrument_id", None
+        )
+        acquisition_model.experimenter_full_name = slims_data.get(
+            "experimenter_full_name", None
+        )
+        acquisition_model.protocol_id = protocol_id if protocol_id else []
+        chamber_immersion_medium = slims_data.get("chamber_immersion_medium", None)
+        chamber_refractive_index = slims_data.get(
+            "chamber_refractive_index", None
+        )
+        acquisition_model.chamber_immersion = Immersion(
+            medium=self._map_immersion_medium(chamber_immersion_medium), 
+            refractive_index=chamber_refractive_index,
+        )
+        sample_immersion_medium = slims_data.get("sample_immersion_medium", None)
+        sample_refractive_index = slims_data.get(
+            "sample_refractive_index", None
+        )
+        acquisition_model.sample_immersion = Immersion(
+            medium=self._map_immersion_medium(sample_immersion_medium),
+            refractive_index=sample_refractive_index,
+        )
+        acquisition_model.axes = self._map_axes(
+            x = slims_data.get("x_direction", None),
+            y = slims_data.get("y_direction", None),
+            z = slims_data.get("z_direction", None),
+        )
+
+        # TODO: some method to handle channels -> processing steps
+        channels = []
+        imaging_channels = slims_data.get("imaging_channels", None)
+        stitching_channels = slims_data.get("stitching_channels", None)
+        ccf_registration_channels = slims_data.get("ccf_registration_channels", None)
+        cell_segmentation_channels = slims_data.get("cell_segmentation_channels", None)
+
+    @staticmethod
+    def _map_axes(x: str, y: str, z: str) -> List[ImageAxis]:
+        """Maps the axes directions to the ImageAxis enum."""
+        x_axis = ImageAxis(name="x", dimension=2, direction=get_anatomical_direction(x))
+        y_axis = ImageAxis(name="y", dimension=1, direction=get_anatomical_direction(y))
+        z_axis = ImageAxis(name="z", dimension=0, direction=get_anatomical_direction(z))
+        return [x_axis, y_axis, z_axis]
+
+
+    @staticmethod
+    def _map_immersion_medium(medium: str) -> ImmersionMedium:
+        """
+        Maps the immersion medium to the ImmersionMedium enum.
+
+        Parameters
+        ----------
+        medium: str
+            The immersion medium to be mapped.
+
+        Returns
+        -------
+        ImmersionMedium
+            The mapped immersion medium.
+        """
+        if medium == SlimsImmersionMedium.DIH2O.value:
+            return ImmersionMedium.WATER
+        elif medium == SlimsImmersionMedium.CARGILLE_OIL_152.value or medium == SlimsImmersionMedium.CARGILLE_OIL_153.value:
+            return ImmersionMedium.OIL
+        elif medium == SlimsImmersionMedium.ETHYL_CINNAMATE.value:
+            return ImmersionMedium.ECI
+        else:
+            return ImmersionMedium.OTHER
+
+        
     def run_job(self) -> JobResponse:
         """
         Runs the SmartSPIM ETL job.
