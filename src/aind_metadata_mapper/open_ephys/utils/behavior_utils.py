@@ -218,7 +218,6 @@ def get_gratings_metadata(stimuli: Dict, start_idx: int = 0) -> pd.DataFrame:
                 "image_index",
             ]
         )
-    print(grating_df)
     return grating_df
 
 
@@ -581,13 +580,6 @@ def is_change_event(stimulus_presentations: pd.DataFrame) -> pd.Series:
     is_change = stimuli != prev_stimuli
 
     stimulus_presentations = stimulus_presentations[~stimulus_presentations.index.duplicated(keep="first")]
-    print("DUPES")
-    print(stimulus_presentations.index.duplicated().sum())  # Should be 0
-    print(stimulus_presentations.index.is_unique)  # Should be True
-
-    print(is_change)
-
-    print(is_change.index.duplicated().sum())  # Should be 0
     is_change = is_change[~is_change.index.duplicated(keep="first")]
 
     # reset back to original index
@@ -1016,8 +1008,6 @@ def from_stimulus_file(
     idx_name = raw_stim_pres_df.index.name
     if idx_name is None:
         return raw_stim_pres_df
-    print("stimulus_metadata_df")
-    print(stimulus_metadata_df['orientation'])
     raw_stim_pres_df = raw_stim_pres_df.drop(columns=["orientation"])
 
     stimulus_index_df = (
@@ -1025,8 +1015,6 @@ def from_stimulus_file(
         .merge(stimulus_metadata_df.reset_index(), on=["image_name"],how="outer")
         .set_index(idx_name)
     )
-    print("stimulus_index_df")
-    print(stimulus_index_df.columns)
 
     stimulus_index_df = (
         stimulus_index_df[
