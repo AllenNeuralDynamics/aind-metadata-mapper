@@ -90,7 +90,7 @@ class CamstimEphysSessionEtl(
         self.pkl_path = self.session_path / f"{self.folder_name}.stim.pkl"
         if not self.pkl_path.exists():
             self.pkl_path = self.session_path / f"{self.folder_name}.behavior.pkl"
-        print("Using pickle:",self.pkl_path)
+        logger.debug("Using pickle:",self.pkl_path)
         self.pkl_data = pkl.load_pkl(self.pkl_path)
         self.fps = pkl.get_fps(self.pkl_data)
 
@@ -389,7 +389,7 @@ class CamstimEphysSessionEtl(
         optotagging_table = pd.DataFrame(
             {
                 "start_time": start_times,
-                "condition_name": conditions,
+                "stim_name": conditions,
                 "level": levels,
             }
         )
@@ -399,7 +399,7 @@ class CamstimEphysSessionEtl(
         pulse_durs = []
         conditions = []
         for _, row in optotagging_table.iterrows():
-            condition = self.opto_conditions_map[row["condition_name"]]
+            condition = self.opto_conditions_map[row["stim_name"]]
             stop_times.append(row["start_time"] + condition["duration"])
             pulse_type, pulse_dur = condition["name"].split("_")
             pulse_types.append(pulse_type)
@@ -408,7 +408,7 @@ class CamstimEphysSessionEtl(
         optotagging_table["stop_time"] = stop_times
         optotagging_table["pulse_type"] = pulse_types
         optotagging_table["pulse_duration"] = pulse_durs
-        optotagging_table["condition_name"] = conditions
+        optotagging_table["stim_name"] = conditions
         optotagging_table["duration"] = (
             optotagging_table["stop_time"] - optotagging_table["start_time"]
         )
