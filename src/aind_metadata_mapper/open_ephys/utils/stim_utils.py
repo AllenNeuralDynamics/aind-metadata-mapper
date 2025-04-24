@@ -563,7 +563,6 @@ def calculate_frame_mean_time(sync_file, frame_keys):
                 photodiode_rise_diff < max_large_photodiode_rise,
             )
         )[FIRST_ELEMENT_INDEX]
-        print(large_rise_indexes)
         for large_rise_index in large_rise_indexes:
             if (
                 set(
