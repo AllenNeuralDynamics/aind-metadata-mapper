@@ -60,6 +60,24 @@ def get_stimulus_presentations(data, stimulus_timestamps) -> pd.DataFrame:
 
 
 def remove_short_sandwiched_spontaneous(df, duration_thresh=(0.3, 0.5)):
+    """
+    Removes spontaneous intervals of short duration that are sandwiched between two identical stimulus intervals.
+    Used to prevent the gray screens during these period for loading images being "spontaneous"
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        A DataFrame containing stimulus presentation intervals
+
+    duration_thresh : tuple of float, optional
+        A (min, max) tuple specifying the duration range (in seconds) for spontaneous intervals that
+        are candidates for removal. Default is (0.3, 0.5).
+
+    Returns
+    -------
+    pandas.DataFrame
+        A cleaned DataFrame with short, sandwiched spontaneous intervals removed.
+    """
     # Sort by start_time to ensure order
     df = df.sort_values(by="start_time").reset_index(drop=True)
 
