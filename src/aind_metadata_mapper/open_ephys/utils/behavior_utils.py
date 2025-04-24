@@ -156,7 +156,9 @@ def get_images_dict(pkl_dict) -> Dict:
             images_meta.append(meta)
 
     images_dict = dict(
-        metadata=metadata, images=images, image_attributes=images_meta,
+        metadata=metadata,
+        images=images,
+        image_attributes=images_meta,
     )
 
     return images_dict
@@ -409,7 +411,10 @@ def get_draw_epochs(
 
         if epoch_length:
             draw_epochs.append(
-                (current_frame - epoch_length - 1, current_frame - 1,)
+                (
+                    current_frame - epoch_length - 1,
+                    current_frame - 1,
+                )
             )
 
     return draw_epochs
@@ -439,7 +444,10 @@ def unpack_change_log(change):
 
     (
         (from_category, from_name),
-        (to_category, to_name,),
+        (
+            to_category,
+            to_name,
+        ),
         time,
         frame,
     ) = change
@@ -483,7 +491,10 @@ def get_visual_stimuli_df(data, time) -> pd.DataFrame:
             image_name = attr_value if attr_name.lower() == "image" else np.nan
 
             stimulus_epoch = get_stimulus_epoch(
-                stim_dict["set_log"], idx, frame, n_frames,
+                stim_dict["set_log"],
+                idx,
+                frame,
+                n_frames,
             )
             draw_epochs = get_draw_epochs(
                 stim_dict["draw_log"], *stimulus_epoch
@@ -803,9 +814,9 @@ def fix_omitted_end_frame(stim_pres_table: pd.DataFrame) -> pd.DataFrame:
         stim_pres_table[stim_pres_table["omitted"]]["start_frame"]
         + median_stim_frame_duration
     )
-    stim_pres_table.loc[
-        stim_pres_table["omitted"], "end_frame"
-    ] = omitted_end_frames
+    stim_pres_table.loc[stim_pres_table["omitted"], "end_frame"] = (
+        omitted_end_frames
+    )
 
     stim_dtypes = stim_pres_table.dtypes.to_dict()
     stim_dtypes["start_frame"] = int
@@ -869,9 +880,9 @@ def compute_is_sham_change(
                 if np.array_equal(
                     active_images, stim_image_names[passive_block_mask].values
                 ):
-                    stim_df.loc[
-                        passive_block_mask, "is_sham_change"
-                    ] = stim_df[active_block_mask]["is_sham_change"].values
+                    stim_df.loc[passive_block_mask, "is_sham_change"] = (
+                        stim_df[active_block_mask]["is_sham_change"].values
+                    )
 
     return stim_df.sort_index()
 
@@ -1071,7 +1082,10 @@ def from_stimulus_file(
         "int"
     )
     stim_pres_df = raw_stim_pres_df.merge(
-        stimulus_index_df, left_on="start_time", right_index=True, how="left",
+        stimulus_index_df,
+        left_on="start_time",
+        right_index=True,
+        how="left",
     )
     # if len(raw_stim_pres_df) != len(stim_pres_df):
     #    raise ValueError(
@@ -1184,7 +1198,8 @@ def from_stimulus_file(
 
 
 def get_is_image_novel(
-    image_names: List[str], behavior_session_id: int,
+    image_names: List[str],
+    behavior_session_id: int,
 ) -> Dict[str, bool]:
     """
     Returns whether each image in `image_names` is novel for the mouse
@@ -1264,7 +1279,9 @@ def postprocess(
     return df
 
 
-def check_for_errant_omitted_stimulus(input_df: pd.DataFrame,) -> pd.DataFrame:
+def check_for_errant_omitted_stimulus(
+    input_df: pd.DataFrame,
+) -> pd.DataFrame:
     """Check if the first entry in the DataFrame is an omitted stimulus.
 
     This shouldn't happen and likely reflects some sort of camstim error
