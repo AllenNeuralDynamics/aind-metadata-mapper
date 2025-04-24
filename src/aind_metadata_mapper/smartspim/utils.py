@@ -5,7 +5,7 @@ Utility functions for SmartSPIM
 import json
 import os
 import re
-from datetime import datetime
+from datetime import datetime, date, time
 from typing import List, Optional, Any
 
 from aind_data_schema.components import tile
@@ -63,7 +63,9 @@ def get_anatomical_direction(anatomical_direction: str) -> AnatomicalDirection:
         Corresponding enum defined in the anatomical
         direction class
     """
-    anatomical_direction = anatomical_direction.strip().lower().replace(" ", "_")
+    anatomical_direction = (
+        anatomical_direction.strip().lower().replace(" ", "_")
+    )
     if anatomical_direction == "left_to_right":
         anatomical_direction = AnatomicalDirection.LR
 
@@ -85,10 +87,7 @@ def get_anatomical_direction(anatomical_direction: str) -> AnatomicalDirection:
     return anatomical_direction
 
 
-def make_tile_acq_channel(
-        wavelength_config: dict,
-        tile_info: dict
-) -> dict:
+def make_tile_acq_channel(wavelength_config: dict, tile_info: dict) -> dict:
     """
     For a given tile config info and the wavelength_config,
     create a tile.Channel object for use in acquisition.json
@@ -99,15 +98,10 @@ def make_tile_acq_channel(
     wavelength = tile_info.get("Laser")
     side = tile_info.get("Side")
     filter_wheel_index = int(tile_info.get("Filter"))
-    side_map = {
-        "0": "left",
-        "1": "right"
-    }
-    excitation_power = (
-        wavelength_config
-        .get(wavelength,)
-        .get(f"power_{side_map[side]}")
-    )
+    side_map = {"0": "left", "1": "right"}
+    excitation_power = wavelength_config.get(
+        wavelength,
+    ).get(f"power_{side_map[side]}")
     # TODO: channel name should be "Ex_488" + "_Em_525"
     channel = tile.Channel(
         channel_name=wavelength,
@@ -122,6 +116,7 @@ def make_tile_acq_channel(
         filter_wheel_index=filter_wheel_index,
     )
     return channel
+
 
 def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
     """
@@ -214,8 +209,7 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
 
         # print("Keys before breaking: ", tile_info.keys())
         channel = make_tile_acq_channel(
-            wavelength_config=wavelength_config,
-            tile_info=tile_info
+            wavelength_config=wavelength_config, tile_info=tile_info
         )
         exaltation_wave = int(tile_info["Laser"])
         emission_wave = filter_mapping[exaltation_wave]
@@ -299,6 +293,7 @@ def get_session_end(asi_file: os.PathLike) -> datetime:
 
     return result
 
+
 def get_excitation_emission_waves(channels: List) -> dict:
     """
     Gets the excitation and emission waves for
@@ -326,40 +321,40 @@ def get_excitation_emission_waves(channels: List) -> dict:
 
     return excitation_emission_channels
 
+
 def parse_channel_name(channel_str: str) -> str:
-        """
-        Parses the channel string from SLIMS to a standard format.
+    """
+    Parses the channel string from SLIMS to a standard format.
 
-        Parameters
-        ----------
-        channel_str: str
-            The channel name to be parsed (ex: "Laser = 445; Emission Filter = 469/35").
+    Parameters
+    ----------
+    channel_str: str
+        The channel name to be parsed (ex: "Laser = 445; Emission Filter = 469/35").
 
-        Returns
-        -------
-        str
-            The parsed channel name (ex: "Ex_445_Em_469").
-        """
-        s = channel_str.replace("Laser", "Ex") \
-                   .replace("Emission Filter", "Em")
-        parts = [p.strip() for p in re.split(r"[;,]", s) if p.strip()]
-        segments = []
-        for part in parts:
-            key, val = [t.strip() for t in part.split("=", 1)]
-            # discard any bandwidth info after slash
-            core = val.split("/", 1)[0]
-            segments.append(f"{key}_{core}")
+    Returns
+    -------
+    str
+        The parsed channel name (ex: "Ex_445_Em_469").
+    """
+    s = channel_str.replace("Laser", "Ex").replace("Emission Filter", "Em")
+    parts = [p.strip() for p in re.split(r"[;,]", s) if p.strip()]
+    segments = []
+    for part in parts:
+        key, val = [t.strip() for t in part.split("=", 1)]
+        # discard any bandwidth info after slash
+        core = val.split("/", 1)[0]
+        segments.append(f"{key}_{core}")
 
-        return "_".join(segments)
+    return "_".join(segments)
+
 
 def ensure_list(raw: Any) -> List[Any]:
-        """
-        Turn a value that might be a list, a single string, or None
-        into a proper list of strings (or an empty list).
-        """
-        if isinstance(raw, list):
-            return raw
-        if isinstance(raw, str) and raw.strip():
-            return [raw]
-        return []
-    
+    """
+    Turn a value that might be a list, a single string, or None
+    into a proper list of strings (or an empty list).
+    """
+    if isinstance(raw, list):
+        return raw
+    if isinstance(raw, str) and raw.strip():
+        return [raw]
+    return []

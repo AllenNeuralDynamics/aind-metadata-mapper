@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-example_session_end_time = datetime.now()
+example_session_end_time = datetime(2025, 4, 23, 18, 46, 0)
 
 example_metadata_info = {
     "session_config": {
@@ -13,7 +13,7 @@ example_metadata_info = {
         "scanning": "Fast",
         "v_res": "1600",
         "z_block": "6676",
-        "z_step_um": "2.00",
+        "Z step (um)": "2.00",
         "m/pix": "1.800",
     },
     "tile_config": {
@@ -1556,4 +1556,28 @@ example_unicode_error_metadata_info = {
         "561": {"power_left": "75.00", "power_right": "75.00"},
         "639": {"power_left": "100.00", "power_right": "100.00"},
     },
+}
+example_imaging_info_from_slims = {
+"experiment_run_created_on": "2025-04-23T18:46:45.711000Z",
+"specimen_id": "BRN00000148",
+"subject_id": "000000",
+"protocol_name": "Imaging cleared mouse brains on SmartSPIM",
+"protocol_id": "https://dx.doi.org/10.17504/protocols.io.3byl4jo1rlo5/v1",
+"date_performed": "2025-04-23T18:46:00Z",
+"chamber_immersion_medium": "Cargille Oil 1.5200",
+"sample_immersion_medium": "EasyIndex",
+"chamber_refractive_index": "1.5182",
+"sample_refractive_index": "1.5177",
+"instrument_id": "440_SmartSPIM1_20240327",
+"experimenter_name": "Some Name",
+"z_direction": "Superior to Inferior",
+"y_direction": "Anterior to Posterior",
+"x_direction": "Left to Right",
+"imaging_channels": [
+"Laser = 561; Emission Filter = 593/40",
+"Laser = 639; Emission Filter = 667/30"
+],
+"stitching_channels": "Laser = 639, Emission Filter = 667/30",
+"ccf_registration_channels": "Laser = 639, Emission Filter = 667/30",
+"cell_segmentation_channels": None
 }

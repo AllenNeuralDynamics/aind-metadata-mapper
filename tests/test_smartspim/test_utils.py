@@ -52,10 +52,10 @@ class TestSmartspimUtils(unittest.TestCase):
         """Tests the anatomical direction parsing to data schema"""
         an_dirs = {
             "left_to_right": AnatomicalDirection.LR,
-            "right_to_left": AnatomicalDirection.RL,
+            "Right to Left": AnatomicalDirection.RL,
             "anterior_to_posterior": AnatomicalDirection.AP,
             "posterior_to_anterior": AnatomicalDirection.PA,
-            "inferior_to_superior": AnatomicalDirection.IS,
+            "inferior to superior": AnatomicalDirection.IS,
             "superior_to_inferior": AnatomicalDirection.SI,
         }
 
@@ -103,6 +103,37 @@ class TestSmartspimUtils(unittest.TestCase):
         self.assertEqual(
             expected_excitation_emission_channels, excitation_emission_channels
         )
+
+    def test_parse_channel_name(self):
+        """Test parsing raw channel strings to standard format"""
+        raw1 = "Laser = 445; Emission Filter = 469/35"
+        self.assertEqual("Ex_445_Em_469", utils.parse_channel_name(raw1))
+
+        raw2 = "Laser = 639, Emission Filter = 667/30"
+        self.assertEqual("Ex_639_Em_667", utils.parse_channel_name(raw2))
+
+    def test_ensure_list(self):
+        """Test converting different inputs to lists"""
+        self.assertEqual([1, 2, 3], utils.ensure_list([1, 2, 3]))
+        self.assertEqual(["hello"], utils.ensure_list("hello"))
+        self.assertEqual([], utils.ensure_list("   "))
+        self.assertEqual([], utils.ensure_list(None))
+        self.assertEqual([], utils.ensure_list([]))
+
+    def test_digest_asi_line(self):
+        """Test extracting datetime from ASI log lines"""
+        # blank or whitespace-only line
+        self.assertIsNone(utils.digest_asi_line(b"   "))
+
+        # PM timestamp
+        line_pm = b"10/19/2023 12:00:55 PM"
+        expected_pm = datetime(2023, 10, 19, 0, 0, 55)
+        self.assertEqual(expected_pm, utils.digest_asi_line(line_pm))
+
+        # AM timestamp
+        line_am = b"10/19/2023 01:23:45 AM"
+        expected_am = datetime(2023, 10, 19, 1, 23, 45)
+        self.assertEqual(expected_am, utils.digest_asi_line(line_am))
 
 
 if __name__ == "__main__":

@@ -6,6 +6,18 @@ from typing import Literal, Optional, Union
 from pydantic import Field
 
 from aind_metadata_mapper.core_models import BaseJobSettings
+from enum import Enum
+
+
+class SlimsImmersionMedium(Enum):
+    """Enum for the immersion medium used in SLIMS."""
+
+    DIH2O = "diH2O"
+    CARGILLE_OIL_152 = "Cargille Oil 1.5200"
+    CARGILLE_OIL_153 = "Cargille Oil 1.5300"
+    ETHYL_CINNAMATE = "ethyl cinnamate"
+    OPTIPLEX_DMSO = "Optiplex and DMSO"
+    EASYINDEX = "EasyIndex"
 
 
 class JobSettings(BaseJobSettings):
@@ -23,5 +35,9 @@ class JobSettings(BaseJobSettings):
     mdata_filename_json: str = "derivatives/metadata.json"
 
     # Metadata service to fetch metadata provided by microscope operators in SLIMS
+    processing_manifest_path: Optional[str] = Field(
+        default="derivatives/processing_manifest.json",
+        description=("Deprecated, use metadata_service_path instead. "),
+    )
     metadata_service_domain: str
     metadata_service_path: str = "slims/smartspim_imaging"
