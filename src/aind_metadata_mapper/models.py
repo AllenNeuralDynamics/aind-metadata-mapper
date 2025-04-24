@@ -46,7 +46,6 @@ class AcquisitionSettings(BaseSettings, extra="allow"):
     # TODO: we can change this to a tagged union once more acquisition settings
     #  are added
     job_settings: SmartSpimAcquisitionJobSettings
-    metadata_service_path: str = "slims/smartspim_imaging"
 
 
 class SubjectSettings(BaseSettings, extra="allow"):

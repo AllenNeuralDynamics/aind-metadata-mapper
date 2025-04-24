@@ -5,8 +5,7 @@ import re
 import sys
 import requests
 from datetime import datetime
-from typing import Dict, Union, List, Any
-from urllib.parse import quote
+from typing import Dict, Union, List
 
 from aind_data_schema.components.coordinates import ImageAxis
 from aind_data_schema.core.acquisition import Acquisition, Immersion, ProcessingSteps
@@ -15,26 +14,16 @@ from aind_data_schema.components.devices import ImmersionMedium
 
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.core_models import JobResponse
-from aind_metadata_mapper.smartspim.models import JobSettings
+from aind_metadata_mapper.smartspim.models import JobSettings, SlimsImmersionMedium
 from aind_metadata_mapper.smartspim.utils import (
     get_anatomical_direction,
     get_excitation_emission_waves,
     get_session_end,
     make_acq_tiles,
     read_json_as_dict,
+    parse_channel_name,
+    ensure_list
 )
-from enum import Enum
-
-#TODO: consider moving Slims Handlers to utils 
-class SlimsImmersionMedium(Enum):
-    """Enum for the immersion medium used in SLIMS."""
-
-    DIH2O = "diH2O"
-    CARGILLE_OIL_152 = "Cargille Oil 1.5200"
-    CARGILLE_OIL_153 = "Cargille Oil 1.5300"
-    ETHYL_CINNAMATE = "ethyl cinnamate"
-    OPTIPLEX_DMSO = "Optiplex and DMSO"
-    EASYINDEX = "EasyIndex"
 class SmartspimETL(GenericEtl[JobSettings]):
     """
     This class contains the methods to write the metadata
@@ -70,7 +59,7 @@ class SmartspimETL(GenericEtl[JobSettings]):
     )
     REGEX_MOUSE_ID = r"([0-9]{6})"
 
-    def _extract(self) -> Dict:
+    def _extract_metadata_from_microscope_files(self) -> Dict:
         """
         Extracts metadata from the microscope metadata files.
 
@@ -131,67 +120,14 @@ class SmartspimETL(GenericEtl[JobSettings]):
         }
 
         return metadata_dict
-
-    def _transform(self, metadata_dict: Dict) -> Acquisition:
-        """
-        Transforms the raw metadata from the acquisition
-        to create the acquisition.json defined on the
-        aind-data-schema package.
-
-        Parameters
-        ----------
-        metadata_dict: Dict
-            Dictionary with the metadata extracted from
-            the microscope files.
-
-        Returns
-        -------
-        Acquisition
-            Built acquisition model.
-        """
-
-        mouse_date = re.search(
-            self.REGEX_DATE, self.job_settings.input_source.stem
-        )
-        mouse_id = re.search(
-            self.REGEX_MOUSE_ID, self.job_settings.input_source.stem
-        )
-
-        # Converting to date and mouse ID
-        if mouse_date and mouse_id:
-            mouse_date = mouse_date.group()
-            mouse_date = datetime.strptime(mouse_date, "%Y-%m-%d_%H-%M-%S")
-
-            mouse_id = mouse_id.group()
-
-        else:
-            raise ValueError("Error while getting mouse date and ID")
-
-        active_objective = metadata_dict["session_config"].get("Obj", None)
-
-        # create incomplete acquisition model
-        acquisition_model = Acquisition.model_construct(
-            specimen_id="",
-            subject_id=mouse_id,
-            session_start_time=mouse_date,
-            session_end_time=metadata_dict["session_end_time"],
-            tiles=make_acq_tiles(
-                metadata_dict=metadata_dict,
-                filter_mapping=metadata_dict["filter_mapping"],
-            ),
-            external_storage_directory="",
-            active_objectives=[active_objective] if active_objective else None,
-            processing_steps=[],
-        )
-
-        return acquisition_model
     
     @staticmethod
-    def get_smartspim_imaging_info(
+    def _extract_metadata_from_slims(
                 domain: str, url_path: str, subject_id: str,
                 start_date_gte: str = None, end_date_lte: str = None
-            ):
-            """Utility method to retrieve smartspim imaging info from metadata service"""
+            ) -> Dict:
+            """Method to retrieve smartspim imaging info from SLIMS using the metadata service"""
+            
             query_params = {"subject_id": subject_id}
             if start_date_gte:
                 query_params["start_date_gte"] = start_date_gte
@@ -199,80 +135,89 @@ class SmartspimETL(GenericEtl[JobSettings]):
                 query_params["end_date_lte"] = end_date_lte
             response = requests.get(f"{domain}/{url_path}", params=query_params)
             response.raise_for_status()
-            if response.status_code == 200:
-                imaging_info = response.json().get("data")
+            if response.status_code == 200 and len(response.json().get("data")) > 1:
+                raise ValueError(
+                    "More than one imaging session found for the same subject_id. "
+                    "Please refine your search."
+                )
+            elif response.status_code == 200 and len(response.json().get("data")) == 1:
+                imaging_info = response.json().get("data")[0]
             else:
-                imaging_info = []
+                imaging_info = {}
             return imaging_info
 
-    def _integrate_data_from_slims(
-            self,
-            slims_data: Dict,
-            acquisition_model: Acquisition,
+    def _transform(
+        self,
+        metadata_dict: Dict,
+        slims_data: Dict
     ) -> Acquisition:
         """
-        Integrates the data from the SLIMS database into the acquisition model.
+        Transforms raw metadata from both microscope files and SLiMS into a complete Acquisition model.
 
         Parameters
         ----------
-        slims_data: Dict
-            Dictionary with the data from the SLIMS database.
-
-        acquisition_model: Acquisition
-            Acquisition model to be integrated with the SLiMS data.
+        metadata_dict : Dict
+            Metadata extracted from the microscope files.
+        slims_data : Dict
+            Metadata fetched from the SLiMS service.
 
         Returns
         -------
         Acquisition
-            The integrated acquisition model.
+            Fully composed acquisition model.
         """
-        protocol_id = slims_data.get("protocol_id", None)
-        experimenter_name = slims_data.get("experimenter_name", None)
-        acquisition_model.specimen_id = slims_data.get("specimen_id", None)
-        acquisition_model.instrument_id = slims_data.get(
-            "instrument_id", None
-        )
-        acquisition_model.experimenter_full_name = [experimenter_name] if experimenter_name else []
-        acquisition_model.protocol_id = [protocol_id] if protocol_id else []
-        chamber_immersion_medium = slims_data.get("chamber_immersion_medium", None)
-        chamber_refractive_index = slims_data.get(
-            "chamber_refractive_index", None
-        )
-        acquisition_model.chamber_immersion = Immersion(
-            medium=self._map_immersion_medium(chamber_immersion_medium), 
-            refractive_index=chamber_refractive_index,
-        )
-        sample_immersion_medium = slims_data.get("sample_immersion_medium", None)
-        sample_refractive_index = slims_data.get(
-            "sample_refractive_index", None
-        )
-        acquisition_model.sample_immersion = Immersion(
-            medium=self._map_immersion_medium(sample_immersion_medium),
-            refractive_index=sample_refractive_index,
-        )
-        acquisition_model.axes = self._map_axes(
-            x = slims_data.get("x_direction", None),
-            y = slims_data.get("y_direction", None),
-            z = slims_data.get("z_direction", None),
-        )
-        acquisition_model.processing_steps = self._map_processing_steps(
-            slims_data=slims_data
-        )
-        return Acquisition.model_validate(acquisition_model)
+        mdate_match = re.search(self.REGEX_DATE, self.job_settings.input_source.stem)
+        mid_match = re.search(self.REGEX_MOUSE_ID, self.job_settings.input_source.stem)
+        if not (mdate_match and mid_match):
+            raise ValueError("Error while extracting mouse date and ID")
+        session_start = datetime.strptime(mdate_match.group(), "%Y-%m-%d_%H-%M-%S")
+        subject_id = mid_match.group()
 
-    # Definitely move this to utils 
-    @staticmethod
-    def _ensure_list(raw: Any) -> List[Any]:
-        """
-        Turn a value that might be a list, a single string, or None
-        into a proper list of strings (or an empty list).
-        """
-        if isinstance(raw, list):
-            return raw
-        if isinstance(raw, str) and raw.strip():
-            return [raw]
-        return []
-    
+        # fields from metadata_dict
+        active_obj = metadata_dict["session_config"].get("Obj")
+
+        # fields from slims_data
+        specimen_id = slims_data.get("specimen_id", "")
+        instrument_id = slims_data.get("instrument_id")
+        protocol_id = slims_data.get("protocol_id")
+        experimenter_name = slims_data.get("experimenter_name")
+
+        acquisition = Acquisition(
+            specimen_id=specimen_id,
+            subject_id=subject_id,
+            session_start_time=session_start,
+            session_end_time=metadata_dict["session_end_time"],
+            tiles=make_acq_tiles(
+                metadata_dict=metadata_dict,
+                filter_mapping=metadata_dict["filter_mapping"],
+            ),
+            external_storage_directory="",
+            active_objectives=[active_obj] if active_obj else None,
+            instrument_id=instrument_id,
+            experimenter_full_name=[experimenter_name] if experimenter_name else [],
+            protocol_id=[protocol_id] if protocol_id else [],
+            chamber_immersion=Immersion(
+                medium=self._map_immersion_medium(
+                    slims_data.get("chamber_immersion_medium")
+                ),
+                refractive_index=slims_data.get("chamber_refractive_index"),
+            ),
+            sample_immersion=Immersion(
+                medium=self._map_immersion_medium(
+                    slims_data.get("sample_immersion_medium")
+                ),
+                refractive_index=slims_data.get("sample_refractive_index"),
+            ),
+            axes=self._map_axes(
+                x=slims_data.get("x_direction"),
+                y=slims_data.get("y_direction"),
+                z=slims_data.get("z_direction"),
+            ),
+            processing_steps=self._map_processing_steps(slims_data),
+        )
+        return acquisition
+
+
     def _map_processing_steps(self, slims_data: Dict) -> List[ProcessingSteps]:
         """
         Maps the channel info from SLIMS to the ProcessingSteps model.
@@ -287,10 +232,10 @@ class SmartspimETL(GenericEtl[JobSettings]):
         List[ProcessingSteps]
             List of processing steps mapped from SLIMS data.
         """
-        imaging = self._ensure_list(slims_data.get("imaging_channels"))
-        stitching = self._ensure_list(slims_data.get("stitching_channels"))
-        ccf_registration = self._ensure_list(slims_data.get("ccf_registration_channels"))
-        cell_segmentation = self._ensure_list(slims_data.get("cell_segmentation_channels"))
+        imaging = ensure_list(slims_data.get("imaging_channels"))
+        stitching = ensure_list(slims_data.get("stitching_channels"))
+        ccf_registration = ensure_list(slims_data.get("ccf_registration_channels"))
+        cell_segmentation = ensure_list(slims_data.get("cell_segmentation_channels"))
 
         list_to_steps = [
             (imaging, [
@@ -306,7 +251,7 @@ class SmartspimETL(GenericEtl[JobSettings]):
 
         for channel_list, process_names in list_to_steps:
             for raw_ch in channel_list:
-                parsed = self._parse_channel_name(raw_ch)
+                parsed = parse_channel_name(raw_ch)
                 if parsed not in step_map:
                     step_map[parsed] = set()
                 step_map[parsed].update(process_names)
@@ -321,34 +266,6 @@ class SmartspimETL(GenericEtl[JobSettings]):
             )
 
         return processing_steps
-    
-    @staticmethod
-    def _parse_channel_name(channel_str: str) -> str:
-        """
-        Parses the channel string from SLIMS to a standard format.
-
-        Parameters
-        ----------
-        channel_str: str
-            The channel name to be parsed (ex: "Laser = 445; Emission Filter = 469/35").
-
-        Returns
-        -------
-        str
-            The parsed channel name (ex: "Ex_445_Em_469").
-        """
-        s = channel_str.replace("Laser", "Ex") \
-                   .replace("Emission Filter", "Em")
-        parts = [p.strip() for p in re.split(r"[;,]", s) if p.strip()]
-        segments = []
-        for part in parts:
-            key, val = [t.strip() for t in part.split("=", 1)]
-            # discard any bandwidth info after slash
-            core = val.split("/", 1)[0]
-            segments.append(f"{key}_{core}")
-
-        return "_".join(segments)
-
 
     @staticmethod
     def _map_axes(x: str, y: str, z: str) -> List[ImageAxis]:
@@ -384,7 +301,6 @@ class SmartspimETL(GenericEtl[JobSettings]):
             return ImmersionMedium.EASYINDEX
         else:
             return ImmersionMedium.OTHER
-
         
     def run_job(self) -> JobResponse:
         """
@@ -400,21 +316,15 @@ class SmartspimETL(GenericEtl[JobSettings]):
             500 - There were errors writing the model to output_directory
 
         """
-        metadata_dict = self._extract()
-        acquisition_model = self._transform(metadata_dict=metadata_dict)
-        slims_data=self.get_smartspim_imaging_info(
-                domain=self.job_settings.metadata_service_domain,
-                url_path=self.job_settings.metadata_service_path,
-                subject_id=self.job_settings.subject_id,
-                start_date_gte=acquisition_model.session_start_time.isoformat(),
-                end_date_lte=acquisition_model.session_end_time.isoformat(),
+        metadata_dict = self._extract_metadata_from_microscope_files()
+        slims_data = self._extract_metadata_from_slims(
+            domain=self.job_settings.metadata_service_domain,
+            url_path=self.job_settings.metadata_service_path,
+            subject_id=self.job_settings.subject_id,
+            start_date_gte=metadata_dict["session_start_time"],
+            end_date_lte=metadata_dict["session_end_time"],
         )
-        if slims_data and len(slims_data) == 1:
-            slims_data = slims_data[0]
-            acquisition_model = self._integrate_data_from_slims(
-                slims_data=slims_data,
-                acquisition_model=acquisition_model,
-            )
+        acquisition_model = self._transform(metadata_dict=metadata_dict, slims_data=slims_data)
 
         job_response = self._load(
             acquisition_model, self.job_settings.output_directory
