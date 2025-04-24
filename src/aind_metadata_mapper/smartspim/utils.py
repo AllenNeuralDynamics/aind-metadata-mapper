@@ -5,7 +5,7 @@ Utility functions for SmartSPIM
 import json
 import os
 import re
-from datetime import datetime, date, time
+from datetime import datetime
 from typing import List, Optional, Any
 
 from aind_data_schema.components import tile
@@ -329,8 +329,9 @@ def parse_channel_name(channel_str: str) -> str:
     Parameters
     ----------
     channel_str: str
-        The channel name to be parsed (ex: "Laser = 445; Emission Filter = 469/35").
-
+        The channel name to be parsed.
+          ex: "Laser = 445; Emission Filter = 469/35"
+          ex: "Laser = 488, Emission Filter = 525/50"
     Returns
     -------
     str

@@ -133,7 +133,20 @@ class SmartspimETL(GenericEtl[JobSettings]):
     def _extract_metadata_from_slims(
         self, start_date_gte: str = None, end_date_lte: str = None
     ) -> Dict:
-        """Method to retrieve smartspim imaging info from SLIMS using the metadata service"""
+        """
+        Method to retrieve smartspim imaging info from SLIMS
+        using the metadata service endpoint.
+        Parameters
+        ----------
+        start_date_gte: str
+            Start date for the search.
+        end_date_lte: str
+            End date for the search.
+        Returns
+        -------
+        Dict
+            Dictionary containing metadata from SLIMS for an acquisition.
+        """
 
         query_params = {"subject_id": self.job_settings.subject_id}
         if start_date_gte:
@@ -141,7 +154,8 @@ class SmartspimETL(GenericEtl[JobSettings]):
         if end_date_lte:
             query_params["end_date_lte"] = end_date_lte
         response = requests.get(
-            f"{self.job_settings.metadata_service_domain}/{self.job_settings.metadata_service_path}",
+            f"{self.job_settings.metadata_service_domain}"
+            f"/{self.job_settings.metadata_service_path}",
             params=query_params,
         )
         response.raise_for_status()
@@ -164,7 +178,8 @@ class SmartspimETL(GenericEtl[JobSettings]):
 
     def _transform(self, metadata_dict: Dict, slims_data: Dict) -> Acquisition:
         """
-        Transforms raw metadata from both microscope files and SLiMS into a complete Acquisition model.
+        Transforms raw metadata from both microscope files and SLIMS
+        into a complete Acquisition model.
 
         Parameters
         ----------

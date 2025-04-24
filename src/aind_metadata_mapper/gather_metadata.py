@@ -4,7 +4,6 @@ import argparse
 import json
 import logging
 import sys
-import urllib.parse as urlencode
 from pathlib import Path
 from typing import Optional, Type
 

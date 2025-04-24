@@ -34,7 +34,7 @@ class JobSettings(BaseJobSettings):
     asi_filename: str = "derivatives/ASI_logging.txt"
     mdata_filename_json: str = "derivatives/metadata.json"
 
-    # Metadata service to fetch metadata provided by microscope operators in SLIMS
+    # Fetch info provided by microscope operators in SLIMS
     processing_manifest_path: Optional[str] = Field(
         default="derivatives/processing_manifest.json",
         description=("Deprecated, use metadata_service_path instead. "),
