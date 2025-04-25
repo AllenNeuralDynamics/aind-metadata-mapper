@@ -119,11 +119,20 @@ class SmartspimETL(GenericEtl[JobSettings]):
             raise ValueError("Metadata json is empty")
 
         session_end_time = get_session_end(asi_file_path_txt)
+        mdate_match = re.search(
+            self.REGEX_DATE, self.job_settings.input_source.stem
+        )
+        if not (mdate_match):
+            raise ValueError("Error while extracting session date.")
+        session_start = datetime.strptime(
+            mdate_match.group(), "%Y-%m-%d_%H-%M-%S"
+        )
 
         metadata_dict = {
             "session_config": session_config,
             "wavelength_config": wavelength_config,
             "tile_config": tile_config,
+            "session_start_time": session_start,
             "session_end_time": session_end_time,
             "filter_mapping": filter_mapping,
         }
