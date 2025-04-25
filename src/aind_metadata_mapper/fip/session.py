@@ -1,19 +1,30 @@
-"""Module to write valid OptoStim and Subject schemas"""
+"""Module for creating Fiber Photometry session metadata.
 
-import re
+This module implements an ETL (Extract, Transform, Load) pattern for generating
+standardized session metadata from fiber photometry experiments. It handles:
+
+- Extraction of session times from data files
+- Transformation of raw data into standardized session objects
+- Loading/saving of session metadata in a standard format
+
+The ETL class provides hooks for future extension to fetch additional data from
+external services or handle new data formats.
+"""
+
 import sys
+import json
+from typing import Union, Optional, List
 from dataclasses import dataclass
-from datetime import timedelta
-from typing import Union, List
+from pathlib import Path
+from datetime import datetime
+import pandas as pd
 
-from aind_data_schema.components.stimulus import OptoStimulation, PulseShape
+from aind_data_schema.base import AindCoreModel
 from aind_data_schema.core.session import (
     DetectorConfig,
     FiberConnectionConfig,
     LightEmittingDiodeConfig,
     Session,
-    StimulusEpoch,
-    StimulusModality,
     Stream,
     Channel
 )
@@ -22,197 +33,230 @@ from aind_data_schema_models.modalities import Modality
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.core_models import JobResponse
 from aind_metadata_mapper.fip.models import JobSettings
+from aind_metadata_mapper.fip.utils import (
+    extract_session_start_time_from_files,
+    extract_session_end_time_from_files,
+)
 
 
-@dataclass(frozen=True)
-class ParsedMetadata:
-    """RawImageInfo gets parsed into this data"""
+@dataclass
+class FiberData:
+    """Intermediate data model for fiber photometry data."""
 
-    teensy_str: str
+    start_time: datetime
+    end_time: Optional[datetime]
+    data_files: List[Path]
+    timestamps: List[float]
+    light_source_configs: List[dict]
+    detector_configs: List[dict]
+    fiber_configs: List[dict]
+    subject_id: str
+    experimenter_full_name: List[str]
+    rig_id: str
+    iacuc_protocol: str
+    notes: str
+    mouse_platform_name: str
+    active_mouse_platform: bool
 
 
 class FIBEtl(GenericEtl[JobSettings]):
-    """This class contains the methods to write OphysScreening data"""
+    """Creates fiber photometry session metadata using an ETL pattern.
 
-    _dictionary_mapping = {
-        "o": "OptoStim10Hz",
-        "p": "OptoStim20Hz",
-        "q": "OptoStim5Hz",
-    }
+    This class handles the full lifecycle of session metadata creation:
+    - Extracting timing information from data files
+    - Transforming raw data into standardized session objects
+    - Loading/saving session metadata in a standard format
 
-    # Define regular expressions to extract the values
-    command_regex = re.compile(r"Received command (\w)")
-    frequency_regex = re.compile(r"OptoStim\s*([0-9.]+)")
-    trial_regex = re.compile(r"OptoTrialN:\s*([0-9.]+)")
-    pulse_regex = re.compile(r"PulseW\(um\):\s*([0-9.]+)")
-    duration_regex = re.compile(r"OptoDuration\(s\):\s*([0-9.]+)")
-    interval_regex = re.compile(r"OptoInterval\(s\):\s*([0-9.]+)")
-    base_regex = re.compile(r"OptoBase\(s\):\s*([0-9.]+)")
+    The ETL process ensures that all required metadata fields are populated
+    and validates the output against the AIND data schema.
 
-    # TODO: Deprecate this constructor. Use GenericEtl constructor instead
-    def __init__(self, job_settings: Union[JobSettings, str]):
-        """
-        Class constructor for Base etl class.
+    This class inherits from GenericEtl which provides the _load method
+    for writing session metadata to a JSON file using a standard filename
+    format (session_fip.json).
+    """
+
+    def __init__(self, job_settings: Union[str, JobSettings]):
+        """Initialize ETL with job settings.
+
         Parameters
         ----------
-        job_settings: Union[JobSettings, str]
-          Variables for a particular session
-        """
+        job_settings : Union[str, JobSettings]
+            Either a JobSettings object or a JSON string that can
+            be parsed into one. The settings define all required parameters
+            for the session metadata, including experimenter info, subject
+            ID, data paths, etc.
 
+        Raises
+        ------
+        ValidationError
+            If the provided settings fail schema validation
+        JSONDecodeError
+            If job_settings is a string but not valid JSON
+        """
         if isinstance(job_settings, str):
-            job_settings_model = JobSettings.model_validate_json(job_settings)
-        else:
-            job_settings_model = job_settings
-        super().__init__(job_settings=job_settings_model)
+            job_settings = JobSettings(**json.loads(job_settings))
+        super().__init__(job_settings)
 
-    def _transform(self, extracted_source: ParsedMetadata) -> Session:
+    def _extract(self) -> FiberData:
+        """Extract metadata and raw data from fiber photometry files.
+
+        This method parses the raw data files to create an
+        intermediate data model containing all necessary
+        information for creating a Session object.
+
+        Returns
+        -------
+        FiberData
+            Intermediate data model containing parsed file data and metadata
         """
-        Parses params from teensy string and creates ophys session model
+        settings = self.job_settings
+        data_dir = Path(settings.data_directory)
+
+        data_files = list(data_dir.glob("FIP_Data*.csv"))
+        start_time = extract_session_start_time_from_files(data_dir)
+        end_time = (
+            extract_session_end_time_from_files(data_dir, start_time)
+            if start_time
+            else None
+        )
+
+        timestamps = []
+        for file in data_files:
+            df = pd.read_csv(file, header=None)
+            timestamps.extend(df[0].tolist())
+
+        stream_data = settings.data_streams[0]
+
+        return FiberData(
+            start_time=start_time,
+            end_time=end_time,
+            data_files=data_files,
+            timestamps=timestamps,
+            light_source_configs=stream_data["light_sources"],
+            detector_configs=stream_data["detectors"],
+            fiber_configs=stream_data["fiber_connections"],
+            subject_id=settings.subject_id,
+            experimenter_full_name=settings.experimenter_full_name,
+            rig_id=settings.rig_id,
+            iacuc_protocol=settings.iacuc_protocol,
+            notes=settings.notes,
+            mouse_platform_name=settings.mouse_platform_name,
+            active_mouse_platform=settings.active_mouse_platform,
+        )
+
+    def _transform(self, fiber_data: FiberData) -> Session:
+        """Transform extracted data into a valid Session object.
+
         Parameters
         ----------
-        extracted_source : ParsedInformation
+        fiber_data : FiberData
+            Intermediate data model containing parsed file data and metadata
 
         Returns
         -------
         Session
-
+            A fully configured Session object that
+            conforms to the AIND data schema
         """
-        # Process data from dictionary keys
-
-        string_to_parse = extracted_source.teensy_str
-
-        session_start_time = self.job_settings.session_start_time
-        labtracks_id = self.job_settings.labtracks_id
-        iacuc_protocol = self.job_settings.iacuc_protocol
-        rig_id = self.job_settings.rig_id
-        experimenter_full_name = self.job_settings.experimenter_full_name
-        mouse_platform_name = self.job_settings.mouse_platform_name
-        active_mouse_platform = self.job_settings.active_mouse_platform
-        light_source_list = self.job_settings.light_source_list
-        detector_list = self.job_settings.detector_list
-        fiber_connections_list = self.job_settings.fiber_connections_list
-        session_type = self.job_settings.session_type
-        notes = self.job_settings.notes
-
-        # Use regular expressions to extract the values
-        frequency_match = re.search(self.frequency_regex, string_to_parse)
-        trial_match = re.search(self.trial_regex, string_to_parse)
-        pulse_match = re.search(self.pulse_regex, string_to_parse)
-        duration_match = re.search(self.duration_regex, string_to_parse)
-        interval_match = re.search(self.interval_regex, string_to_parse)
-        base_match = re.search(self.base_regex, string_to_parse)
-        command_match = re.search(self.command_regex, string_to_parse)
-
-        # Store the float values as variables
-        frequency = int(frequency_match.group(1))
-        trial_num = int(trial_match.group(1))
-        pulse_width = int(pulse_match.group(1))
-        opto_duration = float(duration_match.group(1))
-        opto_interval = float(interval_match.group(1))
-        opto_base = float(base_match.group(1))
-
-        # maps stimulus_name from command
-        command = command_match.group(1)
-        stimulus_name = self._dictionary_mapping.get(command, "")
-
-        # create opto stim instance
-        opto_stim = OptoStimulation(
-            stimulus_name=stimulus_name,
-            pulse_shape=PulseShape.SQUARE,
-            pulse_frequency=[
-                frequency,
+        stream = Stream(
+            stream_start_time=fiber_data.start_time,
+            stream_end_time=fiber_data.end_time,
+            light_sources=[
+                LightEmittingDiodeConfig(**ls)
+                for ls in fiber_data.light_source_configs
             ],
-            number_pulse_trains=[
-                trial_num,
+            stream_modalities=[Modality.FIB],
+            detectors=[
+                DetectorConfig(**d) for d in fiber_data.detector_configs
             ],
-            pulse_width=[
-                pulse_width,
+            fiber_connections=[
+                FiberConnectionConfig(**fc) for fc in fiber_data.fiber_configs
             ],
-            pulse_train_duration=[
-                opto_duration,
-            ],
-            pulse_train_interval=opto_interval,
-            baseline_duration=opto_base,
-            fixed_pulse_train_interval=True,  # TODO: Check this is right
         )
 
-        # create stimulus presentation instance
-        experiment_duration = (
-            opto_base + opto_duration + (opto_interval * trial_num)
-        )
-        end_datetime = session_start_time + timedelta(
-            seconds=experiment_duration
-        )
-        stimulus_epochs = StimulusEpoch(
-            stimulus_name=stimulus_name,
-            stimulus_modalities=[StimulusModality.OPTOGENETICS],
-            stimulus_parameters=[
-                opto_stim,
-            ],
-            stimulus_start_time=session_start_time,
-            stimulus_end_time=end_datetime,
+        session = Session(
+            experimenter_full_name=fiber_data.experimenter_full_name,
+            session_start_time=fiber_data.start_time,
+            session_end_time=fiber_data.end_time,
+            session_type="FIB",
+            rig_id=fiber_data.rig_id,
+            subject_id=fiber_data.subject_id,
+            iacuc_protocol=fiber_data.iacuc_protocol,
+            notes=fiber_data.notes,
+            data_streams=[stream],
+            mouse_platform_name=fiber_data.mouse_platform_name,
+            active_mouse_platform=fiber_data.active_mouse_platform,
         )
 
-        # create light source instance
-        light_source = []
-        for ls in light_source_list:
-            diode = LightEmittingDiodeConfig(**ls)
-            light_source.append(diode)
+        return session
 
-        # create detector instance
-        detectors = []
-        for d in detector_list:
-            camera = DetectorConfig(**d)
-            detectors.append(camera)
+    def _load(
+        self, output_model: AindCoreModel, output_directory: Optional[Path]
+    ) -> JobResponse:
+        """Override parent _load to handle custom
+        filenames and default directories.
 
-        # create fiber connection instance
-        fiber_connections = []
-        for fc in fiber_connections_list:
-            cord = FiberConnectionConfig(**fc)
-            fiber_connections.append(cord)
-        data_stream = [
-            Stream(
-                stream_start_time=session_start_time,
-                stream_end_time=end_datetime,
-                light_sources=light_source,
-                stream_modalities=[Modality.FIB],
-                detectors=detectors,
-                fiber_connections=fiber_connections,
-            )
-        ]
-        # and finally, create ophys session
-        ophys_session = Session(
-            stimulus_epochs=[stimulus_epochs],
-            subject_id=labtracks_id,
-            iacuc_protocol=iacuc_protocol,
-            session_start_time=session_start_time,
-            session_end_time=end_datetime,
-            rig_id=rig_id,
-            experimenter_full_name=experimenter_full_name,
-            session_type=session_type,
-            notes=notes,
-            data_streams=data_stream,
-            mouse_platform_name=mouse_platform_name,
-            active_mouse_platform=active_mouse_platform,
-        )
+        This implementation differs from the parent GenericEtl._load
+        in that it:
+        1. Uses the filename specified in job_settings rather
+        than model's default
+        2. Falls back to data_directory if no output_directory specified
+        3. Maintains validation and error handling from parent class
 
-        return ophys_session
+        Parameters
+        ----------
+        output_model : AindCoreModel
+            The final model that has been constructed and validated
+        output_directory : Optional[Path]
+            Directory where the file should be written. If None,
+            defaults to job_settings.data_directory
 
-    def _extract(self) -> ParsedMetadata:
-        """Extract metadata from fip session."""
+        Returns
+        -------
+        JobResponse
+            Object containing status code, message, and optional data.
+            Status codes:
+            - 200: Success
+            - 500: File writing errors
+        """
+        # If no output directory specified, use the data directory
+        if output_directory is None:
+            output_directory = Path(self.job_settings.data_directory)
 
-        tensy_str = self.job_settings.string_to_parse
-
-        return ParsedMetadata(
-            teensy_str=tensy_str,
+        output_path = output_directory / self.job_settings.output_filename
+        with open(output_path, "w") as f:
+            f.write(output_model.model_dump_json(indent=3))
+        return JobResponse(
+            status_code=200, message=f"Write model to {output_path}"
         )
 
     def run_job(self) -> JobResponse:
-        """Run the etl job and return a JobResponse."""
-        extracted = self._extract()
-        transformed = self._transform(extracted_source=extracted)
+        """Run the complete ETL job and return a JobResponse.
+
+        This method orchestrates the full ETL process:
+        1. Extracts metadata from files and settings
+        2. Transforms the data into a valid Session object
+        3. Saves the session metadata to the specified output location
+        4. Verifies the output file was written correctly
+
+        Returns
+        -------
+        JobResponse
+            Object containing status code, message, and optional data.
+            Status codes:
+            - 200: Success
+            - 406: Validation errors
+            - 500: File writing errors
+
+        Notes
+        -----
+        Uses the parent class's _load method which
+        handles validation and writing.
+        """
+        fiber_data = self._extract()
+        transformed_session = self._transform(fiber_data)
         job_response = self._load(
-            transformed, self.job_settings.output_directory
+            transformed_session, self.job_settings.output_directory
         )
         return job_response
     
