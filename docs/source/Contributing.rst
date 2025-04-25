@@ -8,7 +8,7 @@ Issues and Feature Requests
 ---------------------------
 Questions, feature requests and bug reports are all welcome as discussions or `issues <https://github.com/AllenNeuralDynamics/aind-metadata-mapper/issues>`_. Please use the provided `templates <https://github.com/AllenNeuralDynamics/aind-metadata-mapper/issues/new/choose>`_ to ensure we have enough information to work with.
 
-NOTE: If your package requires upgrading aind-data-schema, create a separate ticket and a dedicated engineer will handle the upgrade.
+**NOTE**: If your package requires upgrading aind-data-schema, create a separate ticket and a dedicated engineer will handle the upgrade.
 
 Installation and Development
 ----------------------------
@@ -42,8 +42,10 @@ This codebase is organized by acquisition machine, so if you're adding a new mac
     ├──models.py
 
 
-The models.py file should contain the ``JobSettings`` class that will be used by your ETL to produce the desired model. We've provided a ``BaseJobSettings`` class that can be used as a base class for your JobSettings. 
+The ``models.py`` file should contain the ``JobSettings`` class that will be used by your ETL to produce the desired model. We've provided a ``BaseJobSettings`` class that can be used as a base class for your JobSettings. 
+
 The ``JobSettings`` class can be used to define the fields that the user needs to input and default values for fields that will usually remain the same. It may look like this:
+
 .. code:: python
    
       from aind_metadata_mapper.core_models import BaseJobSettings
@@ -87,6 +89,7 @@ Please see the bergamo package for a more complete example of how to structure y
 Each package should also have it's own package dependencies. These should be added in the in the ``pyproject.toml`` file in the root of the repository like so:
 
 .. code:: bash
+
    [project.optional-dependencies]
    my_acquisition_machine = [
        "aind-metadata-mapper[schema]",
@@ -107,16 +110,19 @@ Testing is required to open a PR in this repository to ensure robustness and rel
    - Test methods should be named ``test_<method_name>_<description>`` (e.g., ``test_run_job_success``).
 - **Mocking Writes**: Your unit tests should not write anything out. You can use the unittest.mock library to intercept file operations and test your method without actually creating a file.
 - **Test Coverage**: Aim for comprehensive test coverage to validate all critical paths and edge cases within the module. To open a PR, you will need at least 80% coverage.
+  
   - Please test your changes using the coverage library, which will run the tests and log a coverage report:
+  
     .. code:: bash
 
         coverage run -m unittest discover && coverage report
+        
+  - To open the coverage report in a browser, you can run:
 
-    To open the coverage report in a browser, you can run
-    .. code:: bash
-
-    coverage html
-
+   .. code:: bash
+      
+         coverage html
+ 
    and find the report in the htmlcov/index.html.
 
 Linters
@@ -164,7 +170,7 @@ To ensure that an ETL runs as expected against data on the VAST, you can run an 
 
 
 Branches and Pull requests
--------------
+---------------------------
 For internal members, please create a branch. For external members, please fork the repository and open a pull request from the fork. We'll primarily use Angular style for commit messages.
 
 Branch naming conventions
