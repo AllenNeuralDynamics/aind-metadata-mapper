@@ -42,8 +42,8 @@ from aind_metadata_mapper.pavlovian_behavior.session import ETL as BehaviorETL
 from aind_metadata_mapper.pavlovian_behavior.models import (
     JobSettings as BehaviorJobSettings,
 )
-from aind_metadata_mapper.fib.session import ETL as FiberETL
-from aind_metadata_mapper.fib.models import JobSettings as FiberJobSettings
+from aind_metadata_mapper.fip.session import FIBEtl as FiberETL
+from aind_metadata_mapper.fip.models import JobSettings as FiberJobSettings
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import VolumeUnit
 from aind_metadata_mapper.utils.merge_sessions import merge_sessions
