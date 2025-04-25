@@ -18,9 +18,9 @@ Example Usage:
         --fiber-dir data/sample_fiber_data/fib \
         --output-dir data/sample_fiber_data \
         --experimenters "Test User 1" "Test User 2" \
-        --behavior-output "pav_behavior.json" \
-        --fiber-output "fiber_phot.json" \
-        --merged-output "session_combined.json"
+        --behavior-output "session_pavlovian.json" \
+        --fiber-output "session_fib.json" \
+        --merged-output "session.json"
     ```
 
     This will:
@@ -42,8 +42,8 @@ from aind_metadata_mapper.pavlovian_behavior.session import ETL as BehaviorETL
 from aind_metadata_mapper.pavlovian_behavior.models import (
     JobSettings as BehaviorJobSettings,
 )
-from aind_metadata_mapper.fib.session import ETL as FiberETL
-from aind_metadata_mapper.fib.models import JobSettings as FiberJobSettings
+from aind_metadata_mapper.fip.session import FIBEtl as FiberETL
+from aind_metadata_mapper.fip.models import JobSettings as FiberJobSettings
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import VolumeUnit
 from aind_metadata_mapper.utils.merge_sessions import merge_sessions
