@@ -18,9 +18,9 @@ Example Usage:
         --fiber-dir data/sample_fiber_data/fib \
         --output-dir data/sample_fiber_data \
         --experimenters "Test User 1" "Test User 2" \
-        --behavior-output "pav_behavior.json" \
-        --fiber-output "fiber_phot.json" \
-        --merged-output "session_combined.json"
+        --behavior-output "session_pavlovian.json" \
+        --fiber-output "session_fib.json" \
+        --merged-output "session.json"
     ```
 
     This will:
