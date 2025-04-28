@@ -2,12 +2,12 @@
 
 This module provides functions for handling timestamps and file operations
 specific to fiber photometry data, including conversion between milliseconds
-and datetime objects, and extraction of session times from data files.
+and datetime objects, and extraction of session times from data files. 
 """
 
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-from typing import Union, Optional
+from typing import Union, Optional, Dict
 from pathlib import Path
 from tzlocal import get_localzone
 import logging
@@ -201,3 +201,66 @@ def extract_session_end_time_from_files(
             return None
 
     return latest_time
+
+def normalize_fiber_name(name: str) -> str:
+    """
+    Normalize a fiber name for comparison by converting to lowercase and removing spaces/underscores.
+
+    Args:
+        name: The fiber name to normalize
+
+    Returns:
+        A normalized version of the name for comparison purposes
+    """
+    # Convert to lowercase and remove spaces and underscores
+    return name.lower().replace(" ", "").replace("_", "")
+
+
+def extract_fiber_index(name: str) -> Optional[int]:
+    """
+    Extract the index from a fiber name regardless of format.
+
+    Args:
+        name: The fiber name
+
+    Returns:
+        The extracted index or None if no index found
+    """
+    # Remove "fiber" and non-numeric characters to extract the index
+    normalized = normalize_fiber_name(name)
+    if not normalized.startswith("fiber"):
+        return None
+
+    # Extract the numeric part after "fiber"
+    numeric_part = normalized[5:]
+    try:
+        return int(numeric_part)
+    except ValueError:
+        return None
+
+
+def check_fiber_indexing(
+    fiber_measurements: Dict[str, Dict[str, Optional[str]]],
+) -> None:
+    """
+    Check if fiber measurements use 1-indexing instead of 0-indexing.
+    Raises an error if 1-indexed fibers are found.
+
+    Args:
+        fiber_measurements: Dictionary mapping fiber names to their measurement data
+
+    Raises:
+        ValueError: If 1-indexed fibers are found
+    """
+    fiber_indices = set()
+    for fiber_name in fiber_measurements.keys():
+        index = extract_fiber_index(fiber_name)
+        if index is not None:
+            fiber_indices.add(index)
+
+    if fiber_indices and min(fiber_indices) == 1:
+        raise ValueError(
+            f"Found 1-indexed fibers in measurements: {fiber_measurements}. "
+            "This script currently only supports 0-indexed fibers. "
+            "Please update the fiber indexing in the measurements data."
+        )
