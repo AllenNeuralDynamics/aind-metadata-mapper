@@ -83,9 +83,7 @@ class TestMesoscope(unittest.TestCase):
         etl = MesoscopeEtl(
             job_settings=job_settings_str,
         )
-        self.assertEqual(
-            etl.job_settings, JobSettings(**self.user_input)
-        )
+        self.assertEqual(etl.job_settings, JobSettings(**self.user_input))
 
     @patch("pathlib.Path.is_file")
     @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
