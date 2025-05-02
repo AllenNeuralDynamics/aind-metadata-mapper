@@ -164,89 +164,6 @@ def get_images_dict(pkl_dict) -> Dict:
     return images_dict
 
 
-def get_gratings_metadata(stimuli: Dict, start_idx: int = 0) -> pd.DataFrame:
-    """
-    This function returns the metadata for each unique grating that was
-    presented during the experiment. If no gratings were displayed during
-    this experiment it returns an empty dataframe with the expected columns.
-    Parameters
-    ----------
-    stimuli:
-        The stimuli field (pkl['items']['behavior']['stimuli']) loaded
-        from the experiment pkl file.
-    start_idx:
-        The index to start index column
-
-    Returns
-    -------
-    pd.DataFrame:
-        DataFrame containing the unique stimuli presented during an
-        experiment. The columns contained in this DataFrame are
-        'image_category', 'image_name', 'image_set', 'phase',
-        'spatial_frequency', 'orientation', and 'image_index'.
-        This returns empty if no gratings were presented.
-
-    """
-    if stimuli.get("grating"):
-        phase = stimuli["grating"]["phase"]
-        correct_freq = stimuli["grating"]["sf"]
-        set_logs = stimuli["grating"]["set_log"]
-        unique_oris = set([set_log[1] for set_log in set_logs])
-
-        image_names = []
-
-        for unique_ori in unique_oris:
-            image_names.append(f"gratings_{float(unique_ori)}")
-
-        grating_dict = {
-            "image_category": ["grating"] * len(unique_oris),
-            "image_name": image_names,
-            "orientation": list(unique_oris),
-            "image_set": ["grating"] * len(unique_oris),
-            "phase": [phase] * len(unique_oris),
-            "spatial_frequency": [correct_freq] * len(unique_oris),
-            "image_index": range(start_idx, start_idx + len(unique_oris), 1),
-        }
-        grating_df = pd.DataFrame.from_dict(grating_dict)
-    elif stimuli.get("images"):
-        correct_freq = stimuli["images"]["correct_freq"]
-        image_set = stimuli["images"]["image_set"]
-        set_logs = stimuli["images"]["set_log"]
-        unique_oris = set([set_log[2] for set_log in set_logs])
-        size = stimuli["images"]["size"]
-        image_names = [
-            name
-            for name in list(
-                [set_log[1] for set_log in set_logs][: len(unique_oris)]
-            )
-        ]
-
-        grating_dict = {
-            "image_category": ["grating"] * len(unique_oris),
-            "image_name": image_names,
-            "orientation": list(unique_oris),
-            "image_set": [image_set] * len(unique_oris),
-            "size": [size] * len(unique_oris),
-            "spatial_frequency": [correct_freq] * len(unique_oris),
-            "image_index": range(start_idx, start_idx + len(unique_oris), 1),
-        }
-        grating_df = pd.DataFrame.from_dict(grating_dict)
-
-    else:
-        grating_df = pd.DataFrame(
-            columns=[
-                "image_category",
-                "image_name",
-                "image_set",
-                "phase",
-                "spatial_frequency",
-                "orientation",
-                "image_index",
-            ]
-        )
-    return grating_df
-
-
 def get_stimulus_metadata(pkl) -> pd.DataFrame:
     """
     Gets the stimulus metadata for each type of stimulus presented during
@@ -303,12 +220,12 @@ def get_stimulus_metadata(pkl) -> pd.DataFrame:
         )
 
     # get the grating metadata will be empty if gratings are absent
-    grating_df = get_gratings_metadata(
-        stimuli, start_idx=len(stimulus_index_df)
-    )
-    stimulus_index_df = pd.concat(
-        [stimulus_index_df, grating_df], ignore_index=True, sort=False
-    )
+    #grating_df = get_gratings_metadata(
+    #    stimuli, start_idx=len(stimulus_index_df)
+    #)
+    #stimulus_index_df = pd.concat(
+    #    [stimulus_index_df, grating_df], ignore_index=True, sort=False
+    #)
     # Add an entry for omitted stimuli
     omitted_df = pd.DataFrame(
         {
@@ -326,6 +243,7 @@ def get_stimulus_metadata(pkl) -> pd.DataFrame:
         [stimulus_index_df, omitted_df], ignore_index=True, sort=False
     )
     stimulus_index_df.set_index(["image_index"], inplace=True, drop=True)
+    #print(stimulus_index_df.head(100))
     return stimulus_index_df
 
 
@@ -1032,6 +950,7 @@ def from_stimulus_file(
         input_df=raw_stim_pres_df
     )
 
+    #print(raw_stim_pres_df.head(100))
     # Fill in nulls for image_name
     # This makes two assumptions:
     #   1. Nulls in `image_name` should be "gratings_<orientation>"
@@ -1046,14 +965,16 @@ def from_stimulus_file(
             raise ValueError(
                 "All values for 'orientation' and " "'image_name are null."
             )
-
+    #print(raw_stim_pres_df.head(100))
     stimulus_metadata_df = get_stimulus_metadata(data)
+    #print("metadata")
+    #print(stimulus_metadata_df)
 
     idx_name = raw_stim_pres_df.index.name
     if idx_name is None:
         return raw_stim_pres_df
     raw_stim_pres_df = raw_stim_pres_df.drop(columns=["orientation"])
-
+    #print(raw_stim_pres_df.head(100))
     stimulus_index_df = (
         raw_stim_pres_df.reset_index()
         .merge(
@@ -1061,6 +982,8 @@ def from_stimulus_file(
         )
         .set_index(idx_name)
     )
+    #print("stimulus_index_df")
+    #print(stimulus_index_df.head(100))
 
     stimulus_index_df = (
         stimulus_index_df[
@@ -1078,15 +1001,20 @@ def from_stimulus_file(
         .sort_index()
         .set_index("timestamps", drop=True)
     )
+    import pdb; pdb.set_trace()
     stimulus_index_df["image_index"] = stimulus_index_df["image_index"].astype(
         "int"
     )
+    #print("stimulus_index_df post start_time")
+    #print(stimulus_index_df)
     stim_pres_df = raw_stim_pres_df.merge(
         stimulus_index_df,
         left_on="start_time",
         right_index=True,
         how="left",
     )
+    #print("stim_pres_df")
+    #print(stim_pres_df)
     # if len(raw_stim_pres_df) != len(stim_pres_df):
     #    raise ValueError(
     #        "Length of `stim_pres_df` should not change after"
@@ -1094,9 +1022,9 @@ def from_stimulus_file(
     #        f" {len(stim_pres_df)}."
     #    )
 
-    stim_pres_df["is_change"] = is_change_event(
-        stimulus_presentations=stim_pres_df
-    )
+    #stim_pres_df["is_change"] = is_change_event(
+    #    stimulus_presentations=stim_pres_df
+    #)
 
     stim_pres_df["flashes_since_change"] = get_flashes_since_change(
         stimulus_presentations=stim_pres_df
@@ -1149,7 +1077,7 @@ def from_stimulus_file(
     )
 
     # Replace "pkl" row's image_set with non-pkl version
-    df.loc[merged.index, "image_set"] = merged["image_set_without_pkl"]
+    #df.loc[merged.index, "image_set"] = merged["image_set_without_pkl"]
 
     # Drop the original non-"pkl" rows
     df = df[~df.index.isin(without_pkl.index)]
@@ -1193,6 +1121,9 @@ def from_stimulus_file(
     if "Pos" in df.columns:
         df[["pos_x", "pos_y"]] = df["Pos"].apply(safe_split_pos)
         df.drop(columns=["Pos"], inplace=True)
+
+    if "contrast" in df.columns:
+        df["contrast"] = df["contrast"].apply(lambda x: x[0] if isinstance(x, list) else x).astype(float)
 
     return (df, column_list)
 
