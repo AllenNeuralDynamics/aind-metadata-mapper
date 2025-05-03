@@ -904,6 +904,26 @@ def fingerprint_from_stimulus_file(
     return table
 
 
+def clean_position_and_contrast(df):
+    def safe_split_pos(x):
+        if isinstance(x, (list, tuple)) and len(x) == 2:
+            return pd.Series([float(x[0]), float(x[1])])
+        else:
+            return pd.Series([np.nan, np.nan])
+
+    if "Pos" in df.columns:
+        df[["pos_x", "pos_y"]] = df["Pos"].apply(safe_split_pos)
+        df.drop(columns=["Pos"], inplace=True)
+
+    if "contrast" in df.columns:
+        df["contrast"] = (
+            df["contrast"]
+            .apply(lambda x: x[0] if isinstance(x, list) else x)
+            .astype(float)
+        )
+    return df
+
+
 def from_stimulus_file(
     stimulus_file,
     stimulus_timestamps,
@@ -1088,27 +1108,8 @@ def from_stimulus_file(
         df[col] = merged
     df = remove_short_sandwiched_spontaneous(df)
 
-    def safe_split_pos(x):
-        """
-        Try to split the 'position' value, which should take
-        the form of a tuple, into two floats.
-        If value is nan, split into two nans.
-        """
-        if isinstance(x, (list, tuple)) and len(x) == 2:
-            return pd.Series([float(x[0]), float(x[1])])
-        else:
-            return pd.Series([np.nan, np.nan])
-
-    if "Pos" in df.columns:
-        df[["pos_x", "pos_y"]] = df["Pos"].apply(safe_split_pos)
-        df.drop(columns=["Pos"], inplace=True)
-
-    if "contrast" in df.columns:
-        df["contrast"] = (
-            df["contrast"]
-            .apply(lambda x: x[0] if isinstance(x, list) else x)
-            .astype(float)
-        )
+    if "Pos" in df.columns or "constrast" in df.columns:
+        df = clean_position_and_contrast(df)
 
     return (df, column_list)
 
