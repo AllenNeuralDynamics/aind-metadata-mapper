@@ -220,12 +220,12 @@ def get_stimulus_metadata(pkl) -> pd.DataFrame:
         )
 
     # get the grating metadata will be empty if gratings are absent
-    #grating_df = get_gratings_metadata(
+    # grating_df = get_gratings_metadata(
     #    stimuli, start_idx=len(stimulus_index_df)
-    #)
-    #stimulus_index_df = pd.concat(
+    # )
+    # stimulus_index_df = pd.concat(
     #    [stimulus_index_df, grating_df], ignore_index=True, sort=False
-    #)
+    # )
     # Add an entry for omitted stimuli
     omitted_df = pd.DataFrame(
         {
@@ -243,7 +243,7 @@ def get_stimulus_metadata(pkl) -> pd.DataFrame:
         [stimulus_index_df, omitted_df], ignore_index=True, sort=False
     )
     stimulus_index_df.set_index(["image_index"], inplace=True, drop=True)
-    #print(stimulus_index_df.head(100))
+    # print(stimulus_index_df.head(100))
     return stimulus_index_df
 
 
@@ -950,7 +950,7 @@ def from_stimulus_file(
         input_df=raw_stim_pres_df
     )
 
-    #print(raw_stim_pres_df.head(100))
+    # print(raw_stim_pres_df.head(100))
     # Fill in nulls for image_name
     # This makes two assumptions:
     #   1. Nulls in `image_name` should be "gratings_<orientation>"
@@ -965,16 +965,16 @@ def from_stimulus_file(
             raise ValueError(
                 "All values for 'orientation' and " "'image_name are null."
             )
-    #print(raw_stim_pres_df.head(100))
+    # print(raw_stim_pres_df.head(100))
     stimulus_metadata_df = get_stimulus_metadata(data)
-    #print("metadata")
-    #print(stimulus_metadata_df)
+    # print("metadata")
+    # print(stimulus_metadata_df)
 
     idx_name = raw_stim_pres_df.index.name
     if idx_name is None:
         return raw_stim_pres_df
     raw_stim_pres_df = raw_stim_pres_df.drop(columns=["orientation"])
-    #print(raw_stim_pres_df.head(100))
+    # print(raw_stim_pres_df.head(100))
     stimulus_index_df = (
         raw_stim_pres_df.reset_index()
         .merge(
@@ -982,8 +982,8 @@ def from_stimulus_file(
         )
         .set_index(idx_name)
     )
-    #print("stimulus_index_df")
-    #print(stimulus_index_df.head(100))
+    # print("stimulus_index_df")
+    # print(stimulus_index_df.head(100))
 
     stimulus_index_df = (
         stimulus_index_df[
@@ -1010,7 +1010,6 @@ def from_stimulus_file(
         right_index=True,
         how="left",
     )
-    
 
     # Sort columns then drop columns which contain only all NaN values
     stim_pres_df = stim_pres_df[sorted(stim_pres_df)].dropna(axis=1, how="all")
@@ -1059,7 +1058,7 @@ def from_stimulus_file(
     )
 
     # Replace "pkl" row's image_set with non-pkl version
-    #df.loc[merged.index, "image_set"] = merged["image_set_without_pkl"]
+    # df.loc[merged.index, "image_set"] = merged["image_set_without_pkl"]
 
     # Drop the original non-"pkl" rows
     df = df[~df.index.isin(without_pkl.index)]
@@ -1105,7 +1104,11 @@ def from_stimulus_file(
         df.drop(columns=["Pos"], inplace=True)
 
     if "contrast" in df.columns:
-        df["contrast"] = df["contrast"].apply(lambda x: x[0] if isinstance(x, list) else x).astype(float)
+        df["contrast"] = (
+            df["contrast"]
+            .apply(lambda x: x[0] if isinstance(x, list) else x)
+            .astype(float)
+        )
 
     return (df, column_list)
 
