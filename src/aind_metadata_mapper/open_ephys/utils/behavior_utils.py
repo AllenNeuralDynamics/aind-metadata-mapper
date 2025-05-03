@@ -1001,30 +1001,15 @@ def from_stimulus_file(
         .sort_index()
         .set_index("timestamps", drop=True)
     )
-    import pdb; pdb.set_trace()
     stimulus_index_df["image_index"] = stimulus_index_df["image_index"].astype(
         "int"
     )
-    #print("stimulus_index_df post start_time")
-    #print(stimulus_index_df)
     stim_pres_df = raw_stim_pres_df.merge(
         stimulus_index_df,
         left_on="start_time",
         right_index=True,
         how="left",
     )
-    #print("stim_pres_df")
-    #print(stim_pres_df)
-    # if len(raw_stim_pres_df) != len(stim_pres_df):
-    #    raise ValueError(
-    #        "Length of `stim_pres_df` should not change after"
-    #        f" merge; was {len(raw_stim_pres_df)}, now "
-    #        f" {len(stim_pres_df)}."
-    #    )
-
-    #stim_pres_df["is_change"] = is_change_event(
-    #    stimulus_presentations=stim_pres_df
-    #)
 
     stim_pres_df["flashes_since_change"] = get_flashes_since_change(
         stimulus_presentations=stim_pres_df
