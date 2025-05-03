@@ -905,7 +905,23 @@ def fingerprint_from_stimulus_file(
 
 
 def clean_position_and_contrast(df):
+    """Clean position and contrast columns in stimulus presentation table.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input stimulus presentation table to clean.
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        Cleaned stimulus presentation table with position and contrast columns
+        processed.
+    """
+
     def safe_split_pos(x):
+        """Safely split position into x and y coordinates."""
+
         if isinstance(x, (list, tuple)) and len(x) == 2:
             return pd.Series([float(x[0]), float(x[1])])
         else:
