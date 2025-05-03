@@ -1010,10 +1010,7 @@ def from_stimulus_file(
         right_index=True,
         how="left",
     )
-
-    stim_pres_df["flashes_since_change"] = get_flashes_since_change(
-        stimulus_presentations=stim_pres_df
-    )
+    
 
     # Sort columns then drop columns which contain only all NaN values
     stim_pres_df = stim_pres_df[sorted(stim_pres_df)].dropna(axis=1, how="all")
