@@ -3,6 +3,17 @@ Simple script to create Pavlovian behavior metadata with default settings.
 
 User should use this script to create a new session metadata file,
 modifying specific fields as needed.
+
+Example command to run the script from the command line:
+
+```bash
+python src/aind_metadata_mapper/pavlovian_behavior/example_create_session.py \
+    --subject-id 000000 \
+    --data-directory data/sample_fiber_data \
+    --output-directory data/sample_fiber_data \
+    --output-filename session_pavlovian_behavior.json
+```
+=======
 """
 
 from pathlib import Path
@@ -77,7 +88,10 @@ def create_metadata(
                 "stream_start_time": None,
                 "stream_end_time": None,
                 "stream_modalities": [Modality.BEHAVIOR],
-                "camera_names": [],
+                "camera_names": [
+                    "BehaviorVideography_Eye",
+                    "BehaviorVideography_Body",
+                ],
                 "daq_names": [""],
                 "light_sources": [
                     {
