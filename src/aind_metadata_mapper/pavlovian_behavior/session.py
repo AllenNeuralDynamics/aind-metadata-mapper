@@ -21,7 +21,13 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from aind_data_schema.base import AindCoreModel
-from aind_data_schema.core.session import Session, StimulusEpoch
+from aind_data_schema.core.session import (
+    Session,
+    StimulusEpoch,
+    Software,
+    SpeakerConfig,
+)
+from aind_data_schema.components.stimulus import AuditoryStimulation
 
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.core_models import JobResponse
@@ -154,14 +160,54 @@ class ETL(GenericEtl[JobSettings]):
         try:
             data_dir = Path(settings.data_directory)
             reward_units = getattr(settings, "reward_units_per_trial", 2.0)
-
             session_time, stimulus_epochs = extract_session_data(
                 data_dir, reward_units
             )
 
-            # Calculate total rewards
+            # If user supplied stimulus_epochs, merge their fields into the extracted epochs
+            if getattr(settings, "stimulus_epochs", None):
+                user_epoch = settings.stimulus_epochs[
+                    0
+                ]  # assuming one epoch for now
+                for epoch in stimulus_epochs:
+                    for k, v in user_epoch.dict().items():
+                        if v is not None:
+                            setattr(epoch, k, v)
+
+            # After merging user fields into each epoch:
+            for epoch in stimulus_epochs:
+                # Convert software list of dicts to list of Software models
+                if hasattr(epoch, "software") and epoch.software:
+                    epoch.software = [
+                        Software(**s) if isinstance(s, dict) else s
+                        for s in epoch.software
+                    ]
+
+                # Convert speaker_config dict to SpeakerConfig model
+                if (
+                    hasattr(epoch, "speaker_config")
+                    and epoch.speaker_config
+                    and isinstance(epoch.speaker_config, dict)
+                ):
+                    epoch.speaker_config = SpeakerConfig(
+                        **epoch.speaker_config
+                    )
+
+                # Convert all stimulus_parameters dicts to AuditoryStimulation models
+                if (
+                    hasattr(epoch, "stimulus_parameters")
+                    and epoch.stimulus_parameters
+                ):
+                    epoch.stimulus_parameters = [
+                        AuditoryStimulation(**p) if isinstance(p, dict) else p
+                        for p in epoch.stimulus_parameters
+                    ]
+
             reward_consumed_total = sum(
-                epoch.reward_consumed_during_epoch for epoch in stimulus_epochs
+                epoch.reward_consumed_during_epoch
+                for epoch in stimulus_epochs
+                if getattr(epoch, "reward_consumed_during_epoch", None)
+                is not None
             )
 
             # Process data streams

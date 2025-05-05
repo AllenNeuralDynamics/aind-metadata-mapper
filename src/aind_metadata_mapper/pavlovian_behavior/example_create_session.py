@@ -112,7 +112,62 @@ def create_metadata(
                 ],
             }
         ],
-        "stimulus_epochs": [],
+        "stimulus_epochs": [
+            {
+                "stimulus_name": "CS - auditory conditioned stimuli",
+                "stimulus_parameters": [
+                    {
+                        "amplitude_modulation_frequency": 5000,
+                        "frequency_unit": "hertz",
+                        "notes": "assigned reward probability is 10%",
+                        "sample_frequency": "96000",
+                        "stimulus_name": "CS1",
+                        "stimulus_type": "Auditory Stimulation",
+                    },
+                    {
+                        "amplitude_modulation_frequency": 8000,
+                        "frequency_unit": "hertz",
+                        "notes": "assigned reward probability is 50%",
+                        "sample_frequency": "96000",
+                        "stimulus_name": "CS2",
+                        "stimulus_type": "Auditory Stimulation",
+                    },
+                    {
+                        "amplitude_modulation_frequency": 13000,
+                        "frequency_unit": "hertz",
+                        "notes": "assigned reward probability is 90%",
+                        "sample_frequency": "96000",
+                        "stimulus_name": "CS3",
+                        "stimulus_type": "Auditory Stimulation",
+                    },
+                    {
+                        "bandpass_filter_type": None,
+                        "frequency_unit": "hertz",
+                        "notes": "assigned airpuff probability is 90%, combined with",
+                        "sample_frequency": "96000",
+                        "stimulus_name": "CS4",
+                        "stimulus_type": "Auditory Stimulation",
+                    },
+                ],
+                "speaker_config": {
+                    "name": "Stimulus Speaker",
+                    "volume": "72",
+                    "volume_unit": "decibels",
+                },
+                "stimulus_device_names": ["Stimulus Speaker"],
+                "software": [
+                    {
+                        "name": "Bonsai",
+                        "parameters": {},
+                        "url": "",
+                        "version": "",
+                    }
+                ],
+                "notes": "The duration of CSs is 1s. The frequency set:5kHz, 8kHz, 13kHz, WhiteNoise.",
+                # Do NOT include: stimulus_start_time, stimulus_end_time, reward_consumed_during_epoch,
+                # trials_total, etc. These are populated by the ETL process from the behavior files.
+            }
+        ],
     }
 
     # Create JobSettings instance and run ETL
