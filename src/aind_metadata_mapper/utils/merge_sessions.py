@@ -259,14 +259,38 @@ def _merge_dicts(
 
     for key in all_keys:
         if key in dict1 and key in dict2:
-            merged[key] = _merge_values(
-                key, dict1[key], dict2[key], file1, file2
-            )
+            # Special case for reward_consumed_unit: pass parent dicts
+            if key == "reward_consumed_unit":
+                merged[key] = _merge_reward_unit(dict1, dict2, file1, file2)
+            else:
+                merged[key] = _merge_values(
+                    key, dict1[key], dict2[key], file1, file2
+                )
         else:
-            # If key only exists in one dict, use that value
             merged[key] = dict1.get(key) or dict2.get(key)
 
     return merged
+
+
+def _merge_reward_unit(
+    dict1: Dict[str, Any], dict2: Dict[str, Any], file1: str, file2: str
+) -> str:
+    """Special-case merge for reward_consumed_unit."""
+    total1 = dict1.get("reward_consumed_total")
+    total2 = dict2.get("reward_consumed_total")
+    unit1 = dict1.get("reward_consumed_unit")
+    unit2 = dict2.get("reward_consumed_unit")
+
+    # If one total is None, use the other's unit
+    if total1 is None and total2 is not None:
+        return unit2
+    if total2 is None and total1 is not None:
+        return unit1
+    # If both totals are None, prefer non-null unit or default to unit1
+    if total1 is None and total2 is None:
+        return unit1 or unit2
+    # If both totals are real, fall back to normal merge (prompt)
+    return _merge_values("reward_consumed_unit", unit1, unit2, file1, file2)
 
 
 def merge_sessions(
