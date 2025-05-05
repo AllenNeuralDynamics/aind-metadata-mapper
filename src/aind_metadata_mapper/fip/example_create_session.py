@@ -115,13 +115,13 @@ def create_metadata(
                 "daq_names": [""],
                 "detectors": [
                     {
-                        "exposure_time": "15650",
+                        "exposure_time": "15350",
                         "exposure_time_unit": "microsecond",
                         "name": "Green CMOS",
                         "trigger_type": "Internal",
                     },
                     {
-                        "exposure_time": "15650",
+                        "exposure_time": "15350",
                         "exposure_time_unit": "microsecond",
                         "name": "Red CMOS",
                         "trigger_type": "Internal",
