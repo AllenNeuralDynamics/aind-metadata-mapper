@@ -262,7 +262,10 @@ def _merge_timestamp(field, val1, val2, file1, file2):
 
 
 def _merge_strings(field, val1, val2, file1, file2):
-    """Merge two strings, preferring non-empty or prompting if both non-empty and different."""
+    """
+    Merge two strings, preferring non-empty or
+    prompting if both non-empty and different.
+    """
     if val1 == "" and val2 != "":
         return val2
     if val2 == "" and val1 != "":
@@ -319,7 +322,8 @@ def _merge_reward_unit(
     """
     Special-case merge for reward_consumed_unit.
 
-    Ignores the unit if the total is None. If both totals are real, falls back to normal merge.
+    Ignores the unit if the total is None.
+    If both totals are real, falls back to normal merge.
 
     Parameters
     ----------
@@ -366,7 +370,7 @@ def merge_sessions(
     session_file1 : Union[str, Path]
         Path to first session JSON file
     session_file2 : Union[str, Path]
-        Path to second session JSON file 
+        Path to second session JSON file
     output_file : Union[str, Path]
         Path where merged session JSON will be saved
 
