@@ -17,6 +17,7 @@ Example Usage:
         --data-dir data/sample_fiber_data \
         --output-dir data/sample_fiber_data \
         --experimenters "Test User 1" "Test User 2" \
+        --session-type "Pavlovian_Conditioning + FIB" \
         --behavior-output "session_pavlovian.json" \
         --fiber-output "session_fib.json" \
         --merged-output "session.json"
@@ -77,33 +78,39 @@ def main():
     parser.add_argument(
         "--rig-id",
         type=str,
-        default="428_9_0_20240617",
+        default=None,
         help="Identifier for the experimental rig",
     )
     parser.add_argument(
         "--iacuc",
         type=str,
-        default="2115",
+        default=None,
         help="IACUC protocol identifier",
     )
     parser.add_argument(
         "--notes",
         type=str,
-        default="",
+        default=None,
         help="Additional notes about the session",
     )
     parser.add_argument(
         "--reward-volume",
         type=float,
-        default=2.0,
+        default=None,
         help="Volume of reward delivered per successful trial",
     )
     parser.add_argument(
         "--reward-unit",
         type=str,
         choices=["microliter", "milliliter"],
-        default="microliter",
+        default=None,
         help="Unit of reward volume",
+    )
+    parser.add_argument(
+        "--session-type",
+        type=str,
+        default=None,
+        help="Session type to use for both behavior and fiber metadata (overrides individual defaults if specified)",
     )
     parser.add_argument(
         "--behavior-output",
@@ -129,37 +136,53 @@ def main():
     output_dir = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Build a dict of all possible arguments
+    pav_cli_kwargs = {
+        "subject_id": args.subject_id,
+        "data_directory": args.data_dir,
+        "output_directory": output_dir,
+        "output_filename": args.behavior_output,
+        "experimenter_full_name": args.experimenters,
+        "rig_id": args.rig_id,
+        "iacuc_protocol": args.iacuc,
+        "notes": args.notes,
+        "reward_units_per_trial": args.reward_volume,
+        "reward_consumed_unit": args.reward_unit,
+        "session_type": args.session_type,
+    }
+
+    print(f"pav_cli_kwargs: {pav_cli_kwargs}")
+
+    # Only include those that are not None
+    pav_kwargs = {k: v for k, v in pav_cli_kwargs.items() if v is not None}
+
     # Run Pavlovian behavior ETL
     logging.info("Generating Pavlovian behavior metadata...")
-    pav_success = create_pavlovian_metadata(
-        subject_id=args.subject_id,
-        data_directory=args.data_dir,
-        output_directory=output_dir,
-        output_filename=args.behavior_output,
-        experimenter_full_name=args.experimenters,
-        rig_id=args.rig_id,
-        iacuc_protocol=args.iacuc,
-        notes=args.notes,
-        reward_units_per_trial=args.reward_volume,
-        reward_consumed_unit=args.reward_unit,
-    )
+    pav_success = create_pavlovian_metadata(**pav_kwargs)
 
     if not pav_success:
         logging.error("Failed to generate Pavlovian behavior metadata.")
         sys.exit(1)
 
+    # Repeat for fiber
+    fip_cli_kwargs = {
+        "subject_id": args.subject_id,
+        "data_directory": args.data_dir,
+        "output_directory": output_dir,
+        "output_filename": args.fiber_output,
+        "experimenter_full_name": args.experimenters,
+        "rig_id": args.rig_id,
+        "iacuc_protocol": args.iacuc,
+        "notes": args.notes,
+        "session_type": args.session_type,
+    }
+    fip_kwargs = {k: v for k, v in fip_cli_kwargs.items() if v is not None}
+
+    print(f"fip_kwargs: {fip_kwargs}")
+
     # Run fiber photometry ETL
     logging.info("Generating fiber photometry metadata...")
-    fib_success = create_fip_metadata(
-        subject_id=args.subject_id,
-        data_directory=args.data_dir,
-        output_directory=output_dir,
-        output_filename=args.fiber_output,
-        experimenter_full_name=args.experimenters,
-        rig_id=args.rig_id,
-        iacuc_protocol=args.iacuc,
-        notes=args.notes,
-    )
+    fib_success = create_fip_metadata(**fip_kwargs)
 
     if not fib_success:
         logging.error("Failed to generate fiber photometry metadata.")
