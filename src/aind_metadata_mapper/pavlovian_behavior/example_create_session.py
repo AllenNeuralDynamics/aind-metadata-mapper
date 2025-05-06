@@ -42,7 +42,8 @@ def create_metadata(
     active_mouse_platform: bool = False,
     session_type: str = "Pavlovian_Conditioning",
     notes: str = (
-        "These two pieces of information are not included in the session metadata: "
+        "These two pieces of information are not "
+        "included in the session metadata: "
         "Reward delivery: water from left lick spout (DO0). "
         "Punishment delivery: airpuff with 25 psi for 1 s (DO2)."
     ),
@@ -144,7 +145,7 @@ def create_metadata(
                     {
                         "bandpass_filter_type": None,
                         "frequency_unit": "hertz",
-                        "notes": "assigned airpuff probability is 90%, combined with",
+                        "notes": "assigned airpuff probability is 90%, combined with white noise",  # noqa: E501
                         "sample_frequency": "96000",
                         "stimulus_name": "CS4",
                         "stimulus_type": "Auditory Stimulation",
@@ -164,9 +165,13 @@ def create_metadata(
                         "version": "",
                     }
                 ],
-                "notes": "The duration of CSs is 1s. The frequency set:5kHz, 8kHz, 13kHz, WhiteNoise.",
-                # Do NOT include: stimulus_start_time, stimulus_end_time, reward_consumed_during_epoch,
-                # trials_total, etc. These are populated by the ETL process from the behavior files.
+                "notes": (
+                    "The duration of CSs is 1s. "
+                    "The frequency set:5kHz, 8kHz, 13kHz, WhiteNoise."
+                ),
+                # Do NOT include: stimulus_start_time, stimulus_end_time,
+                # reward_consumed_during_epoch, trials_total, etc.
+                # These are populated by the ETL from the behavior files.
             }
         ],
     }

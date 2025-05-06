@@ -189,61 +189,58 @@ def _merge_timestamps(
 def _merge_values(
     field: str, val1: Any, val2: Any, file1: str, file2: str
 ) -> Any:
-    """Merge two values based on their types.
-
-    Args:
-        field: Name of the field being merged
-        val1: Value from first file
-        val2: Value from second file
-        file1: Name of first file
-        file2: Name of second file
-
-    Returns:
-        Merged value
-    """
-    # Handle case where one value is None
-    if val1 is None:
-        return val2
-    if val2 is None:
+    """Merge two values based on their types."""
+    if _is_none(val1, val2):
+        return _merge_none(val1, val2)
+    if _is_identical(val1, val2):
         return val1
-
-    # If values are identical, return either
-    if val1 == val2:
-        return val1
-
-    # Handle timestamps specially
-    if (
-        isinstance(val1, str)
-        and isinstance(val2, str)
-        and (
-            "time" in field.lower()
-            and all(t.endswith("Z") for t in [val1, val2])
-        )
-    ):
-        try:
-            return _merge_timestamps(
-                field, val1, val2, file1=file1, file2=file2
-            )
-        except ValueError:
-            # If timestamps are invalid or difference exceeds tolerance,
-            # fall back to user prompt
-            return _prompt_for_field(field, val1, val2, file1, file2)
-
-    # Handle other types
+    if _is_timestamp(field, val1, val2):
+        return _merge_timestamp(field, val1, val2, file1, file2)
     if isinstance(val1, list) and isinstance(val2, list):
         return _merge_lists(val1, val2)
-    elif isinstance(val1, dict) and isinstance(val2, dict):
+    if isinstance(val1, dict) and isinstance(val2, dict):
         return _merge_dicts(val1, val2, file1, file2)
-    elif isinstance(val1, str) and isinstance(val2, str):
-        # Special case: if one string is empty, use the non-empty one
-        if val1 == "" and val2 != "":
-            return val2
-        if val2 == "" and val1 != "":
-            return val1
-        # If both are non-empty and different, prompt
+    if isinstance(val1, str) and isinstance(val2, str):
+        return _merge_strings(field, val1, val2, file1, file2)
+    return _prompt_for_field(field, str(val1), str(val2), file1, file2)
+
+
+def _is_none(val1, val2):
+    return val1 is None or val2 is None
+
+
+def _merge_none(val1, val2):
+    return val2 if val1 is None else val1
+
+
+def _is_identical(val1, val2):
+    return val1 == val2
+
+
+def _is_timestamp(field, val1, val2):
+    return (
+        isinstance(val1, str)
+        and isinstance(val2, str)
+        and "time" in field.lower()
+        and all(t.endswith("Z") for t in [val1, val2])
+    )
+
+
+def _merge_timestamp(field, val1, val2, file1, file2):
+    try:
+        return _merge_timestamps(field, val1, val2, file1=file1, file2=file2)
+    except ValueError:
         return _prompt_for_field(field, val1, val2, file1, file2)
-    else:
-        return _prompt_for_field(field, str(val1), str(val2), file1, file2)
+
+
+def _merge_strings(field, val1, val2, file1, file2):
+    # Special case: if one string is empty, use the non-empty one
+    if val1 == "" and val2 != "":
+        return val2
+    if val2 == "" and val1 != "":
+        return val1
+    # If both are non-empty and different, prompt
+    return _prompt_for_field(field, val1, val2, file1, file2)
 
 
 def _merge_dicts(

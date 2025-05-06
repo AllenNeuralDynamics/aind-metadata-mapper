@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Create a unified session metadata file by generating and merging
 Pavlovian behavior and fiber photometry metadata.
@@ -51,7 +50,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Create unified session metadata from behavior and fiber data"
+        description="Create unified session metadata from behavior and fiber data"  # noqa: E501
     )
     parser.add_argument(
         "--subject-id", type=str, required=True, help="Subject identifier"
@@ -66,7 +65,7 @@ def main():
         "--output-dir",
         type=Path,
         default=Path.cwd(),
-        help="Directory where metadata files will be saved (default: current directory)",
+        help="Directory where metadata files will be saved (default: current directory)",  # noqa: E501
     )
     parser.add_argument(
         "--experimenters",
@@ -110,19 +109,19 @@ def main():
         "--session-type",
         type=str,
         default=None,
-        help="Session type to use for both behavior and fiber metadata (overrides individual defaults if specified)",
+        help="Session type to use for both behavior and fiber metadata (overrides individual defaults if specified)",  # noqa: E501
     )
     parser.add_argument(
         "--behavior-output",
         type=str,
         default="session_pavlovian.json",
-        help="Filename for behavior session metadata (default: session_pavlovian.json)",
+        help="Filename for behavior session metadata (default: session_pavlovian.json)",  # noqa: E501
     )
     parser.add_argument(
         "--fiber-output",
         type=str,
         default="session_fib.json",
-        help="Filename for fiber photometry session metadata (default: session_fib.json)",
+        help="Filename for fiber photometry session metadata (default: session_fib.json)",  # noqa: E501
     )
     parser.add_argument(
         "--merged-output",
@@ -151,8 +150,6 @@ def main():
         "session_type": args.session_type,
     }
 
-    print(f"pav_cli_kwargs: {pav_cli_kwargs}")
-
     # Only include those that are not None
     pav_kwargs = {k: v for k, v in pav_cli_kwargs.items() if v is not None}
 
@@ -177,8 +174,6 @@ def main():
         "session_type": args.session_type,
     }
     fip_kwargs = {k: v for k, v in fip_cli_kwargs.items() if v is not None}
-
-    print(f"fip_kwargs: {fip_kwargs}")
 
     # Run fiber photometry ETL
     logging.info("Generating fiber photometry metadata...")
@@ -205,7 +200,8 @@ def main():
         f.write(session_model.model_dump_json(indent=2))
 
     logging.info(
-        f"Successfully created unified session metadata at: {output_dir / args.merged_output}"
+        "Successfully created unified session metadata at:\n"
+        f"{output_dir / args.merged_output}"
     )
 
 

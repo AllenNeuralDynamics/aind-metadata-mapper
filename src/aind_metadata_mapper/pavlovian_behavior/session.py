@@ -164,63 +164,21 @@ class ETL(GenericEtl[JobSettings]):
                 data_dir, reward_units
             )
 
-            # If user supplied stimulus_epochs, merge their fields into the extracted epochs
-            if getattr(settings, "stimulus_epochs", None):
-                user_epoch = settings.stimulus_epochs[
-                    0
-                ]  # assuming one epoch for now
-                for epoch in stimulus_epochs:
-                    for k, v in user_epoch.dict().items():
-                        if v is not None:
-                            setattr(epoch, k, v)
-
-            # After merging user fields into each epoch:
-            for epoch in stimulus_epochs:
-                # Convert software list of dicts to list of Software models
-                if hasattr(epoch, "software") and epoch.software:
-                    epoch.software = [
-                        Software(**s) if isinstance(s, dict) else s
-                        for s in epoch.software
-                    ]
-
-                # Convert speaker_config dict to SpeakerConfig model
-                if (
-                    hasattr(epoch, "speaker_config")
-                    and epoch.speaker_config
-                    and isinstance(epoch.speaker_config, dict)
-                ):
-                    epoch.speaker_config = SpeakerConfig(
-                        **epoch.speaker_config
-                    )
-
-                # Convert all stimulus_parameters dicts to AuditoryStimulation models
-                if (
-                    hasattr(epoch, "stimulus_parameters")
-                    and epoch.stimulus_parameters
-                ):
-                    epoch.stimulus_parameters = [
-                        AuditoryStimulation(**p) if isinstance(p, dict) else p
-                        for p in epoch.stimulus_parameters
-                    ]
-
-            reward_consumed_total = sum(
-                epoch.reward_consumed_during_epoch
-                for epoch in stimulus_epochs
-                if getattr(epoch, "reward_consumed_during_epoch", None)
-                is not None
+            # Merge user-supplied fields into extracted epochs
+            stimulus_epochs = self._merge_user_epochs(
+                settings, stimulus_epochs
             )
 
-            # Process data streams
-            data_streams = []
-            if hasattr(settings, "data_streams") and settings.data_streams:
-                for stream in settings.data_streams:
-                    if stream.get("stream_start_time") is None:
-                        stream["stream_start_time"] = session_time
-                    if stream.get("stream_end_time") is None:
-                        stream["stream_end_time"] = stimulus_epochs[
-                            0
-                        ].stimulus_end_time
-                    data_streams.append(stream)
+            # Post-process epochs (type conversions)
+            stimulus_epochs = self._postprocess_epochs(stimulus_epochs)
+
+            reward_consumed_total = self._calculate_reward_total(
+                stimulus_epochs
+            )
+
+            data_streams = self._process_data_streams(
+                settings, session_time, stimulus_epochs
+            )
 
             # Create intermediate data model
             return PavlovianData(
@@ -242,6 +200,71 @@ class ETL(GenericEtl[JobSettings]):
 
         except (FileNotFoundError, ValueError) as e:
             raise ValueError(f"Failed to extract data from files: {str(e)}")
+
+    def _merge_user_epochs(self, settings, stimulus_epochs):
+        """Merge user-supplied epoch fields into extracted epochs."""
+        if getattr(settings, "stimulus_epochs", None):
+            user_epoch = settings.stimulus_epochs[
+                0
+            ]  # assuming one epoch for now
+            for epoch in stimulus_epochs:
+                for k, v in user_epoch.dict().items():
+                    if v is not None:
+                        setattr(epoch, k, v)
+        return stimulus_epochs
+
+    def _postprocess_epochs(self, stimulus_epochs):
+        """
+        Convert dicts to models for software,
+        speaker_config, and stimulus_parameters.
+        """
+        for epoch in stimulus_epochs:
+            # Convert software list of dicts to list of Software models
+            if hasattr(epoch, "software") and epoch.software:
+                epoch.software = [
+                    Software(**s) if isinstance(s, dict) else s
+                    for s in epoch.software
+                ]
+            # Convert speaker_config dict to SpeakerConfig model
+            if (
+                hasattr(epoch, "speaker_config")
+                and epoch.speaker_config
+                and isinstance(epoch.speaker_config, dict)
+            ):
+                epoch.speaker_config = SpeakerConfig(**epoch.speaker_config)
+            # Convert all stimulus_parameters dicts to
+            # AuditoryStimulation models
+            if (
+                hasattr(epoch, "stimulus_parameters")
+                and epoch.stimulus_parameters
+            ):
+                epoch.stimulus_parameters = [
+                    AuditoryStimulation(**p) if isinstance(p, dict) else p
+                    for p in epoch.stimulus_parameters
+                ]
+        return stimulus_epochs
+
+    def _calculate_reward_total(self, stimulus_epochs):
+        """Sum reward_consumed_during_epoch across all epochs."""
+        return sum(
+            epoch.reward_consumed_during_epoch
+            for epoch in stimulus_epochs
+            if getattr(epoch, "reward_consumed_during_epoch", None) is not None
+        )
+
+    def _process_data_streams(self, settings, session_time, stimulus_epochs):
+        """Process and fill in data_streams."""
+        data_streams = []
+        if hasattr(settings, "data_streams") and settings.data_streams:
+            for stream in settings.data_streams:
+                if stream.get("stream_start_time") is None:
+                    stream["stream_start_time"] = session_time
+                if stream.get("stream_end_time") is None:
+                    stream["stream_end_time"] = stimulus_epochs[
+                        0
+                    ].stimulus_end_time
+                data_streams.append(stream)
+        return data_streams
 
     def _transform(self, pavlovian_data: PavlovianData) -> Session:
         """Transform extracted data into a valid Session object.

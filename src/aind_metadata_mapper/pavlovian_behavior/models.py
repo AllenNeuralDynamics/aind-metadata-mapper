@@ -25,12 +25,14 @@ class StimulusEpochSettings(BaseModel):
     This model defines only those fields that are consistent across sessions
     and should be specified by the user in the job settings. Fields that are
     session-specific or should be extracted/calculated from data files
-    (such as timing, trial counts, or reward amounts) are intentionally omitted.
+    (such as timing, trial counts, or reward amounts)
+    are intentionally omitted.
 
     Parameters
     ----------
     stimulus_name : Optional[str]
-        Name of the stimulus protocol (e.g., "CS - auditory conditioned stimuli").
+        Name of the stimulus protocol
+        (e.g., "CS - auditory conditioned stimuli").
     software : Optional[List[Dict[str, Any]]]
         List of software used to control the stimulus (e.g., Bonsai).
     script : Optional[Dict[str, Any]]
@@ -38,7 +40,8 @@ class StimulusEpochSettings(BaseModel):
     stimulus_modalities : Optional[List[Union[str, Dict[str, Any]]]]
         Modalities of the stimulus (e.g., ["Auditory"]).
     stimulus_parameters : Optional[List[Dict[str, Any]]]
-        List of parameter dictionaries for each stimulus type (e.g., frequency, type).
+        List of parameter dictionaries for each stimulus type
+        (e.g., frequency, type).
     stimulus_device_names : Optional[List[str]]
         Names of devices used to deliver the stimulus.
     speaker_config : Optional[Dict[str, Any]]
