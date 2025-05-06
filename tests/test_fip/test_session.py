@@ -150,6 +150,9 @@ class TestSchemaWriter(unittest.TestCase):
                     self.example_job_settings.active_mouse_platform
                 ),
                 session_type="FIB",
+                anaesthesia=None,
+                animal_weight_post=None,
+                animal_weight_prior=None,
             )
             parsed_info = etl_job1._extract()
             self.assertEqual(
@@ -179,6 +182,9 @@ class TestSchemaWriter(unittest.TestCase):
             mouse_platform_name=job_settings.mouse_platform_name,
             active_mouse_platform=job_settings.active_mouse_platform,
             session_type="FIB",
+            anaesthesia=None,
+            animal_weight_post=None,
+            animal_weight_prior=None,
         )
         actual_session = etl_job1._transform(parsed_info)
 
@@ -218,6 +224,9 @@ class TestSchemaWriter(unittest.TestCase):
                     mouse_platform_name=job_settings.mouse_platform_name,
                     active_mouse_platform=job_settings.active_mouse_platform,
                     session_type="FIB",
+                    anaesthesia=None,
+                    animal_weight_post=None,
+                    animal_weight_prior=None,
                 )
                 job_response = etl_job1.run_job()
                 self.assertEqual(200, job_response.status_code)

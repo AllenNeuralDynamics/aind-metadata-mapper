@@ -73,6 +73,12 @@ class PavlovianData:
         Whether the mouse platform was active
     data_streams : List[dict]
         Optional data stream configurations
+    anaesthesia : Optional[str]
+        Anaesthesia used
+    animal_weight_post : Optional[float]
+        Animal weight after session
+    animal_weight_prior : Optional[float]
+        Animal weight before session
     """
 
     start_time: datetime
@@ -89,6 +95,9 @@ class PavlovianData:
     mouse_platform_name: str
     active_mouse_platform: bool
     data_streams: List[dict]
+    anaesthesia: Optional[str]
+    animal_weight_post: Optional[float]
+    animal_weight_prior: Optional[float]
 
 
 class ETL(GenericEtl[JobSettings]):
@@ -196,6 +205,9 @@ class ETL(GenericEtl[JobSettings]):
                 mouse_platform_name=settings.mouse_platform_name,
                 active_mouse_platform=settings.active_mouse_platform,
                 data_streams=data_streams,
+                anaesthesia=settings.anaesthesia,
+                animal_weight_post=settings.animal_weight_post,
+                animal_weight_prior=settings.animal_weight_prior,
             )
 
         except (FileNotFoundError, ValueError) as e:
@@ -312,6 +324,9 @@ class ETL(GenericEtl[JobSettings]):
             stimulus_epochs=pavlovian_data.stimulus_epochs,
             reward_consumed_total=pavlovian_data.reward_consumed_total,
             reward_consumed_unit=pavlovian_data.reward_consumed_unit,
+            anaesthesia=pavlovian_data.anaesthesia,
+            animal_weight_post=pavlovian_data.animal_weight_post,
+            animal_weight_prior=pavlovian_data.animal_weight_prior,
         )
 
         return session

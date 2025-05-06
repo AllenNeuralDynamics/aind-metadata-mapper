@@ -66,6 +66,9 @@ def create_metadata(
     active_mouse_platform: bool = False,
     session_type: str = "FIB",
     notes: str = "",
+    anaesthesia: Optional[str] = None,
+    animal_weight_post: Optional[float] = None,
+    animal_weight_prior: Optional[float] = None,
 ) -> bool:
     """Create fiber photometry metadata with default settings.
 
@@ -81,6 +84,9 @@ def create_metadata(
         active_mouse_platform: Whether platform is active
         session_type: Type of experimental session
         notes: Additional notes about the session
+        anaesthesia: Anaesthesia used
+        animal_weight_post: Animal weight after session
+        animal_weight_prior: Animal weight before session
 
     Returns:
         bool: True if metadata was successfully
@@ -99,6 +105,9 @@ def create_metadata(
         "active_mouse_platform": active_mouse_platform,
         "session_type": session_type,
         "notes": notes,
+        "anaesthesia": anaesthesia,
+        "animal_weight_post": animal_weight_post,
+        "animal_weight_prior": animal_weight_prior,
         "data_streams": [
             {
                 "stream_start_time": None,
@@ -225,6 +234,32 @@ if __name__ == "__main__":
         default="session_fip.json",
         help="Name of the output JSON file (default: session_fip.json)",
     )
+    parser.add_argument(
+        "--active-mouse-platform",
+        action="store_true",
+        help="Whether the mouse platform was active",
+    )
+    parser.add_argument(
+        "--anaesthesia", type=str, default=None, help="Anaesthesia used"
+    )
+    parser.add_argument(
+        "--animal-weight-post",
+        type=float,
+        default=None,
+        help="Animal weight after session",
+    )
+    parser.add_argument(
+        "--animal-weight-prior",
+        type=float,
+        default=None,
+        help="Animal weight before session",
+    )
+    parser.add_argument(
+        "--mouse-platform-name",
+        type=str,
+        default="mouse_tube_foraging",
+        help="Name of the mouse platform",
+    )
 
     args = parser.parse_args()
 
@@ -233,6 +268,11 @@ if __name__ == "__main__":
         data_directory=args.data_directory,
         output_directory=args.output_directory,
         output_filename=args.output_filename,
+        active_mouse_platform=args.active_mouse_platform,
+        anaesthesia=args.anaesthesia,
+        animal_weight_post=args.animal_weight_post,
+        animal_weight_prior=args.animal_weight_prior,
+        mouse_platform_name=args.mouse_platform_name,
     )
 
     output_path = args.output_directory / args.output_filename

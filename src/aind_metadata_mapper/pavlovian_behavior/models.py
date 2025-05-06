@@ -124,6 +124,12 @@ class JobSettings(BaseJobSettings):
         Container for data stream configurations
     stimulus_epochs : List[StimulusEpochSettings], optional
         Container for stimulus epoch information
+    anaesthesia : Optional[str], optional
+        Anaesthesia used during the session
+    animal_weight_post : Optional[float], optional
+        Animal weight after the session
+    animal_weight_prior : Optional[float], optional
+        Animal weight before the session
 
     Notes
     -----
@@ -166,6 +172,11 @@ class JobSettings(BaseJobSettings):
     # Reward configuration
     reward_units_per_trial: float = 2.0  # Default reward amount
     reward_consumed_unit: VolumeUnit = VolumeUnit.UL  # Default to microliters
+
+    # Additional session-specific fields
+    anaesthesia: Optional[str] = None
+    animal_weight_post: Optional[float] = None
+    animal_weight_prior: Optional[float] = None
 
     # Data containers (populated during ETL)
     data_streams: List[Dict[str, Any]] = []

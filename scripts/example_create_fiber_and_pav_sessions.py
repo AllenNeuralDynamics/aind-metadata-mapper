@@ -135,6 +135,32 @@ def main():
         default="session.json",
         help="Filename for merged session metadata (default: session.json)",
     )
+    parser.add_argument(
+        "--active-mouse-platform",
+        action="store_true",
+        help="Whether the mouse platform was active",
+    )
+    parser.add_argument(
+        "--anaesthesia", type=str, default=None, help="Anaesthesia used"
+    )
+    parser.add_argument(
+        "--animal-weight-post",
+        type=float,
+        default=None,
+        help="Animal weight after session",
+    )
+    parser.add_argument(
+        "--animal-weight-prior",
+        type=float,
+        default=None,
+        help="Animal weight before session",
+    )
+    parser.add_argument(
+        "--mouse-platform-name",
+        type=str,
+        default="mouse_tube_foraging",
+        help="Name of the mouse platform",
+    )
 
     args = parser.parse_args()
 
@@ -154,6 +180,11 @@ def main():
         "reward_units_per_trial": args.reward_volume,
         "reward_consumed_unit": args.reward_unit,
         "session_type": args.session_type,
+        "active_mouse_platform": args.active_mouse_platform,
+        "anaesthesia": args.anaesthesia,
+        "animal_weight_post": args.animal_weight_post,
+        "animal_weight_prior": args.animal_weight_prior,
+        "mouse_platform_name": args.mouse_platform_name,
     }
 
     # Only include those that are not None
@@ -178,6 +209,11 @@ def main():
         "iacuc_protocol": args.iacuc,
         "notes": args.notes,
         "session_type": args.session_type,
+        "active_mouse_platform": args.active_mouse_platform,
+        "anaesthesia": args.anaesthesia,
+        "animal_weight_post": args.animal_weight_post,
+        "animal_weight_prior": args.animal_weight_prior,
+        "mouse_platform_name": args.mouse_platform_name,
     }
     fip_kwargs = {k: v for k, v in fip_cli_kwargs.items() if v is not None}
 
