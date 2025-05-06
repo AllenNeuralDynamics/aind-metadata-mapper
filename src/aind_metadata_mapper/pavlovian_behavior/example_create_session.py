@@ -41,8 +41,11 @@ def create_metadata(
     mouse_platform_name: str = "mouse_tube_foraging",
     active_mouse_platform: bool = False,
     session_type: str = "Pavlovian_Conditioning",
-    task_name: str = "Pavlovian_Conditioning",
-    notes: str = ("Example configuration for Pavlovian Conditioning behavior"),
+    notes: str = (
+        "These two pieces of information are not included in the session metadata: "
+        "Reward delivery: water from left lick spout (DO0). "
+        "Punishment delivery: airpuff with 25 psi for 1 s (DO2)."
+    ),
     reward_units_per_trial: float = 2.0,
     reward_consumed_unit: VolumeUnit = VolumeUnit.UL,
 ) -> bool:
@@ -59,7 +62,6 @@ def create_metadata(
         mouse_platform_name: Name of the mouse platform
         active_mouse_platform: Whether platform is active
         session_type: Type of experimental session
-        task_name: Name of the experimental task
         notes: Additional notes about the session
         reward_units_per_trial: Number of reward units per successful trial
         reward_consumed_unit: Unit of reward consumed
@@ -79,7 +81,6 @@ def create_metadata(
         "mouse_platform_name": mouse_platform_name,
         "active_mouse_platform": active_mouse_platform,
         "session_type": session_type,
-        "task_name": task_name,
         "notes": notes,
         "reward_units_per_trial": reward_units_per_trial,
         "reward_consumed_unit": reward_consumed_unit,

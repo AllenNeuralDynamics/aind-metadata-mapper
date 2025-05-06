@@ -56,6 +56,7 @@ class FiberData:
     notes: str
     mouse_platform_name: str
     active_mouse_platform: bool
+    session_type: str
 
 
 class FIBEtl(GenericEtl[JobSettings]):
@@ -141,6 +142,7 @@ class FIBEtl(GenericEtl[JobSettings]):
             notes=settings.notes,
             mouse_platform_name=settings.mouse_platform_name,
             active_mouse_platform=settings.active_mouse_platform,
+            session_type=settings.session_type,
         )
 
     def _transform(self, fiber_data: FiberData) -> Session:
@@ -177,7 +179,7 @@ class FIBEtl(GenericEtl[JobSettings]):
             experimenter_full_name=fiber_data.experimenter_full_name,
             session_start_time=fiber_data.start_time,
             session_end_time=fiber_data.end_time,
-            session_type="FIB",
+            session_type=fiber_data.session_type,
             rig_id=fiber_data.rig_id,
             subject_id=fiber_data.subject_id,
             iacuc_protocol=fiber_data.iacuc_protocol,
