@@ -47,6 +47,12 @@ from aind_data_schema.core.session import Session
 
 
 def main():
+    """
+    Main entry point for the unified session metadata creation script.
+
+    Parses command-line arguments, generates behavior and fiber metadata,
+    merges them, and writes the unified session file.
+    """
     import argparse
 
     parser = argparse.ArgumentParser(
