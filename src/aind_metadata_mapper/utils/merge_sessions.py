@@ -235,6 +235,12 @@ def _merge_values(
     elif isinstance(val1, dict) and isinstance(val2, dict):
         return _merge_dicts(val1, val2, file1, file2)
     elif isinstance(val1, str) and isinstance(val2, str):
+        # Special case: if one string is empty, use the non-empty one
+        if val1 == "" and val2 != "":
+            return val2
+        if val2 == "" and val1 != "":
+            return val1
+        # If both are non-empty and different, prompt
         return _prompt_for_field(field, val1, val2, file1, file2)
     else:
         return _prompt_for_field(field, str(val1), str(val2), file1, file2)
@@ -275,7 +281,10 @@ def _merge_dicts(
 def _merge_reward_unit(
     dict1: Dict[str, Any], dict2: Dict[str, Any], file1: str, file2: str
 ) -> str:
-    """Special-case merge for reward_consumed_unit."""
+    """
+    Special-case merge for reward_consumed_unit.
+    Ignores the unit if the total is None.
+    """
     total1 = dict1.get("reward_consumed_total")
     total2 = dict2.get("reward_consumed_total")
     unit1 = dict1.get("reward_consumed_unit")
