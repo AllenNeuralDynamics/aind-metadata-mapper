@@ -148,7 +148,9 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Create unified session metadata from behavior and fiber data"
+        description=(
+            "Create unified session metadata from behavior and fiber data"
+        )
     )
     parser.add_argument(
         "--subject-id",
@@ -166,7 +168,10 @@ def main():
         "--output-dir",
         type=Path,
         default=Path.cwd(),
-        help="Directory where metadata files will be saved (default: current directory)",
+        help=(
+            "Directory where metadata files will be saved "
+            "(default: current directory)"
+        ),
     )
     parser.add_argument(
         "--experimenters",
@@ -211,21 +216,21 @@ def main():
         type=str,
         default=None,
         help="Session type to use for both behavior and fiber metadata "
-             "(overrides individual defaults if specified)",
+        "(overrides individual defaults if specified)",
     )
     parser.add_argument(
         "--behavior-output",
         type=str,
         default="session_pavlovian.json",
         help="Filename for behavior session metadata "
-             "(default: session_pavlovian.json)",
+        "(default: session_pavlovian.json)",
     )
     parser.add_argument(
         "--fiber-output",
         type=str,
         default="session_fib.json",
         help="Filename for fiber photometry session metadata "
-             "(default: session_fib.json)",
+        "(default: session_fib.json)",
     )
     parser.add_argument(
         "--merged-output",
