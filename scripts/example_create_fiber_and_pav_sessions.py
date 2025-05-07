@@ -32,6 +32,7 @@ Example Usage:
     See --help for full list of options.
 """
 
+import argparse
 import sys
 import logging
 from pathlib import Path
@@ -67,9 +68,61 @@ def create_unified_session_metadata(
     animal_weight_prior: float | None = None,
     mouse_platform_name: str = "mouse_tube_foraging",
 ) -> Path:
-    """
-    Generate Pavlovian behavior metadata, fiber photometry metadata,
+    """Generate Pavlovian behavior metadata, fiber photometry metadata,
     merge them into a unified session file, and return its path.
+
+    Parameters
+    ----------
+    subject_id : str
+        Unique identifier for the experimental subject
+    data_dir : Path | str
+        Root directory containing 'behavior' and 'fib' subdirectories
+    output_dir : Path | str, optional
+        Directory where metadata files will be saved, by default Path.cwd()
+    experimenters : list[str], optional
+        List of experimenter full names, by default ()
+    rig_id : str | None, optional
+        Identifier for the experimental rig, by default None
+    iacuc : str | None, optional
+        IACUC protocol identifier, by default None
+    notes : str | None, optional
+        Additional notes about the session, by default None
+    reward_volume : float | None, optional
+        Volume of reward delivered per successful trial, by default None
+    reward_unit : str | None, optional
+        Unit of reward volume, by default None
+    session_type : str | None, optional
+        Session type to use for both behavior and fiber metadata,
+        by default None
+    behavior_output : str, optional
+        Filename for behavior session metadata,
+        by default "session_pavlovian.json"
+    fiber_output : str, optional
+        Filename for fiber photometry session metadata,
+        by default "session_fib.json"
+    merged_output : str, optional
+        Filename for merged session metadata, by default "session.json"
+    active_mouse_platform : bool, optional
+        Whether the mouse platform was active, by default False
+    anaesthesia : str | None, optional
+        Anaesthesia used, by default None
+    animal_weight_post : float | None, optional
+        Animal weight after session, by default None
+    animal_weight_prior : float | None, optional
+        Animal weight before session, by default None
+    mouse_platform_name : str, optional
+        Name of the mouse platform, by default "mouse_tube_foraging"
+
+    Returns
+    -------
+    Path
+        Path to the generated unified session metadata file
+
+    Raises
+    ------
+    RuntimeError
+        If either Pavlovian behavior or
+        fiber photometry metadata generation fails
     """
     # Ensure paths exist
     data_dir = Path(data_dir)
@@ -145,8 +198,19 @@ def create_unified_session_metadata(
 
 
 def main():
-    import argparse
+    """Parse command line arguments and create unified session metadata.
 
+    This function:
+    1. Sets up argument parsing for all required and optional parameters
+    2. Calls create_unified_session_metadata with the parsed arguments
+    3. Handles any exceptions and exits with status code 1 if an error occurs
+
+    Notes
+    -----
+    The script requires both behavior and fiber data directories to be present
+    under the specified data directory. The output will be a unified session
+    metadata file that combines information from both data types.
+    """
     parser = argparse.ArgumentParser(
         description=(
             "Create unified session metadata from behavior and fiber data"
