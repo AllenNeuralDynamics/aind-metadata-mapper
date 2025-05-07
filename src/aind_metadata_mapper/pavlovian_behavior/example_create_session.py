@@ -25,6 +25,97 @@ from aind_metadata_mapper.pavlovian_behavior.session import ETL
 from aind_metadata_mapper.pavlovian_behavior.models import JobSettings
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import VolumeUnit
+from aind_data_schema.core.session import (
+    RewardDeliveryConfig,
+    RewardSolution,
+    RewardSpoutConfig,
+    SpoutSide,
+    RelativePosition,
+)
+from aind_data_schema.components.coordinates import (
+    Axis,
+    AxisName,
+    Translation3dTransform,
+    Rotation3dTransform,
+)
+
+
+def create_reward_delivery_config() -> RewardDeliveryConfig:
+    """Create the reward delivery configuration for Pavlovian conditioning.
+
+    Returns
+    -------
+    RewardDeliveryConfig
+        Configuration specifying water delivery from left spout with right spout retracted
+    """
+    return RewardDeliveryConfig(
+        reward_solution=RewardSolution.WATER,
+        reward_spouts=[
+            RewardSpoutConfig(
+                side=SpoutSide.LEFT,
+                starting_position=RelativePosition(
+                    device_position_transformations=[
+                        Translation3dTransform(translation=[0.0, 0.0, 0.0]),
+                        Rotation3dTransform(
+                            rotation=[
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0,
+                            ]
+                        ),
+                    ],
+                    device_origin="Unknown. Coordinates are placeholders. Spout is manually adjusted",
+                    device_axes=[
+                        Axis(name=AxisName.X, direction="lateral motion"),
+                        Axis(
+                            name=AxisName.Y, direction="rostro-caudal motion"
+                        ),
+                        Axis(name=AxisName.Z, direction="up/down"),
+                    ],
+                    notes="Left spout in extended position",
+                ),
+                variable_position=False,
+            ),
+            RewardSpoutConfig(
+                side=SpoutSide.RIGHT,
+                starting_position=RelativePosition(
+                    device_position_transformations=[
+                        Translation3dTransform(translation=[0.0, 0.0, 0.0]),
+                        Rotation3dTransform(
+                            rotation=[
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0,
+                            ]
+                        ),
+                    ],
+                    device_origin="Unknown. Coordinates are placeholders. Spout is manually adjusted",
+                    device_axes=[
+                        Axis(name=AxisName.X, direction="lateral motion"),
+                        Axis(
+                            name=AxisName.Y, direction="rostro-caudal motion"
+                        ),
+                        Axis(name=AxisName.Z, direction="up/down"),
+                    ],
+                    notes="Right spout in retracted position",
+                ),
+                variable_position=False,
+            ),
+        ],
+        notes="Water delivered from left lick spout, right spout retracted",
+    )
 
 
 def create_metadata(
@@ -42,11 +133,11 @@ def create_metadata(
     active_mouse_platform: bool = False,
     session_type: str = "Pavlovian_Conditioning",
     notes: str = (
-        "These two pieces of information are not "
-        "included in the session metadata: "
-        "Reward delivery: water from left lick spout (DO0). "
+        "The following information has no corresponding field "
+        "in the session metadata: "
         "Punishment delivery: airpuff with 25 psi for 1 s (DO2)."
     ),
+    reward_delivery: Optional[RewardDeliveryConfig] = None,
     reward_units_per_trial: float = 2.0,
     reward_consumed_unit: VolumeUnit = VolumeUnit.UL,
     anaesthesia: Optional[str] = None,
@@ -72,6 +163,9 @@ def create_metadata(
         anaesthesia: Anaesthesia used
         animal_weight_post: Animal weight after session
         animal_weight_prior: Animal weight before session
+        reward_delivery: Optional[RewardDeliveryConfig]
+            Configuration for reward delivery. If None, defaults to water from left spout
+            with right spout retracted.
 
     Returns:
         bool: True if metadata was successfully created and verified
@@ -94,6 +188,7 @@ def create_metadata(
         "anaesthesia": anaesthesia,
         "animal_weight_post": animal_weight_post,
         "animal_weight_prior": animal_weight_prior,
+        "reward_delivery": reward_delivery or create_reward_delivery_config(),
         "data_streams": [
             {
                 "stream_start_time": None,

@@ -28,6 +28,7 @@ from aind_data_schema.core.session import (
     SpeakerConfig,
 )
 from aind_data_schema.components.stimulus import AuditoryStimulation
+from aind_data_schema.core.session import RewardDeliveryConfig
 
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.core_models import JobResponse
@@ -55,6 +56,8 @@ class PavlovianData:
         Total reward consumed during session
     reward_consumed_unit : str
         Unit for reward measurement
+    reward_delivery : RewardDeliveryConfig
+        Configuration for reward delivery
     subject_id : str
         Subject identifier
     experimenter_full_name : List[str]
@@ -86,6 +89,7 @@ class PavlovianData:
     stimulus_epochs: List[StimulusEpoch]
     reward_consumed_total: float
     reward_consumed_unit: str
+    reward_delivery: RewardDeliveryConfig
     subject_id: str
     experimenter_full_name: List[str]
     session_type: str
@@ -196,6 +200,7 @@ class ETL(GenericEtl[JobSettings]):
                 stimulus_epochs=stimulus_epochs,
                 reward_consumed_total=reward_consumed_total,
                 reward_consumed_unit=settings.reward_consumed_unit,
+                reward_delivery=settings.reward_delivery,
                 subject_id=settings.subject_id,
                 experimenter_full_name=settings.experimenter_full_name,
                 session_type=settings.session_type,
@@ -324,6 +329,7 @@ class ETL(GenericEtl[JobSettings]):
             stimulus_epochs=pavlovian_data.stimulus_epochs,
             reward_consumed_total=pavlovian_data.reward_consumed_total,
             reward_consumed_unit=pavlovian_data.reward_consumed_unit,
+            reward_delivery=pavlovian_data.reward_delivery,
             anaesthesia=pavlovian_data.anaesthesia,
             animal_weight_post=pavlovian_data.animal_weight_post,
             animal_weight_prior=pavlovian_data.animal_weight_prior,

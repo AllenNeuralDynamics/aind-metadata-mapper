@@ -13,9 +13,22 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Literal, Dict, Any, Union
 
+from aind_data_schema.core.session import (
+    RewardDeliveryConfig,
+    RewardSolution,
+    RewardSpoutConfig,
+    SpoutSide,
+    RelativePosition,
+)
 from aind_data_schema_models.units import VolumeUnit
 from aind_metadata_mapper.core_models import BaseJobSettings
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from aind_data_schema.components.coordinates import (
+    Translation3dTransform,
+    Rotation3dTransform,
+    Axis,
+    AxisName,
+)
 
 
 class StimulusEpochSettings(BaseModel):
@@ -130,6 +143,8 @@ class JobSettings(BaseJobSettings):
         Animal weight after the session
     animal_weight_prior : Optional[float], optional
         Animal weight before the session
+    reward_delivery : RewardDeliveryConfig, optional
+        Configuration for reward delivery, defaults to water from left spout with right spout retracted
 
     Notes
     -----
@@ -172,6 +187,7 @@ class JobSettings(BaseJobSettings):
     # Reward configuration
     reward_units_per_trial: float = 2.0  # Default reward amount
     reward_consumed_unit: VolumeUnit = VolumeUnit.UL  # Default to microliters
+    reward_delivery: Optional[RewardDeliveryConfig] = None
 
     # Additional session-specific fields
     anaesthesia: Optional[str] = None
