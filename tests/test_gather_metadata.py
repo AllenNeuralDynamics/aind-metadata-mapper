@@ -39,6 +39,9 @@ from aind_metadata_mapper.models import (
     SessionSettings,
     SubjectSettings,
 )
+from aind_metadata_mapper.open_ephys.models import (
+    JobSettings as OpenEphysJobSettings,
+)
 from aind_metadata_mapper.smartspim.acquisition import (
     JobSettings as SmartSpimAcquisitionJobSettings,
 )
@@ -545,6 +548,30 @@ class TestGatherMetadataJob(unittest.TestCase):
             directory_to_write_to=RESOURCES_DIR,
             session_settings=SessionSettings(
                 job_settings=fip_session_settings,
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_session_metadata()
+        self.assertEqual({"some_key": "some_value"}, contents)
+        mock_run_job.assert_called_once()
+
+    @patch(
+        "aind_metadata_mapper.open_ephys.camstim_ephys_session"
+        ".CamstimEphysSessionEtl.run_job"
+    )
+    def test_get_session_metadata_camstim_success(
+        self, mock_run_job: MagicMock
+    ):
+        """Tests get_session_metadata openephys creates
+        CamstimEphysSessionEtl class."""
+        mock_run_job.return_value = JobResponse(
+            status_code=200, data=json.dumps({"some_key": "some_value"})
+        )
+        openephys_session_settings = OpenEphysJobSettings.model_construct()
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            session_settings=SessionSettings(
+                job_settings=openephys_session_settings,
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
