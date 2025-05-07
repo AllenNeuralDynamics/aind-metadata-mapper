@@ -71,11 +71,12 @@ def create_unified_session_metadata(
     Generate Pavlovian behavior metadata, fiber photometry metadata,
     merge them into a unified session file, and return its path.
     """
+    # Ensure paths exist
     data_dir = Path(data_dir)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Prepare and filter kwargs for pavlovian behavior
+    # Build and filter kwargs for Pavlovian behavior metadata generation
     pav_kwargs = {
         "subject_id": subject_id,
         "data_directory": data_dir,
@@ -96,11 +97,12 @@ def create_unified_session_metadata(
     }
     pav_kwargs = {k: v for k, v in pav_kwargs.items() if v is not None}
 
+    # Run Pavlovian behavior ETL
     logging.info("Generating Pavlovian behavior metadata…")
     if not create_pavlovian_metadata(**pav_kwargs):
         raise RuntimeError("Failed to generate Pavlovian behavior metadata")
 
-    # Prepare and filter kwargs for fiber photometry
+    # Build and filter kwargs for fiber photometry metadata generation
     fip_kwargs = {
         "subject_id": subject_id,
         "data_directory": data_dir,
@@ -119,11 +121,12 @@ def create_unified_session_metadata(
     }
     fip_kwargs = {k: v for k, v in fip_kwargs.items() if v is not None}
 
+    # Run fiber photometry ETL
     logging.info("Generating fiber photometry metadata…")
     if not create_fip_metadata(**fip_kwargs):
         raise RuntimeError("Failed to generate fiber photometry metadata")
 
-    # Merge the two session files
+    # Merge the two session files into one
     logging.info("Merging session metadata files…")
     merged = merge_sessions(
         session_file1=output_dir / behavior_output,
@@ -147,50 +150,121 @@ def main():
     parser = argparse.ArgumentParser(
         description="Create unified session metadata from behavior and fiber data"
     )
-    parser.add_argument("--subject-id", type=str, required=True)
-    parser.add_argument("--data-dir", type=Path, required=True)
-    parser.add_argument("--output-dir", type=Path, default=Path.cwd())
-    parser.add_argument("--experimenters", type=str, nargs="+", required=True)
-    parser.add_argument("--rig-id", type=str, default=None)
-    parser.add_argument("--iacuc", type=str, default=None)
-    parser.add_argument("--notes", type=str, default=None)
-    parser.add_argument("--reward-volume", type=float, default=None)
+    parser.add_argument(
+        "--subject-id",
+        type=str,
+        required=True,
+        help="Subject identifier",
+    )
+    parser.add_argument(
+        "--data-dir",
+        type=Path,
+        required=True,
+        help="Root directory containing 'behavior' and 'fib' subdirectories",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path.cwd(),
+        help="Directory where metadata files will be saved (default: current directory)",
+    )
+    parser.add_argument(
+        "--experimenters",
+        type=str,
+        nargs="+",
+        required=True,
+        help="List of experimenter full names",
+    )
+    parser.add_argument(
+        "--rig-id",
+        type=str,
+        default=None,
+        help="Identifier for the experimental rig",
+    )
+    parser.add_argument(
+        "--iacuc",
+        type=str,
+        default=None,
+        help="IACUC protocol identifier",
+    )
+    parser.add_argument(
+        "--notes",
+        type=str,
+        default=None,
+        help="Additional notes about the session",
+    )
+    parser.add_argument(
+        "--reward-volume",
+        type=float,
+        default=None,
+        help="Volume of reward delivered per successful trial",
+    )
     parser.add_argument(
         "--reward-unit",
         type=str,
         choices=["microliter", "milliliter"],
         default=None,
+        help="Unit of reward volume",
     )
-    parser.add_argument("--session-type", type=str, default=None)
+    parser.add_argument(
+        "--session-type",
+        type=str,
+        default=None,
+        help="Session type to use for both behavior and fiber metadata "
+             "(overrides individual defaults if specified)",
+    )
     parser.add_argument(
         "--behavior-output",
         type=str,
         default="session_pavlovian.json",
+        help="Filename for behavior session metadata "
+             "(default: session_pavlovian.json)",
     )
     parser.add_argument(
         "--fiber-output",
         type=str,
         default="session_fib.json",
+        help="Filename for fiber photometry session metadata "
+             "(default: session_fib.json)",
     )
     parser.add_argument(
         "--merged-output",
         type=str,
         default="session.json",
+        help="Filename for merged session metadata (default: session.json)",
     )
     parser.add_argument(
-        "--active-mouse-platform", action="store_true"
+        "--active-mouse-platform",
+        action="store_true",
+        help="Whether the mouse platform was active",
     )
-    parser.add_argument("--anaesthesia", type=str, default=None)
-    parser.add_argument("--animal-weight-post", type=float, default=None)
-    parser.add_argument("--animal-weight-prior", type=float, default=None)
+    parser.add_argument(
+        "--anaesthesia",
+        type=str,
+        default=None,
+        help="Anaesthesia used",
+    )
+    parser.add_argument(
+        "--animal-weight-post",
+        type=float,
+        default=None,
+        help="Animal weight after session",
+    )
+    parser.add_argument(
+        "--animal-weight-prior",
+        type=float,
+        default=None,
+        help="Animal weight before session",
+    )
     parser.add_argument(
         "--mouse-platform-name",
         type=str,
         default="mouse_tube_foraging",
+        help="Name of the mouse platform",
     )
 
     args = parser.parse_args()
-    # Delegate to the function
+
     try:
         create_unified_session_metadata(
             subject_id=args.subject_id,
