@@ -46,7 +46,10 @@ def create_reward_delivery_config() -> RewardDeliveryConfig:
     Returns
     -------
     RewardDeliveryConfig
-        Configuration specifying water delivery from left spout with right spout retracted
+        Configuration specifying water delivery
+        from left spout with right spout retracted.
+        Uses placeholders for coordinates since
+        they are manually adjusted.
     """
     return RewardDeliveryConfig(
         reward_solution=RewardSolution.WATER,
@@ -70,7 +73,10 @@ def create_reward_delivery_config() -> RewardDeliveryConfig:
                             ]
                         ),
                     ],
-                    device_origin="Unknown. Coordinates are placeholders. Spout is manually adjusted",
+                    device_origin=(
+                        "Unknown. Coordinates are placeholders. "
+                        "Spout is manually adjusted"
+                    ),
                     device_axes=[
                         Axis(name=AxisName.X, direction="lateral motion"),
                         Axis(
@@ -101,7 +107,10 @@ def create_reward_delivery_config() -> RewardDeliveryConfig:
                             ]
                         ),
                     ],
-                    device_origin="Unknown. Coordinates are placeholders. Spout is manually adjusted",
+                    device_origin=(
+                        "Unknown. Coordinates are placeholders. "
+                        "Spout is manually adjusted"
+                    ),
                     device_axes=[
                         Axis(name=AxisName.X, direction="lateral motion"),
                         Axis(
@@ -164,7 +173,8 @@ def create_metadata(
         animal_weight_post: Animal weight after session
         animal_weight_prior: Animal weight before session
         reward_delivery: Optional[RewardDeliveryConfig]
-            Configuration for reward delivery. If None, defaults to water from left spout
+            Configuration for reward delivery. If None,
+            defaults to water from left spout
             with right spout retracted.
 
     Returns:
