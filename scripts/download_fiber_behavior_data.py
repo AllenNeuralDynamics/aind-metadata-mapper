@@ -82,16 +82,19 @@ def get_s3fs(profile_name="aind-prod"):
 
 
 def download_session_data(s3_uri, profile_name="aind-prod"):
-    """
-    Download CSV files from a given S3 URI to local data folders.
+    """Download CSV files from a given S3 URI to local data folders.
 
-    Args:
-        s3_uri (str): The S3 URI of the session
-        (e.g., s3://bucket/path/to/session)
-        profile_name (str): The AWS profile name to use for credentials
+    Parameters
+    ----------
+    s3_uri : str
+        The S3 URI of the session (e.g., s3://bucket/path/to/session)
+    profile_name : str, optional
+        The AWS profile name to use for credentials, by default "aind-prod"
 
-    Returns:
-        bool: True if successful, False otherwise
+    Returns
+    -------
+    bool
+        True if successful, False otherwise
     """
     if not s3_uri.startswith("s3://"):
         logging.error("S3 URI must start with 's3://'")
@@ -157,6 +160,22 @@ def download_session_data(s3_uri, profile_name="aind-prod"):
 
 
 def main():
+    """Parse command line arguments and download session data from S3.
+
+    This function:
+    1. Sets up logging configuration
+    2. Parses command line arguments for S3 URI and AWS profile
+    3. Calls download_session_data with the provided arguments
+    4. Exits with status code 1 if download fails
+
+    The script expects an S3 URI as a positional argument and optionally
+    accepts an AWS profile name via the --profile flag.
+
+    Notes
+    -----
+    The script requires AWS credentials to be configured either through
+    AWS CLI or manually in ~/.aws/credentials.
+    """
     # Set up logging
     logging.basicConfig(
         level=logging.INFO,
