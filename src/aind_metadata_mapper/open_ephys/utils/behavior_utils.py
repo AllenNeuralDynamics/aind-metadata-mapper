@@ -1126,6 +1126,9 @@ def from_stimulus_file(
 
     if "Pos" in df.columns or "constrast" in df.columns:
         df = clean_position_and_contrast(df)
+    
+    df.drop(columns=["stim_block"], inplace=True, errors="ignore")
+    df = df.drop(columns=["start_frame", "end_frame" ], errors="ignore")
 
     return (df, column_list)
 
