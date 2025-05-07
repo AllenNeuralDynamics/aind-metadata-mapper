@@ -1,4 +1,9 @@
-"""Utility functions for merging multiple session metadata files."""
+"""Utility functions for merging multiple session metadata files.
+
+This module provides functions to merge two session JSON files, handling
+special cases for certain fields and resolving conflicts interactively
+when necessary.
+"""
 
 import json
 import argparse
@@ -16,11 +21,7 @@ logging.basicConfig(
 
 
 def _merge_lists(list1: List[Any], list2: List[Any]) -> List[Any]:
-    """Merge two lists, removing duplicates while preserving order.
-
-    For lists of dictionaries, merges based on content rather than identity.
-    For simple types (str, int, etc), removes duplicates using dict.fromkeys.
-    """
+    """Merge two lists, removing duplicates while preserving order."""
     # If lists contain dictionaries, append all items
     if any(isinstance(item, dict) for item in list1 + list2):
         return list1 + list2
@@ -32,17 +33,26 @@ def _merge_lists(list1: List[Any], list2: List[Any]) -> List[Any]:
 def _prompt_for_field(
     field_name: str, value1: str, value2: str, file1: str, file2: str
 ) -> str:
-    """Prompt user to resolve conflicting string fields.
+    """
+    Prompt user to resolve conflicting string fields.
 
-    Args:
-        field_name: Name of the field with conflict
-        value1: Value from first file
-        value2: Value from second file
-        file1: Name of first file
-        file2: Name of second file
+    Parameters
+    ----------
+    field_name : str
+        Name of the field with conflict.
+    value1 : str
+        Value from first file.
+    value2 : str
+        Value from second file.
+    file1 : str
+        Name of first file.
+    file2 : str
+        Name of second file.
 
-    Returns:
-        str: User's chosen value for the field
+    Returns
+    -------
+    str
+        User's chosen value for the field.
     """
     default = f"{value1} + {value2}"
     logging.info(
@@ -189,17 +199,30 @@ def _merge_timestamps(
 def _merge_values(
     field: str, val1: Any, val2: Any, file1: str, file2: str
 ) -> Any:
-    """Merge two values based on their types.
+    """
+    Merge two values based on their types and field name.
 
-    Args:
-        field: Name of the field being merged
-        val1: Value from first file
-        val2: Value from second file
-        file1: Name of first file
-        file2: Name of second file
+    Handles special cases for timestamps, lists, dicts, and strings.
+    For strings, if one is empty, returns the non-empty string.
+    Prompts the user if both are non-empty and different.
 
-    Returns:
-        Merged value
+    Parameters
+    ----------
+    field : str
+        Name of the field being merged.
+    val1 : Any
+        Value from the first file.
+    val2 : Any
+        Value from the second file.
+    file1 : str
+        Name of the first file.
+    file2 : str
+        Name of the second file.
+
+    Returns
+    -------
+    Any
+        The merged value.
     """
     # Handle case where one value is None
     if val1 is None:
@@ -215,58 +238,124 @@ def _merge_values(
     if (
         isinstance(val1, str)
         and isinstance(val2, str)
-        and (
-            "time" in field.lower()
-            and all(t.endswith("Z") for t in [val1, val2])
-        )
+        and "time" in field.lower()
+        and all(t.endswith("Z") for t in [val1, val2])
     ):
-        try:
-            return _merge_timestamps(
-                field, val1, val2, file1=file1, file2=file2
-            )
-        except ValueError:
-            # If timestamps are invalid or difference exceeds tolerance,
-            # fall back to user prompt
-            return _prompt_for_field(field, val1, val2, file1, file2)
+        return _merge_timestamp(field, val1, val2, file1, file2)
 
     # Handle other types
     if isinstance(val1, list) and isinstance(val2, list):
         return _merge_lists(val1, val2)
-    elif isinstance(val1, dict) and isinstance(val2, dict):
+    if isinstance(val1, dict) and isinstance(val2, dict):
         return _merge_dicts(val1, val2, file1, file2)
-    elif isinstance(val1, str) and isinstance(val2, str):
+    if isinstance(val1, str) and isinstance(val2, str):
+        return _merge_strings(field, val1, val2, file1, file2)
+    return _prompt_for_field(field, str(val1), str(val2), file1, file2)
+
+
+def _merge_timestamp(field, val1, val2, file1, file2):
+    """Merge two timestamp strings, preferring earlier/later as appropriate."""
+    try:
+        return _merge_timestamps(field, val1, val2, file1=file1, file2=file2)
+    except ValueError:
         return _prompt_for_field(field, val1, val2, file1, file2)
-    else:
-        return _prompt_for_field(field, str(val1), str(val2), file1, file2)
+
+
+def _merge_strings(field, val1, val2, file1, file2):
+    """
+    Merge two strings, preferring non-empty or
+    prompting if both non-empty and different.
+    """
+    if val1 == "" and val2 != "":
+        return val2
+    if val2 == "" and val1 != "":
+        return val1
+    # If both are non-empty and different, prompt
+    return _prompt_for_field(field, val1, val2, file1, file2)
 
 
 def _merge_dicts(
     dict1: Dict[str, Any], dict2: Dict[str, Any], file1: str, file2: str
 ) -> Dict[str, Any]:
-    """Recursively merge two dictionaries.
+    """
+    Recursively merge two dictionaries.
 
-    Args:
-        dict1: First dictionary
-        dict2: Second dictionary
-        file1: Name of first file
-        file2: Name of second file
+    Handles special case for 'reward_consumed_unit' field.
 
-    Returns:
-        Merged dictionary
+    Parameters
+    ----------
+    dict1 : dict
+        First dictionary.
+    dict2 : dict
+        Second dictionary.
+    file1 : str
+        Name of the first file.
+    file2 : str
+        Name of the second file.
+
+    Returns
+    -------
+    dict
+        The merged dictionary.
     """
     merged = {}
     all_keys = set(dict1.keys()) | set(dict2.keys())
 
     for key in all_keys:
         if key in dict1 and key in dict2:
-            merged[key] = _merge_values(
-                key, dict1[key], dict2[key], file1, file2
-            )
+            # Special case for reward_consumed_unit: pass parent dicts
+            if key == "reward_consumed_unit":
+                merged[key] = _merge_reward_unit(dict1, dict2, file1, file2)
+            else:
+                merged[key] = _merge_values(
+                    key, dict1[key], dict2[key], file1, file2
+                )
         else:
-            # If key only exists in one dict, use that value
             merged[key] = dict1.get(key) or dict2.get(key)
 
     return merged
+
+
+def _merge_reward_unit(
+    dict1: Dict[str, Any], dict2: Dict[str, Any], file1: str, file2: str
+) -> str:
+    """
+    Special-case merge for reward_consumed_unit.
+
+    Ignores the unit if the total is None.
+    If both totals are real, falls back to normal merge.
+
+    Parameters
+    ----------
+    dict1 : dict
+        First dictionary.
+    dict2 : dict
+        Second dictionary.
+    file1 : str
+        Name of the first file.
+    file2 : str
+        Name of the second file.
+
+    Returns
+    -------
+    str
+        The merged reward_consumed_unit value.
+    """
+    total1 = dict1.get("reward_consumed_total")
+    total2 = dict2.get("reward_consumed_total")
+    unit1 = dict1.get("reward_consumed_unit")
+    unit2 = dict2.get("reward_consumed_unit")
+
+    # If one total is None, use the other's unit
+    if total1 is None and total2 is not None:
+        return unit2
+    if total2 is None and total1 is not None:
+        return unit1
+    # If both totals are None, prefer non-null unit or default to unit1
+    if total1 is None and total2 is None:
+        return unit1 or unit2
+    # If both totals are real, fall back to normal merge (prompt)
+    return _merge_values("reward_consumed_unit", unit1, unit2, file1, file2)
 
 
 def merge_sessions(
@@ -276,16 +365,24 @@ def merge_sessions(
 ) -> Dict[str, Any]:
     """Merge two session metadata files into a single session.
 
-    Args:
-        session_file1: Path to first session JSON file
-        session_file2: Path to second session JSON file
-        output_file: Path where merged session JSON will be saved
+    Parameters
+    ----------
+    session_file1 : Union[str, Path]
+        Path to first session JSON file
+    session_file2 : Union[str, Path]
+        Path to second session JSON file
+    output_file : Union[str, Path]
+        Path where merged session JSON will be saved
 
-    Returns:
-        Dict containing merged session metadata
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary containing merged session metadata
 
-    Raises:
-        ValueError: If files cannot be read or merged
+    Raises
+    ------
+    ValueError
+        If files cannot be read or merged
     """
     try:
         with open(session_file1, "r") as f1, open(session_file2, "r") as f2:

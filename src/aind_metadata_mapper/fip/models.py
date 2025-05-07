@@ -36,6 +36,12 @@ class JobSettings(BaseJobSettings):
         IACUC protocol identifier
     notes : str
         Session notes
+    anaesthesia : Optional[str]
+        Anaesthesia used
+    animal_weight_post : Optional[float]
+        Animal weight after session
+    animal_weight_prior : Optional[float]
+        Animal weight before session
     protocol_id : List[str], optional
         List of protocol identifiers, defaults to empty list
     data_directory : Optional[Union[str, Path]], optional
@@ -60,6 +66,9 @@ class JobSettings(BaseJobSettings):
     session_type: str = "FIB"
     iacuc_protocol: str
     notes: str
+    anaesthesia: Optional[str] = None
+    animal_weight_post: Optional[float] = None
+    animal_weight_prior: Optional[float] = None
 
     # Optional Session fields with defaults
     protocol_id: List[str] = []

@@ -3,10 +3,21 @@ Simple script to create Pavlovian behavior metadata with default settings.
 
 User should use this script to create a new session metadata file,
 modifying specific fields as needed.
+
+Example command to run the script from the command line:
+
+```bash
+python src/aind_metadata_mapper/pavlovian_behavior/example_create_session.py \
+    --subject-id 000000 \
+    --data-directory data/sample_fiber_data \
+    --output-directory data/sample_fiber_data \
+    --output-filename session_pavlovian_behavior.json
+```
+=======
 """
 
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 import logging
 import sys
 
@@ -14,6 +25,106 @@ from aind_metadata_mapper.pavlovian_behavior.session import ETL
 from aind_metadata_mapper.pavlovian_behavior.models import JobSettings
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import VolumeUnit
+from aind_data_schema.core.session import (
+    RewardDeliveryConfig,
+    RewardSolution,
+    RewardSpoutConfig,
+    SpoutSide,
+    RelativePosition,
+)
+from aind_data_schema.components.coordinates import (
+    Axis,
+    AxisName,
+    Translation3dTransform,
+    Rotation3dTransform,
+)
+
+
+def create_reward_delivery_config() -> RewardDeliveryConfig:
+    """Create the reward delivery configuration for Pavlovian conditioning.
+
+    Returns
+    -------
+    RewardDeliveryConfig
+        Configuration specifying water delivery
+        from left spout with right spout retracted.
+        Uses placeholders for coordinates since
+        they are manually adjusted.
+    """
+    return RewardDeliveryConfig(
+        reward_solution=RewardSolution.WATER,
+        reward_spouts=[
+            RewardSpoutConfig(
+                side=SpoutSide.LEFT,
+                starting_position=RelativePosition(
+                    device_position_transformations=[
+                        Translation3dTransform(translation=[0.0, 0.0, 0.0]),
+                        Rotation3dTransform(
+                            rotation=[
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0,
+                            ]
+                        ),
+                    ],
+                    device_origin=(
+                        "Unknown. Coordinates are placeholders. "
+                        "Spout is manually adjusted"
+                    ),
+                    device_axes=[
+                        Axis(name=AxisName.X, direction="lateral motion"),
+                        Axis(
+                            name=AxisName.Y, direction="rostro-caudal motion"
+                        ),
+                        Axis(name=AxisName.Z, direction="up/down"),
+                    ],
+                    notes="Left spout in extended position",
+                ),
+                variable_position=False,
+            ),
+            RewardSpoutConfig(
+                side=SpoutSide.RIGHT,
+                starting_position=RelativePosition(
+                    device_position_transformations=[
+                        Translation3dTransform(translation=[0.0, 0.0, 0.0]),
+                        Rotation3dTransform(
+                            rotation=[
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0,
+                            ]
+                        ),
+                    ],
+                    device_origin=(
+                        "Unknown. Coordinates are placeholders. "
+                        "Spout is manually adjusted"
+                    ),
+                    device_axes=[
+                        Axis(name=AxisName.X, direction="lateral motion"),
+                        Axis(
+                            name=AxisName.Y, direction="rostro-caudal motion"
+                        ),
+                        Axis(name=AxisName.Z, direction="up/down"),
+                    ],
+                    notes="Right spout in retracted position",
+                ),
+                variable_position=False,
+            ),
+        ],
+        notes="Water delivered from left lick spout, right spout retracted",
+    )
 
 
 def create_metadata(
@@ -30,10 +141,17 @@ def create_metadata(
     mouse_platform_name: str = "mouse_tube_foraging",
     active_mouse_platform: bool = False,
     session_type: str = "Pavlovian_Conditioning",
-    task_name: str = "Pavlovian_Conditioning",
-    notes: str = ("Example configuration for Pavlovian Conditioning behavior"),
+    notes: str = (
+        "The following information has no corresponding field "
+        "in the session metadata: "
+        "Punishment delivery: airpuff with 25 psi for 1 s (DO2)."
+    ),
+    reward_delivery: Optional[RewardDeliveryConfig] = None,
     reward_units_per_trial: float = 2.0,
     reward_consumed_unit: VolumeUnit = VolumeUnit.UL,
+    anaesthesia: Optional[str] = None,
+    animal_weight_post: Optional[float] = None,
+    animal_weight_prior: Optional[float] = None,
 ) -> bool:
     """Create Pavlovian behavior metadata with default settings.
 
@@ -48,10 +166,16 @@ def create_metadata(
         mouse_platform_name: Name of the mouse platform
         active_mouse_platform: Whether platform is active
         session_type: Type of experimental session
-        task_name: Name of the experimental task
         notes: Additional notes about the session
         reward_units_per_trial: Number of reward units per successful trial
         reward_consumed_unit: Unit of reward consumed
+        anaesthesia: Anaesthesia used
+        animal_weight_post: Animal weight after session
+        animal_weight_prior: Animal weight before session
+        reward_delivery: Optional[RewardDeliveryConfig]
+            Configuration for reward delivery. If None,
+            defaults to water from left spout
+            with right spout retracted.
 
     Returns:
         bool: True if metadata was successfully created and verified
@@ -68,16 +192,22 @@ def create_metadata(
         "mouse_platform_name": mouse_platform_name,
         "active_mouse_platform": active_mouse_platform,
         "session_type": session_type,
-        "task_name": task_name,
         "notes": notes,
         "reward_units_per_trial": reward_units_per_trial,
         "reward_consumed_unit": reward_consumed_unit,
+        "anaesthesia": anaesthesia,
+        "animal_weight_post": animal_weight_post,
+        "animal_weight_prior": animal_weight_prior,
+        "reward_delivery": reward_delivery or create_reward_delivery_config(),
         "data_streams": [
             {
                 "stream_start_time": None,
                 "stream_end_time": None,
                 "stream_modalities": [Modality.BEHAVIOR],
-                "camera_names": [],
+                "camera_names": [
+                    "BehaviorVideography_Eye",
+                    "BehaviorVideography_Body",
+                ],
                 "daq_names": [""],
                 "light_sources": [
                     {
@@ -98,7 +228,66 @@ def create_metadata(
                 ],
             }
         ],
-        "stimulus_epochs": [],
+        "stimulus_epochs": [
+            {
+                "stimulus_name": "CS - auditory conditioned stimuli",
+                "stimulus_parameters": [
+                    {
+                        "amplitude_modulation_frequency": 5000,
+                        "frequency_unit": "hertz",
+                        "notes": "assigned reward probability is 10%",
+                        "sample_frequency": "96000",
+                        "stimulus_name": "CS1",
+                        "stimulus_type": "Auditory Stimulation",
+                    },
+                    {
+                        "amplitude_modulation_frequency": 8000,
+                        "frequency_unit": "hertz",
+                        "notes": "assigned reward probability is 50%",
+                        "sample_frequency": "96000",
+                        "stimulus_name": "CS2",
+                        "stimulus_type": "Auditory Stimulation",
+                    },
+                    {
+                        "amplitude_modulation_frequency": 13000,
+                        "frequency_unit": "hertz",
+                        "notes": "assigned reward probability is 90%",
+                        "sample_frequency": "96000",
+                        "stimulus_name": "CS3",
+                        "stimulus_type": "Auditory Stimulation",
+                    },
+                    {
+                        "bandpass_filter_type": None,
+                        "frequency_unit": "hertz",
+                        "notes": "assigned airpuff probability is 90%, combined with white noise",  # noqa: E501
+                        "sample_frequency": "96000",
+                        "stimulus_name": "CS4",
+                        "stimulus_type": "Auditory Stimulation",
+                    },
+                ],
+                "speaker_config": {
+                    "name": "Stimulus Speaker",
+                    "volume": "72",
+                    "volume_unit": "decibels",
+                },
+                "stimulus_device_names": ["Stimulus Speaker"],
+                "software": [
+                    {
+                        "name": "Bonsai",
+                        "parameters": {},
+                        "url": "",
+                        "version": "",
+                    }
+                ],
+                "notes": (
+                    "The duration of CSs is 1s. "
+                    "The frequency set:5kHz, 8kHz, 13kHz, WhiteNoise."
+                ),
+                # Do NOT include: stimulus_start_time, stimulus_end_time,
+                # reward_consumed_during_epoch, trials_total, etc.
+                # These are populated by the ETL from the behavior files.
+            }
+        ],
     }
 
     # Create JobSettings instance and run ETL
@@ -143,6 +332,32 @@ if __name__ == "__main__":
         default="session_pavlovian.json",
         help="Name of the output JSON file (default: session_pavlovian.json)",
     )
+    parser.add_argument(
+        "--active-mouse-platform",
+        action="store_true",
+        help="Whether the mouse platform was active",
+    )
+    parser.add_argument(
+        "--anaesthesia", type=str, default=None, help="Anaesthesia used"
+    )
+    parser.add_argument(
+        "--animal-weight-post",
+        type=float,
+        default=None,
+        help="Animal weight after session",
+    )
+    parser.add_argument(
+        "--animal-weight-prior",
+        type=float,
+        default=None,
+        help="Animal weight before session",
+    )
+    parser.add_argument(
+        "--mouse-platform-name",
+        type=str,
+        default="mouse_tube_foraging",
+        help="Name of the mouse platform",
+    )
 
     args = parser.parse_args()
 
@@ -151,6 +366,11 @@ if __name__ == "__main__":
         data_directory=args.data_directory,
         output_directory=args.output_directory,
         output_filename=args.output_filename,
+        active_mouse_platform=args.active_mouse_platform,
+        anaesthesia=args.anaesthesia,
+        animal_weight_post=args.animal_weight_post,
+        animal_weight_prior=args.animal_weight_prior,
+        mouse_platform_name=args.mouse_platform_name,
     )
 
     output_path = args.output_directory / args.output_filename
