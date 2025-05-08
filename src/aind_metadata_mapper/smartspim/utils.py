@@ -5,9 +5,8 @@ Utility functions for SmartSPIM
 import json
 import os
 import re
-from pathlib import Path
 from datetime import datetime
-from typing import List, Optional, Any, Union
+from typing import List, Optional, Any
 
 from aind_data_schema.components import tile
 from aind_data_schema.components.coordinates import AnatomicalDirection
