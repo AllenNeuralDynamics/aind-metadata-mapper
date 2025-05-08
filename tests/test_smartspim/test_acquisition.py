@@ -46,7 +46,7 @@ class TestSmartspimETL(unittest.TestCase):
             asi_filename="derivatives/ASI_logging.txt",
             mdata_filename_json="derivatives/metadata.json",
             processing_manifest_path="derivatives/processing_manifest.json",
-            metadata_service_domain="http://acme.test",
+            metadata_service_path="http://acme.test",
         )
         self.example_smartspim_etl_success = SmartspimETL(
             job_settings=self.example_job_settings_success
@@ -59,7 +59,7 @@ class TestSmartspimETL(unittest.TestCase):
             asi_filename="derivatives/ASI_logging.txt",
             mdata_filename_json="derivatives/metadata.json",
             processing_manifest_path="derivatives/processing_manifest.json",
-            metadata_service_domain="http://acme.test",
+            metadata_service_path="http://acme.test",
         )
         self.example_smartspim_etl_fail_mouseid = SmartspimETL(
             job_settings=self.example_job_settings_fail_mouseid

@@ -13,7 +13,7 @@ example_metadata_info = {
         "scanning": "Fast",
         "v_res": "1600",
         "z_block": "6676",
-        "Z step (um)": "2.00",
+        "z_step_um": "2.00",
         "m/pix": "1.800",
     },
     "tile_config": {

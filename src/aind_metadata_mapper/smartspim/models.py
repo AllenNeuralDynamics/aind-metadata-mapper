@@ -31,11 +31,11 @@ class JobSettings(BaseJobSettings):
     subject_id: str
 
     # Metadata names
-    asi_filename: Union[Path, str] = Field(
+    asi_filename: str = Field(
         default="derivatives/ASI_logging.txt",
         description="Path to ASI logging file.",
     )
-    mdata_filename_json: Union[Path, str] = Field(
+    mdata_filename_json: str = Field(
         default="derivatives/metadata.json",
         description=(
             "Path to metadata file, expected to be a .json or .txt file."
