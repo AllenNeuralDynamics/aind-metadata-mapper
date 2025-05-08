@@ -96,7 +96,7 @@ class SmartspimETL(GenericEtl[JobSettings]):
             self.job_settings.asi_filename
         )
 
-        mdata_path_json = self.job_settings.input_source.joinpath(
+        mdata_path = self.job_settings.input_source.joinpath(
             self.job_settings.mdata_filename_json
         )
 
@@ -104,11 +104,11 @@ class SmartspimETL(GenericEtl[JobSettings]):
         if not asi_file_path_txt.exists():
             raise FileNotFoundError(f"File {asi_file_path_txt} does not exist")
 
-        if not mdata_path_json.exists():
-            raise FileNotFoundError(f"File {mdata_path_json} does not exist")
+        if not mdata_path.exists():
+            raise FileNotFoundError(f"File {mdata_path} does not exist")
 
         # Getting acquisition metadata from the microscope
-        metadata_info = read_json_as_dict(mdata_path_json)
+        metadata_info = read_json_as_dict(mdata_path)
 
         filter_mapping = get_excitation_emission_waves(channels)
         session_config = metadata_info["session_config"]
@@ -163,8 +163,7 @@ class SmartspimETL(GenericEtl[JobSettings]):
         if end_date_lte:
             query_params["end_date_lte"] = end_date_lte
         response = requests.get(
-            f"{self.job_settings.metadata_service_domain}"
-            f"/{self.job_settings.metadata_service_path}",
+            f"{self.job_settings.metadata_service_path}",
             params=query_params,
         )
         response.raise_for_status()

@@ -31,13 +31,19 @@ class JobSettings(BaseJobSettings):
     subject_id: str
 
     # Metadata names
-    asi_filename: str = "derivatives/ASI_logging.txt"
-    mdata_filename_json: str = "derivatives/metadata.json"
-
-    # Fetch info provided by microscope operators in SLIMS
-    processing_manifest_path: Optional[str] = Field(
-        default="derivatives/processing_manifest.json",
-        description=("Deprecated, use metadata_service_path instead. "),
+    asi_filename: Union[Path, str] = Field(
+        default="derivatives/ASI_logging.txt",
+        description="Path to ASI logging file.",
     )
-    metadata_service_domain: str
-    metadata_service_path: str = "slims/smartspim_imaging"
+    mdata_filename_json: Union[Path, str] = Field(
+        default="derivatives/metadata.json",
+        description=(
+            "Path to metadata file, expected to be a .json or .txt file."
+        ),
+    )
+    # Fetch info provided by microscope operators in SLIMS
+    processing_manifest_path: Optional[Union[Path, str]] = Field(
+        default="derivatives/processing_manifest.json",
+        description=("Deprecated, use metadata_service_path instead."),
+    )
+    metadata_service_path: str

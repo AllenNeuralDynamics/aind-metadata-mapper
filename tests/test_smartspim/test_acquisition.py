@@ -256,7 +256,7 @@ class TestSmartspimETL(unittest.TestCase):
 
     def test_transform(self):
         """Tests that _transform combines microscope metadata
-          and SLIMS data into a complete Acquisition model"""
+        and SLIMS data into a complete Acquisition model"""
         metadata_dict = {
             "session_config": example_metadata_info["session_config"],
             "wavelength_config": example_metadata_info["wavelength_config"],

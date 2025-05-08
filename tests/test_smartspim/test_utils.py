@@ -69,7 +69,7 @@ class TestSmartspimUtils(unittest.TestCase):
         schema and microscope metadata
         """
         modified_example_metadata_info = copy.deepcopy(example_metadata_info)
-        del modified_example_metadata_info["session_config"]["Z step (um)"]
+        del modified_example_metadata_info["session_config"]["z_step_um"]
 
         with self.assertRaises(KeyError):
             utils.make_acq_tiles(

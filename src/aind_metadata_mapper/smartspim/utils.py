@@ -5,8 +5,9 @@ Utility functions for SmartSPIM
 import json
 import os
 import re
+from pathlib import Path
 from datetime import datetime
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Union
 
 from aind_data_schema.components import tile
 from aind_data_schema.components.coordinates import AnatomicalDirection
@@ -149,7 +150,7 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
     session_config = metadata_dict.get("session_config")
 
     x_res = y_res = session_config.get("um/pix")
-    z_res = session_config.get("Z step (um)")
+    z_res = session_config.get("z_step_um")
 
     # utf-8 error with micron symbol
     if x_res is None:
