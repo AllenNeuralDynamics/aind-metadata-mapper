@@ -718,7 +718,7 @@ class TestGatherMetadataJob(unittest.TestCase):
                 job_settings=SmartSpimAcquisitionJobSettings(
                     subject_id="695464",
                     input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
-                    metadata_service_domain="http://acme/test",
+                    metadata_service_path="http://acme/test",
                 )
             ),
         )
@@ -741,7 +741,7 @@ class TestGatherMetadataJob(unittest.TestCase):
                 job_settings=SmartSpimAcquisitionJobSettings(
                     subject_id="695464",
                     input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
-                    metadata_service_domain="http://acme/test",
+                    metadata_service_path="http://acme/test",
                 )
             ),
         )
