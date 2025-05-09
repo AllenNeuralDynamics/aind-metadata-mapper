@@ -4,8 +4,9 @@ Utility functions for SmartSPIM
 
 import json
 import os
+import re
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from aind_data_schema.components import tile
 from aind_data_schema.components.coordinates import AnatomicalDirection
@@ -62,13 +63,9 @@ def get_anatomical_direction(anatomical_direction: str) -> AnatomicalDirection:
         Corresponding enum defined in the anatomical
         direction class
     """
-
-    anatomical_direction = anatomical_direction.lower()
-
-    # Note: I could have done str.capitalize and then get
-    # the anatomical direction directly from the class
-    # but we have multiple versions now and I want to make this
-    # robust
+    anatomical_direction = (
+        anatomical_direction.strip().lower().replace(" ", "_")
+    )
     if anatomical_direction == "left_to_right":
         anatomical_direction = AnatomicalDirection.LR
 
@@ -88,6 +85,37 @@ def get_anatomical_direction(anatomical_direction: str) -> AnatomicalDirection:
         anatomical_direction = AnatomicalDirection.SI
 
     return anatomical_direction
+
+
+def make_tile_acq_channel(wavelength_config: dict, tile_info: dict) -> dict:
+    """
+    For a given tile config info and the wavelength_config,
+    create a tile.Channel object for use in acquisition.json
+
+    This is necessary to get the left/right specific power setting for
+    each tile.
+    """
+    wavelength = tile_info.get("Laser")
+    side = tile_info.get("Side")
+    filter_wheel_index = int(tile_info.get("Filter"))
+    side_map = {"0": "left", "1": "right"}
+    excitation_power = wavelength_config.get(
+        wavelength,
+    ).get(f"power_{side_map[side]}")
+    # TODO: channel name should be "Ex_488" + "_Em_525"
+    channel = tile.Channel(
+        channel_name=wavelength,
+        light_source_name=wavelength,
+        filter_names=[""],  # Filter names are in instrument JSON
+        detector_name="",  # Detector is in instrument JSON
+        additional_device_names=[],
+        excitation_wavelength=int(wavelength),
+        excitation_wavelength_unit=SizeUnit.NM,
+        excitation_power=excitation_power,
+        excitation_power_unit=PowerUnit.PERCENT,
+        filter_wheel_index=filter_wheel_index,
+    )
+    return channel
 
 
 def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
@@ -110,38 +138,17 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
         List with the metadata for the tiles
     """
 
-    channels = {}
-
     # List where the metadata of the acquired
     # tiles is stored
     tile_acquisitions = []
 
-    filter_wheel_idx = 0
-    for wavelength, value in metadata_dict["wavelength_config"].items():
-        channel = tile.Channel(
-            channel_name=str(wavelength),
-            light_source_name=str(wavelength),
-            filter_names=[""],  # We don't have filter names at the moment
-            detector_name="",  # We don't have detector names at the moment
-            additional_device_names=[],
-            # Excitation wavelengths
-            excitation_wavelength=int(wavelength),
-            excitation_wavelength_unit=SizeUnit.NM,
-            # Excitation power
-            excitation_power=value[
-                "power_left"
-            ],  # [value["power_left"], value["power_right"]]
-            excitation_power_unit=PowerUnit.PERCENT,
-            filter_wheel_index=filter_wheel_idx,
-        )
-        filter_wheel_idx += 1
-
-        channels[wavelength] = channel
+    # Wavelength config
+    wavelength_config = metadata_dict.get("wavelength_config")
 
     # Scale metadata
     session_config = metadata_dict.get("session_config")
 
-    x_res = y_res = session_config.get("µm/pix")
+    x_res = y_res = session_config.get("um/pix")
     z_res = session_config.get("z_step_um")
 
     # utf-8 error with micron symbol
@@ -153,10 +160,13 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
             )
 
     if z_res is None:
-        z_res = session_config.get("Z step (m)")
-
+        z_res = session_config.get("Z step (um)")
         if z_res is None:
-            raise KeyError("Failed to get the Z step in microns")
+            z_res = session_config.get("Z step (m)")
+            if z_res is None:
+                raise KeyError("Failed to get the Z step in microns")
+
+        z_res = float(z_res)
 
     x_res = float(x_res)
     y_res = float(y_res)
@@ -171,6 +181,7 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
     )
 
     for tile_key, tile_info in metadata_dict["tile_config"].items():
+
         tile_info_x = tile_info.get("x")
         tile_info_y = tile_info.get("y")
         tile_info_z = tile_info.get("z")
@@ -197,7 +208,10 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
             ]
         )
 
-        channel = channels[tile_info["Laser"]]
+        # print("Keys before breaking: ", tile_info.keys())
+        channel = make_tile_acq_channel(
+            wavelength_config=wavelength_config, tile_info=tile_info
+        )
         exaltation_wave = int(tile_info["Laser"])
         emission_wave = filter_mapping[exaltation_wave]
 
@@ -207,8 +221,11 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
                 "\nLaser power is in percentage of total, it needs calibration"
             ),
             coordinate_transformations=[tile_transform, scale],
-            file_name=f"Ex_{exaltation_wave}_Em_{emission_wave}/"
-            f"{tile_info_x}/{tile_info_x}_{tile_info_y}/",
+            file_name=(
+                f"Ex_{exaltation_wave}_"
+                f"Em_{emission_wave}/"
+                f"{int(tile_info_x)}/{int(tile_info_x)}_{int(tile_info_y)}/"
+            ),
         )
 
         tile_acquisitions.append(tile_acquisition)
@@ -304,3 +321,42 @@ def get_excitation_emission_waves(channels: List) -> dict:
         excitation_emission_channels[int(splitted[0])] = int(splitted[1])
 
     return excitation_emission_channels
+
+
+def parse_channel_name(channel_str: str) -> str:
+    """
+    Parses the channel string from SLIMS to a standard format.
+
+    Parameters
+    ----------
+    channel_str: str
+        The channel name to be parsed.
+          ex: "Laser = 445; Emission Filter = 469/35"
+          ex: "Laser = 488, Emission Filter = 525/50"
+    Returns
+    -------
+    str
+        The parsed channel name (ex: "Ex_445_Em_469").
+    """
+    s = channel_str.replace("Laser", "Ex").replace("Emission Filter", "Em")
+    parts = [p.strip() for p in re.split(r"[;,]", s) if p.strip()]
+    segments = []
+    for part in parts:
+        key, val = [t.strip() for t in part.split("=", 1)]
+        # discard any bandwidth info after slash
+        core = val.split("/", 1)[0]
+        segments.append(f"{key}_{core}")
+
+    return "_".join(segments)
+
+
+def ensure_list(raw: Any) -> List[Any]:
+    """
+    Turn a value that might be a list, a single string, or None
+    into a proper list of strings (or an empty list).
+    """
+    if isinstance(raw, list):
+        return raw
+    if isinstance(raw, str) and raw.strip():
+        return [raw]
+    return []
