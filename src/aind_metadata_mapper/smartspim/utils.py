@@ -161,9 +161,10 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict):
 
     if z_res is None:
         z_res = session_config.get("Z step (um)")
-
         if z_res is None:
-            raise KeyError("Failed to get the Z step in microns")
+            z_res = session_config.get("Z step (m)")
+            if z_res is None:
+                raise KeyError("Failed to get the Z step in microns")
 
         z_res = float(z_res)
 
