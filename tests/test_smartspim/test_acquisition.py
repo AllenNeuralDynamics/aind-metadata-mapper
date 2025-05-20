@@ -6,6 +6,7 @@ import copy
 import os
 import unittest
 import json
+import requests
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 from aind_data_schema.core import acquisition
@@ -15,7 +16,7 @@ from aind_metadata_mapper.smartspim.acquisition import (
     SmartspimETL,
     SlimsImmersionMedium,
 )
-from tests.test_smartspim.example_metadata import (
+from example_metadata import (
     example_filter_mapping,
     example_metadata_info,
     example_processing_manifest,
@@ -25,6 +26,8 @@ from tests.test_smartspim.example_metadata import (
 from aind_data_schema.components.coordinates import AnatomicalDirection
 from aind_data_schema.components.devices import ImmersionMedium
 from aind_data_schema.core.acquisition import ProcessingSteps, ProcessName
+from aind_metadata_mapper.core import JobResponse
+
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
@@ -344,6 +347,39 @@ class TestSmartspimETL(unittest.TestCase):
         mock_write.assert_called_once()
         self.assertEqual(200, response.status_code)
 
+    @patch("aind_data_schema.base.AindCoreModel.write_standard_file")
+    @patch(
+        "aind_metadata_mapper.smartspim.acquisition.SmartspimETL."
+        "_extract_metadata_from_slims"
+    )
+    @patch(
+        "aind_metadata_mapper.smartspim.acquisition.SmartspimETL."
+        "_extract_metadata_from_microscope_files"
+    )
+    def test_run_job_success_slims_datetime(
+        self, mock_extract_microscope, mock_extract_slims, mock_write
+    ):
+        """Tests that run_job runs as expected."""
+        mock_extract_microscope.return_value = {
+            "session_config": example_metadata_info["session_config"],
+            "wavelength_config": example_metadata_info["wavelength_config"],
+            "tile_config": example_metadata_info["tile_config"],
+            "session_end_time": example_session_end_time,
+            "filter_mapping": example_filter_mapping,
+            "session_start_time": datetime.strptime(
+                "2024-10-10_10-10-10", "%Y-%m-%d_%H-%M-%S"
+            ),
+        }
+        mock_extract_slims.return_value = example_imaging_info_from_slims
+        mock_write.return_value = None
+        job_settings = self.example_job_settings_success.model_copy(deep=True)
+        job_settings.slims_datetime = "2024-10-10_10-10-10"
+        etl = SmartspimETL(
+            job_settings=job_settings
+        )
+        response = etl.run_job()
+        mock_write.assert_called_once()
+        self.assertEqual(200, response.status_code)
 
 if __name__ == "__main__":
     unittest.main()

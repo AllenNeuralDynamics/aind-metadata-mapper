@@ -47,3 +47,12 @@ class JobSettings(BaseJobSettings):
         description=("Deprecated, use metadata_service_path instead."),
     )
     metadata_service_path: str
+
+    # Optional field for SLIMS datetime
+    slims_datetime: Optional[str] = Field(
+        default=None,
+        description=(
+            "Datetime of the SLIMS entry, if not provided, the datetime "
+            "window will be extracted from the metadata file."
+        ),
+    )

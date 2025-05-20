@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import requests
+import logging
 from datetime import datetime
 from typing import Dict, Union, List
 
@@ -31,7 +32,6 @@ from aind_metadata_mapper.smartspim.utils import (
     parse_channel_name,
     ensure_list,
 )
-
 
 class SmartspimETL(GenericEtl[JobSettings]):
     """
@@ -156,7 +156,6 @@ class SmartspimETL(GenericEtl[JobSettings]):
         Dict
             Dictionary containing metadata from SLIMS for an acquisition.
         """
-
         query_params = {"subject_id": self.job_settings.subject_id}
         if start_date_gte:
             query_params["start_date_gte"] = start_date_gte
@@ -374,10 +373,21 @@ class SmartspimETL(GenericEtl[JobSettings]):
 
         """
         metadata_dict = self._extract_metadata_from_microscope_files()
-        slims_data = self._extract_metadata_from_slims(
-            start_date_gte=metadata_dict["session_start_time"],
-            end_date_lte=metadata_dict["session_end_time"],
-        )
+        try:
+            if self.job_settings.slims_datetime:
+                slims_data = self._extract_metadata_from_slims(
+                    start_date_gte=self.job_settings.slims_datetime,
+                    end_date_lte=self.job_settings.slims_datetime,
+                )
+            else:
+                slims_data = self._extract_metadata_from_slims(
+                    start_date_gte=metadata_dict["session_start_time"],
+                    end_date_lte=metadata_dict["session_end_time"],
+                )
+        except Exception as e:
+            logging.error("Unexpected error occurred: %s", e)
+            raise
+            
         acquisition_model = self._transform(
             metadata_dict=metadata_dict, slims_data=slims_data
         )
