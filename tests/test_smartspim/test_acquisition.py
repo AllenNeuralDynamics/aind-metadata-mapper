@@ -15,7 +15,7 @@ from aind_metadata_mapper.smartspim.acquisition import (
     SmartspimETL,
     SlimsImmersionMedium,
 )
-from example_metadata import (
+from tests.test_smartspim.example_metadata import (
     example_filter_mapping,
     example_metadata_info,
     example_processing_manifest,
