@@ -33,6 +33,7 @@ from aind_metadata_mapper.smartspim.utils import (
     ensure_list,
 )
 
+
 class SmartspimETL(GenericEtl[JobSettings]):
     """
     This class contains the methods to write the metadata
@@ -387,7 +388,7 @@ class SmartspimETL(GenericEtl[JobSettings]):
         except Exception as e:
             logging.error("Unexpected error occurred: %s", e)
             raise
-            
+        
         acquisition_model = self._transform(
             metadata_dict=metadata_dict, slims_data=slims_data
         )

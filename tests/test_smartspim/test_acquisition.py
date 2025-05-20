@@ -6,7 +6,6 @@ import copy
 import os
 import unittest
 import json
-import requests
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 from aind_data_schema.core import acquisition
@@ -26,8 +25,6 @@ from example_metadata import (
 from aind_data_schema.components.coordinates import AnatomicalDirection
 from aind_data_schema.components.devices import ImmersionMedium
 from aind_data_schema.core.acquisition import ProcessingSteps, ProcessName
-from aind_metadata_mapper.core import JobResponse
-
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
@@ -380,6 +377,7 @@ class TestSmartspimETL(unittest.TestCase):
         response = etl.run_job()
         mock_write.assert_called_once()
         self.assertEqual(200, response.status_code)
+
 
 if __name__ == "__main__":
     unittest.main()
