@@ -1,57 +1,21 @@
-"""Utility functions for fiber photometry data processing.
+"""Utility functions for fiber photometry metadata extraction.
 
 This module provides functions for handling timestamps and file operations
 specific to fiber photometry data, including conversion between milliseconds
 and datetime objects, and extraction of session times from data files.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Union, Optional
 from pathlib import Path
 from tzlocal import get_localzone
 import logging
-import pandas as pd
 import re
 
-
-def convert_ms_since_midnight_to_datetime(
-    ms_since_midnight: float,
-    base_date: datetime,
-    local_timezone: Optional[str] = None,
-) -> datetime:
-    """Convert milliseconds since midnight to a datetime object in local timezone.
-
-    Parameters
-    ----------
-    ms_since_midnight : float
-        Float representing milliseconds since midnight in local timezone
-    base_date : datetime
-        Reference datetime to get the date from (must have tzinfo)
-    local_timezone : Optional[str], optional
-        Timezone string (e.g., "America/Los_Angeles").
-        If not provided, will use system timezone.
-
-    Returns
-    -------
-    datetime
-        datetime object in local timezone with the same date as base_date but time from
-        ms_since_midnight
-    """
-    # Get timezone (either specified or system default)
-    tz = ZoneInfo(local_timezone) if local_timezone else get_localzone()
-
-    # Get midnight of base_date in local time
-    base_date_local = base_date.astimezone(tz)
-    base_midnight_local = datetime.combine(
-        base_date_local.date(), datetime.min.time()
-    )
-    base_midnight_local = base_midnight_local.replace(tzinfo=tz)
-
-    # Add milliseconds as timedelta
-    delta = timedelta(milliseconds=ms_since_midnight)
-
-    return base_midnight_local + delta
+from aind_metadata_mapper.utils.timing_utils import (
+    find_latest_timestamp_in_csv_files,
+)
 
 
 def extract_session_start_time_from_files(
@@ -144,56 +108,22 @@ def extract_session_end_time_from_files(
     if not fib_dir.exists():
         fib_dir = data_dir
 
-    earliest_time = None
-    latest_time = None
+    # Find the latest timestamp in FIP data files
+    latest_time = find_latest_timestamp_in_csv_files(
+        directory=fib_dir,
+        file_pattern="FIP_Data*.csv",
+        session_start_time=session_start_time,
+        local_timezone=local_timezone,
+    )
 
-    # Get timezone
-    tz = ZoneInfo(local_timezone) if local_timezone else get_localzone()
+    # Calculate the session duration if we found a valid end time
+    if latest_time is not None:
+        # Ensure session_start_time and latest_time are in the same timezone
+        tz = ZoneInfo(local_timezone) if local_timezone else get_localzone()
+        local_session_start = session_start_time.astimezone(tz)
+        latest_time = latest_time.astimezone(tz)
 
-    # Ensure session_start_time is in the local timezone
-    local_session_start = session_start_time.astimezone(tz)
-
-    # Look for CSV files
-    for csv_file in fib_dir.glob("FIP_Data*.csv"):
-        try:
-            # Read CSV file using pandas - with no header
-            df = pd.read_csv(csv_file, header=None)
-            if df.empty:
-                continue
-
-            # Use first column (index 0) for time data
-            first_ms = df[0].min()
-            last_ms = df[0].max()
-
-            # Convert to datetime objects (will be in local timezone)
-            first_time = convert_ms_since_midnight_to_datetime(
-                first_ms, local_session_start, local_timezone=local_timezone
-            )
-            last_time = convert_ms_since_midnight_to_datetime(
-                last_ms, local_session_start, local_timezone=local_timezone
-            )
-
-            # Update earliest and latest times
-            if earliest_time is None or first_time < earliest_time:
-                earliest_time = first_time
-            if latest_time is None or last_time > latest_time:
-                latest_time = last_time
-
-        except Exception as e:
-            logging.warning(f"Error processing file {csv_file}: {str(e)}")
-            continue
-
-    # Validate earliest time against session start time (both in local timezone)
-    if earliest_time is not None and session_start_time is not None:
-        time_diff = abs((earliest_time - local_session_start).total_seconds())
-        if time_diff > 300:  # 5 minutes = 300 seconds
-            logging.warning(
-                f"First timestamp in CSV "
-                f"({earliest_time.isoformat()}) "
-                f"differs from session start time "
-                f"({local_session_start.isoformat()}) "
-                f"by more than 5 minutes"
-            )
-            return None
+        session_duration = latest_time - local_session_start
+        logging.info(f"FIP session duration: {session_duration}")
 
     return latest_time

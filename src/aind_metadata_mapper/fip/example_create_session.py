@@ -186,7 +186,7 @@ def create_metadata(
                     {
                         "name": "Bonsai",
                         "parameters": {},
-                        "url": "",
+                        "url": "https://github.com/AllenNeuralDynamics/PavlovianCond_Bonsai/tree/dafd7dfe0f347f781e91466b3d16b83cf32f8b6d",
                         "version": "",
                     }
                 ],

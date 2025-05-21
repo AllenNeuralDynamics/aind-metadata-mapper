@@ -8,7 +8,7 @@ when necessary.
 import json
 import argparse
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Optional
 import logging
 from datetime import datetime
 
@@ -18,6 +18,37 @@ logging.basicConfig(
     format="\n%(asctime)s - %(message)s\n",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+
+
+def _parse_timestamp(timestamp_str: Optional[str]) -> Optional[datetime]:
+    """Convert any ISO format timestamp string to a datetime object.
+
+    Handles various ISO 8601 formats including Z suffix and timezone offsets.
+
+    Parameters
+    ----------
+    timestamp_str : Optional[str]
+        ISO format timestamp string, or None
+
+    Returns
+    -------
+    Optional[datetime]
+        Parsed datetime object with timezone information, or None if input was None
+
+    Raises
+    ------
+    ValueError
+        If the timestamp string cannot be parsed
+    """
+    if not timestamp_str:
+        return None
+
+    # Handle Z suffix by replacing with +00:00 for standard parsing
+    if timestamp_str.endswith("Z"):
+        timestamp_str = timestamp_str.replace("Z", "+00:00")
+
+    # Parse the ISO format string
+    return datetime.fromisoformat(timestamp_str)
 
 
 def _merge_lists(list1: List[Any], list2: List[Any]) -> List[Any]:
@@ -113,7 +144,7 @@ def _merge_timestamps(
     field: str,
     time1: str,
     time2: str,
-    tolerance_hours: float = 1.0,
+    tolerance_minutes: float = 5.0,
     file1: str | None = None,
     file2: str | None = None,
 ) -> str:
@@ -127,7 +158,7 @@ def _merge_timestamps(
         field: Name of field being merged (determines earlier/later logic)
         time1: First timestamp in ISO format (with any timezone information)
         time2: Second timestamp in ISO format (with any timezone information)
-        tolerance_hours: Maximum allowed difference in hours (default 1)
+        tolerance_minutes: Maximum allowed difference in minutes (default 5.0)
         file1: Optional name of first file for logging clarity
         file2: Optional name of second file for logging clarity
 
@@ -137,20 +168,13 @@ def _merge_timestamps(
     Raises:
         ValueError: If timestamps differ by more than tolerance
     """
-    # Handle different ISO formats by parsing into datetime objects
-    # fromisoformat handles both Z suffix (UTC) and timezone offsets like +00:00, -08:00
+    # Parse timestamps to datetime objects
     try:
-        # If time1 ends with Z, replace with +00:00 for standard parsing
-        if time1.endswith("Z"):
-            t1 = datetime.fromisoformat(time1.replace("Z", "+00:00"))
-        else:
-            t1 = datetime.fromisoformat(time1)
+        t1 = _parse_timestamp(time1)
+        t2 = _parse_timestamp(time2)
 
-        # If time2 ends with Z, replace with +00:00 for standard parsing
-        if time2.endswith("Z"):
-            t2 = datetime.fromisoformat(time2.replace("Z", "+00:00"))
-        else:
-            t2 = datetime.fromisoformat(time2)
+        if not t1 or not t2:
+            raise ValueError("One or both timestamps are None or empty")
     except ValueError as e:
         raise ValueError(f"Failed to parse timestamp: {str(e)}")
 
@@ -158,10 +182,10 @@ def _merge_timestamps(
     diff_seconds = abs((t1 - t2).total_seconds())
     diff_str = _format_time_difference(diff_seconds)
 
-    if diff_seconds / 3600 > tolerance_hours:
+    if diff_seconds / 60 > tolerance_minutes:
         raise ValueError(
             f"Timestamps differ by {diff_str}, "
-            f"exceeding tolerance of {tolerance_hours} hours"
+            f"exceeding tolerance of {tolerance_minutes} minutes"
         )
 
     # Format the timestamp descriptions with file names if available
@@ -291,13 +315,134 @@ def _merge_strings(field, val1, val2, file1, file2):
     return _prompt_for_field(field, val1, val2, file1, file2)
 
 
+def _merge_data_streams(
+    streams: List[Dict[str, Any]], file1: str, file2: str
+) -> List[Dict[str, Any]]:
+    """
+    Recursively merge data streams with similar start and end times.
+
+    Parameters
+    ----------
+    streams : List[Dict[str, Any]]
+        List of data stream dictionaries to merge
+    file1 : str
+        Name of the first file
+    file2 : str
+        Name of the second file
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        List of merged data streams
+    """
+    # Base case: 0 or 1 stream, nothing to merge
+    if len(streams) <= 1:
+        return streams
+
+    # Function to check if two streams should be merged
+    def should_merge(stream1, stream2, tolerance_minutes=5.0):
+        # Extract start and end times and convert to datetime objects for comparison
+        try:
+            # Parse the start times
+            start1_dt = _parse_timestamp(stream1.get("stream_start_time"))
+            start2_dt = _parse_timestamp(stream2.get("stream_start_time"))
+
+            if not start1_dt or not start2_dt:
+                return False
+
+            # Parse the end times
+            end1_dt = _parse_timestamp(stream1.get("stream_end_time"))
+            end2_dt = _parse_timestamp(stream2.get("stream_end_time"))
+
+            if not end1_dt or not end2_dt:
+                return False
+
+            # Calculate time differences
+            start_diff = abs((start1_dt - start2_dt).total_seconds())
+            end_diff = abs((end1_dt - end2_dt).total_seconds())
+
+            # Check if streams should be merged (comparing in minutes)
+            return (
+                start_diff / 60 <= tolerance_minutes
+                and end_diff / 60 <= tolerance_minutes
+            )
+
+        except (ValueError, AttributeError):
+            # If there's any error parsing dates, don't merge
+            return False
+
+    # Function to merge two streams
+    def merge_two_streams(stream1, stream2):
+        merged = {}
+        all_keys = set(stream1.keys()) | set(stream2.keys())
+
+        for key in all_keys:
+            if key in stream1 and key in stream2:
+                val1 = stream1[key]
+                val2 = stream2[key]
+
+                # For timestamps, use standard merge logic
+                if (
+                    key in ["stream_start_time", "stream_end_time"]
+                    and val1
+                    and val2
+                ):
+                    try:
+                        merged[key] = _merge_timestamps(
+                            key, val1, val2, file1=file1, file2=file2
+                        )
+                    except ValueError:
+                        # If merge fails, use first value
+                        merged[key] = val1
+
+                # For lists, simply combine them
+                elif isinstance(val1, list) and isinstance(val2, list):
+                    merged[key] = _merge_lists(val1, val2)
+
+                # For other types, use standard value merging
+                else:
+                    merged[key] = _merge_values(key, val1, val2, file1, file2)
+            else:
+                # Key only in one stream
+                merged[key] = (
+                    stream1.get(key) if key in stream1 else stream2.get(key)
+                )
+
+        return merged
+
+    # Try to merge any pair of streams
+    for i in range(len(streams)):
+        for j in range(i + 1, len(streams)):
+            if should_merge(streams[i], streams[j]):
+                # Merge these two streams
+                merged_stream = merge_two_streams(streams[i], streams[j])
+
+                # Create a new list of streams with the merged one
+                new_streams = [
+                    s for k, s in enumerate(streams) if k != i and k != j
+                ]
+                new_streams.append(merged_stream)
+
+                logging.info(
+                    f"Merged two data streams with similar timing.\n"
+                    f"  Stream {i+1}: {streams[i].get('stream_modalities', 'unknown')}\n"
+                    f"  Stream {j+1}: {streams[j].get('stream_modalities', 'unknown')}"
+                )
+
+                # Recursively continue merging
+                return _merge_data_streams(new_streams, file1, file2)
+
+    # If we get here, no more streams could be merged
+    return streams
+
+
 def _merge_dicts(
     dict1: Dict[str, Any], dict2: Dict[str, Any], file1: str, file2: str
 ) -> Dict[str, Any]:
     """
     Recursively merge two dictionaries.
 
-    Handles special case for 'reward_consumed_unit' field.
+    Handles special cases for certain fields.
 
     Parameters
     ----------
@@ -323,6 +468,11 @@ def _merge_dicts(
             # Special case for reward_consumed_unit: pass parent dicts
             if key == "reward_consumed_unit":
                 merged[key] = _merge_reward_unit(dict1, dict2, file1, file2)
+            # Special case for data_streams: merge streams with similar timing
+            elif key == "data_streams":
+                # Combine all streams from both files and recursively merge them
+                all_streams = dict1[key] + dict2[key]
+                merged[key] = _merge_data_streams(all_streams, file1, file2)
             else:
                 merged[key] = _merge_values(
                     key, dict1[key], dict2[key], file1, file2

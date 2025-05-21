@@ -203,7 +203,10 @@ def create_metadata(
             {
                 "stream_start_time": None,
                 "stream_end_time": None,
-                "stream_modalities": [Modality.BEHAVIOR],
+                "stream_modalities": [
+                    Modality.BEHAVIOR_VIDEOS,
+                    Modality.BEHAVIOR,
+                ],
                 "camera_names": [
                     "BehaviorVideography_Eye",
                     "BehaviorVideography_Body",
@@ -222,7 +225,7 @@ def create_metadata(
                     {
                         "name": "Bonsai",
                         "parameters": {},
-                        "url": "",
+                        "url": "https://github.com/AllenNeuralDynamics/PavlovianCond_Bonsai/tree/dafd7dfe0f347f781e91466b3d16b83cf32f8b6d",
                         "version": "",
                     }
                 ],
@@ -275,7 +278,7 @@ def create_metadata(
                     {
                         "name": "Bonsai",
                         "parameters": {},
-                        "url": "",
+                        "url": "https://github.com/AllenNeuralDynamics/PavlovianCond_Bonsai/tree/dafd7dfe0f347f781e91466b3d16b83cf32f8b6d",
                         "version": "",
                     }
                 ],
