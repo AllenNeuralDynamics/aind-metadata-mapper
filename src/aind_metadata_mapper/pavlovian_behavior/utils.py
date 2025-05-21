@@ -93,7 +93,7 @@ def parse_session_start_time(
     Returns
     -------
     datetime
-        Session start time in UTC
+        Session start time in local timezone with offset format (+/-HH:MM)
 
     Raises
     ------
@@ -122,7 +122,7 @@ def parse_session_start_time(
         # Use get_localzone() as default
         tz = ZoneInfo(local_timezone) if local_timezone else get_localzone()
         local_time = parsed_time.replace(tzinfo=tz)
-        return local_time.astimezone(ZoneInfo("UTC"))
+        return local_time
 
     except (ValueError, IndexError) as e:
         raise ValueError(

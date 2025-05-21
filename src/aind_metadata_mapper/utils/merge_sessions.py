@@ -117,7 +117,7 @@ def _merge_timestamps(
     file1: str | None = None,
     file2: str | None = None,
 ) -> str:
-    """Merge two ISO format UTC timestamps based on field name.
+    """Merge two ISO format timestamps based on field name.
 
     For start times (containing 'start'), takes earlier timestamp.
     For end times (containing 'end'), takes later timestamp.
@@ -125,20 +125,34 @@ def _merge_timestamps(
 
     Args:
         field: Name of field being merged (determines earlier/later logic)
-        time1: First timestamp in ISO format with Z suffix
-        time2: Second timestamp in ISO format with Z suffix
+        time1: First timestamp in ISO format (with any timezone information)
+        time2: Second timestamp in ISO format (with any timezone information)
         tolerance_hours: Maximum allowed difference in hours (default 1)
         file1: Optional name of first file for logging clarity
         file2: Optional name of second file for logging clarity
 
     Returns:
-        Selected timestamp in ISO format
+        Selected timestamp in ISO format, preserving the original format
 
     Raises:
         ValueError: If timestamps differ by more than tolerance
     """
-    t1 = datetime.fromisoformat(time1.replace("Z", "+00:00"))
-    t2 = datetime.fromisoformat(time2.replace("Z", "+00:00"))
+    # Handle different ISO formats by parsing into datetime objects
+    # fromisoformat handles both Z suffix (UTC) and timezone offsets like +00:00, -08:00
+    try:
+        # If time1 ends with Z, replace with +00:00 for standard parsing
+        if time1.endswith("Z"):
+            t1 = datetime.fromisoformat(time1.replace("Z", "+00:00"))
+        else:
+            t1 = datetime.fromisoformat(time1)
+
+        # If time2 ends with Z, replace with +00:00 for standard parsing
+        if time2.endswith("Z"):
+            t2 = datetime.fromisoformat(time2.replace("Z", "+00:00"))
+        else:
+            t2 = datetime.fromisoformat(time2)
+    except ValueError as e:
+        raise ValueError(f"Failed to parse timestamp: {str(e)}")
 
     # Calculate time difference in seconds
     diff_seconds = abs((t1 - t2).total_seconds())
@@ -154,8 +168,9 @@ def _merge_timestamps(
     time1_desc = f"{time1} (from {file1})" if file1 else time1
     time2_desc = f"{time2} (from {file2})" if file2 else time2
 
+    # Compare the datetime objects but return the original string format
     if "start" in field.lower():
-        result = min(time1, time2)
+        result = time1 if t1 <= t2 else time2
         result_source = file1 if result == time1 else file2
         result_desc = (
             f"{result} (from {result_source})" if result_source else result
@@ -169,7 +184,7 @@ def _merge_timestamps(
         )
         return result
     elif "end" in field.lower():
-        result = max(time1, time2)
+        result = time1 if t1 >= t2 else time2
         result_source = file1 if result == time1 else file2
         result_desc = (
             f"{result} (from {result_source})" if result_source else result
@@ -239,7 +254,9 @@ def _merge_values(
         isinstance(val1, str)
         and isinstance(val2, str)
         and "time" in field.lower()
-        and all(t.endswith("Z") for t in [val1, val2])
+        and (
+            val1.find("T") > 0 or val2.find("T") > 0
+        )  # ISO datetime format check
     ):
         return _merge_timestamp(field, val1, val2, file1, file2)
 

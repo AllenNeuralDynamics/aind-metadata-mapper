@@ -302,17 +302,11 @@ class ETL(GenericEtl[JobSettings]):
         Creates a standardized Session object from the intermediate data model,
         including all stimulus epochs and their configurations.
         """
-        # Format timestamps as ISO with Z suffix
-        start_time = (
-            pavlovian_data.start_time.replace(microsecond=0)
-            .isoformat()
-            .replace("+00:00", "Z")
-        )
-        end_time = (
-            pavlovian_data.end_time.replace(microsecond=0)
-            .isoformat()
-            .replace("+00:00", "Z")
-        )
+        # Format timestamps as ISO with timezone offset (+/-HH:MM)
+        start_time = pavlovian_data.start_time.replace(
+            microsecond=0
+        ).isoformat()
+        end_time = pavlovian_data.end_time.replace(microsecond=0).isoformat()
 
         session = Session(
             experimenter_full_name=pavlovian_data.experimenter_full_name,

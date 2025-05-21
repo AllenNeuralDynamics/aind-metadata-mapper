@@ -20,7 +20,7 @@ def convert_ms_since_midnight_to_datetime(
     base_date: datetime,
     local_timezone: Optional[str] = None,
 ) -> datetime:
-    """Convert milliseconds since midnight to a datetime object in UTC.
+    """Convert milliseconds since midnight to a datetime object in local timezone.
 
     Parameters
     ----------
@@ -35,7 +35,7 @@ def convert_ms_since_midnight_to_datetime(
     Returns
     -------
     datetime
-        datetime object in UTC with the same date as base_date but time from
+        datetime object in local timezone with the same date as base_date but time from
         ms_since_midnight
     """
     # Get timezone (either specified or system default)
@@ -48,13 +48,10 @@ def convert_ms_since_midnight_to_datetime(
     )
     base_midnight_local = base_midnight_local.replace(tzinfo=tz)
 
-    # Convert local midnight to UTC
-    base_midnight_utc = base_midnight_local.astimezone(ZoneInfo("UTC"))
-
     # Add milliseconds as timedelta
     delta = timedelta(milliseconds=ms_since_midnight)
 
-    return base_midnight_utc + delta
+    return base_midnight_local + delta
 
 
 def extract_session_start_time_from_files(
@@ -73,7 +70,7 @@ def extract_session_start_time_from_files(
     Returns
     -------
     Optional[datetime]
-        Extracted session time in UTC or None if not found
+        Extracted session time in local timezone with offset format (+/-HH:MM) or None if not found
     """
     data_dir = Path(data_dir)
 
@@ -105,7 +102,6 @@ def extract_session_start_time_from_files(
                     timestamp_str = timestamp_str.replace("_", ":")
                     try:
                         # Parse the timestamp in local time zone
-                        # and convert to UTC
                         tz = (
                             ZoneInfo(local_timezone)
                             if local_timezone
@@ -114,7 +110,7 @@ def extract_session_start_time_from_files(
                         local_time = datetime.fromisoformat(
                             timestamp_str
                         ).replace(tzinfo=tz)
-                        return local_time.astimezone(ZoneInfo("UTC"))
+                        return local_time
                     except ValueError:
                         continue
 
@@ -133,7 +129,7 @@ def extract_session_end_time_from_files(
     data_dir : Union[str, Path]
         Path to the directory containing fiber photometry data
     session_start_time : datetime
-        Previously determined session start time (in UTC)
+        Previously determined session start time (in local timezone)
     local_timezone : Optional[str], optional
         Timezone string (e.g., "America/Los_Angeles").
         If not provided, will use system timezone.
@@ -141,7 +137,7 @@ def extract_session_end_time_from_files(
     Returns
     -------
     Optional[datetime]
-        Extracted session end time in UTC or None if not found
+        Extracted session end time in local timezone or None if not found
     """
     data_dir = Path(data_dir)
     fib_dir = data_dir / "fib"
@@ -154,7 +150,7 @@ def extract_session_end_time_from_files(
     # Get timezone
     tz = ZoneInfo(local_timezone) if local_timezone else get_localzone()
 
-    # Convert session_start_time to local time for comparison
+    # Ensure session_start_time is in the local timezone
     local_session_start = session_start_time.astimezone(tz)
 
     # Look for CSV files
@@ -169,7 +165,7 @@ def extract_session_end_time_from_files(
             first_ms = df[0].min()
             last_ms = df[0].max()
 
-            # Convert to datetime objects (will be in UTC)
+            # Convert to datetime objects (will be in local timezone)
             first_time = convert_ms_since_midnight_to_datetime(
                 first_ms, local_session_start, local_timezone=local_timezone
             )
@@ -187,15 +183,15 @@ def extract_session_end_time_from_files(
             logging.warning(f"Error processing file {csv_file}: {str(e)}")
             continue
 
-    # Validate earliest time against session start time (both in UTC)
+    # Validate earliest time against session start time (both in local timezone)
     if earliest_time is not None and session_start_time is not None:
-        time_diff = abs((earliest_time - session_start_time).total_seconds())
+        time_diff = abs((earliest_time - local_session_start).total_seconds())
         if time_diff > 300:  # 5 minutes = 300 seconds
             logging.warning(
                 f"First timestamp in CSV "
                 f"({earliest_time.isoformat()}) "
                 f"differs from session start time "
-                f"({session_start_time.isoformat()}) "
+                f"({local_session_start.isoformat()}) "
                 f"by more than 5 minutes"
             )
             return None
