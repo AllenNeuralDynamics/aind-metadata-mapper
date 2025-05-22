@@ -50,8 +50,6 @@ class TestBehaviorUtils(unittest.TestCase):
             data, stimulus_timestamps
         )
 
-        print(result_df)
-        print(expected_df)
         # Assert DataFrame equality
         pd.testing.assert_frame_equal(
             result_df, expected_df, check_dtype=False, check_index_type=False
