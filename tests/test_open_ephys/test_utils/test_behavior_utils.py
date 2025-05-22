@@ -731,6 +731,7 @@ class TestBehaviorUtils(unittest.TestCase):
             stimulus_presentations,
             pd.DataFrame(stimulus_file),
             stimulus_timestamps,
+            "fingerprint",
         )
 
         # Define expected output based on the provided mock data
