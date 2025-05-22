@@ -53,78 +53,9 @@ class TestBehaviorUtils(unittest.TestCase):
         # Assert DataFrame equality
         pd.testing.assert_frame_equal(result_df, expected_df)
 
-    def test_get_gratings_metadata(self):
-        """
-        Creates a stimuli with gratings and
-        tests the get_gratings_metadata
-        """
-        # Example stimuli input containing gratings
-        stimuli_with_gratings = {
-            "grating": {
-                "phase": 0.5,
-                "sf": 0.03,
-                "set_log": [[0, 0.0], [1, 45.0], [2, 90.0], [3, 0.0]],
-            }
-        }
-
-        # Expected DataFrame with gratings
-        expected_grating_df = pd.DataFrame(
-            {
-                "image_category": ["grating", "grating", "grating"],
-                "image_name": [
-                    "gratings_0.0",
-                    "gratings_90.0",
-                    "gratings_45.0",
-                ],
-                "orientation": [0.0, 90.0, 45.0],
-                "image_set": ["grating", "grating", "grating"],
-                "phase": [0.5, 0.5, 0.5],
-                "spatial_frequency": [0.03, 0.03, 0.03],
-                "image_index": [0, 1, 2],
-            }
-        )
-
-        # Call the function with stimuli containing gratings
-        result_grating_df = behavior.get_gratings_metadata(
-            stimuli_with_gratings
-        )
-
-        # Assert DataFrame equality
-        pd.testing.assert_frame_equal(result_grating_df, expected_grating_df)
-
-        # Example stimuli input without gratings
-        stimuli_without_gratings = {
-            "other_stimuli": {"some_key": "some_value"}
-        }
-
-        # Expected empty DataFrame
-        expected_empty_df = pd.DataFrame(
-            columns=[
-                "image_category",
-                "image_name",
-                "image_set",
-                "phase",
-                "spatial_frequency",
-                "orientation",
-                "image_index",
-            ]
-        )
-
-        # Call the function with stimuli not containing gratings
-        result_empty_df = behavior.get_gratings_metadata(
-            stimuli_without_gratings
-        )
-
-        # Assert DataFrame equality
-        pd.testing.assert_frame_equal(result_empty_df, expected_empty_df)
-
     @patch(
         "aind_metadata_mapper.open_ephys.utils"
         ".behavior_utils.get_images_dict"
-    )
-    @patch(
-        "aind_metadata_mapper.open_ephys.utils"
-        ".behavior_utils.get_gratings_metadata"
     )
     @patch(
         "aind_metadata_mapper.open_ephys.utils"
@@ -138,7 +69,6 @@ class TestBehaviorUtils(unittest.TestCase):
         self,
         mock_get_image_set_name,
         mock_convert_filepath_caseinsensitive,
-        mock_get_gratings_metadata,
         mock_get_images_dict,
     ):
         """
@@ -188,19 +118,6 @@ class TestBehaviorUtils(unittest.TestCase):
             ],
         }
 
-        # Mock the get_gratings_metadata function
-        mock_get_gratings_metadata.return_value = pd.DataFrame(
-            {
-                "image_category": ["grating", "grating"],
-                "image_name": ["gratings_0.0", "gratings_45.0"],
-                "orientation": [0.0, 45.0],
-                "image_set": ["grating", "grating"],
-                "phase": [0.5, 0.5],
-                "spatial_frequency": [0.03, 0.03],
-                "image_index": [2, 3],
-            }
-        )
-
         # Mock the stim.convert_filepath_caseinsensitive function
         mock_convert_filepath_caseinsensitive.return_value = (
             "path/to/images.pkl"
@@ -222,8 +139,6 @@ class TestBehaviorUtils(unittest.TestCase):
                 "image_name": [
                     "image1.jpg",
                     "image2.jpg",
-                    "gratings_0.0",
-                    "gratings_45.0",
                     "omitted",
                 ],
                 "orientation": [np.NaN, np.NaN, 0.0, 45.0, np.NaN],
