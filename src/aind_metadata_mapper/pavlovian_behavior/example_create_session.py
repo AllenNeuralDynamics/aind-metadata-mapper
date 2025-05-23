@@ -215,7 +215,10 @@ def create_metadata(
                         "sample_frequency": "96000",
                         "stimulus_name": "CS1",
                         "stimulus_type": "Auditory Stimulation",
-                        "notes": "assigned reward probability is 10%, duration is 1.0 s",
+                        "notes": (
+                            "assigned reward probability is 10%, "
+                            "duration is 1.0 s"
+                        ),
                     },
                     {
                         "amplitude_modulation_frequency": 8000,
@@ -223,7 +226,10 @@ def create_metadata(
                         "sample_frequency": "96000",
                         "stimulus_name": "CS2",
                         "stimulus_type": "Auditory Stimulation",
-                        "notes": "assigned reward probability is 50%, duration is 1.0 s",
+                        "notes": (
+                            "assigned reward probability is 50%, "
+                            "duration is 1.0 s"
+                        ),
                     },
                     {
                         "amplitude_modulation_frequency": 13000,
@@ -231,7 +237,10 @@ def create_metadata(
                         "sample_frequency": "96000",
                         "stimulus_name": "CS3",
                         "stimulus_type": "Auditory Stimulation",
-                        "notes": "assigned reward probability is 90%, duration is 1.0 s",
+                        "notes": (
+                            "assigned reward probability is 90%, "
+                            "duration is 1.0 s"
+                        ),
                     },
                     {
                         "bandpass_filter_type": None,
@@ -239,7 +248,10 @@ def create_metadata(
                         "sample_frequency": "96000",
                         "stimulus_name": "CS4",
                         "stimulus_type": "Auditory Stimulation",
-                        "notes": "White noise, aversive probability is 90%, duration is 1.0 s",
+                        "notes": (
+                            "White noise, aversive probability is 90%, "
+                            "duration is 1.0 s"
+                        ),
                     },
                 ],
                 "speaker_config": {
