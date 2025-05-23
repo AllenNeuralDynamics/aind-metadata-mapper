@@ -36,7 +36,6 @@ from aind_data_schema.components.coordinates import (
     Axis,
     AxisName,
     Translation3dTransform,
-    Rotation3dTransform,
 )
 
 
@@ -58,33 +57,20 @@ def create_reward_delivery_config() -> RewardDeliveryConfig:
                 side=SpoutSide.LEFT,
                 starting_position=RelativePosition(
                     device_position_transformations=[
-                        Translation3dTransform(translation=[0.0, 0.0, 0.0]),
-                        Rotation3dTransform(
-                            rotation=[
-                                1.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                1.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                1.0,
-                            ]
-                        ),
+                        Translation3dTransform(translation=[0.0, -5.0, 0.0]),
                     ],
-                    device_origin=(
-                        "Unknown. Coordinates are placeholders. "
-                        "Spout is manually adjusted"
-                    ),
+                    device_origin=("lower jaw"),
                     device_axes=[
-                        Axis(name=AxisName.X, direction="lateral motion"),
+                        Axis(name=AxisName.X, direction="left/right"),
                         Axis(
                             name=AxisName.Y, direction="rostro-caudal motion"
                         ),
                         Axis(name=AxisName.Z, direction="up/down"),
                     ],
-                    notes="Left spout in extended position",
+                    notes=(
+                        "Left spout in extended position, manually positioned "
+                        "about 5 mm from the lower jaw"
+                    ),
                 ),
                 variable_position=False,
             ),
@@ -92,33 +78,21 @@ def create_reward_delivery_config() -> RewardDeliveryConfig:
                 side=SpoutSide.RIGHT,
                 starting_position=RelativePosition(
                     device_position_transformations=[
-                        Translation3dTransform(translation=[0.0, 0.0, 0.0]),
-                        Rotation3dTransform(
-                            rotation=[
-                                1.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                1.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                1.0,
-                            ]
-                        ),
+                        Translation3dTransform(translation=[5.0, -35.0, 0.0]),
                     ],
-                    device_origin=(
-                        "Unknown. Coordinates are placeholders. "
-                        "Spout is manually adjusted"
-                    ),
+                    device_origin=("lower jaw"),
                     device_axes=[
-                        Axis(name=AxisName.X, direction="lateral motion"),
+                        Axis(name=AxisName.X, direction="left/right"),
                         Axis(
                             name=AxisName.Y, direction="rostro-caudal motion"
                         ),
                         Axis(name=AxisName.Z, direction="up/down"),
                     ],
-                    notes="Right spout in retracted position",
+                    notes=(
+                        "Right spout in retracted position, "
+                        "retraction travel is 30 mm "
+                        "placing it about 35 mm from the lower jaw."
+                    ),
                 ),
                 variable_position=False,
             ),
@@ -225,7 +199,7 @@ def create_metadata(
                     {
                         "name": "Bonsai",
                         "parameters": {},
-                        "url": "https://github.com/AllenNeuralDynamics/PavlovianCond_Bonsai/tree/dafd7dfe0f347f781e91466b3d16b83cf32f8b6d",
+                        "url": "https://github.com/AllenNeuralDynamics/PavlovianCond_Bonsai/tree/dafd7dfe0f347f781e91466b3d16b83cf32f8b6d",  # noqa E501
                         "version": "",
                     }
                 ],
@@ -278,14 +252,11 @@ def create_metadata(
                     {
                         "name": "Bonsai",
                         "parameters": {},
-                        "url": "https://github.com/AllenNeuralDynamics/PavlovianCond_Bonsai/tree/dafd7dfe0f347f781e91466b3d16b83cf32f8b6d",
+                        "url": "https://github.com/AllenNeuralDynamics/PavlovianCond_Bonsai/tree/dafd7dfe0f347f781e91466b3d16b83cf32f8b6d",  # noqa E501
                         "version": "",
                     }
                 ],
-                "notes": (
-                    "The duration of CSs is 1s. "
-                    "The frequency set:5kHz, 8kHz, 13kHz, WhiteNoise."
-                ),
+                "notes": ("The duration of CSs is 1s. "),
                 # Do NOT include: stimulus_start_time, stimulus_end_time,
                 # reward_consumed_during_epoch, trials_total, etc.
                 # These are populated by the ETL from the behavior files.

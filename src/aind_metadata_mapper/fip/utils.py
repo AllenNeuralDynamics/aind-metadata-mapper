@@ -34,7 +34,8 @@ def extract_session_start_time_from_files(
     Returns
     -------
     Optional[datetime]
-        Extracted session time in local timezone with offset format (+/-HH:MM) or None if not found
+        Extracted session time in local timezone with
+        offset format (+/-HH:MM) or None if not found
     """
     data_dir = Path(data_dir)
 

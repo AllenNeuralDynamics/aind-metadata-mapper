@@ -191,8 +191,10 @@ def calculate_session_timing_from_trials(
 
     Notes
     -----
-    This method is less accurate than using actual timestamps from the data files.
-    It's recommended to use find_session_end_time instead when possible.
+    This method is less accurate than using actual
+    timestamps from the data files.
+    It's recommended to use find_session_end_time
+    instead when possible.
     """
     total_duration = float(trial_data["ITI_s"].sum())
     end_time = start_time + timedelta(seconds=total_duration)
@@ -209,7 +211,9 @@ def find_session_end_time(
     session_start_time: datetime,
     local_timezone: Optional[str] = None,
 ) -> Optional[datetime]:
-    """Find the actual session end time based on the latest timestamp in CSV files.
+    """
+    Find the actual session end time based on
+    the latest timestamp in CSV files.
 
     Parameters
     ----------
@@ -223,7 +227,8 @@ def find_session_end_time(
     Returns
     -------
     Optional[datetime]
-        The latest timestamp found in any behavior data file, or None if not found
+        The latest timestamp found in any behavior data file,
+        or None if not found
     """
     behavior_dir = data_dir / "behavior"
     if not behavior_dir.exists():
@@ -355,7 +360,8 @@ def extract_session_data(
     # If that fails, fall back to calculating from trial data
     if end_time is None:
         logging.warning(
-            "Could not find session end time from timestamps. Falling back to trial data calculation."
+            "Could not find session end time from timestamps. "
+            "Falling back to trial data calculation."
         )
         end_time, _ = calculate_session_timing_from_trials(
             start_time, trial_data
