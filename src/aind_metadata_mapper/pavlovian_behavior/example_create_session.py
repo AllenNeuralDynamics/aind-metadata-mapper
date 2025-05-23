@@ -212,34 +212,34 @@ def create_metadata(
                     {
                         "amplitude_modulation_frequency": 5000,
                         "frequency_unit": "hertz",
-                        "notes": "assigned reward probability is 10%",
                         "sample_frequency": "96000",
                         "stimulus_name": "CS1",
                         "stimulus_type": "Auditory Stimulation",
+                        "notes": "assigned reward probability is 10%, duration is 1.0 s",
                     },
                     {
                         "amplitude_modulation_frequency": 8000,
                         "frequency_unit": "hertz",
-                        "notes": "assigned reward probability is 50%",
                         "sample_frequency": "96000",
                         "stimulus_name": "CS2",
                         "stimulus_type": "Auditory Stimulation",
+                        "notes": "assigned reward probability is 50%, duration is 1.0 s",
                     },
                     {
                         "amplitude_modulation_frequency": 13000,
                         "frequency_unit": "hertz",
-                        "notes": "assigned reward probability is 90%",
                         "sample_frequency": "96000",
                         "stimulus_name": "CS3",
                         "stimulus_type": "Auditory Stimulation",
+                        "notes": "assigned reward probability is 90%, duration is 1.0 s",
                     },
                     {
                         "bandpass_filter_type": None,
                         "frequency_unit": "hertz",
-                        "notes": "assigned airpuff probability is 90%, combined with white noise",  # noqa: E501
                         "sample_frequency": "96000",
                         "stimulus_name": "CS4",
                         "stimulus_type": "Auditory Stimulation",
+                        "notes": "White noise, aversive probability is 90%, duration is 1.0 s",
                     },
                 ],
                 "speaker_config": {
@@ -256,7 +256,6 @@ def create_metadata(
                         "version": "",
                     }
                 ],
-                "notes": ("The duration of CSs is 1s. "),
                 # Do NOT include: stimulus_start_time, stimulus_end_time,
                 # reward_consumed_during_epoch, trials_total, etc.
                 # These are populated by the ETL from the behavior files.
