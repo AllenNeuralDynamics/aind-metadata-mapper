@@ -13,6 +13,7 @@ from pathlib import Path
 from tzlocal import get_localzone
 import pandas as pd
 import logging
+import math
 
 
 def convert_ms_since_midnight_to_datetime(
@@ -41,6 +42,10 @@ def convert_ms_since_midnight_to_datetime(
         same date as base_date but time from
         ms_since_midnight
     """
+    # Check for NaN or invalid values
+    if math.isnan(ms_since_midnight) or math.isinf(ms_since_midnight):
+        raise ValueError(f"Invalid timestamp value: {ms_since_midnight}")
+
     # Get timezone (either specified or system default)
     tz = ZoneInfo(local_timezone) if local_timezone else get_localzone()
 
@@ -52,7 +57,7 @@ def convert_ms_since_midnight_to_datetime(
     base_midnight_local = base_midnight_local.replace(tzinfo=tz)
 
     # Add milliseconds as timedelta
-    delta = timedelta(milliseconds=ms_since_midnight)
+    delta = timedelta(milliseconds=float(ms_since_midnight))
 
     return base_midnight_local + delta
 
@@ -92,16 +97,44 @@ def _extract_max_timestamp(df: pd.DataFrame) -> Optional[float]:
         ]
 
         if time_cols:
-            return df[time_cols[0]].max()
+            max_val = df[time_cols[0]].max()
+            # Check if the result is NaN or invalid
+            if pd.isna(max_val):
+                return None
+            try:
+                if math.isnan(max_val):
+                    return None
+            except (TypeError, ValueError):
+                # max_val is not numeric
+                return None
+            return max_val
 
         # Fallback to first numeric column
         numeric_cols = df.select_dtypes(include=["number"]).columns
         if len(numeric_cols) > 0:
-            return df[numeric_cols[0]].max()
+            max_val = df[numeric_cols[0]].max()
+            # Check if the result is NaN
+            if pd.isna(max_val):
+                return None
+            try:
+                if math.isnan(max_val):
+                    return None
+            except (TypeError, ValueError):
+                return None
+            return max_val
 
     # Handle files without headers
     elif df.shape[1] >= 1:
-        return df[0].max()
+        max_val = df[0].max()
+        # Check if the result is NaN
+        if pd.isna(max_val):
+            return None
+        try:
+            if math.isnan(max_val):
+                return None
+        except (TypeError, ValueError):
+            return None
+        return max_val
 
     return None
 

@@ -11,7 +11,7 @@ from aind_metadata_mapper.pavlovian_behavior.utils import (
     find_behavior_files,
     parse_session_start_time,
     extract_trial_data,
-    calculate_session_timing,
+    calculate_session_timing_from_trials,
     create_stimulus_epoch,
     extract_session_data,
     validate_behavior_file_format,
@@ -76,6 +76,29 @@ class TestPavlovianBehaviorUtils(unittest.TestCase):
         )
         self.assertEqual(expected, actual)
 
+    def test_parse_session_start_time_with_default_timezone(self):
+        """Test parsing session start time with default timezone."""
+        # Test with no timezone specified (uses system default)
+        filename_actual = Path("TS_CS1_2024-01-01T12_00_00.csv")
+        actual = parse_session_start_time(filename_actual)
+        # Should have timezone info from system default
+        self.assertIsNotNone(actual.tzinfo)
+        self.assertEqual(actual.hour, 12)
+        self.assertEqual(actual.minute, 0)
+        self.assertEqual(actual.second, 0)
+
+    def test_parse_session_start_time_invalid_format(self):
+        """Test parsing session start time with invalid filename format."""
+        # Test with invalid filename format (not enough parts)
+        with self.assertRaises(ValueError) as cm:
+            parse_session_start_time(Path("TS_CS1.csv"))
+        self.assertIn("Could not parse datetime", str(cm.exception))
+
+        # Test with invalid datetime format
+        with self.assertRaises(ValueError) as cm:
+            parse_session_start_time(Path("TS_CS1_invalid-date.csv"))
+        self.assertIn("Could not parse datetime", str(cm.exception))
+
     def test_extract_trial_data(self):
         """Test extraction of trial data from CSV."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -106,12 +129,30 @@ class TestPavlovianBehaviorUtils(unittest.TestCase):
             with self.assertRaises(ValueError):
                 extract_trial_data(Path(tmpdir) / "invalid.csv")
 
+    def test_extract_trial_data_missing_columns(self):
+        """Test extraction of trial data with missing required columns."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create CSV with missing columns
+            trial_file = Path(tmpdir) / "trial_data.csv"
+            df = pd.DataFrame(
+                {"TrialNumber": [1, 2, 3]}
+            )  # Missing other columns
+            df.to_csv(trial_file, index=False)
+
+            with self.assertRaises(ValueError) as cm:
+                extract_trial_data(trial_file)
+            self.assertIn("missing required columns", str(cm.exception))
+            self.assertIn("TotalRewards", str(cm.exception))
+            self.assertIn("ITI_s", str(cm.exception))
+
     def test_calculate_session_timing(self):
         """Test calculation of session timing from trial data."""
         start_time = datetime(2024, 1, 1, tzinfo=ZoneInfo("UTC"))
         trial_data = pd.DataFrame({"ITI_s": [1.0] * 10})  # 10 seconds total
 
-        end_time, duration = calculate_session_timing(start_time, trial_data)
+        end_time, duration = calculate_session_timing_from_trials(
+            start_time, trial_data
+        )
         self.assertEqual(duration, 10.0)
         self.assertEqual((end_time - start_time).total_seconds(), 10.0)
 

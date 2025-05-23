@@ -94,7 +94,7 @@ class TestPavlovianBehaviorSession(unittest.TestCase):
         )
 
         # Mock file paths
-        self.behavior_file = self.data_dir / "TS_CS1_1999-10-04T01_00_00.csv"
+        self.behavior_file = self.data_dir / "TS_CS1_1999-10-04T08_00_00.csv"
         self.trial_file = self.data_dir / "TrialN_TrialType_ITI_001.csv"
 
         # Create mock trial data
@@ -127,6 +127,8 @@ class TestPavlovianBehaviorSession(unittest.TestCase):
             side_effect=lambda pattern: {
                 "TS_CS1_*.csv": [self.behavior_file],
                 "TrialN_TrialType_ITI_*.csv": [self.trial_file],
+                "TS_CS*.csv": [self.behavior_file],
+                "TS_Reward*.csv": [],
             }[pattern]
         )
 
@@ -158,6 +160,8 @@ class TestPavlovianBehaviorSession(unittest.TestCase):
             side_effect=lambda pattern: {
                 "TS_CS1_*.csv": [self.behavior_file],
                 "TrialN_TrialType_ITI_*.csv": [self.trial_file],
+                "TS_CS*.csv": [self.behavior_file],
+                "TS_Reward*.csv": [],
             }[pattern]
         )
 

@@ -138,13 +138,13 @@ def test_merge_timestamp_tolerance():
     time1 = now.isoformat().replace("+00:00", "Z")
     time2 = (now + timedelta(hours=2)).isoformat().replace("+00:00", "Z")
 
-    # Should raise error when difference exceeds default 1-hour tolerance
+    # Should raise error when difference exceeds default 5-minute tolerance
     with pytest.raises(ValueError, match="exceeding tolerance"):
         _merge_timestamps("session_start_time", time1, time2)
 
-    # Should succeed with custom tolerance
+    # Should succeed with custom tolerance (180 minutes = 3 hours)
     result = _merge_timestamps(
-        "session_start_time", time1, time2, tolerance_hours=3
+        "session_start_time", time1, time2, tolerance_minutes=180
     )
     assert result == time1  # Should take earlier time for start times
 
