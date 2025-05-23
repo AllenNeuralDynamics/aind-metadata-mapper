@@ -87,46 +87,9 @@ def _read_csv_safely(csv_file: Path) -> Optional[pd.DataFrame]:
 
 def _extract_max_timestamp(df: pd.DataFrame) -> Optional[float]:
     """Extract the maximum timestamp value from a DataFrame."""
-    # Handle files with headers (string column names)
-    if df.columns.dtype == "object":
-        # Look for time-related columns first
-        time_cols = [
-            col
-            for col in df.columns
-            if any(term in col.lower() for term in ["time", "timestamp", "ms"])
-        ]
 
-        if time_cols:
-            max_val = df[time_cols[0]].max()
-            # Check if the result is NaN or invalid
-            if pd.isna(max_val):
-                return None
-            try:
-                if math.isnan(max_val):
-                    return None
-            except (TypeError, ValueError):
-                # max_val is not numeric
-                return None
-            return max_val
-
-        # Fallback to first numeric column
-        numeric_cols = df.select_dtypes(include=["number"]).columns
-        if len(numeric_cols) > 0:
-            max_val = df[numeric_cols[0]].max()
-            # Check if the result is NaN
-            if pd.isna(max_val):
-                return None
-            try:
-                if math.isnan(max_val):
-                    return None
-            except (TypeError, ValueError):
-                return None
-            return max_val
-
-    # Handle files without headers
-    elif df.shape[1] >= 1:
-        max_val = df[0].max()
-        # Check if the result is NaN
+    def _validate_max_value(max_val):
+        """Helper to validate a max value is not NaN."""
         if pd.isna(max_val):
             return None
         try:
@@ -135,6 +98,31 @@ def _extract_max_timestamp(df: pd.DataFrame) -> Optional[float]:
         except (TypeError, ValueError):
             return None
         return max_val
+
+    # Handle empty DataFrame
+    if df.empty:
+        return None
+
+    # Handle files without headers first (simpler case)
+    if df.columns.dtype != "object" and df.shape[1] >= 1:
+        max_val = df[0].max()
+        return _validate_max_value(max_val)
+
+    # Handle files with headers - try time-related columns
+    time_cols = [
+        col
+        for col in df.columns
+        if any(term in col.lower() for term in ["time", "timestamp", "ms"])
+    ]
+    if time_cols:
+        max_val = df[time_cols[0]].max()
+        return _validate_max_value(max_val)
+
+    # Fallback to first numeric column
+    numeric_cols = df.select_dtypes(include=["number"]).columns
+    if len(numeric_cols) > 0:
+        max_val = df[numeric_cols[0]].max()
+        return _validate_max_value(max_val)
 
     return None
 

@@ -55,9 +55,11 @@ class TestTimingUtils(unittest.TestCase):
                 f.write("4,5\n")  # Missing column
                 f.write("6,7,8,9\n")  # Extra column
 
-            # Should return None for malformed CSV that can't be parsed consistently
+            # Should return None for malformed CSV
+            # that can't be parsed consistently
             result = _read_csv_safely(malformed_file)
-            # The function may or may not be able to read this depending on pandas behavior
+            # The function may or may not be able to read
+            # this depending on pandas behavior
             # so we just check that it doesn't crash
 
     def test_extract_max_timestamp_edge_cases(self):
