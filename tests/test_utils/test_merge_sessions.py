@@ -24,6 +24,7 @@ def test_basic_merge(caplog):
 
     # Mock file operations
     def mock_open_side_effect(filename, mode="r"):
+        """Mock file opening for different test files."""
         if "file1.json" in str(filename):
             if "w" in mode:
                 return mock_open().return_value
@@ -61,6 +62,7 @@ def test_merge_timestamps(caplog):
 
     # Mock file operations
     def mock_open_side_effect(filename, mode="r"):
+        """Mock file opening for timestamp test files."""
         if "file1.json" in str(filename):
             if "w" in mode:
                 return mock_open().return_value
@@ -103,6 +105,7 @@ def test_merge_lists():
 
     # Mock file operations
     def mock_open_side_effect(filename, mode="r"):
+        """Mock file opening for list merge test files."""
         if "file1.json" in str(filename):
             if "w" in mode:
                 return mock_open().return_value
@@ -131,6 +134,7 @@ def test_merge_with_none_values():
 
     # Mock file operations
     def mock_open_side_effect(filename, mode="r"):
+        """Mock file opening for None value test files."""
         if "file1.json" in str(filename):
             if "w" in mode:
                 return mock_open().return_value
