@@ -173,8 +173,9 @@ class ETL(GenericEtl[JobSettings]):
         try:
             data_dir = Path(settings.data_directory)
             reward_units = getattr(settings, "reward_units_per_trial", 2.0)
+            local_timezone = getattr(settings, "local_timezone", None)
             session_time, stimulus_epochs = extract_session_data(
-                data_dir, reward_units, local_timezone=None
+                data_dir, reward_units, local_timezone=local_timezone
             )
 
             # Merge user-supplied fields into extracted epochs
