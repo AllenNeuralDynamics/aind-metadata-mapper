@@ -94,6 +94,11 @@ u19 = [
     "pandas >= 2.2.2",
 ]
 
+smartspim = [
+    "aind-metadata-mapper[schema]",
+    "requests",
+]
+
 doc = [
     "Sphinx<6.0",
     "furo"
