@@ -57,7 +57,7 @@ def create_reward_delivery_config() -> RewardDeliveryConfig:
                 side=SpoutSide.LEFT,
                 starting_position=RelativePosition(
                     device_position_transformations=[
-                        Translation3dTransform(translation=[0.0, -5.0, 0.0]),
+                        Translation3dTransform(translation=[0.0, -1.5, 0.0]),
                     ],
                     device_origin=("lower jaw"),
                     device_axes=[
@@ -69,7 +69,7 @@ def create_reward_delivery_config() -> RewardDeliveryConfig:
                     ],
                     notes=(
                         "Left spout in extended position, manually positioned "
-                        "about 5 mm from the lower jaw"
+                        "about 1.5 mm from the lower jaw"
                     ),
                 ),
                 variable_position=False,
@@ -78,7 +78,7 @@ def create_reward_delivery_config() -> RewardDeliveryConfig:
                 side=SpoutSide.RIGHT,
                 starting_position=RelativePosition(
                     device_position_transformations=[
-                        Translation3dTransform(translation=[5.0, -35.0, 0.0]),
+                        Translation3dTransform(translation=[5.0, -31.5, 0.0]),
                     ],
                     device_origin=("lower jaw"),
                     device_axes=[
@@ -91,7 +91,7 @@ def create_reward_delivery_config() -> RewardDeliveryConfig:
                     notes=(
                         "Right spout in retracted position, "
                         "retraction travel is 30 mm "
-                        "placing it about 35 mm from the lower jaw."
+                        "placing it about 31.5 mm from the lower jaw."
                     ),
                 ),
                 variable_position=False,
