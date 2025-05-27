@@ -47,10 +47,14 @@ class TestPavlovianBehaviorUtils(unittest.TestCase):
         with (
             patch.object(Path, "exists") as mock_exists,
             patch.object(Path, "glob") as mock_glob,
-            patch("aind_metadata_mapper.pavlovian_behavior.utils"
-                  ".validate_behavior_file_format"),
-            patch("aind_metadata_mapper.pavlovian_behavior.utils"
-                  ".validate_trial_file_format"),
+            patch(
+                "aind_metadata_mapper.pavlovian_behavior.utils"
+                ".validate_behavior_file_format"
+            ),
+            patch(
+                "aind_metadata_mapper.pavlovian_behavior.utils"
+                ".validate_trial_file_format"
+            ),
         ):
             # Mock behavior directory exists
             mock_exists.side_effect = lambda: True
@@ -201,7 +205,7 @@ class TestPavlovianBehaviorUtils(unittest.TestCase):
             ),
             patch(
                 "aind_metadata_mapper.pavlovian_behavior.utils"
-                ".parse_session_start_time", 
+                ".parse_session_start_time",
                 return_value=expected_start_time,
             ),
             patch("pandas.read_csv", return_value=df),
