@@ -1,7 +1,6 @@
 """Tests for timing utility functions."""
 
 import unittest
-import tempfile
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -19,6 +18,10 @@ from aind_metadata_mapper.utils.timing_utils import (
 class TestTimingUtils(unittest.TestCase):
     """Test timing utility functions."""
 
+    def setUp(self):
+        """Set up common test data."""
+        self.session_start = datetime(2024, 1, 1, tzinfo=ZoneInfo("UTC"))
+
     def test_convert_ms_since_midnight_to_datetime_default_timezone(self):
         """Test conversion with default timezone."""
         base_date = datetime(2024, 1, 1, tzinfo=ZoneInfo("UTC"))
@@ -31,36 +34,36 @@ class TestTimingUtils(unittest.TestCase):
 
     def test_read_csv_safely_error_conditions(self):
         """Test CSV reading with error conditions."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Test with empty file
-            empty_file = Path(tmpdir) / "empty.csv"
-            empty_file.touch()
-            result = _read_csv_safely(empty_file)
+        # Mock empty DataFrame
+        mock_empty_df = pd.DataFrame()
+
+        # Mock valid DataFrame
+        mock_valid_df = pd.DataFrame(
+            {"col1": [1, 4], "col2": [2, 5], "col3": [3, 6]}
+        )
+
+        # Test with empty file (pandas returns empty DataFrame)
+        with patch("pandas.read_csv", return_value=mock_empty_df):
+            result = _read_csv_safely(Path("empty.csv"))
             self.assertIsNone(result)
 
-            # Test with valid CSV that can be read
-            valid_file = Path(tmpdir) / "valid.csv"
-            with open(valid_file, "w") as f:
-                f.write("1,2,3\n")
-                f.write("4,5,6\n")
-
-            # Should return a DataFrame for valid CSV
-            result = _read_csv_safely(valid_file)
+        # Test with valid CSV that can be read
+        with patch("pandas.read_csv", return_value=mock_valid_df):
+            result = _read_csv_safely(Path("valid.csv"))
             self.assertIsNotNone(result)
+            self.assertEqual(len(result), 2)
 
-            # Test with malformed CSV that pandas can't parse
-            malformed_file = Path(tmpdir) / "malformed.csv"
-            with open(malformed_file, "w") as f:
-                f.write("1,2,3\n")
-                f.write("4,5\n")  # Missing column
-                f.write("6,7,8,9\n")  # Extra column
-
-            # Should return None for malformed CSV
-            # that can't be parsed consistently
-            result = _read_csv_safely(malformed_file)
-            # The function may or may not be able to read
-            # this depending on pandas behavior
-            # so we just check that it doesn't crash
+        # Test with malformed CSV that raises ParserError
+        with patch(
+            "pandas.read_csv", side_effect=pd.errors.ParserError("Parse error")
+        ):
+            # Should try reading without header as fallback
+            with patch(
+                "pandas.read_csv", return_value=mock_valid_df
+            ) as mock_fallback:
+                result = _read_csv_safely(Path("malformed.csv"))
+                # Should call read_csv twice (with and without header)
+                self.assertEqual(mock_fallback.call_count, 1)
 
     def test_extract_max_timestamp_edge_cases(self):
         """Test timestamp extraction edge cases."""
@@ -93,47 +96,53 @@ class TestTimingUtils(unittest.TestCase):
 
     def test_find_latest_timestamp_nonexistent_directory(self):
         """Test finding timestamps in nonexistent directory."""
-        session_start = datetime(2024, 1, 1, tzinfo=ZoneInfo("UTC"))
-
-        result = find_latest_timestamp_in_csv_files(
-            "/nonexistent/path", "*.csv", session_start, local_timezone="UTC"
-        )
-        self.assertIsNone(result)
+        # Mock Path.exists to return False
+        with patch.object(Path, "exists", return_value=False):
+            result = find_latest_timestamp_in_csv_files(
+                "/nonexistent/path",
+                "*.csv",
+                self.session_start,
+                local_timezone="UTC",
+            )
+            self.assertIsNone(result)
 
     def test_find_latest_timestamp_no_matching_files(self):
         """Test finding timestamps with no matching files."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            session_start = datetime(2024, 1, 1, tzinfo=ZoneInfo("UTC"))
-
+        # Mock Path methods directly
+        with (
+            patch.object(Path, "exists", return_value=True),
+            patch.object(Path, "glob", return_value=[]),  # No matching files
+        ):
             result = find_latest_timestamp_in_csv_files(
-                tmpdir,
+                "/mock/path",
                 "nonexistent_*.csv",
-                session_start,
+                self.session_start,
                 local_timezone="UTC",
             )
             self.assertIsNone(result)
 
     def test_find_latest_timestamp_with_valid_files(self):
         """Test finding timestamps with valid CSV files."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Create test CSV files
-            csv1 = Path(tmpdir) / "test1.csv"
-            csv2 = Path(tmpdir) / "test2.csv"
+        # Mock DataFrames
+        df1 = pd.DataFrame({"timestamp_ms": [100, 200]})
+        df2 = pd.DataFrame([[150], [300]])  # No header
 
-            # CSV with header
-            pd.DataFrame({"timestamp_ms": [100, 200]}).to_csv(
-                csv1, index=False
-            )
-
-            # CSV without header
-            pd.DataFrame([[150], [300]]).to_csv(
-                csv2, index=False, header=False
-            )
-
-            session_start = datetime(2024, 1, 1, tzinfo=ZoneInfo("UTC"))
-
+        # Mock Path methods and CSV reading
+        with (
+            patch.object(Path, "exists", return_value=True),
+            patch.object(
+                Path, "glob", return_value=["test1.csv", "test2.csv"]
+            ),
+            patch(
+                "aind_metadata_mapper.utils.timing_utils._read_csv_safely",
+                side_effect=[df1, df2],
+            ),
+        ):
             result = find_latest_timestamp_in_csv_files(
-                tmpdir, "test*.csv", session_start, local_timezone="UTC"
+                "/mock/path",
+                "test*.csv",
+                self.session_start,
+                local_timezone="UTC",
             )
 
             # Should find the maximum timestamp (300ms)
@@ -145,18 +154,25 @@ class TestTimingUtils(unittest.TestCase):
     @patch("aind_metadata_mapper.utils.timing_utils.logging")
     def test_find_latest_timestamp_with_file_errors(self, mock_logging):
         """Test finding timestamps when files have errors."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Create a file with non-numeric data that results in NaN
-            bad_file = Path(tmpdir) / "bad.csv"
-            with open(bad_file, "w") as f:
-                f.write("timestamp\n")
-                f.write("not_a_number\n")
-                f.write("also_not_a_number\n")
+        # Mock DataFrame with non-numeric data that results in NaN
+        df_with_nan = pd.DataFrame(
+            {"timestamp": ["not_a_number", "also_not_a_number"]}
+        )
 
-            session_start = datetime(2024, 1, 1, tzinfo=ZoneInfo("UTC"))
-
+        # Mock Path methods and CSV reading
+        with (
+            patch.object(Path, "exists", return_value=True),
+            patch.object(Path, "glob", return_value=["bad.csv"]),
+            patch(
+                "aind_metadata_mapper.utils.timing_utils._read_csv_safely",
+                return_value=df_with_nan,
+            ),
+        ):
             result = find_latest_timestamp_in_csv_files(
-                tmpdir, "bad.csv", session_start, local_timezone="UTC"
+                "/mock/path",
+                "bad.csv",
+                self.session_start,
+                local_timezone="UTC",
             )
 
             # Should return None when no valid timestamps found

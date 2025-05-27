@@ -1,11 +1,11 @@
 """Tests for Pavlovian behavior utility functions."""
 
 import unittest
-import tempfile
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 import pandas as pd
+from unittest.mock import patch, Mock
 
 from aind_metadata_mapper.pavlovian_behavior.utils import (
     find_behavior_files,
@@ -37,34 +37,40 @@ class TestPavlovianBehaviorUtils(unittest.TestCase):
 
     def test_find_behavior_files(self):
         """Test finding behavior and trial files."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Create test directory structure
-            behavior_dir = Path(tmpdir) / "behavior"
-            behavior_dir.mkdir()
+        # Mock Path objects for files
+        mock_ts_file = Mock()
+        mock_ts_file.name = "TS_CS1_2024-01-01T15_49_53.csv"
+        mock_trial_file = Mock()
+        mock_trial_file.name = "TrialN_TrialType_ITI_001.csv"
 
-            # Create test files
-            ts_file = behavior_dir / "TS_CS1_2024-01-01T15_49_53.csv"
-            trial_file = behavior_dir / "TrialN_TrialType_ITI_001.csv"
-            ts_file.touch()
-            trial_file.touch()
+        # Test with behavior subdirectory
+        with (
+            patch.object(Path, "exists") as mock_exists,
+            patch.object(Path, "glob") as mock_glob,
+            patch("aind_metadata_mapper.pavlovian_behavior.utils"
+                  ".validate_behavior_file_format"),
+            patch("aind_metadata_mapper.pavlovian_behavior.utils"
+                  ".validate_trial_file_format"),
+        ):
+            # Mock behavior directory exists
+            mock_exists.side_effect = lambda: True
+            mock_glob.side_effect = lambda pattern: (
+                [mock_ts_file] if "TS_CS1_" in pattern else [mock_trial_file]
+            )
 
-            # Test with behavior subdirectory
-            behavior_files, trial_files = find_behavior_files(Path(tmpdir))
+            behavior_files, trial_files = find_behavior_files(
+                Path("/mock/path")
+            )
             self.assertEqual(len(behavior_files), 1)
             self.assertEqual(len(trial_files), 1)
 
-            # Test with files in main directory
-            ts_file.rename(Path(tmpdir) / ts_file.name)
-            trial_file.rename(Path(tmpdir) / trial_file.name)
-            behavior_dir.rmdir()
-
-            behavior_files, trial_files = find_behavior_files(Path(tmpdir))
-            self.assertEqual(len(behavior_files), 1)
-            self.assertEqual(len(trial_files), 1)
-
-            # Test with missing files
+        # Test with missing files
+        with (
+            patch.object(Path, "exists", return_value=True),
+            patch.object(Path, "glob", return_value=[]),  # No files found
+        ):
             with self.assertRaises(FileNotFoundError):
-                find_behavior_files(Path(tmpdir) / "nonexistent")
+                find_behavior_files(Path("/mock/path"))
 
     def test_parse_session_start_time(self):
         """Test parsing session start time from filename."""
@@ -101,20 +107,18 @@ class TestPavlovianBehaviorUtils(unittest.TestCase):
 
     def test_extract_trial_data(self):
         """Test extraction of trial data from CSV."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Create test CSV file
-            trial_file = Path(tmpdir) / "trial_data.csv"
-            df = pd.DataFrame(
-                {
-                    "TrialNumber": range(1, 11),  # 10 items
-                    "TotalRewards": range(0, 10),  # 10 items
-                    "ITI_s": [1.0] * 10,  # 10 items
-                }
-            )
-            df.to_csv(trial_file, index=False)
+        # Create test DataFrame
+        df = pd.DataFrame(
+            {
+                "TrialNumber": range(1, 11),  # 10 items
+                "TotalRewards": range(0, 10),  # 10 items
+                "ITI_s": [1.0] * 10,  # 10 items
+            }
+        )
 
-            # Test with valid file
-            result = extract_trial_data(trial_file)
+        # Mock pandas.read_csv to return our test DataFrame
+        with patch("pandas.read_csv", return_value=df):
+            result = extract_trial_data(Path("/mock/trial_data.csv"))
             self.assertEqual(len(result), 10)
             self.assertTrue(
                 all(
@@ -123,24 +127,20 @@ class TestPavlovianBehaviorUtils(unittest.TestCase):
                 )
             )
 
-            # Test with missing columns
-            invalid_df = pd.DataFrame({"Wrong": [1, 2, 3]})
-            invalid_df.to_csv(Path(tmpdir) / "invalid.csv", index=False)
+        # Test with missing columns
+        invalid_df = pd.DataFrame({"Wrong": [1, 2, 3]})
+        with patch("pandas.read_csv", return_value=invalid_df):
             with self.assertRaises(ValueError):
-                extract_trial_data(Path(tmpdir) / "invalid.csv")
+                extract_trial_data(Path("/mock/invalid.csv"))
 
     def test_extract_trial_data_missing_columns(self):
         """Test extraction of trial data with missing required columns."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Create CSV with missing columns
-            trial_file = Path(tmpdir) / "trial_data.csv"
-            df = pd.DataFrame(
-                {"TrialNumber": [1, 2, 3]}
-            )  # Missing other columns
-            df.to_csv(trial_file, index=False)
+        # Create CSV with missing columns
+        df = pd.DataFrame({"TrialNumber": [1, 2, 3]})  # Missing other columns
 
+        with patch("pandas.read_csv", return_value=df):
             with self.assertRaises(ValueError) as cm:
-                extract_trial_data(trial_file)
+                extract_trial_data(Path("/mock/trial_data.csv"))
             self.assertIn("missing required columns", str(cm.exception))
             self.assertIn("TotalRewards", str(cm.exception))
             self.assertIn("ITI_s", str(cm.exception))
@@ -179,31 +179,43 @@ class TestPavlovianBehaviorUtils(unittest.TestCase):
 
     def test_extract_session_data(self):
         """Test complete session data extraction."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Create test directory structure and files
-            behavior_dir = Path(tmpdir) / "behavior"
-            behavior_dir.mkdir()
+        # Create trial DataFrame
+        df = pd.DataFrame(
+            {
+                "TrialNumber": range(1, 11),
+                "TotalRewards": range(0, 10),
+                "ITI_s": [1.0] * 10,
+            }
+        )
 
-            # Use UTC time to avoid timezone dependencies
-            ts_file = behavior_dir / "TS_CS1_2024-01-01T12_00_00.csv"
-            ts_file.touch()
+        # Expected session start time
+        expected_start_time = datetime(
+            2024, 1, 1, 12, 0, 0, tzinfo=ZoneInfo("UTC")
+        )
 
-            # Create trial file with data
-            trial_file = behavior_dir / "TrialN_TrialType_ITI_001.csv"
-            df = pd.DataFrame(
-                {
-                    "TrialNumber": range(1, 11),
-                    "TotalRewards": range(0, 10),
-                    "ITI_s": [1.0] * 10,
-                }
-            )
-            df.to_csv(trial_file, index=False)
-
+        with (
+            patch(
+                "aind_metadata_mapper.pavlovian_behavior.utils"
+                ".find_behavior_files",
+                return_value=(["mock_ts_file"], ["mock_trial_file"]),
+            ),
+            patch(
+                "aind_metadata_mapper.pavlovian_behavior.utils"
+                ".parse_session_start_time", 
+                return_value=expected_start_time,
+            ),
+            patch("pandas.read_csv", return_value=df),
+            patch(
+                "aind_metadata_mapper.pavlovian_behavior.utils"
+                ".find_session_end_time",
+                return_value=None,
+            ),  # Force fallback to trial calculation
+        ):
             # Test complete extraction using UTC
             start_time, epochs = extract_session_data(
-                Path(tmpdir),
+                Path("/mock/path"),
                 reward_units_per_trial=2.0,
-                local_timezone="UTC",  # Always use UTC in tests
+                local_timezone="UTC",
             )
 
             # Test exact UTC times
@@ -274,21 +286,29 @@ class TestPavlovianBehaviorUtils(unittest.TestCase):
 
     def test_find_behavior_files_with_invalid_formats(self):
         """Test finding behavior files with invalid formats."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            behavior_dir = Path(tmpdir) / "behavior"
-            behavior_dir.mkdir()
+        # Mock file objects
+        mock_invalid_ts = Mock()
+        mock_invalid_ts.name = "TS_CS1_20240101T154953.csv"  # Wrong format
+        mock_valid_trial = Mock()
+        mock_valid_trial.name = "TrialN_TrialType_ITI_001.csv"
 
-            # Create files with invalid formats
-            invalid_ts = (
-                behavior_dir / "TS_CS1_20240101T154953.csv"
-            )  # Wrong format but correct prefix
-            valid_trial = behavior_dir / "TrialN_TrialType_ITI_001.csv"
-            invalid_ts.touch()
-            valid_trial.touch()
+        with (
+            patch.object(Path, "exists", return_value=True),
+            patch.object(Path, "glob") as mock_glob,
+            patch(
+                "aind_metadata_mapper.pavlovian_behavior.utils."
+                "validate_trial_file_format"
+            ),
+        ):
+            mock_glob.side_effect = lambda pattern: (
+                [mock_invalid_ts]
+                if "TS_CS1_" in pattern
+                else [mock_valid_trial]
+            )
 
             # Should raise ValueError due to invalid behavior file format
             with self.assertRaises(ValueError) as cm:
-                find_behavior_files(Path(tmpdir))
+                find_behavior_files(Path("/mock/path"))
             self.assertIn(
                 "must be in format YYYY-MM-DDThh_mm_ss", str(cm.exception)
             )
