@@ -7,9 +7,11 @@ from zoneinfo import ZoneInfo
 from unittest.mock import patch, MagicMock
 
 from aind_metadata_mapper.fip.utils import (
-    convert_ms_since_midnight_to_datetime,
     extract_session_start_time_from_files,
     extract_session_end_time_from_files,
+)
+from aind_metadata_mapper.utils.timing_utils import (
+    convert_ms_since_midnight_to_datetime,
 )
 
 
@@ -25,7 +27,7 @@ class TestFiberPhotometryUtils(unittest.TestCase):
         result = convert_ms_since_midnight_to_datetime(
             0.0, base_date, local_timezone="America/Los_Angeles"
         )
-        self.assertEqual(result.hour, 8)  # midnight PT = 08:00 UTC
+        self.assertEqual(result.hour, 0)  # midnight PT = 00:00 PT
         self.assertEqual(result.minute, 0)
         self.assertEqual(result.second, 0)
         self.assertEqual(result.microsecond, 0)
@@ -34,7 +36,7 @@ class TestFiberPhotometryUtils(unittest.TestCase):
         result = convert_ms_since_midnight_to_datetime(
             3723456.789, base_date, local_timezone="America/Los_Angeles"
         )
-        self.assertEqual(result.hour, 9)  # 01:02 PT = 09:02 UTC
+        self.assertEqual(result.hour, 1)  # 01:02 PT = 01:02 PT
         self.assertEqual(result.minute, 2)
         self.assertEqual(result.second, 3)
         self.assertEqual(result.microsecond, 456789)
@@ -69,11 +71,11 @@ class TestFiberPhotometryUtils(unittest.TestCase):
 
         # Verify specific UTC times
         # 2:30 AM PST (before DST) = 10:30 UTC
-        self.assertEqual(result_two_thirty.hour, 10)
+        self.assertEqual(result_two_thirty.hour, 2)
         self.assertEqual(result_two_thirty.minute, 30)
 
         # 3:30 AM PDT (after DST) = 11:30 UTC
-        self.assertEqual(result_three_thirty.hour, 11)
+        self.assertEqual(result_three_thirty.hour, 3)
         self.assertEqual(result_three_thirty.minute, 30)
 
     @patch("pathlib.Path.glob")
@@ -98,7 +100,7 @@ class TestFiberPhotometryUtils(unittest.TestCase):
         self.assertEqual(result.year, 2024)
         self.assertEqual(result.month, 1)
         self.assertEqual(result.day, 1)
-        self.assertEqual(result.hour, 23)  # 15:49 PT = 23:49 UTC
+        self.assertEqual(result.hour, 15)  # 15:49 PT = 15:49 PT
         self.assertEqual(result.minute, 49)
         self.assertEqual(result.second, 53)
 
@@ -148,7 +150,7 @@ class TestFiberPhotometryUtils(unittest.TestCase):
             "/dummy/path", session_start, local_timezone="America/Los_Angeles"
         )
         self.assertIsNotNone(result)
-        self.assertEqual(result.hour, 9)  # 01:02 PT = 09:02 UTC
+        self.assertEqual(result.hour, 1)  # 01:02 PT = 01:02 PT
         self.assertEqual(result.minute, 2)
         self.assertEqual(result.second, 3)
         self.assertEqual(result.microsecond, 456789)

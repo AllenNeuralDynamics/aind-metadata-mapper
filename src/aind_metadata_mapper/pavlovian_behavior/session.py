@@ -21,7 +21,14 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from aind_data_schema.base import AindCoreModel
-from aind_data_schema.core.session import Session, StimulusEpoch
+from aind_data_schema.core.session import (
+    Session,
+    StimulusEpoch,
+    Software,
+    SpeakerConfig,
+)
+from aind_data_schema.components.stimulus import AuditoryStimulation
+from aind_data_schema.core.session import RewardDeliveryConfig
 
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.core_models import JobResponse
@@ -49,6 +56,8 @@ class PavlovianData:
         Total reward consumed during session
     reward_consumed_unit : str
         Unit for reward measurement
+    reward_delivery : RewardDeliveryConfig
+        Configuration for reward delivery
     subject_id : str
         Subject identifier
     experimenter_full_name : List[str]
@@ -67,6 +76,12 @@ class PavlovianData:
         Whether the mouse platform was active
     data_streams : List[dict]
         Optional data stream configurations
+    anaesthesia : Optional[str]
+        Anaesthesia used
+    animal_weight_post : Optional[float]
+        Animal weight after session
+    animal_weight_prior : Optional[float]
+        Animal weight before session
     """
 
     start_time: datetime
@@ -74,6 +89,7 @@ class PavlovianData:
     stimulus_epochs: List[StimulusEpoch]
     reward_consumed_total: float
     reward_consumed_unit: str
+    reward_delivery: RewardDeliveryConfig
     subject_id: str
     experimenter_full_name: List[str]
     session_type: str
@@ -83,6 +99,9 @@ class PavlovianData:
     mouse_platform_name: str
     active_mouse_platform: bool
     data_streams: List[dict]
+    anaesthesia: Optional[str]
+    animal_weight_post: Optional[float]
+    animal_weight_prior: Optional[float]
 
 
 class ETL(GenericEtl[JobSettings]):
@@ -154,27 +173,26 @@ class ETL(GenericEtl[JobSettings]):
         try:
             data_dir = Path(settings.data_directory)
             reward_units = getattr(settings, "reward_units_per_trial", 2.0)
-
+            local_timezone = getattr(settings, "local_timezone", None)
             session_time, stimulus_epochs = extract_session_data(
-                data_dir, reward_units
+                data_dir, reward_units, local_timezone=local_timezone
             )
 
-            # Calculate total rewards
-            reward_consumed_total = sum(
-                epoch.reward_consumed_during_epoch for epoch in stimulus_epochs
+            # Merge user-supplied fields into extracted epochs
+            stimulus_epochs = self._merge_user_epochs(
+                settings, stimulus_epochs
             )
 
-            # Process data streams
-            data_streams = []
-            if hasattr(settings, "data_streams") and settings.data_streams:
-                for stream in settings.data_streams:
-                    if stream.get("stream_start_time") is None:
-                        stream["stream_start_time"] = session_time
-                    if stream.get("stream_end_time") is None:
-                        stream["stream_end_time"] = stimulus_epochs[
-                            0
-                        ].stimulus_end_time
-                    data_streams.append(stream)
+            # Post-process epochs (type conversions)
+            stimulus_epochs = self._postprocess_epochs(stimulus_epochs)
+
+            reward_consumed_total = self._calculate_reward_total(
+                stimulus_epochs
+            )
+
+            data_streams = self._process_data_streams(
+                settings, session_time, stimulus_epochs
+            )
 
             # Create intermediate data model
             return PavlovianData(
@@ -183,6 +201,7 @@ class ETL(GenericEtl[JobSettings]):
                 stimulus_epochs=stimulus_epochs,
                 reward_consumed_total=reward_consumed_total,
                 reward_consumed_unit=settings.reward_consumed_unit,
+                reward_delivery=settings.reward_delivery,
                 subject_id=settings.subject_id,
                 experimenter_full_name=settings.experimenter_full_name,
                 session_type=settings.session_type,
@@ -192,10 +211,78 @@ class ETL(GenericEtl[JobSettings]):
                 mouse_platform_name=settings.mouse_platform_name,
                 active_mouse_platform=settings.active_mouse_platform,
                 data_streams=data_streams,
+                anaesthesia=settings.anaesthesia,
+                animal_weight_post=settings.animal_weight_post,
+                animal_weight_prior=settings.animal_weight_prior,
             )
 
         except (FileNotFoundError, ValueError) as e:
             raise ValueError(f"Failed to extract data from files: {str(e)}")
+
+    def _merge_user_epochs(self, settings, stimulus_epochs):
+        """Merge user-supplied epoch fields into extracted epochs."""
+        if getattr(settings, "stimulus_epochs", None):
+            user_epoch = settings.stimulus_epochs[
+                0
+            ]  # assuming one epoch for now
+            for epoch in stimulus_epochs:
+                for k, v in user_epoch.dict().items():
+                    if v is not None:
+                        setattr(epoch, k, v)
+        return stimulus_epochs
+
+    def _postprocess_epochs(self, stimulus_epochs):
+        """
+        Convert dicts to models for software,
+        speaker_config, and stimulus_parameters.
+        """
+        for epoch in stimulus_epochs:
+            # Convert software list of dicts to list of Software models
+            if hasattr(epoch, "software") and epoch.software:
+                epoch.software = [
+                    Software(**s) if isinstance(s, dict) else s
+                    for s in epoch.software
+                ]
+            # Convert speaker_config dict to SpeakerConfig model
+            if (
+                hasattr(epoch, "speaker_config")
+                and epoch.speaker_config
+                and isinstance(epoch.speaker_config, dict)
+            ):
+                epoch.speaker_config = SpeakerConfig(**epoch.speaker_config)
+            # Convert all stimulus_parameters dicts to
+            # AuditoryStimulation models
+            if (
+                hasattr(epoch, "stimulus_parameters")
+                and epoch.stimulus_parameters
+            ):
+                epoch.stimulus_parameters = [
+                    AuditoryStimulation(**p) if isinstance(p, dict) else p
+                    for p in epoch.stimulus_parameters
+                ]
+        return stimulus_epochs
+
+    def _calculate_reward_total(self, stimulus_epochs):
+        """Sum reward_consumed_during_epoch across all epochs."""
+        return sum(
+            epoch.reward_consumed_during_epoch
+            for epoch in stimulus_epochs
+            if getattr(epoch, "reward_consumed_during_epoch", None) is not None
+        )
+
+    def _process_data_streams(self, settings, session_time, stimulus_epochs):
+        """Process and fill in data_streams."""
+        data_streams = []
+        if hasattr(settings, "data_streams") and settings.data_streams:
+            for stream in settings.data_streams:
+                if stream.get("stream_start_time") is None:
+                    stream["stream_start_time"] = session_time
+                if stream.get("stream_end_time") is None:
+                    stream["stream_end_time"] = stimulus_epochs[
+                        0
+                    ].stimulus_end_time
+                data_streams.append(stream)
+        return data_streams
 
     def _transform(self, pavlovian_data: PavlovianData) -> Session:
         """Transform extracted data into a valid Session object.
@@ -216,17 +303,9 @@ class ETL(GenericEtl[JobSettings]):
         Creates a standardized Session object from the intermediate data model,
         including all stimulus epochs and their configurations.
         """
-        # Format timestamps as ISO with Z suffix
-        start_time = (
-            pavlovian_data.start_time.replace(microsecond=0)
-            .isoformat()
-            .replace("+00:00", "Z")
-        )
-        end_time = (
-            pavlovian_data.end_time.replace(microsecond=0)
-            .isoformat()
-            .replace("+00:00", "Z")
-        )
+        # Use datetime objects directly with microseconds removed
+        start_time = pavlovian_data.start_time.replace(microsecond=0)
+        end_time = pavlovian_data.end_time.replace(microsecond=0)
 
         session = Session(
             experimenter_full_name=pavlovian_data.experimenter_full_name,
@@ -243,6 +322,10 @@ class ETL(GenericEtl[JobSettings]):
             stimulus_epochs=pavlovian_data.stimulus_epochs,
             reward_consumed_total=pavlovian_data.reward_consumed_total,
             reward_consumed_unit=pavlovian_data.reward_consumed_unit,
+            reward_delivery=pavlovian_data.reward_delivery,
+            anaesthesia=pavlovian_data.anaesthesia,
+            animal_weight_post=pavlovian_data.animal_weight_post,
+            animal_weight_prior=pavlovian_data.animal_weight_prior,
         )
 
         return session
