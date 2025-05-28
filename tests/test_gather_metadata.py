@@ -539,7 +539,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     @patch("aind_metadata_mapper.fip.session.FIBEtl.run_job")
     def test_get_session_metadata_fip_success(self, mock_run_job: MagicMock):
-        """Tests get_session_metadata bruker creates FibEtl"""
+        """Tests ETL"""
         mock_run_job.return_value = JobResponse(
             status_code=200, data=json.dumps({"some_key": "some_value"})
         )
@@ -745,6 +745,7 @@ class TestGatherMetadataJob(unittest.TestCase):
                 job_settings=SmartSpimAcquisitionJobSettings(
                     subject_id="695464",
                     input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
+                    metadata_service_path="http://acme/test",
                 )
             ),
         )
@@ -767,6 +768,7 @@ class TestGatherMetadataJob(unittest.TestCase):
                 job_settings=SmartSpimAcquisitionJobSettings(
                     subject_id="695464",
                     input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
+                    metadata_service_path="http://acme/test",
                 )
             ),
         )
