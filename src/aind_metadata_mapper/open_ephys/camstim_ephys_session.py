@@ -10,7 +10,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Union
 
-import npc_ephys
+from npc_ephys import get_ephys_timing_on_sync, get_newscale_coordinates, get_single_oebin_path
 import npc_mvr
 import numpy as np
 import pandas as pd
@@ -74,11 +74,11 @@ class CamstimEphysSessionEtl(
         self.output_dir = job_settings.output_directory
         # sometimes data files are deleted on npexp so try files on lims
         # try:
-        #     self.recording_dir = npc_ephys.get_single_oebin_path(
+        #     self.recording_dir = get_single_oebin_path(
         #         session_inst.lims_path
         #     ).parent
         # except:
-        self.recording_dir = npc_ephys.get_single_oebin_path(
+        self.recording_dir = get_single_oebin_path(
             self.session_path
         ).parent
 
@@ -257,7 +257,7 @@ class CamstimEphysSessionEtl(
         """
         Return list of schema ephys modules for each available probe.
         """
-        newscale_coords = npc_ephys.get_newscale_coordinates(
+        newscale_coords = get_newscale_coordinates(
             self.motor_locs_path
         )
 
@@ -287,7 +287,7 @@ class CamstimEphysSessionEtl(
         """
         probe_exp = r"(?<=[pP{1}]robe)[-_\s]*(?P<letter>[A-F]{1})(?![a-zA-Z])"
 
-        times = npc_ephys.get_ephys_timing_on_sync(
+        times = get_ephys_timing_on_sync(
             sync=self.sync_path, recording_dirs=[self.recording_dir]
         )
 
