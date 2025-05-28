@@ -31,7 +31,6 @@ create_metadata(
     # Optional parameters with defaults:
     experimenter_full_name=["test_experimenter_1", "test_experimenter_2"],
     rig_id="428_9_B_20240617",
-    task_version="1.0.0",
     iacuc_protocol="2115",
     mouse_platform_name="mouse_tube_foraging",
     active_mouse_platform=False,
@@ -62,13 +61,14 @@ def create_metadata(
         "test_experimenter_2",
     ],
     rig_id: str = "428_9_0_20240617",
-    task_version: str = "1.0.0",
     iacuc_protocol: str = "2115",
     mouse_platform_name: str = "mouse_tube_foraging",
     active_mouse_platform: bool = False,
-    session_type: str = "Foraging_Photometry",
-    task_name: str = "Fiber Photometry",
-    notes: str = "Example configuration for fiber photometry rig",
+    session_type: str = "FIB",
+    notes: str = "",
+    anaesthesia: Optional[str] = None,
+    animal_weight_post: Optional[float] = None,
+    animal_weight_prior: Optional[float] = None,
 ) -> bool:
     """Create fiber photometry metadata with default settings.
 
@@ -79,13 +79,14 @@ def create_metadata(
         output_filename: Name of the output JSON file
         experimenter_full_name: List of experimenter names
         rig_id: Identifier for the experimental rig
-        task_version: Version of the experimental task
         iacuc_protocol: Protocol identifier
         mouse_platform_name: Name of the mouse platform
         active_mouse_platform: Whether platform is active
         session_type: Type of experimental session
-        task_name: Name of the experimental task
         notes: Additional notes about the session
+        anaesthesia: Anaesthesia used
+        animal_weight_post: Animal weight after session
+        animal_weight_prior: Animal weight before session
 
     Returns:
         bool: True if metadata was successfully
@@ -99,13 +100,14 @@ def create_metadata(
         "output_directory": str(output_directory),
         "output_filename": output_filename,
         "rig_id": rig_id,
-        "task_version": task_version,
         "iacuc_protocol": iacuc_protocol,
         "mouse_platform_name": mouse_platform_name,
         "active_mouse_platform": active_mouse_platform,
         "session_type": session_type,
-        "task_name": task_name,
         "notes": notes,
+        "anaesthesia": anaesthesia,
+        "animal_weight_post": animal_weight_post,
+        "animal_weight_prior": animal_weight_prior,
         "data_streams": [
             {
                 "stream_start_time": None,
@@ -184,7 +186,7 @@ def create_metadata(
                     {
                         "name": "Bonsai",
                         "parameters": {},
-                        "url": "",
+                        "url": "https://github.com/AllenNeuralDynamics/PavlovianCond_Bonsai/tree/dafd7dfe0f347f781e91466b3d16b83cf32f8b6d",  # noqa E501
                         "version": "",
                     }
                 ],
@@ -232,6 +234,32 @@ if __name__ == "__main__":
         default="session_fip.json",
         help="Name of the output JSON file (default: session_fip.json)",
     )
+    parser.add_argument(
+        "--active-mouse-platform",
+        action="store_true",
+        help="Whether the mouse platform was active",
+    )
+    parser.add_argument(
+        "--anaesthesia", type=str, default=None, help="Anaesthesia used"
+    )
+    parser.add_argument(
+        "--animal-weight-post",
+        type=float,
+        default=None,
+        help="Animal weight after session",
+    )
+    parser.add_argument(
+        "--animal-weight-prior",
+        type=float,
+        default=None,
+        help="Animal weight before session",
+    )
+    parser.add_argument(
+        "--mouse-platform-name",
+        type=str,
+        default="mouse_tube_foraging",
+        help="Name of the mouse platform",
+    )
 
     args = parser.parse_args()
 
@@ -240,6 +268,11 @@ if __name__ == "__main__":
         data_directory=args.data_directory,
         output_directory=args.output_directory,
         output_filename=args.output_filename,
+        active_mouse_platform=args.active_mouse_platform,
+        anaesthesia=args.anaesthesia,
+        animal_weight_post=args.animal_weight_post,
+        animal_weight_prior=args.animal_weight_prior,
+        mouse_platform_name=args.mouse_platform_name,
     )
 
     output_path = args.output_directory / args.output_filename
