@@ -1,13 +1,13 @@
 """Tests for Pavlovian behavior session metadata generation."""
 
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch, Mock
 from zoneinfo import ZoneInfo
 import pandas as pd
 
-from aind_data_schema.core.session import Session
+from aind_data_schema.core.session import Session, StimulusEpoch
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import VolumeUnit
 
@@ -23,19 +23,20 @@ class TestPavlovianBehaviorSession(unittest.TestCase):
         self.session_time = datetime(
             1999, 10, 4, 8, 0, 0, tzinfo=ZoneInfo("UTC")
         )
-        self.end_time = self.session_time + pd.Timedelta(seconds=100)
+        # Make end time 2 hours later than start time for temporal consistency
+        self.end_time = self.session_time + timedelta(hours=2)
 
-        # Create stimulus epoch as a dictionary
-        self.stimulus_epoch_dict = {
-            "stimulus_start_time": self.session_time,
-            "stimulus_end_time": self.end_time,
-            "stimulus_name": "Pavlovian",
-            "stimulus_modalities": ["Auditory"],
-            "trials_total": 100,
-            "trials_finished": 100,
-            "trials_rewarded": 50,
-            "reward_consumed_during_epoch": 100.0,
-        }
+        # Create stimulus epoch as a proper StimulusEpoch object
+        self.stimulus_epoch = StimulusEpoch(
+            stimulus_start_time=self.session_time,
+            stimulus_end_time=self.end_time,
+            stimulus_name="Pavlovian",
+            stimulus_modalities=["Auditory"],
+            trials_total=100,
+            trials_finished=100,
+            trials_rewarded=50,
+            reward_consumed_during_epoch=100.0,
+        )
 
         # Create job settings with all required fields
         self.example_job_settings = JobSettings(
@@ -87,7 +88,7 @@ class TestPavlovianBehaviorSession(unittest.TestCase):
             active_mouse_platform=False,
             session_type="Pavlovian_Conditioning",
             data_streams=self.example_job_settings.data_streams,
-            stimulus_epochs=[self.stimulus_epoch_dict],
+            stimulus_epochs=[self.stimulus_epoch.model_dump()],
             reward_consumed_total=100.0,
             reward_consumed_unit=VolumeUnit.UL,
             notes="Test session",
@@ -133,9 +134,12 @@ class TestPavlovianBehaviorSession(unittest.TestCase):
         )
 
         mock_read_csv = Mock(return_value=self.trial_data)
+        # Mock extract_session_data to return proper StimulusEpoch object
         mock_extract = Mock(
-            return_value=(self.session_time, [self.stimulus_epoch_dict])
+            return_value=(self.session_time, [self.stimulus_epoch])
         )
+        # Mock find_session_end_time to return our expected end time
+        mock_find_end_time = Mock(return_value=self.end_time)
 
         # Patch with explicit mocks
         with (
@@ -145,6 +149,11 @@ class TestPavlovianBehaviorSession(unittest.TestCase):
                 "aind_metadata_mapper.pavlovian_behavior.utils"
                 ".extract_session_data",
                 mock_extract,
+            ),
+            patch(
+                "aind_metadata_mapper.pavlovian_behavior.utils"
+                ".find_session_end_time",
+                mock_find_end_time,
             ),
         ):
             etl = ETL(job_settings=self.example_job_settings)
@@ -176,9 +185,12 @@ class TestPavlovianBehaviorSession(unittest.TestCase):
         mock_open.return_value.__exit__ = Mock()
 
         mock_read_csv = Mock(return_value=self.trial_data)
+        # Mock extract_session_data to return proper StimulusEpoch object
         mock_extract = Mock(
-            return_value=(self.session_time, [self.stimulus_epoch_dict])
+            return_value=(self.session_time, [self.stimulus_epoch])
         )
+        # Mock find_session_end_time to return our expected end time
+        mock_find_end_time = Mock(return_value=self.end_time)
 
         # Patch with explicit mocks
         with (
@@ -189,6 +201,11 @@ class TestPavlovianBehaviorSession(unittest.TestCase):
                 "aind_metadata_mapper.pavlovian_behavior.utils"
                 ".extract_session_data",
                 mock_extract,
+            ),
+            patch(
+                "aind_metadata_mapper.pavlovian_behavior.utils"
+                ".find_session_end_time",
+                mock_find_end_time,
             ),
             # Add explicit mock for timezone to avoid file reading
             patch("tzlocal.get_localzone", return_value=ZoneInfo("UTC")),
