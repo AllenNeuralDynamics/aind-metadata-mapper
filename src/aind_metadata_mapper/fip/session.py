@@ -160,9 +160,14 @@ class FIBEtl(GenericEtl[JobSettings]):
         data_dir = Path(settings.data_directory)
 
         data_files = list(data_dir.glob("FIP_Data*.csv"))
-        start_time = extract_session_start_time_from_files(data_dir)
+        local_timezone = getattr(settings, "local_timezone", None)
+        start_time = extract_session_start_time_from_files(
+            data_dir, local_timezone
+        )
         end_time = (
-            extract_session_end_time_from_files(data_dir, start_time)
+            extract_session_end_time_from_files(
+                data_dir, start_time, local_timezone
+            )
             if start_time
             else None
         )

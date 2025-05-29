@@ -66,6 +66,7 @@ def create_metadata(
     active_mouse_platform: bool = False,
     session_type: str = "FIB",
     notes: str = "",
+    local_timezone: Optional[str] = None,
     anaesthesia: Optional[str] = None,
     animal_weight_post: Optional[float] = None,
     animal_weight_prior: Optional[float] = None,
@@ -84,6 +85,7 @@ def create_metadata(
         active_mouse_platform: Whether platform is active
         session_type: Type of experimental session
         notes: Additional notes about the session
+        local_timezone: Local timezone (defaults to Pacific timezone if None)
         anaesthesia: Anaesthesia used
         animal_weight_post: Animal weight after session
         animal_weight_prior: Animal weight before session
@@ -105,6 +107,7 @@ def create_metadata(
         "active_mouse_platform": active_mouse_platform,
         "session_type": session_type,
         "notes": notes,
+        "local_timezone": local_timezone,
         "anaesthesia": anaesthesia,
         "animal_weight_post": animal_weight_post,
         "animal_weight_prior": animal_weight_prior,
@@ -240,6 +243,9 @@ if __name__ == "__main__":
         help="Whether the mouse platform was active",
     )
     parser.add_argument(
+        "--local-timezone", type=str, default=None, help="Local timezone"
+    )
+    parser.add_argument(
         "--anaesthesia", type=str, default=None, help="Anaesthesia used"
     )
     parser.add_argument(
@@ -269,6 +275,7 @@ if __name__ == "__main__":
         output_directory=args.output_directory,
         output_filename=args.output_filename,
         active_mouse_platform=args.active_mouse_platform,
+        local_timezone=args.local_timezone,
         anaesthesia=args.anaesthesia,
         animal_weight_post=args.animal_weight_post,
         animal_weight_prior=args.animal_weight_prior,

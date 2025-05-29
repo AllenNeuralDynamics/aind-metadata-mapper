@@ -28,8 +28,7 @@ def extract_session_start_time_from_files(
     data_dir : Union[str, Path]
         Path to the directory containing fiber photometry data
     local_timezone : Optional[str], optional
-        Timezone string (e.g., "America/Los_Angeles").
-        If not provided, will use system timezone.
+        Timezone string. If not provided, defaults to Pacific timezone.
 
     Returns
     -------
@@ -66,12 +65,22 @@ def extract_session_start_time_from_files(
                     # (replace _ with : for proper ISO format)
                     timestamp_str = timestamp_str.replace("_", ":")
                     try:
-                        # Parse the timestamp in local time zone
-                        tz = (
-                            ZoneInfo(local_timezone)
-                            if local_timezone
-                            else get_localzone()
-                        )
+                        # Default to Pacific timezone,
+                        # warn if auto-detected timezone differs
+                        if local_timezone is None:
+                            local_timezone = "America/Los_Angeles"
+                            auto_tz = get_localzone()
+                            if str(auto_tz) != local_timezone:
+                                logging.warning(
+                                    f"Auto-detected timezone ({auto_tz}) "
+                                    f"differs from default "
+                                    f"Pacific timezone ({local_timezone}). "
+                                    f"Using Pacific timezone. "
+                                    f"Specify local_timezone parameter "
+                                    f"if this is incorrect."
+                                )
+
+                        tz = ZoneInfo(local_timezone)
                         local_time = datetime.fromisoformat(
                             timestamp_str
                         ).replace(tzinfo=tz)
@@ -96,8 +105,7 @@ def extract_session_end_time_from_files(
     session_start_time : datetime
         Previously determined session start time (in local timezone)
     local_timezone : Optional[str], optional
-        Timezone string (e.g., "America/Los_Angeles").
-        If not provided, will use system timezone.
+        Timezone string. If not provided, defaults to Pacific timezone.
 
     Returns
     -------

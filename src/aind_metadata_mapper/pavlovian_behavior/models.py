@@ -133,6 +133,8 @@ class JobSettings(BaseJobSettings):
         Animal weight before the session
     reward_delivery : RewardDeliveryConfig, optional
         Configuration for reward delivery, defaults None
+    local_timezone : Optional[str], optional
+        Timezone for the session, defaults to Pacific timezone
 
     Notes
     -----
@@ -167,6 +169,9 @@ class JobSettings(BaseJobSettings):
     data_directory: Union[str, Path]  # Required for data extraction
     output_directory: Optional[Union[str, Path]] = None
     output_filename: Optional[str] = None
+
+    # Timezone configuration
+    local_timezone: Optional[str] = None  # Defaults to Pacific timezone
 
     # Optional configuration
     notes: str = ""

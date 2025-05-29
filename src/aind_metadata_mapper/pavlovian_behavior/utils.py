@@ -92,7 +92,7 @@ def parse_session_start_time(
     behavior_file : Path
         Path to behavior file
     local_timezone : Optional[str], optional
-        Timezone string. If not provided, system timezone is used.
+        Timezone string. If not provided, defaults to Pacific timezone.
 
     Returns
     -------
@@ -123,8 +123,19 @@ def parse_session_start_time(
         date_time_str = date_time_str.replace("_", ":")
         parsed_time = datetime.strptime(date_time_str, "%Y-%m-%dT%H:%M:%S")
 
-        # Use get_localzone() as default
-        tz = ZoneInfo(local_timezone) if local_timezone else get_localzone()
+        # Default to Pacific timezone, warn if auto-detected timezone differs
+        if local_timezone is None:
+            local_timezone = "America/Los_Angeles"
+            auto_tz = get_localzone()
+            if str(auto_tz) != local_timezone:
+                logging.warning(
+                    f"Auto-detected timezone ({auto_tz}) differs from default "
+                    f"Pacific timezone ({local_timezone}). "
+                    f"Using Pacific timezone."
+                    f"Specify local_timezone parameter if this is incorrect."
+                )
+
+        tz = ZoneInfo(local_timezone)
         local_time = parsed_time.replace(tzinfo=tz)
         return local_time
 
@@ -222,7 +233,7 @@ def find_session_end_time(
     session_start_time : datetime
         Session start time (with timezone info)
     local_timezone : Optional[str], optional
-        Timezone string. If not provided, system timezone is used.
+        Timezone string. If not provided, defaults to Pacific timezone.
 
     Returns
     -------
@@ -323,7 +334,7 @@ def extract_session_data(
     reward_units_per_trial : float, optional
         Units of reward given per successful trial, by default 2.0
     local_timezone : Optional[str], optional
-        Timezone string. If not provided, system timezone is used
+        Timezone string. If not provided, defaults to Pacific timezone
 
     Returns
     -------
