@@ -10,6 +10,11 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Union
 
+from npc_ephys import (
+    get_ephys_timing_on_sync,
+    get_newscale_coordinates,
+    get_single_oebin_path
+)
 import npc_mvr
 import numpy as np
 import pandas as pd

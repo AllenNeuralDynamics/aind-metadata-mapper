@@ -82,7 +82,8 @@ openephys = [
     "pandas >= 2.2.2",
     "numpy >= 1.26.4",
     "npc_mvr >= 0.1.6",
-    "wavpack-numcodecs==0.2.2"
+    "wavpack-numcodecs<0.2.2",
+    "numcodecs<0.16.0",
 ]
 
 dynamicrouting = [
