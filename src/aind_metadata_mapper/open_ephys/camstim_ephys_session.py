@@ -10,7 +10,6 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Union
 
-from npc_ephys import get_ephys_timing_on_sync, get_newscale_coordinates, get_single_oebin_path
 import npc_mvr
 import numpy as np
 import pandas as pd
@@ -25,6 +24,11 @@ from aind_data_schema.core.session import (
     VisualStimulation,
 )
 from aind_data_schema_models.modalities import Modality
+from npc_ephys import (
+    get_ephys_timing_on_sync,
+    get_newscale_coordinates,
+    get_single_oebin_path,
+)
 
 import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
 import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
@@ -380,18 +384,18 @@ class CamstimEphysSessionEtl(
         start_times = sync.extract_led_times(
             sync_file, self.opto_conditions_map
         )
-        conditions = [str(item) for item in opto_file["opto_conditions"]]
+        condition_nums = [str(item) for item in opto_file["opto_conditions"]]
         levels = opto_file["opto_levels"]
-        assert len(conditions) == len(levels)
-        if len(start_times) > len(conditions):
+        assert len(condition_nums) == len(levels)
+        if len(start_times) > len(condition_nums):
             raise ValueError(
-                f"there are {len(start_times) - len(conditions)} extra "
+                f"there are {len(start_times) - len(condition_nums)} extra "
                 f"optotagging sync times!"
             )
         optotagging_table = pd.DataFrame(
             {
                 "start_time": start_times,
-                "stim_name": conditions,
+                "condition_num": condition_nums,
                 "level": levels,
             }
         )
@@ -399,20 +403,16 @@ class CamstimEphysSessionEtl(
             by="start_time", axis=0
         )
         stop_times = []
-        pulse_types = []
-        pulse_durs = []
         conditions = []
+        names = []
         for _, row in optotagging_table.iterrows():
-            condition = self.opto_conditions_map[row["stim_name"]]
+            condition = self.opto_conditions_map[row["condition_num"]]
             stop_times.append(row["start_time"] + condition["duration"])
-            pulse_type, pulse_dur = condition["name"].split("_")
-            pulse_types.append(pulse_type)
-            pulse_durs.append(pulse_dur)
             conditions.append(condition["condition"])
+            names.append(condition["name"])
         optotagging_table["stop_time"] = stop_times
-        optotagging_table["pulse_type"] = pulse_types
-        optotagging_table["pulse_duration"] = pulse_durs
-        optotagging_table["stim_name"] = conditions
+        optotagging_table["condition"] = conditions
+        optotagging_table["name"] = names
         optotagging_table["duration"] = (
             optotagging_table["stop_time"] - optotagging_table["start_time"]
         )
