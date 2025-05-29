@@ -5,11 +5,12 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 import pandas as pd
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from aind_metadata_mapper.utils.timing_utils import (
     convert_ms_since_midnight_to_datetime,
     find_latest_timestamp_in_csv_files,
+    validate_session_temporal_consistency,
     _read_csv_safely,
     _extract_max_timestamp,
 )
@@ -177,6 +178,76 @@ class TestTimingUtils(unittest.TestCase):
 
             # Should return None when no valid timestamps found
             self.assertIsNone(result)
+
+    def test_validate_session_temporal_consistency_valid_session(self):
+        """Test validation with valid session timing."""
+        # Create mock session with valid timing
+        mock_session = Mock()
+        mock_session.session_start_time = datetime(2024, 1, 1, 10, 0, 0)
+        mock_session.session_end_time = datetime(2024, 1, 1, 11, 0, 0)
+
+        # Create mock data streams with valid timing
+        mock_stream1 = Mock()
+        mock_stream1.stream_start_time = datetime(2024, 1, 1, 10, 5, 0)
+        mock_stream1.stream_end_time = datetime(2024, 1, 1, 10, 55, 0)
+
+        mock_stream2 = Mock()
+        mock_stream2.stream_start_time = datetime(2024, 1, 1, 10, 10, 0)
+        mock_stream2.stream_end_time = datetime(2024, 1, 1, 10, 50, 0)
+
+        mock_session.data_streams = [mock_stream1, mock_stream2]
+
+        # Should not raise any exception
+        validate_session_temporal_consistency(mock_session)
+
+    def test_validate_session_temporal_consistency_invalid_session_timing(
+        self,
+    ):
+        """Test validation with invalid session timing."""
+        # Create mock session with invalid timing (end before start)
+        mock_session = Mock()
+        mock_session.session_start_time = datetime(2024, 1, 1, 11, 0, 0)
+        mock_session.session_end_time = datetime(2024, 1, 1, 10, 0, 0)
+        mock_session.data_streams = []
+
+        # Should raise AssertionError
+        with self.assertRaises(AssertionError) as context:
+            validate_session_temporal_consistency(mock_session)
+
+        self.assertIn("Session end time", str(context.exception))
+        self.assertIn("must be greater than", str(context.exception))
+
+    def test_validate_session_temporal_consistency_invalid_stream_timing(self):
+        """Test validation with invalid stream timing."""
+        # Create mock session with valid session timing
+        mock_session = Mock()
+        mock_session.session_start_time = datetime(2024, 1, 1, 10, 0, 0)
+        mock_session.session_end_time = datetime(2024, 1, 1, 11, 0, 0)
+
+        # Create mock stream with invalid timing (end before start)
+        mock_stream = Mock()
+        mock_stream.stream_start_time = datetime(2024, 1, 1, 10, 30, 0)
+        mock_stream.stream_end_time = datetime(2024, 1, 1, 10, 20, 0)
+
+        mock_session.data_streams = [mock_stream]
+
+        # Should raise AssertionError
+        with self.assertRaises(AssertionError) as context:
+            validate_session_temporal_consistency(mock_session)
+
+        self.assertIn("Data stream 0 end time", str(context.exception))
+        self.assertIn("must be greater than", str(context.exception))
+
+    def test_validate_session_temporal_consistency_no_data_streams(self):
+        """Test validation with no data streams."""
+        # Create mock session with valid timing and no data streams
+        mock_session = Mock()
+        mock_session.session_start_time = datetime(2024, 1, 1, 10, 0, 0)
+        mock_session.session_end_time = datetime(2024, 1, 1, 11, 0, 0)
+        mock_session.data_streams = None
+
+        # Should not raise any exception
+        validate_session_temporal_consistency(mock_session)
 
 
 if __name__ == "__main__":

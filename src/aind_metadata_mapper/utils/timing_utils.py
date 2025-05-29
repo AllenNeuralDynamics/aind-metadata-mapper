@@ -10,10 +10,44 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from typing import Union, Optional
 from pathlib import Path
-from tzlocal import get_localzone
 import pandas as pd
 import logging
 import math
+
+
+def validate_session_temporal_consistency(session) -> None:
+    """Validate that all timestamps in a Session are in proper temporal order.
+
+    Parameters
+    ----------
+    session : Session
+        AIND Session object to validate
+
+    Raises
+    ------
+    AssertionError
+        If any temporal consistency checks fail
+
+    Notes
+    -----
+    Validates:
+    - session_end_time > session_start_time
+    - stream_end_time > stream_start_time for all data streams
+    """
+    # Validate session-level temporal consistency
+    assert session.session_end_time > session.session_start_time, (
+        f"Session end time ({session.session_end_time}) must be greater than "
+        f"session start time ({session.session_start_time})"
+    )
+
+    # Validate data stream temporal consistency
+    if session.data_streams:
+        for i, stream in enumerate(session.data_streams):
+            assert stream.stream_end_time > stream.stream_start_time, (
+                f"Data stream {i} end time ({stream.stream_end_time}) "
+                f"must be greater than "
+                f"stream start time ({stream.stream_start_time})"
+            )
 
 
 def convert_ms_since_midnight_to_datetime(
@@ -32,8 +66,7 @@ def convert_ms_since_midnight_to_datetime(
     base_date : datetime
         Reference datetime to get the date from (must have tzinfo)
     local_timezone : Optional[str], optional
-        Timezone string (e.g., "America/Los_Angeles").
-        If not provided, will use system timezone.
+        Timezone string. If not provided, defaults to Pacific timezone.
 
     Returns
     -------
@@ -46,8 +79,10 @@ def convert_ms_since_midnight_to_datetime(
     if math.isnan(ms_since_midnight) or math.isinf(ms_since_midnight):
         raise ValueError(f"Invalid timestamp value: {ms_since_midnight}")
 
-    # Get timezone (either specified or system default)
-    tz = ZoneInfo(local_timezone) if local_timezone else get_localzone()
+    # Default to Pacific timezone if not specified
+    if local_timezone is None:
+        local_timezone = "America/Los_Angeles"
+    tz = ZoneInfo(local_timezone)
 
     # Get midnight of base_date in local time
     base_date_local = base_date.astimezone(tz)
@@ -145,7 +180,7 @@ def find_latest_timestamp_in_csv_files(
         Session start time with timezone info,
         used as base date for timestamp conversion
     local_timezone : Optional[str], optional
-        Timezone string. If not provided, system timezone is used.
+        Timezone string. If not provided, defaults to Pacific timezone.
 
     Returns
     -------
