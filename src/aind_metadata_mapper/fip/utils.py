@@ -128,7 +128,10 @@ def extract_session_end_time_from_files(
     # Calculate the session duration if we found a valid end time
     if latest_time is not None:
         # Ensure session_start_time and latest_time are in the same timezone
-        tz = ZoneInfo(local_timezone) if local_timezone else get_localzone()
+        # Default to Pacific timezone if not specified, same as start time parsing
+        if local_timezone is None:
+            local_timezone = "America/Los_Angeles"
+        tz = ZoneInfo(local_timezone)
         local_session_start = session_start_time.astimezone(tz)
         latest_time = latest_time.astimezone(tz)
 
