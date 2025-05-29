@@ -74,8 +74,8 @@ def extract_session_start_time_from_files(
                                 logging.warning(
                                     f"Auto-detected timezone ({auto_tz}) "
                                     f"differs from default "
-                                    f"Pacific timezone ({local_timezone}). "
-                                    f"Using Pacific timezone. "
+                                    f"timezone ({local_timezone}). "
+                                    f"Using {local_timezone} timezone. "
                                     f"Specify local_timezone parameter "
                                     f"if this is incorrect."
                                 )

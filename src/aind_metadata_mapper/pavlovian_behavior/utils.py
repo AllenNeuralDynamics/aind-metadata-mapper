@@ -130,8 +130,8 @@ def parse_session_start_time(
             if str(auto_tz) != local_timezone:
                 logging.warning(
                     f"Auto-detected timezone ({auto_tz}) differs from default "
-                    f"Pacific timezone ({local_timezone}). "
-                    f"Using Pacific timezone."
+                    f"timezone ({local_timezone}). "
+                    f"Using {local_timezone} timezone."
                     f"Specify local_timezone parameter if this is incorrect."
                 )
 
