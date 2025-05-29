@@ -266,7 +266,8 @@ def find_session_end_time(
     # Calculate session duration if we found a valid end time
     if latest_time is not None:
         # Ensure both times are in the same timezone
-        # Default to Pacific timezone if not specified, same as start time parsing
+        # Default to Pacific timezone if not specified,
+        # same as start time parsing
         if local_timezone is None:
             local_timezone = "America/Los_Angeles"
         tz = ZoneInfo(local_timezone)
