@@ -559,15 +559,29 @@ class TestGatherMetadataJob(unittest.TestCase):
         "aind_metadata_mapper.open_ephys.camstim_ephys_session"
         ".CamstimEphysSessionEtl.run_job"
     )
+    @patch("aind_metadata_mapper.open_ephys.camstim_ephys_session"
+           ".CamstimEphysSessionEtl.__init__"
+    )
     def test_get_session_metadata_camstim_success(
-        self, mock_run_job: MagicMock
+        self, mock_camstim: MagicMock, mock_run_job: MagicMock
     ):
         """Tests get_session_metadata openephys creates
         CamstimEphysSessionEtl class."""
         mock_run_job.return_value = JobResponse(
             status_code=200, data=json.dumps({"some_key": "some_value"})
         )
-        openephys_session_settings = OpenEphysJobSettings.model_construct()
+        mock_camstim.return_value = None
+        openephys_session_settings = OpenEphysJobSettings.model_construct(
+            session_type="ecephys",
+            project_name="testing",
+            iacuc_protocol="0000",
+            description="test description",
+            overwrite_tables=True,
+            mtrain_server="http://mtrain:5000",
+            session_id="000000",
+            input_source="some/path",
+            output_directory="some/other/path"
+        )
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             session_settings=SessionSettings(
