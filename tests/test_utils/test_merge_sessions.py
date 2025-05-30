@@ -8,10 +8,7 @@ import unittest
 import logging
 from unittest.mock import patch, mock_open
 
-from aind_metadata_mapper.utils.merge_sessions import (
-    merge_sessions,
-    _merge_timestamps,
-)
+from aind_metadata_mapper.utils.merge_sessions import merge_sessions
 
 
 def test_basic_merge(caplog):
