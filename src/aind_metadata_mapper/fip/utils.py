@@ -19,7 +19,7 @@ from aind_metadata_mapper.utils.timing_utils import (
 
 
 def extract_session_start_time_from_files(
-    data_dir: Union[str, Path], local_timezone: Optional[str] = None
+    data_dir: Union[str, Path], local_timezone: str = "America/Los_Angeles"
 ) -> Optional[datetime]:
     """Extract session start time from fiber photometry data files.
 
@@ -27,8 +27,8 @@ def extract_session_start_time_from_files(
     ----------
     data_dir : Union[str, Path]
         Path to the directory containing fiber photometry data
-    local_timezone : Optional[str], optional
-        Timezone string. If not provided, defaults to Pacific timezone.
+    local_timezone : str, optional
+        Timezone string, by default "America/Los_Angeles"
 
     Returns
     -------
@@ -65,20 +65,18 @@ def extract_session_start_time_from_files(
                     # (replace _ with : for proper ISO format)
                     timestamp_str = timestamp_str.replace("_", ":")
                     try:
-                        # Default to Pacific timezone,
-                        # warn if auto-detected timezone differs
-                        if local_timezone is None:
-                            local_timezone = "America/Los_Angeles"
-                            auto_tz = get_localzone()
-                            if str(auto_tz) != local_timezone:
-                                logging.warning(
-                                    f"Auto-detected timezone ({auto_tz}) "
-                                    f"differs from default "
-                                    f"timezone ({local_timezone}). "
-                                    f"Using {local_timezone} timezone. "
-                                    f"Specify local_timezone parameter "
-                                    f"if this is incorrect."
-                                )
+                        # Warn if auto-detected timezone differs
+                        # from provided timezone
+                        auto_tz = get_localzone()
+                        if str(auto_tz) != local_timezone:
+                            logging.warning(
+                                f"Auto-detected timezone ({auto_tz}) "
+                                f"differs from specified "
+                                f"timezone ({local_timezone}). "
+                                f"Using {local_timezone} timezone. "
+                                f"Specify local_timezone parameter "
+                                f"if this is incorrect."
+                            )
 
                         tz = ZoneInfo(local_timezone)
                         local_time = datetime.fromisoformat(
@@ -94,7 +92,7 @@ def extract_session_start_time_from_files(
 def extract_session_end_time_from_files(
     data_dir: Union[str, Path],
     session_start_time: datetime,
-    local_timezone: Optional[str] = None,
+    local_timezone: str = "America/Los_Angeles",
 ) -> Optional[datetime]:
     """Extract session end time from fiber photometry data files.
 
@@ -104,8 +102,8 @@ def extract_session_end_time_from_files(
         Path to the directory containing fiber photometry data
     session_start_time : datetime
         Previously determined session start time (in local timezone)
-    local_timezone : Optional[str], optional
-        Timezone string. If not provided, defaults to Pacific timezone.
+    local_timezone : str, optional
+        Timezone string, by default "America/Los_Angeles"
 
     Returns
     -------
@@ -128,10 +126,6 @@ def extract_session_end_time_from_files(
     # Calculate the session duration if we found a valid end time
     if latest_time is not None:
         # Ensure session_start_time and latest_time are in the same timezone
-        # Default to Pacific timezone if not specified,
-        # same as start time parsing
-        if local_timezone is None:
-            local_timezone = "America/Los_Angeles"
         tz = ZoneInfo(local_timezone)
         local_session_start = session_start_time.astimezone(tz)
         latest_time = latest_time.astimezone(tz)

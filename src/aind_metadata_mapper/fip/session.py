@@ -163,7 +163,7 @@ class FIBEtl(GenericEtl[JobSettings]):
         data_dir = Path(settings.data_directory)
 
         data_files = list(data_dir.glob("FIP_Data*.csv"))
-        local_timezone = getattr(settings, "local_timezone", None)
+        local_timezone = settings.local_timezone
         start_time = extract_session_start_time_from_files(
             data_dir, local_timezone
         )

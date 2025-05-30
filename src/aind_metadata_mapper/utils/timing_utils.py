@@ -53,7 +53,7 @@ def validate_session_temporal_consistency(session) -> None:
 def convert_ms_since_midnight_to_datetime(
     ms_since_midnight: float,
     base_date: datetime,
-    local_timezone: Optional[str] = None,
+    local_timezone: str = "America/Los_Angeles",
 ) -> datetime:
     """
     Convert milliseconds since midnight
@@ -65,8 +65,8 @@ def convert_ms_since_midnight_to_datetime(
         Float representing milliseconds since midnight in local timezone
     base_date : datetime
         Reference datetime to get the date from (must have tzinfo)
-    local_timezone : Optional[str], optional
-        Timezone string. If not provided, defaults to Pacific timezone.
+    local_timezone : str, optional
+        Timezone string, by default "America/Los_Angeles"
 
     Returns
     -------
@@ -79,9 +79,7 @@ def convert_ms_since_midnight_to_datetime(
     if math.isnan(ms_since_midnight) or math.isinf(ms_since_midnight):
         raise ValueError(f"Invalid timestamp value: {ms_since_midnight}")
 
-    # Default to Pacific timezone if not specified
-    if local_timezone is None:
-        local_timezone = "America/Los_Angeles"
+    # Use provided timezone
     tz = ZoneInfo(local_timezone)
 
     # Get midnight of base_date in local time
@@ -166,9 +164,9 @@ def find_latest_timestamp_in_csv_files(
     directory: Union[str, Path],
     file_pattern: str,
     session_start_time: datetime,
-    local_timezone: Optional[str] = None,
+    local_timezone: str = "America/Los_Angeles",
 ) -> Optional[datetime]:
-    """Find the latest timestamp in a set of CSV files.
+    """Find the latest timestamp across multiple CSV files.
 
     Parameters
     ----------
@@ -179,8 +177,8 @@ def find_latest_timestamp_in_csv_files(
     session_start_time : datetime
         Session start time with timezone info,
         used as base date for timestamp conversion
-    local_timezone : Optional[str], optional
-        Timezone string. If not provided, defaults to Pacific timezone.
+    local_timezone : str, optional
+        Timezone string, by default "America/Los_Angeles"
 
     Returns
     -------

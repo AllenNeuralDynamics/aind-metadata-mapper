@@ -83,7 +83,7 @@ def find_behavior_files(
 
 
 def parse_session_start_time(
-    behavior_file: Path, local_timezone: Optional[str] = None
+    behavior_file: Path, local_timezone: str = "America/Los_Angeles"
 ) -> datetime:
     """Parse session start time from behavior file name.
 
@@ -91,8 +91,8 @@ def parse_session_start_time(
     ----------
     behavior_file : Path
         Path to behavior file
-    local_timezone : Optional[str], optional
-        Timezone string. If not provided, defaults to Pacific timezone.
+    local_timezone : str, optional
+        Timezone string, by default "America/Los_Angeles"
 
     Returns
     -------
@@ -123,17 +123,15 @@ def parse_session_start_time(
         date_time_str = date_time_str.replace("_", ":")
         parsed_time = datetime.strptime(date_time_str, "%Y-%m-%dT%H:%M:%S")
 
-        # Default to Pacific timezone, warn if auto-detected timezone differs
-        if local_timezone is None:
-            local_timezone = "America/Los_Angeles"
-            auto_tz = get_localzone()
-            if str(auto_tz) != local_timezone:
-                logging.warning(
-                    f"Auto-detected timezone ({auto_tz}) differs from default "
-                    f"timezone ({local_timezone}). "
-                    f"Using {local_timezone} timezone."
-                    f"Specify local_timezone parameter if this is incorrect."
-                )
+        # Warn if auto-detected timezone differs from provided timezone
+        auto_tz = get_localzone()
+        if str(auto_tz) != local_timezone:
+            logging.warning(
+                f"Auto-detected timezone ({auto_tz}) differs from specified "
+                f"timezone ({local_timezone}). "
+                f"Using {local_timezone} timezone. "
+                f"Specify local_timezone parameter if this is incorrect."
+            )
 
         tz = ZoneInfo(local_timezone)
         local_time = parsed_time.replace(tzinfo=tz)
@@ -220,7 +218,7 @@ def calculate_session_timing_from_trials(
 def find_session_end_time(
     data_dir: Path,
     session_start_time: datetime,
-    local_timezone: Optional[str] = None,
+    local_timezone: str = "America/Los_Angeles",
 ) -> Optional[datetime]:
     """
     Find the actual session end time based on
@@ -232,8 +230,8 @@ def find_session_end_time(
         Path to the directory containing behavior data
     session_start_time : datetime
         Session start time (with timezone info)
-    local_timezone : Optional[str], optional
-        Timezone string. If not provided, defaults to Pacific timezone.
+    local_timezone : str, optional
+        Timezone string, by default "America/Los_Angeles"
 
     Returns
     -------
@@ -266,10 +264,6 @@ def find_session_end_time(
     # Calculate session duration if we found a valid end time
     if latest_time is not None:
         # Ensure both times are in the same timezone
-        # Default to Pacific timezone if not specified,
-        # same as start time parsing
-        if local_timezone is None:
-            local_timezone = "America/Los_Angeles"
         tz = ZoneInfo(local_timezone)
         local_session_start = session_start_time.astimezone(tz)
         latest_time = latest_time.astimezone(tz)
@@ -327,7 +321,7 @@ def create_stimulus_epoch(
 def extract_session_data(
     data_dir: Path,
     reward_units_per_trial: float = 2.0,
-    local_timezone: Optional[str] = None,
+    local_timezone: str = "America/Los_Angeles",
 ) -> Tuple[datetime, List[StimulusEpoch]]:
     """Extract all session data from behavior files.
 
@@ -337,8 +331,8 @@ def extract_session_data(
         Directory containing behavior files
     reward_units_per_trial : float, optional
         Units of reward given per successful trial, by default 2.0
-    local_timezone : Optional[str], optional
-        Timezone string. If not provided, defaults to Pacific timezone
+    local_timezone : str, optional
+        Timezone string, by default "America/Los_Angeles"
 
     Returns
     -------

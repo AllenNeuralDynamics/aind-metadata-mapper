@@ -133,8 +133,8 @@ class JobSettings(BaseJobSettings):
         Animal weight before the session
     reward_delivery : RewardDeliveryConfig, optional
         Configuration for reward delivery, defaults None
-    local_timezone : Optional[str], optional
-        Timezone for the session, defaults to Pacific timezone
+    local_timezone : str, optional
+        Timezone for the session, by default "America/Los_Angeles"
 
     Notes
     -----
@@ -171,7 +171,7 @@ class JobSettings(BaseJobSettings):
     output_filename: Optional[str] = None
 
     # Timezone configuration
-    local_timezone: Optional[str] = None  # Defaults to Pacific timezone
+    local_timezone: str = "America/Los_Angeles"  # Defaults to Pacific timezone
 
     # Optional configuration
     notes: str = ""
