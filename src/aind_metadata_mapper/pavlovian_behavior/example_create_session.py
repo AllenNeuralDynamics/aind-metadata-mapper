@@ -81,9 +81,7 @@ def create_reward_delivery_config() -> RewardDeliveryConfig:
                     device_origin=("lower jaw"),
                     device_axes=[
                         Axis(name=AxisName.X, direction="left/right"),
-                        Axis(
-                            name=AxisName.Y, direction="rostro-caudal motion"
-                        ),
+                        Axis(name=AxisName.Y, direction="rostro-caudal"),
                         Axis(name=AxisName.Z, direction="up/down"),
                     ],
                     notes=(
