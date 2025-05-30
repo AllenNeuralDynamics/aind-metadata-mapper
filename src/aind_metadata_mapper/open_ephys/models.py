@@ -8,33 +8,33 @@ DEFAULT_OPTO_CONDITIONS = {
     "0": {
         "duration": 1.0,
         "name": "fast_pulses",
-        "condition": "2.5 ms pulses at 10 Hz"
+        "condition": "2.5 ms pulses at 10 Hz",
     },
     "1": {
         "duration": 0.005,
         "name": "pulse",
-        "condition": "a single square pulse"
+        "condition": "a single square pulse",
     },
     "2": {
         "duration": 0.01,
         "name": "pulse",
-        "condition": "a single square pulse"
+        "condition": "a single square pulse",
     },
     "3": {
         "duration": 1.0,
         "name": "raised_cosine",
-        "condition": "half-period of a cosine wave"
+        "condition": "half-period of a cosine wave",
     },
     "4": {
         "duration": 1.0,
         "name": "5 hz pulse train",
-        "condition": "Each pulse is 10 ms wide"
+        "condition": "Each pulse is 10 ms wide",
     },
     "5": {
         "duration": 1.0,
         "name": "40 hz pulse train",
-        "condition": "Each pulse is 6 ms wide"
-    }
+        "condition": "Each pulse is 6 ms wide",
+    },
 }
 
 

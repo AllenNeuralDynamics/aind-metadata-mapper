@@ -559,8 +559,9 @@ class TestGatherMetadataJob(unittest.TestCase):
         "aind_metadata_mapper.open_ephys.camstim_ephys_session"
         ".CamstimEphysSessionEtl.run_job"
     )
-    @patch("aind_metadata_mapper.open_ephys.camstim_ephys_session"
-           ".CamstimEphysSessionEtl.__init__"
+    @patch(
+        "aind_metadata_mapper.open_ephys.camstim_ephys_session"
+        ".CamstimEphysSessionEtl.__init__"
     )
     def test_get_session_metadata_camstim_success(
         self, mock_camstim: MagicMock, mock_run_job: MagicMock
@@ -580,7 +581,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             mtrain_server="http://mtrain:5000",
             session_id="000000",
             input_source="some/path",
-            output_directory="some/other/path"
+            output_directory="some/other/path",
         )
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
