@@ -119,7 +119,7 @@ def create_metadata(
     reward_delivery: Optional[RewardDeliveryConfig] = None,
     reward_units_per_trial: float = 2.0,
     reward_consumed_unit: VolumeUnit = VolumeUnit.UL,
-    local_timezone: Optional[str] = None,
+    local_timezone: str = "America/Los_Angeles",
     anaesthesia: Optional[str] = None,
     animal_weight_post: Optional[float] = None,
     animal_weight_prior: Optional[float] = None,
@@ -322,7 +322,10 @@ if __name__ == "__main__":
         help="Whether the mouse platform was active",
     )
     parser.add_argument(
-        "--local-timezone", type=str, default=None, help="Local timezone"
+        "--local-timezone",
+        type=str,
+        default="America/Los_Angeles",
+        help="Local timezone",
     )
     parser.add_argument(
         "--anaesthesia", type=str, default=None, help="Anaesthesia used"

@@ -63,7 +63,7 @@ def create_unified_session_metadata(
     fiber_output: str = "session_fib.json",
     merged_output: str = "session.json",
     active_mouse_platform: bool = False,
-    local_timezone: str | None = None,
+    local_timezone: str = "America/Los_Angeles",
     anaesthesia: str | None = None,
     animal_weight_post: float | None = None,
     animal_weight_prior: float | None = None,
@@ -105,9 +105,8 @@ def create_unified_session_metadata(
         Filename for merged session metadata, by default "session.json"
     active_mouse_platform : bool, optional
         Whether the mouse platform was active, by default False
-    local_timezone : str | None, optional
-        Local timezone for the session
-        (defaults to Pacific timezone if None), by default None
+    local_timezone : str, optional
+        Local timezone for the session, by default "America/Los_Angeles"
     anaesthesia : str | None, optional
         Anaesthesia used, by default None
     animal_weight_post : float | None, optional
