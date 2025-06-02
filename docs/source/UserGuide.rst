@@ -22,6 +22,10 @@ The list of acquisition-specific packages is as follows:
 - ``bruker``: BCI acquisition machine
 - ``mesoscope``: Mesoscope acquisition machine
 - ``u19``: U19 acquisition machine
+- ``fip``: FIP acquisition machine
+- ``dynamicrouting``: Dynamic Routing acquisition machine
+- ``smartspim``: SmartSPIM acquisition machine
+
 
 Please check the ``pyproject.toml`` file for the most up-to-date list of packages and their dependencies.
 If you need to install all the packages, you can do so with the following command:
