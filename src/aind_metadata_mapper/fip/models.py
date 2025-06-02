@@ -47,6 +47,8 @@ class JobSettings(BaseJobSettings):
     data_directory : Optional[Union[str, Path]], optional
         Path to data directory containing fiber photometry files,
         by default None
+    local_timezone : str, optional
+        Timezone for the session, by default "America/Los_Angeles"
     output_directory : Optional[Union[str, Path]], optional
         Output directory for generated files, by default None
     output_filename : str
@@ -75,6 +77,9 @@ class JobSettings(BaseJobSettings):
 
     # Path to data directory containing fiber photometry files
     data_directory: Optional[Union[str, Path]] = None
+
+    # Timezone configuration
+    local_timezone: str = "America/Los_Angeles"  # Defaults to Pacific timezone
 
     # Output directory and filename for generated files
     output_directory: Optional[Union[str, Path]] = None

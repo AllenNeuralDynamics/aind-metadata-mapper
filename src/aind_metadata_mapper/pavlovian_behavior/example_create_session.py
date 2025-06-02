@@ -62,9 +62,7 @@ def create_reward_delivery_config() -> RewardDeliveryConfig:
                     device_origin=("lower jaw"),
                     device_axes=[
                         Axis(name=AxisName.X, direction="left/right"),
-                        Axis(
-                            name=AxisName.Y, direction="rostro-caudal motion"
-                        ),
+                        Axis(name=AxisName.Y, direction="rostro-caudal"),
                         Axis(name=AxisName.Z, direction="up/down"),
                     ],
                     notes=(
@@ -83,9 +81,7 @@ def create_reward_delivery_config() -> RewardDeliveryConfig:
                     device_origin=("lower jaw"),
                     device_axes=[
                         Axis(name=AxisName.X, direction="left/right"),
-                        Axis(
-                            name=AxisName.Y, direction="rostro-caudal motion"
-                        ),
+                        Axis(name=AxisName.Y, direction="rostro-caudal"),
                         Axis(name=AxisName.Z, direction="up/down"),
                     ],
                     notes=(
@@ -123,6 +119,7 @@ def create_metadata(
     reward_delivery: Optional[RewardDeliveryConfig] = None,
     reward_units_per_trial: float = 2.0,
     reward_consumed_unit: VolumeUnit = VolumeUnit.UL,
+    local_timezone: str = "America/Los_Angeles",
     anaesthesia: Optional[str] = None,
     animal_weight_post: Optional[float] = None,
     animal_weight_prior: Optional[float] = None,
@@ -143,6 +140,7 @@ def create_metadata(
         notes: Additional notes about the session
         reward_units_per_trial: Number of reward units per successful trial
         reward_consumed_unit: Unit of reward consumed
+        local_timezone: Local timezone (defaults to Pacific timezone if None)
         anaesthesia: Anaesthesia used
         animal_weight_post: Animal weight after session
         animal_weight_prior: Animal weight before session
@@ -169,6 +167,7 @@ def create_metadata(
         "notes": notes,
         "reward_units_per_trial": reward_units_per_trial,
         "reward_consumed_unit": reward_consumed_unit,
+        "local_timezone": local_timezone,
         "anaesthesia": anaesthesia,
         "animal_weight_post": animal_weight_post,
         "animal_weight_prior": animal_weight_prior,
@@ -323,6 +322,12 @@ if __name__ == "__main__":
         help="Whether the mouse platform was active",
     )
     parser.add_argument(
+        "--local-timezone",
+        type=str,
+        default="America/Los_Angeles",
+        help="Local timezone",
+    )
+    parser.add_argument(
         "--anaesthesia", type=str, default=None, help="Anaesthesia used"
     )
     parser.add_argument(
@@ -352,6 +357,7 @@ if __name__ == "__main__":
         output_directory=args.output_directory,
         output_filename=args.output_filename,
         active_mouse_platform=args.active_mouse_platform,
+        local_timezone=args.local_timezone,
         anaesthesia=args.anaesthesia,
         animal_weight_post=args.animal_weight_post,
         animal_weight_prior=args.animal_weight_prior,

@@ -149,7 +149,6 @@ def _merge_timestamps(
     field: str,
     time1: str,
     time2: str,
-    tolerance_minutes: float = 5.0,
     file1: str | None = None,
     file2: str | None = None,
 ) -> str:
@@ -163,7 +162,6 @@ def _merge_timestamps(
         field: Name of field being merged (determines earlier/later logic)
         time1: First timestamp in ISO format (with any timezone information)
         time2: Second timestamp in ISO format (with any timezone information)
-        tolerance_minutes: Maximum allowed difference in minutes (default 5.0)
         file1: Optional name of first file for logging clarity
         file2: Optional name of second file for logging clarity
 
@@ -186,12 +184,6 @@ def _merge_timestamps(
     # Calculate time difference in seconds
     diff_seconds = abs((t1 - t2).total_seconds())
     diff_str = _format_time_difference(diff_seconds)
-
-    if diff_seconds / 60 > tolerance_minutes:
-        raise ValueError(
-            f"Timestamps differ by {diff_str}, "
-            f"exceeding tolerance of {tolerance_minutes} minutes"
-        )
 
     # Format the timestamp descriptions with file names if available
     time1_desc = f"{time1} (from {file1})" if file1 else time1
@@ -287,7 +279,14 @@ def _merge_values(
             val1.find("T") > 0 or val2.find("T") > 0
         )  # ISO datetime format check
     ):
-        return _merge_timestamp(field, val1, val2, file1, file2)
+
+        return _merge_timestamps(
+            field=field,
+            time1=val1,
+            time2=val2,
+            file1=file1,
+            file2=file2,
+        )
 
     # Handle other types
     if isinstance(val1, list) and isinstance(val2, list):
@@ -297,14 +296,6 @@ def _merge_values(
     if isinstance(val1, str) and isinstance(val2, str):
         return _merge_strings(field, val1, val2, file1, file2)
     return _prompt_for_field(field, str(val1), str(val2), file1, file2)
-
-
-def _merge_timestamp(field, val1, val2, file1, file2):
-    """Merge two timestamp strings, preferring earlier/later as appropriate."""
-    try:
-        return _merge_timestamps(field, val1, val2, file1=file1, file2=file2)
-    except ValueError:
-        return _prompt_for_field(field, val1, val2, file1, file2)
 
 
 def _merge_strings(field, val1, val2, file1, file2):
@@ -376,7 +367,11 @@ def _merge_two_streams(
             ):
                 try:
                     merged[key] = _merge_timestamps(
-                        key, val1, val2, file1=file1, file2=file2
+                        field=key,
+                        time1=val1,
+                        time2=val2,
+                        file1=file1,
+                        file2=file2,
                     )
                 except ValueError:
                     # If merge fails, use first value

@@ -34,6 +34,9 @@ from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.core_models import JobResponse
 from aind_metadata_mapper.pavlovian_behavior.models import JobSettings
 from aind_metadata_mapper.pavlovian_behavior.utils import extract_session_data
+from aind_metadata_mapper.utils.timing_utils import (
+    validate_session_temporal_consistency,
+)
 
 
 @dataclass
@@ -327,6 +330,9 @@ class ETL(GenericEtl[JobSettings]):
             animal_weight_post=pavlovian_data.animal_weight_post,
             animal_weight_prior=pavlovian_data.animal_weight_prior,
         )
+
+        # Validate temporal consistency (end time > start time)
+        validate_session_temporal_consistency(session)
 
         return session
 
