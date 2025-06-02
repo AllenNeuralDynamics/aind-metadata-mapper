@@ -36,11 +36,19 @@ class JobSettings(BaseJobSettings):
         IACUC protocol identifier
     notes : str
         Session notes
+    anaesthesia : Optional[str]
+        Anaesthesia used
+    animal_weight_post : Optional[float]
+        Animal weight after session
+    animal_weight_prior : Optional[float]
+        Animal weight before session
     protocol_id : List[str], optional
         List of protocol identifiers, defaults to empty list
     data_directory : Optional[Union[str, Path]], optional
         Path to data directory containing fiber photometry files,
         by default None
+    local_timezone : str, optional
+        Timezone for the session, by default "America/Los_Angeles"
     output_directory : Optional[Union[str, Path]], optional
         Output directory for generated files, by default None
     output_filename : str
@@ -60,12 +68,18 @@ class JobSettings(BaseJobSettings):
     session_type: str = "FIB"
     iacuc_protocol: str
     notes: str
+    anaesthesia: Optional[str] = None
+    animal_weight_post: Optional[float] = None
+    animal_weight_prior: Optional[float] = None
 
     # Optional Session fields with defaults
     protocol_id: List[str] = []
 
     # Path to data directory containing fiber photometry files
     data_directory: Optional[Union[str, Path]] = None
+
+    # Timezone configuration
+    local_timezone: str = "America/Los_Angeles"  # Defaults to Pacific timezone
 
     # Output directory and filename for generated files
     output_directory: Optional[Union[str, Path]] = None

@@ -13,6 +13,7 @@ Functions are organized by their specific tasks:
 """
 
 import pandas as pd
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Tuple, Optional
@@ -20,6 +21,9 @@ from zoneinfo import ZoneInfo
 
 from aind_data_schema.core.session import StimulusEpoch
 from tzlocal import get_localzone
+from aind_metadata_mapper.utils.timing_utils import (
+    find_latest_timestamp_in_csv_files,
+)
 
 
 def find_behavior_files(
@@ -79,7 +83,7 @@ def find_behavior_files(
 
 
 def parse_session_start_time(
-    behavior_file: Path, local_timezone: Optional[str] = None
+    behavior_file: Path, local_timezone: str = "America/Los_Angeles"
 ) -> datetime:
     """Parse session start time from behavior file name.
 
@@ -87,13 +91,13 @@ def parse_session_start_time(
     ----------
     behavior_file : Path
         Path to behavior file
-    local_timezone : Optional[str], optional
-        Timezone string. If not provided, system timezone is used.
+    local_timezone : str, optional
+        Timezone string, by default "America/Los_Angeles"
 
     Returns
     -------
     datetime
-        Session start time in UTC
+        Session start time in local timezone with offset format (+/-HH:MM)
 
     Raises
     ------
@@ -119,10 +123,19 @@ def parse_session_start_time(
         date_time_str = date_time_str.replace("_", ":")
         parsed_time = datetime.strptime(date_time_str, "%Y-%m-%dT%H:%M:%S")
 
-        # Use get_localzone() as default
-        tz = ZoneInfo(local_timezone) if local_timezone else get_localzone()
+        # Warn if auto-detected timezone differs from provided timezone
+        auto_tz = get_localzone()
+        if str(auto_tz) != local_timezone:
+            logging.warning(
+                f"Auto-detected timezone ({auto_tz}) differs from specified "
+                f"timezone ({local_timezone}). "
+                f"Using {local_timezone} timezone. "
+                f"Specify local_timezone parameter if this is incorrect."
+            )
+
+        tz = ZoneInfo(local_timezone)
         local_time = parsed_time.replace(tzinfo=tz)
-        return local_time.astimezone(ZoneInfo("UTC"))
+        return local_time
 
     except (ValueError, IndexError) as e:
         raise ValueError(
@@ -166,7 +179,7 @@ def extract_trial_data(
     return trial_data
 
 
-def calculate_session_timing(
+def calculate_session_timing_from_trials(
     start_time: datetime,
     trial_data: pd.DataFrame,
 ) -> Tuple[datetime, float]:
@@ -175,20 +188,92 @@ def calculate_session_timing(
     Parameters
     ----------
     start_time : datetime
-        Session start time (in UTC)
+        Session start time
     trial_data : pd.DataFrame
         DataFrame containing trial information
 
     Returns
     -------
     Tuple[datetime, float]
-        - Session end time (in UTC)
+        - Session end time
         - Total session duration in seconds
+
+    Notes
+    -----
+    This method is less accurate than using actual
+    timestamps from the data files.
+    It's recommended to use find_session_end_time
+    instead when possible.
     """
     total_duration = float(trial_data["ITI_s"].sum())
     end_time = start_time + timedelta(seconds=total_duration)
 
+    logging.info(
+        f"Pavlovian session duration from trial data: {total_duration} seconds"
+    )
+
     return end_time, total_duration
+
+
+def find_session_end_time(
+    data_dir: Path,
+    session_start_time: datetime,
+    local_timezone: str = "America/Los_Angeles",
+) -> Optional[datetime]:
+    """
+    Find the actual session end time based on
+    the latest timestamp in CSV files.
+
+    Parameters
+    ----------
+    data_dir : Path
+        Path to the directory containing behavior data
+    session_start_time : datetime
+        Session start time (with timezone info)
+    local_timezone : str, optional
+        Timezone string, by default "America/Los_Angeles"
+
+    Returns
+    -------
+    Optional[datetime]
+        The latest timestamp found in any behavior data file,
+        or None if not found
+    """
+    behavior_dir = data_dir / "behavior"
+    if not behavior_dir.exists():
+        behavior_dir = data_dir
+
+    # Patterns to check for timestamps
+    patterns = ["TS_CS*.csv", "TS_Reward*.csv"]
+
+    latest_time = None
+
+    # Search through each pattern
+    for pattern in patterns:
+        end_time = find_latest_timestamp_in_csv_files(
+            directory=behavior_dir,
+            file_pattern=pattern,
+            session_start_time=session_start_time,
+            local_timezone=local_timezone,
+        )
+
+        if end_time is not None:
+            if latest_time is None or end_time > latest_time:
+                latest_time = end_time
+
+    # Calculate session duration if we found a valid end time
+    if latest_time is not None:
+        # Ensure both times are in the same timezone
+        tz = ZoneInfo(local_timezone)
+        local_session_start = session_start_time.astimezone(tz)
+        latest_time = latest_time.astimezone(tz)
+
+        session_duration = latest_time - local_session_start
+        logging.info(
+            f"Pavlovian session duration from timestamps: {session_duration}"
+        )
+
+    return latest_time
 
 
 def create_stimulus_epoch(
@@ -236,7 +321,7 @@ def create_stimulus_epoch(
 def extract_session_data(
     data_dir: Path,
     reward_units_per_trial: float = 2.0,
-    local_timezone: Optional[str] = None,
+    local_timezone: str = "America/Los_Angeles",
 ) -> Tuple[datetime, List[StimulusEpoch]]:
     """Extract all session data from behavior files.
 
@@ -246,13 +331,13 @@ def extract_session_data(
         Directory containing behavior files
     reward_units_per_trial : float, optional
         Units of reward given per successful trial, by default 2.0
-    local_timezone : Optional[str], optional
-        Timezone string. If not provided, system timezone is used
+    local_timezone : str, optional
+        Timezone string, by default "America/Los_Angeles"
 
     Returns
     -------
     Tuple[datetime, List[StimulusEpoch]]
-        - Session start time (in UTC)
+        - Session start time
         - List of StimulusEpoch objects
 
     Raises
@@ -278,8 +363,18 @@ def extract_session_data(
     # Extract trial data
     trial_data = extract_trial_data(trial_files[0])
 
-    # Calculate session timing
-    end_time, _ = calculate_session_timing(start_time, trial_data)
+    # First try to find the end time using actual timestamps
+    end_time = find_session_end_time(data_dir, start_time, local_timezone)
+
+    # If that fails, fall back to calculating from trial data
+    if end_time is None:
+        logging.warning(
+            "Could not find session end time from timestamps. "
+            "Falling back to trial data calculation."
+        )
+        end_time, _ = calculate_session_timing_from_trials(
+            start_time, trial_data
+        )
 
     # Create stimulus epoch
     stimulus_epoch = create_stimulus_epoch(

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Create a unified session metadata file by generating and merging
 Pavlovian behavior and fiber photometry metadata.
@@ -14,10 +13,10 @@ Example Usage:
     ```bash
     python scripts/example_create_fiber_and_pav_sessions.py \
         --subject-id "000000" \
-        --behavior-dir data/sample_fiber_data/behavior \
-        --fiber-dir data/sample_fiber_data/fib \
+        --data-dir data/sample_fiber_data \
         --output-dir data/sample_fiber_data \
         --experimenters "Test User 1" "Test User 2" \
+        --session-type "Pavlovian_Conditioning + FIB" \
         --behavior-output "session_pavlovian.json" \
         --fiber-output "session_fib.json" \
         --merged-output "session.json"
@@ -33,294 +32,215 @@ Example Usage:
     See --help for full list of options.
 """
 
+import argparse
 import sys
-from pathlib import Path
-from typing import List
 import logging
+from pathlib import Path
 
-from aind_metadata_mapper.pavlovian_behavior.session import ETL as BehaviorETL
-from aind_metadata_mapper.pavlovian_behavior.models import (
-    JobSettings as BehaviorJobSettings,
+from aind_metadata_mapper.pavlovian_behavior.example_create_session import (
+    create_metadata as create_pavlovian_metadata,
 )
-from aind_metadata_mapper.fip.session import FIBEtl as FiberETL
-from aind_metadata_mapper.fip.models import JobSettings as FiberJobSettings
-from aind_data_schema_models.modalities import Modality
-from aind_data_schema_models.units import VolumeUnit
+from aind_metadata_mapper.fip.example_create_session import (
+    create_metadata as create_fip_metadata,
+)
 from aind_metadata_mapper.utils.merge_sessions import merge_sessions
+from aind_data_schema.core.session import Session
 
 
-def create_unified_session(
+def create_unified_session_metadata(
     subject_id: str,
-    behavior_data_dir: Path,
-    fiber_data_dir: Path,
-    output_dir: Path,
-    experimenter_names: List[str],
+    data_dir: Path | str,
+    output_dir: Path | str = Path.cwd(),
+    experimenters: list[str] = (),
+    *,
+    rig_id: str | None = None,
+    iacuc: str | None = None,
+    notes: str | None = None,
+    reward_volume: float | None = None,
+    reward_unit: str | None = None,
+    session_type: str | None = None,
     behavior_output: str = "session_pavlovian.json",
     fiber_output: str = "session_fib.json",
     merged_output: str = "session.json",
-    rig_id: str = "428_9_0_20240617",
-    iacuc_protocol: str = "2115",
-    session_notes: str = "",
-    reward_volume_per_trial: float = 2.0,
-    reward_volume_unit: str = "microliter",
-) -> bool:
-    """Create a unified session metadata file from behavior and fiber data.
+    active_mouse_platform: bool = False,
+    local_timezone: str = "America/Los_Angeles",
+    anaesthesia: str | None = None,
+    animal_weight_post: float | None = None,
+    animal_weight_prior: float | None = None,
+    mouse_platform_name: str = "mouse_tube_foraging",
+) -> Path:
+    """Generate Pavlovian behavior metadata, fiber photometry metadata,
+    merge them into a unified session file, and return its path.
 
-    Args:
-        subject_id: Subject identifier
-        behavior_data_dir: Directory containing Pavlovian behavior data
-        fiber_data_dir: Directory containing fiber photometry data
-        output_dir: Directory where metadata files will be saved
-        experimenter_names: List of experimenter full names
-        behavior_output: Filename for behavior session metadata
-        fiber_output: Filename for fiber photometry session metadata
-        merged_output: Filename for merged session metadata
-        rig_id: Identifier for the experimental rig
-        iacuc_protocol: Protocol identifier
-        session_notes: Additional notes about the session
-        reward_volume_per_trial: Volume of reward delivered per successful
-            trial
-        reward_volume_unit: Unit of reward volume (e.g., 'microliter',
-            'milliliter')
+    Parameters
+    ----------
+    subject_id : str
+        Unique identifier for the experimental subject
+    data_dir : Path | str
+        Root directory containing 'behavior' and 'fib' subdirectories
+    output_dir : Path | str, optional
+        Directory where metadata files will be saved, by default Path.cwd()
+    experimenters : list[str], optional
+        List of experimenter full names, by default ()
+    rig_id : str | None, optional
+        Identifier for the experimental rig, by default None
+    iacuc : str | None, optional
+        IACUC protocol identifier, by default None
+    notes : str | None, optional
+        Additional notes about the session, by default None
+    reward_volume : float | None, optional
+        Volume of reward delivered per successful trial, by default None
+    reward_unit : str | None, optional
+        Unit of reward volume, by default None
+    session_type : str | None, optional
+        Session type to use for both behavior and fiber metadata,
+        by default None
+    behavior_output : str, optional
+        Filename for behavior session metadata,
+        by default "session_pavlovian.json"
+    fiber_output : str, optional
+        Filename for fiber photometry session metadata,
+        by default "session_fib.json"
+    merged_output : str, optional
+        Filename for merged session metadata, by default "session.json"
+    active_mouse_platform : bool, optional
+        Whether the mouse platform was active, by default False
+    local_timezone : str, optional
+        Local timezone for the session, by default "America/Los_Angeles"
+    anaesthesia : str | None, optional
+        Anaesthesia used, by default None
+    animal_weight_post : float | None, optional
+        Animal weight after session, by default None
+    animal_weight_prior : float | None, optional
+        Animal weight before session, by default None
+    mouse_platform_name : str, optional
+        Name of the mouse platform, by default "mouse_tube_foraging"
 
-    Returns:
-        bool: True if all operations completed successfully
+    Returns
+    -------
+    Path
+        Path to the generated unified session metadata file
+
+    Raises
+    ------
+    RuntimeError
+        If either Pavlovian behavior or
+        fiber photometry metadata generation fails
     """
+    # Ensure paths exist
+    data_dir = Path(data_dir)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Create behavior settings
-    behavior_settings = {
+    # Build and filter kwargs for Pavlovian behavior metadata generation
+    pav_kwargs = {
         "subject_id": subject_id,
-        "experimenter_full_name": experimenter_names,
-        "data_directory": str(behavior_data_dir),
-        "output_directory": str(output_dir),
+        "data_directory": data_dir,
+        "output_directory": output_dir,
         "output_filename": behavior_output,
+        "experimenter_full_name": experimenters,
         "rig_id": rig_id,
-        "iacuc_protocol": iacuc_protocol,
-        "mouse_platform_name": "mouse_tube_foraging",
-        "active_mouse_platform": False,
-        "session_type": "Pavlovian_Conditioning",
-        "task_name": "Pavlovian_Conditioning",
-        "notes": session_notes,
-        "reward_units_per_trial": reward_volume_per_trial,
-        "reward_consumed_unit": VolumeUnit.UL,
-        "data_streams": [get_behavior_data_stream()],
-        "stimulus_epochs": [],
+        "iacuc_protocol": iacuc,
+        "notes": notes,
+        "reward_units_per_trial": reward_volume,
+        "reward_consumed_unit": reward_unit,
+        "session_type": session_type,
+        "active_mouse_platform": active_mouse_platform,
+        "local_timezone": local_timezone,
+        "anaesthesia": anaesthesia,
+        "animal_weight_post": animal_weight_post,
+        "animal_weight_prior": animal_weight_prior,
+        "mouse_platform_name": mouse_platform_name,
     }
+    pav_kwargs = {k: v for k, v in pav_kwargs.items() if v is not None}
 
-    # Create fiber settings
-    fiber_settings = {
+    # Run Pavlovian behavior ETL
+    logging.info("Generating Pavlovian behavior metadata…")
+    if not create_pavlovian_metadata(**pav_kwargs):
+        raise RuntimeError("Failed to generate Pavlovian behavior metadata")
+
+    # Build and filter kwargs for fiber photometry metadata generation
+    fip_kwargs = {
         "subject_id": subject_id,
-        "experimenter_full_name": experimenter_names,
-        "data_directory": str(fiber_data_dir),
-        "output_directory": str(output_dir),
+        "data_directory": data_dir,
+        "output_directory": output_dir,
         "output_filename": fiber_output,
+        "experimenter_full_name": experimenters,
         "rig_id": rig_id,
-        "task_version": "1.0.0",
-        "iacuc_protocol": iacuc_protocol,
-        "mouse_platform_name": "mouse_tube_foraging",
-        "active_mouse_platform": False,
-        "session_type": "Foraging_Photometry",
-        "task_name": "Fiber Photometry",
-        "notes": session_notes,
-        "data_streams": [get_fiber_data_stream()],
+        "iacuc_protocol": iacuc,
+        "notes": notes,
+        "session_type": session_type,
+        "active_mouse_platform": active_mouse_platform,
+        "local_timezone": local_timezone,
+        "anaesthesia": anaesthesia,
+        "animal_weight_post": animal_weight_post,
+        "animal_weight_prior": animal_weight_prior,
+        "mouse_platform_name": mouse_platform_name,
     }
+    fip_kwargs = {k: v for k, v in fip_kwargs.items() if v is not None}
 
-    # Run behavior ETL
-    logging.info("Generating Pavlovian behavior metadata...")
-    behavior_job = BehaviorJobSettings(**behavior_settings)
-    behavior_etl = BehaviorETL(behavior_job)
-    behavior_response = behavior_etl.run_job()
+    # Run fiber photometry ETL
+    logging.info("Generating fiber photometry metadata…")
+    if not create_fip_metadata(**fip_kwargs):
+        raise RuntimeError("Failed to generate fiber photometry metadata")
 
-    if behavior_response.status_code != 200:
-        logging.error(
-            f"Failed to generate behavior metadata: {behavior_response.message}"  # noqa: E501
-        )
-        return False
-
-    # Run fiber ETL
-    logging.info("Generating fiber photometry metadata...")
-    fiber_job = FiberJobSettings(**fiber_settings)
-    fiber_etl = FiberETL(fiber_job)
-    fiber_response = fiber_etl.run_job()
-
-    if fiber_response.status_code != 200:
-        logging.error(
-            f"Failed to generate fiber metadata: {fiber_response.message}"
-        )
-        return False
-
-    logging.info("Merging session metadata files...")
-    try:
-        merge_sessions(
-            session_file1=output_dir / behavior_output,
-            session_file2=output_dir / fiber_output,
-            output_file=output_dir / merged_output,
-        )
-    except Exception as e:
-        logging.error(f"Failed to merge session files: {e}")
-        return False
-
-    logging.info(
-        "Successfully created unified session metadata at: "
-        f"{output_dir / merged_output}"
+    # Merge the two session files into one
+    logging.info("Merging session metadata files…")
+    merged = merge_sessions(
+        session_file1=output_dir / behavior_output,
+        session_file2=output_dir / fiber_output,
+        output_file=output_dir / merged_output,
     )
-    return True
 
+    # Validate via pydantic and write final JSON
+    session_model = Session(**merged)
+    merged_path = output_dir / merged_output
+    with open(merged_path, "w") as f:
+        f.write(session_model.model_dump_json(indent=2))
 
-def get_fiber_data_stream() -> dict:
-    """Get default fiber photometry data stream configuration.
-
-    Returns:
-        dict: Default fiber photometry data stream configuration
-    """
-    return {
-        "stream_start_time": None,
-        "stream_end_time": None,
-        "stream_modalities": ["FIB"],
-        "camera_names": [],
-        "daq_names": [""],
-        "detectors": [
-            {
-                "exposure_time": "5230.42765",
-                "exposure_time_unit": "millisecond",
-                "name": "Green CMOS",
-                "trigger_type": "Internal",
-            },
-            {
-                "exposure_time": "5230.42765",
-                "exposure_time_unit": "millisecond",
-                "name": "Red CMOS",
-                "trigger_type": "Internal",
-            },
-        ],
-        "ephys_modules": [],
-        "fiber_connections": [
-            {
-                "fiber_name": "Fiber 0",
-                "output_power_unit": "microwatt",
-                "patch_cord_name": "Patch Cord 0",
-                "patch_cord_output_power": "20",
-            },
-            {
-                "fiber_name": "Fiber 1",
-                "output_power_unit": "microwatt",
-                "patch_cord_name": "Patch Cord 1",
-                "patch_cord_output_power": "20",
-            },
-            {
-                "fiber_name": "Fiber 2",
-                "output_power_unit": "microwatt",
-                "patch_cord_name": "Patch Cord 2",
-                "patch_cord_output_power": "20",
-            },
-            {
-                "fiber_name": "Fiber 3",
-                "output_power_unit": "microwatt",
-                "patch_cord_name": "Patch Cord 3",
-                "patch_cord_output_power": "20",
-            },
-        ],
-        "fiber_modules": [],
-        "light_sources": [
-            {
-                "device_type": "Light emitting diode",
-                "excitation_power": None,
-                "excitation_power_unit": "milliwatt",
-                "name": "470nm LED",
-            },
-            {
-                "device_type": "Light emitting diode",
-                "excitation_power": None,
-                "excitation_power_unit": "milliwatt",
-                "name": "415nm LED",
-            },
-            {
-                "device_type": "Light emitting diode",
-                "excitation_power": None,
-                "excitation_power_unit": "milliwatt",
-                "name": "565nm LED",
-            },
-        ],
-        "manipulator_modules": [],
-        "mri_scans": [],
-        "notes": "Fib modality: fib mode: Normal",
-        "ophys_fovs": [],
-        "slap_fovs": [],
-        "software": [
-            {
-                "name": "Bonsai",
-                "parameters": {},
-                "url": "",
-                "version": "",
-            }
-        ],
-        "stack_parameters": None,
-        "stick_microscopes": [],
-    }
-
-
-def get_behavior_data_stream() -> dict:
-    """Get default Pavlovian behavior data stream configuration.
-
-    Returns:
-        dict: Default Pavlovian behavior data stream configuration
-    """
-    return {
-        "stream_start_time": None,
-        "stream_end_time": None,
-        "stream_modalities": [Modality.BEHAVIOR],
-        "camera_names": [],
-        "daq_names": [""],
-        "light_sources": [
-            {
-                "device_type": "Light emitting diode",
-                "excitation_power": None,
-                "excitation_power_unit": "milliwatt",
-                "name": "IR LED",
-            }
-        ],
-        "notes": "Behavioral tracking with IR LED",
-        "software": [
-            {
-                "name": "Bonsai",
-                "parameters": {},
-                "url": "",
-                "version": "",
-            }
-        ],
-    }
+    logging.info(f"Unified session metadata created at: {merged_path}")
+    return merged_path
 
 
 def main():
-    """Command line interface for creating unified session metadata."""
-    import argparse
+    """Parse command line arguments and create unified session metadata.
 
+    This function:
+    1. Sets up argument parsing for all required and optional parameters
+    2. Calls create_unified_session_metadata with the parsed arguments
+    3. Handles any exceptions and exits with status code 1 if an error occurs
+
+    Notes
+    -----
+    The script requires both behavior and fiber data directories to be present
+    under the specified data directory. The output will be a unified session
+    metadata file that combines information from both data types.
+    """
     parser = argparse.ArgumentParser(
-        description="Create unified session metadata from behavior and fiber data"  # noqa: E501
+        description=(
+            "Create unified session metadata from behavior and fiber data"
+        )
     )
     parser.add_argument(
-        "--subject-id", type=str, required=True, help="Subject identifier"
+        "--subject-id",
+        type=str,
+        required=True,
+        help="Subject identifier",
     )
     parser.add_argument(
-        "--behavior-dir",
+        "--data-dir",
         type=Path,
         required=True,
-        help="Directory containing Pavlovian behavior data",
-    )
-    parser.add_argument(
-        "--fiber-dir",
-        type=Path,
-        required=True,
-        help="Directory containing fiber photometry data",
+        help="Root directory containing 'behavior' and 'fib' subdirectories",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
         default=Path.cwd(),
-        help="Directory where metadata files will be saved "
-        "(default: current directory)",
+        help=(
+            "Directory where metadata files will be saved "
+            "(default: current directory)"
+        ),
     )
     parser.add_argument(
         "--experimenters",
@@ -332,51 +252,54 @@ def main():
     parser.add_argument(
         "--rig-id",
         type=str,
-        default="428_9_0_20240617",
+        default=None,
         help="Identifier for the experimental rig",
     )
     parser.add_argument(
         "--iacuc",
         type=str,
-        default="2115",
+        default=None,
         help="IACUC protocol identifier",
     )
     parser.add_argument(
         "--notes",
         type=str,
-        default="",
+        default=None,
         help="Additional notes about the session",
     )
     parser.add_argument(
         "--reward-volume",
         type=float,
-        default=2.0,
+        default=None,
         help="Volume of reward delivered per successful trial",
     )
     parser.add_argument(
         "--reward-unit",
         type=str,
         choices=["microliter", "milliliter"],
-        default="microliter",
+        default=None,
         help="Unit of reward volume",
+    )
+    parser.add_argument(
+        "--session-type",
+        type=str,
+        default=None,
+        help="Session type to use for both behavior and fiber metadata "
+        "(overrides individual defaults if specified)",
     )
     parser.add_argument(
         "--behavior-output",
         type=str,
         default="session_pavlovian.json",
-        help=(
-            "Filename for behavior session metadata "
-            "(default: session_pavlovian.json)"
-        ),
+        help="Filename for behavior session metadata "
+        "(default: session_pavlovian.json)",
     )
     parser.add_argument(
         "--fiber-output",
         type=str,
         default="session_fib.json",
-        help=(
-            "Filename for fiber photometry session metadata "
-            "(default: session_fib.json)"
-        ),
+        help="Filename for fiber photometry session metadata "
+        "(default: session_fib.json)",
     )
     parser.add_argument(
         "--merged-output",
@@ -384,31 +307,72 @@ def main():
         default="session.json",
         help="Filename for merged session metadata (default: session.json)",
     )
+    parser.add_argument(
+        "--active-mouse-platform",
+        action="store_true",
+        help="Whether the mouse platform was active",
+    )
+    parser.add_argument(
+        "--local-timezone",
+        type=str,
+        default=None,
+        help="Local timezone for the session",
+    )
+    parser.add_argument(
+        "--anaesthesia",
+        type=str,
+        default=None,
+        help="Anaesthesia used",
+    )
+    parser.add_argument(
+        "--animal-weight-post",
+        type=float,
+        default=None,
+        help="Animal weight after session",
+    )
+    parser.add_argument(
+        "--animal-weight-prior",
+        type=float,
+        default=None,
+        help="Animal weight before session",
+    )
+    parser.add_argument(
+        "--mouse-platform-name",
+        type=str,
+        default="mouse_tube_foraging",
+        help="Name of the mouse platform",
+    )
 
     args = parser.parse_args()
 
-    success = create_unified_session(
-        subject_id=args.subject_id,
-        behavior_data_dir=args.behavior_dir,
-        fiber_data_dir=args.fiber_dir,
-        output_dir=args.output_dir,
-        experimenter_names=args.experimenters,
-        behavior_output=args.behavior_output,
-        fiber_output=args.fiber_output,
-        merged_output=args.merged_output,
-        rig_id=args.rig_id,
-        iacuc_protocol=args.iacuc,
-        session_notes=args.notes,
-        reward_volume_per_trial=args.reward_volume,
-        reward_volume_unit=args.reward_unit,
-    )
-
-    if not success:
+    try:
+        create_unified_session_metadata(
+            subject_id=args.subject_id,
+            data_dir=args.data_dir,
+            output_dir=args.output_dir,
+            experimenters=args.experimenters,
+            rig_id=args.rig_id,
+            iacuc=args.iacuc,
+            notes=args.notes,
+            reward_volume=args.reward_volume,
+            reward_unit=args.reward_unit,
+            session_type=args.session_type,
+            behavior_output=args.behavior_output,
+            fiber_output=args.fiber_output,
+            merged_output=args.merged_output,
+            active_mouse_platform=args.active_mouse_platform,
+            local_timezone=args.local_timezone,
+            anaesthesia=args.anaesthesia,
+            animal_weight_post=args.animal_weight_post,
+            animal_weight_prior=args.animal_weight_prior,
+            mouse_platform_name=args.mouse_platform_name,
+        )
+    except Exception as e:
+        logging.error(e)
         sys.exit(1)
 
 
 if __name__ == "__main__":
-    # Configure logging
     logging.basicConfig(
         level=logging.INFO,
         format="\n%(asctime)s - %(message)s\n",

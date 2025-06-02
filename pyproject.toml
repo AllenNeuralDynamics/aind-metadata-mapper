@@ -80,7 +80,8 @@ openephys = [
     "scipy >= 1.11.0",
     "pandas >= 2.2.2",
     "numpy >= 1.26.4",
-    "npc_mvr >= 0.1.6"
+    "npc_mvr >= 0.1.6",
+    "wavpack-numcodecs==0.2.2"
 ]
 
 dynamicrouting = [
@@ -91,6 +92,11 @@ dynamicrouting = [
 u19 = [
     "aind-metadata-mapper[schema]",
     "pandas >= 2.2.2",
+]
+
+smartspim = [
+    "aind-metadata-mapper[schema]",
+    "requests",
 ]
 
 doc = [

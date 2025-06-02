@@ -13,8 +13,69 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Literal, Dict, Any, Union
 
+from aind_data_schema.core.session import RewardDeliveryConfig
 from aind_data_schema_models.units import VolumeUnit
 from aind_metadata_mapper.core_models import BaseJobSettings
+from pydantic import BaseModel
+
+
+class StimulusEpochSettings(BaseModel):
+    """
+    User-supplied configuration for stimulus epochs.
+
+    This model defines only those fields that are consistent across sessions
+    and should be specified by the user in the job settings. Fields that are
+    session-specific or should be extracted/calculated from data files
+    (such as timing, trial counts, or reward amounts)
+    are intentionally omitted.
+
+    Parameters
+    ----------
+    stimulus_name : Optional[str]
+        Name of the stimulus protocol
+        (e.g., "CS - auditory conditioned stimuli").
+    software : Optional[List[Dict[str, Any]]]
+        List of software used to control the stimulus (e.g., Bonsai).
+    script : Optional[Dict[str, Any]]
+        Information about the script used for stimulus delivery.
+    stimulus_modalities : Optional[List[Union[str, Dict[str, Any]]]]
+        Modalities of the stimulus (e.g., ["Auditory"]).
+    stimulus_parameters : Optional[List[Dict[str, Any]]]
+        List of parameter dictionaries for each stimulus type
+        (e.g., frequency, type).
+    stimulus_device_names : Optional[List[str]]
+        Names of devices used to deliver the stimulus.
+    speaker_config : Optional[Dict[str, Any]]
+        Configuration for the speaker used in stimulus delivery.
+    light_source_config : Optional[List[Dict[str, Any]]]
+        Configuration for any light sources used in the stimulus.
+    output_parameters : Optional[Dict[str, Any]]
+        Additional output or performance metrics.
+    reward_consumed_unit : Optional[VolumeUnit]
+        Unit for reward measurement (e.g., microliter).
+    notes : Optional[str]
+        Freeform notes about the stimulus epoch.
+
+    Notes
+    -----
+    This model is used to capture user-specified, session-invariant stimulus
+    configuration. All session-specific fields (such as times, trial counts,
+    and reward amounts) are extracted from data files by the ETL process and
+    should not be set here.
+    """
+
+    stimulus_name: Optional[str] = None
+    software: Optional[List[Dict[str, Any]]] = None
+    script: Optional[Dict[str, Any]] = None
+    stimulus_modalities: Optional[List[Union[str, Dict[str, Any]]]] = None
+    stimulus_parameters: Optional[List[Dict[str, Any]]] = None
+    stimulus_device_names: Optional[List[str]] = None
+    speaker_config: Optional[Dict[str, Any]] = None
+    light_source_config: Optional[List[Dict[str, Any]]] = None
+    output_parameters: Optional[Dict[str, Any]] = None
+    reward_consumed_during_epoch: Optional[float] = None
+    reward_consumed_unit: Optional[VolumeUnit] = None
+    notes: Optional[str] = None
 
 
 class JobSettings(BaseJobSettings):
@@ -62,8 +123,18 @@ class JobSettings(BaseJobSettings):
         Unit for reward measurement, defaults to microliters
     data_streams : List[Dict[str, Any]], optional
         Container for data stream configurations
-    stimulus_epochs : List[Dict[str, Any]], optional
+    stimulus_epochs : List[StimulusEpochSettings], optional
         Container for stimulus epoch information
+    anaesthesia : Optional[str], optional
+        Anaesthesia used during the session
+    animal_weight_post : Optional[float], optional
+        Animal weight after the session
+    animal_weight_prior : Optional[float], optional
+        Animal weight before the session
+    reward_delivery : RewardDeliveryConfig, optional
+        Configuration for reward delivery, defaults None
+    local_timezone : str, optional
+        Timezone for the session, by default "America/Los_Angeles"
 
     Notes
     -----
@@ -99,6 +170,9 @@ class JobSettings(BaseJobSettings):
     output_directory: Optional[Union[str, Path]] = None
     output_filename: Optional[str] = None
 
+    # Timezone configuration
+    local_timezone: str = "America/Los_Angeles"  # Defaults to Pacific timezone
+
     # Optional configuration
     notes: str = ""
     protocol_id: List[str] = []
@@ -106,7 +180,13 @@ class JobSettings(BaseJobSettings):
     # Reward configuration
     reward_units_per_trial: float = 2.0  # Default reward amount
     reward_consumed_unit: VolumeUnit = VolumeUnit.UL  # Default to microliters
+    reward_delivery: Optional[RewardDeliveryConfig] = None
+
+    # Additional session-specific fields
+    anaesthesia: Optional[str] = None
+    animal_weight_post: Optional[float] = None
+    animal_weight_prior: Optional[float] = None
 
     # Data containers (populated during ETL)
     data_streams: List[Dict[str, Any]] = []
-    stimulus_epochs: List[Dict[str, Any]] = []
+    stimulus_epochs: List[StimulusEpochSettings] = []

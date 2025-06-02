@@ -496,8 +496,8 @@ class BergamoEtl(GenericEtl[JobSettings]):
             for channel_num in channel_nums:
                 channels.append(
                     StackChannel(
-                        start_depth=z_start,
-                        end_depth=z_end,
+                        start_depth=int(z_start),
+                        end_depth=int(z_end),
                         channel_name=channel_dict[channel_num]["channel_name"],
                         light_source_name=channel_dict[channel_num][
                             "light_source_name"

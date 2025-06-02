@@ -1,7 +1,7 @@
 """Tests parsing of session information from fip rig."""
 
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 import zoneinfo
 from unittest.mock import patch, mock_open
 
@@ -24,6 +24,8 @@ class TestSchemaWriter(unittest.TestCase):
     def setUpClass(cls):
         """Set up test fixtures."""
         session_time = datetime(1999, 10, 4, tzinfo=zoneinfo.ZoneInfo("UTC"))
+        # Make stream end time 1 hour later for temporal consistency
+        stream_end_time = session_time + timedelta(hours=1)
 
         # Create job settings
         cls.example_job_settings = JobSettings(
@@ -37,7 +39,7 @@ class TestSchemaWriter(unittest.TestCase):
             data_streams=[
                 {
                     "stream_start_time": session_time,
-                    "stream_end_time": session_time,
+                    "stream_end_time": stream_end_time,
                     "light_sources": [
                         {
                             "name": "470nm LED",
@@ -80,7 +82,7 @@ class TestSchemaWriter(unittest.TestCase):
             data_streams=[
                 Stream(
                     stream_start_time=session_time,
-                    stream_end_time=session_time,
+                    stream_end_time=stream_end_time,
                     light_sources=[
                         LightEmittingDiodeConfig(
                             name="470nm LED",
@@ -121,10 +123,14 @@ class TestSchemaWriter(unittest.TestCase):
     def test_extract(self):
         """Tests that data files and metadata are extracted correctly"""
         etl_job1 = FIBEtl(job_settings=self.example_job_settings)
+        # Make end time 1 hour later than start time for temporal consistency
+        session_end_time = (
+            self.example_job_settings.session_start_time + timedelta(hours=1)
+        )
         with patch.object(etl_job1, "_extract") as mock_extract:
             mock_extract.return_value = FiberData(
                 start_time=self.example_job_settings.session_start_time,
-                end_time=self.example_job_settings.session_start_time,
+                end_time=session_end_time,
                 data_files=[],
                 timestamps=[],
                 light_source_configs=self.example_job_settings.data_streams[0][
@@ -149,6 +155,10 @@ class TestSchemaWriter(unittest.TestCase):
                 active_mouse_platform=(
                     self.example_job_settings.active_mouse_platform
                 ),
+                session_type="FIB",
+                anaesthesia=None,
+                animal_weight_post=None,
+                animal_weight_prior=None,
             )
             parsed_info = etl_job1._extract()
             self.assertEqual(
@@ -160,11 +170,13 @@ class TestSchemaWriter(unittest.TestCase):
         """Tests that the data maps correctly to session object"""
         etl_job1 = FIBEtl(job_settings=self.example_job_settings)
         session_time = self.example_job_settings.session_start_time
+        # Make end time 1 hour later than start time for temporal consistency
+        session_end_time = session_time + timedelta(hours=1)
         job_settings = self.example_job_settings
         stream = job_settings.data_streams[0]
         parsed_info = FiberData(
             start_time=session_time,
-            end_time=session_time,
+            end_time=session_end_time,
             data_files=[],
             timestamps=[],
             light_source_configs=stream["light_sources"],
@@ -177,12 +189,16 @@ class TestSchemaWriter(unittest.TestCase):
             notes=job_settings.notes,
             mouse_platform_name=job_settings.mouse_platform_name,
             active_mouse_platform=job_settings.active_mouse_platform,
+            session_type="FIB",
+            anaesthesia=None,
+            animal_weight_post=None,
+            animal_weight_prior=None,
         )
         actual_session = etl_job1._transform(parsed_info)
 
         # Ensure expected session has matching datetime fields
         expected_dict = self.expected_session.model_dump()
-        expected_dict["session_end_time"] = session_time
+        expected_dict["session_end_time"] = session_end_time
         modified_expected = Session(**expected_dict)
 
         self.assertEqual(modified_expected, actual_session)
@@ -196,13 +212,15 @@ class TestSchemaWriter(unittest.TestCase):
 
         etl_job1 = FIBEtl(job_settings=job_settings)
         stream = self.example_job_settings.data_streams[0]
+        # Make end time 1 hour later than start time for temporal consistency
+        session_end_time = job_settings.session_start_time + timedelta(hours=1)
         with patch.object(
             etl_job1, "_transform", return_value=self.expected_session
         ):
             with patch.object(etl_job1, "_extract") as mock_extract:
                 mock_extract.return_value = FiberData(
                     start_time=job_settings.session_start_time,
-                    end_time=job_settings.session_start_time,
+                    end_time=session_end_time,
                     data_files=[],
                     timestamps=[],
                     light_source_configs=stream["light_sources"],
@@ -215,6 +233,10 @@ class TestSchemaWriter(unittest.TestCase):
                     notes=job_settings.notes,
                     mouse_platform_name=job_settings.mouse_platform_name,
                     active_mouse_platform=job_settings.active_mouse_platform,
+                    session_type="FIB",
+                    anaesthesia=None,
+                    animal_weight_post=None,
+                    animal_weight_prior=None,
                 )
                 job_response = etl_job1.run_job()
                 self.assertEqual(200, job_response.status_code)

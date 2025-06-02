@@ -36,11 +36,58 @@ from aind_metadata_mapper.fip.utils import (
     extract_session_start_time_from_files,
     extract_session_end_time_from_files,
 )
+from aind_metadata_mapper.utils.timing_utils import (
+    validate_session_temporal_consistency,
+)
 
 
 @dataclass
 class FiberData:
-    """Intermediate data model for fiber photometry data."""
+    """Intermediate data model for fiber photometry data.
+
+    This model holds the extracted and processed data before final
+    transformation into a Session object. It serves as a structured
+    intermediate representation of the fiber photometry session data.
+
+    Parameters
+    ----------
+    start_time : datetime
+        Session start time from fiber photometry files
+    end_time : Optional[datetime]
+        Session end time from fiber photometry files
+    data_files : List[Path]
+        List of paths to fiber photometry data files
+    timestamps : List[float]
+        List of timestamps from fiber photometry recordings
+    light_source_configs : List[dict]
+        List of light source configuration dictionaries
+    detector_configs : List[dict]
+        List of detector configuration dictionaries
+    fiber_configs : List[dict]
+        List of fiber configuration dictionaries
+    subject_id : str
+        Subject identifier
+    experimenter_full_name : List[str]
+        List of experimenter names
+    rig_id : str
+        Identifier for the experimental rig
+    iacuc_protocol : str
+        IACUC protocol number
+    notes : str
+        Additional notes about the session
+    mouse_platform_name : str
+        Name of the mouse platform used
+    active_mouse_platform : bool
+        Whether the mouse platform was active
+    session_type : str
+        Type of session (e.g. "FIB")
+    anaesthesia : Optional[str]
+        Anaesthesia used, if any
+    animal_weight_post : Optional[float]
+        Animal weight after session
+    animal_weight_prior : Optional[float]
+        Animal weight before session
+    """
 
     start_time: datetime
     end_time: Optional[datetime]
@@ -56,6 +103,10 @@ class FiberData:
     notes: str
     mouse_platform_name: str
     active_mouse_platform: bool
+    session_type: str
+    anaesthesia: Optional[str]
+    animal_weight_post: Optional[float]
+    animal_weight_prior: Optional[float]
 
 
 class FIBEtl(GenericEtl[JobSettings]):
@@ -112,9 +163,14 @@ class FIBEtl(GenericEtl[JobSettings]):
         data_dir = Path(settings.data_directory)
 
         data_files = list(data_dir.glob("FIP_Data*.csv"))
-        start_time = extract_session_start_time_from_files(data_dir)
+        local_timezone = settings.local_timezone
+        start_time = extract_session_start_time_from_files(
+            data_dir, local_timezone
+        )
         end_time = (
-            extract_session_end_time_from_files(data_dir, start_time)
+            extract_session_end_time_from_files(
+                data_dir, start_time, local_timezone
+            )
             if start_time
             else None
         )
@@ -141,6 +197,10 @@ class FIBEtl(GenericEtl[JobSettings]):
             notes=settings.notes,
             mouse_platform_name=settings.mouse_platform_name,
             active_mouse_platform=settings.active_mouse_platform,
+            session_type=settings.session_type,
+            anaesthesia=settings.anaesthesia,
+            animal_weight_post=settings.animal_weight_post,
+            animal_weight_prior=settings.animal_weight_prior,
         )
 
     def _transform(self, fiber_data: FiberData) -> Session:
@@ -177,7 +237,7 @@ class FIBEtl(GenericEtl[JobSettings]):
             experimenter_full_name=fiber_data.experimenter_full_name,
             session_start_time=fiber_data.start_time,
             session_end_time=fiber_data.end_time,
-            session_type="FIB",
+            session_type=fiber_data.session_type,
             rig_id=fiber_data.rig_id,
             subject_id=fiber_data.subject_id,
             iacuc_protocol=fiber_data.iacuc_protocol,
@@ -185,7 +245,13 @@ class FIBEtl(GenericEtl[JobSettings]):
             data_streams=[stream],
             mouse_platform_name=fiber_data.mouse_platform_name,
             active_mouse_platform=fiber_data.active_mouse_platform,
+            anaesthesia=fiber_data.anaesthesia,
+            animal_weight_post=fiber_data.animal_weight_post,
+            animal_weight_prior=fiber_data.animal_weight_prior,
         )
+
+        # Validate temporal consistency (end time > start time)
+        validate_session_temporal_consistency(session)
 
         return session
 
