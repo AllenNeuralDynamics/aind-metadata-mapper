@@ -198,6 +198,10 @@ class Camstim:
             names.default_column_renames
 
         """
+        assert (
+            not self.behavior
+        ), "Can't generate regular stim table from behavior pkl. \
+            Use build_behavior_table instead."
 
         vsync_times = stim_utils.extract_frame_times_from_vsync(self.sync_data)
         if modality == "ephys":
@@ -247,6 +251,40 @@ class Camstim:
             else:
                 stim_table_final.to_csv(self.vsync_table_path, index=False)
 
+    def _summarize_epoch_params(
+        self,
+        stim_table: pd.DataFrame,
+        current_epoch: list,
+        start_idx: int,
+        end_idx: int,
+    ):
+        """
+        This fills in the current_epoch tuple with the set of parameters
+        that exist between start_idx and end_idx
+        """
+        for column in stim_table:
+            if column not in (
+                "start_time",
+                "stop_time",
+                "stim_name",
+                "stim_type",
+                "start_frame",
+                "end_frame",
+                "frame",
+                "duration",
+                "image_set",
+                "stim_block",
+                "flashes_since_change",
+                "image_index",
+                "is_change",
+                "omitted",
+            ):
+                param_set = set(stim_table[column][start_idx:end_idx].dropna())
+                if len(param_set) > 1000:
+                    current_epoch[3][column] = ["Error: over 1000 values"]
+                elif param_set:
+                    current_epoch[3][column] = param_set
+
     def extract_stim_epochs(
         self, stim_table: pd.DataFrame
     ) -> list[list[str, int, int, dict, set]]:
@@ -265,23 +303,12 @@ class Camstim:
         current_epoch = [None, 0.0, 0.0, {}, set()]
         epoch_start_idx = 0
         for current_idx, row in stim_table.iterrows():
-            # if the stim name changes, summarize current epoch's parameters
-            # and start a new epoch
+            if row["stim_name"] == "spontaneous":
+                continue
             if row["stim_name"] != current_epoch[0]:
-                for column in stim_table:
-                    if column not in (
-                        "start_time",
-                        "stop_time",
-                        "stim_name",
-                        "stim_type",
-                        "frame",
-                    ):
-                        param_set = set(
-                            stim_table[column][
-                                epoch_start_idx:current_idx
-                            ].dropna()
-                        )
-                        current_epoch[3][column] = param_set
+                self._summarize_epoch_params(
+                    stim_table, current_epoch, epoch_start_idx, current_idx
+                )
                 epochs.append(current_epoch)
                 epoch_start_idx = current_idx
                 current_epoch = [
@@ -291,20 +318,16 @@ class Camstim:
                     {},
                     set(),
                 ]
-            # if stim name hasn't changed, we are in the same epoch, keep
-            # pushing the stop time
             else:
                 current_epoch[2] = row["stop_time"]
 
-            # if this row is a movie or image set, record it's stim name in
-            # the epoch's templates entry
-            stim_name = row.get("stim_name", "")
-            if pd.isnull(stim_name):
-                stim_name = ""
+            stim_name = row.get("stim_name", "") or ""
+            image_set = row.get("image_set", "")
+            if pd.notnull(image_set):
+                stim_name = image_set
 
             if "image" in stim_name.lower() or "movie" in stim_name.lower():
                 current_epoch[4].add(row["stim_name"])
-        # slice off dummy epoch from beginning
         return epochs[1:]
 
     def epochs_from_stim_table(self) -> list[StimulusEpoch]:
