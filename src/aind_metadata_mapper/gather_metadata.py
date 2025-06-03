@@ -38,8 +38,17 @@ from aind_metadata_mapper.fip.models import (
     JobSettings as FipSessionJobSettings,
 )
 from aind_metadata_mapper.fip.session import FIBEtl
+from aind_metadata_mapper.mesoscope.models import (
+    JobSettings as MesoscopeSessionJobSettings,
+)
 from aind_metadata_mapper.mesoscope.session import MesoscopeEtl
 from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.open_ephys.camstim_ephys_session import (
+    CamstimEphysSessionEtl,
+)
+from aind_metadata_mapper.open_ephys.models import (
+    JobSettings as OpenEphysJobSettings,
+)
 from aind_metadata_mapper.smartspim.acquisition import SmartspimETL
 
 
@@ -284,8 +293,14 @@ class GatherMetadataJob:
                 session_job = MRIEtl(job_settings=session_settings)
             elif isinstance(session_settings, FipSessionJobSettings):
                 session_job = FIBEtl(job_settings=session_settings)
-            else:
+            elif isinstance(session_settings, MesoscopeSessionJobSettings):
                 session_job = MesoscopeEtl(job_settings=session_settings)
+            elif isinstance(session_settings, OpenEphysJobSettings):
+                session_job = CamstimEphysSessionEtl(
+                    job_settings=session_settings
+                )
+            else:
+                raise ValueError("Unknown session job settings class!")
             job_response = session_job.run_job()
             if job_response.status_code != 500:
                 return json.loads(job_response.data)
