@@ -17,7 +17,7 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
-    "aind-data-schema-models>=0.3.2",
+    "aind-data-schema-models>=0.3.2,<1.0.0",
     "pydantic-settings>=2.0"
 ]
 
@@ -32,6 +32,12 @@ dev = [
     "furo",
 ]
 
+fip = [
+    "aind-metadata-mapper[schema]",
+    "tzlocal>=5.3.1",
+    "pandas>=2.2.2"
+]
+
 all = [
     "aind-metadata-mapper[bergamo]",
     "aind-metadata-mapper[bruker]",
@@ -39,6 +45,7 @@ all = [
     "aind-metadata-mapper[openephys]",
     "aind-metadata-mapper[dynamicrouting]",
     "aind-metadata-mapper[u19]",
+    "aind-metadata-mapper[fip]",
 ]
 
 schema = [
@@ -69,11 +76,14 @@ mesoscope = [
 openephys = [
     "aind-metadata-mapper[schema]",
     "h5py >= 3.11.0",
+    "hdmf < 4.0.0",
     "npc_ephys >= 0.1.18",
     "scipy >= 1.11.0",
     "pandas >= 2.2.2",
     "numpy >= 1.26.4",
-    "npc_mvr >= 0.1.6"
+    "npc_mvr >= 0.1.6",
+    "wavpack-numcodecs<0.2.2",
+    "numcodecs<0.16.0",
 ]
 
 dynamicrouting = [
@@ -84,6 +94,11 @@ dynamicrouting = [
 u19 = [
     "aind-metadata-mapper[schema]",
     "pandas >= 2.2.2",
+]
+
+smartspim = [
+    "aind-metadata-mapper[schema]",
+    "requests",
 ]
 
 doc = [

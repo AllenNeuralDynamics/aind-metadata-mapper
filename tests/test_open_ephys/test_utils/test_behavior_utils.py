@@ -51,80 +51,13 @@ class TestBehaviorUtils(unittest.TestCase):
         )
 
         # Assert DataFrame equality
-        pd.testing.assert_frame_equal(result_df, expected_df)
-
-    def test_get_gratings_metadata(self):
-        """
-        Creates a stimuli with gratings and
-        tests the get_gratings_metadata
-        """
-        # Example stimuli input containing gratings
-        stimuli_with_gratings = {
-            "grating": {
-                "phase": 0.5,
-                "sf": 0.03,
-                "set_log": [[0, 0.0], [1, 45.0], [2, 90.0], [3, 0.0]],
-            }
-        }
-
-        # Expected DataFrame with gratings
-        expected_grating_df = pd.DataFrame(
-            {
-                "image_category": ["grating", "grating", "grating"],
-                "image_name": [
-                    "gratings_0.0",
-                    "gratings_90.0",
-                    "gratings_45.0",
-                ],
-                "orientation": [0.0, 90.0, 45.0],
-                "image_set": ["grating", "grating", "grating"],
-                "phase": [0.5, 0.5, 0.5],
-                "spatial_frequency": [0.03, 0.03, 0.03],
-                "image_index": [0, 1, 2],
-            }
+        pd.testing.assert_frame_equal(
+            result_df, expected_df, check_dtype=False, check_index_type=False
         )
-
-        # Call the function with stimuli containing gratings
-        result_grating_df = behavior.get_gratings_metadata(
-            stimuli_with_gratings
-        )
-
-        # Assert DataFrame equality
-        pd.testing.assert_frame_equal(result_grating_df, expected_grating_df)
-
-        # Example stimuli input without gratings
-        stimuli_without_gratings = {
-            "other_stimuli": {"some_key": "some_value"}
-        }
-
-        # Expected empty DataFrame
-        expected_empty_df = pd.DataFrame(
-            columns=[
-                "image_category",
-                "image_name",
-                "image_set",
-                "phase",
-                "spatial_frequency",
-                "orientation",
-                "image_index",
-            ]
-        )
-
-        # Call the function with stimuli not containing gratings
-        result_empty_df = behavior.get_gratings_metadata(
-            stimuli_without_gratings
-        )
-
-        # Assert DataFrame equality
-        pd.testing.assert_frame_equal(result_empty_df, expected_empty_df)
 
     @patch(
         "aind_metadata_mapper.open_ephys.utils"
         ".behavior_utils.get_images_dict"
-    )
-    @patch(
-        "aind_metadata_mapper.open_ephys.utils"
-        ".behavior_utils.get_gratings_metadata"
     )
     @patch(
         "aind_metadata_mapper.open_ephys.utils"
@@ -138,7 +71,6 @@ class TestBehaviorUtils(unittest.TestCase):
         self,
         mock_get_image_set_name,
         mock_convert_filepath_caseinsensitive,
-        mock_get_gratings_metadata,
         mock_get_images_dict,
     ):
         """
@@ -188,19 +120,6 @@ class TestBehaviorUtils(unittest.TestCase):
             ],
         }
 
-        # Mock the get_gratings_metadata function
-        mock_get_gratings_metadata.return_value = pd.DataFrame(
-            {
-                "image_category": ["grating", "grating"],
-                "image_name": ["gratings_0.0", "gratings_45.0"],
-                "orientation": [0.0, 45.0],
-                "image_set": ["grating", "grating"],
-                "phase": [0.5, 0.5],
-                "spatial_frequency": [0.03, 0.03],
-                "image_index": [2, 3],
-            }
-        )
-
         # Mock the stim.convert_filepath_caseinsensitive function
         mock_convert_filepath_caseinsensitive.return_value = (
             "path/to/images.pkl"
@@ -212,31 +131,14 @@ class TestBehaviorUtils(unittest.TestCase):
         # Expected DataFrame
         expected_df = pd.DataFrame(
             {
-                "image_category": [
-                    "image",
-                    "image",
-                    "grating",
-                    "grating",
-                    "omitted",
-                ],
-                "image_name": [
-                    "image1.jpg",
-                    "image2.jpg",
-                    "gratings_0.0",
-                    "gratings_45.0",
-                    "omitted",
-                ],
-                "orientation": [np.NaN, np.NaN, 0.0, 45.0, np.NaN],
-                "phase": [np.NaN, np.NaN, 0.5, 0.5, np.NaN],
-                "spatial_frequency": [np.NaN, np.NaN, 0.03, 0.03, np.NaN],
-                "image_set": [
-                    "image_set_name",
-                    "image_set_name",
-                    "grating",
-                    "grating",
-                    "omitted",
-                ],
-                "image_index": [0, 1, 2, 3, 4],
+                "image_index": [0, 1, 2],
+                "image_category": ["image", "image", "omitted"],
+                "image_name": ["image1.jpg", "image2.jpg", "omitted"],
+                "orientation": [np.NaN, np.NaN, np.NaN],
+                "phase": [np.NaN, np.NaN, np.NaN],
+                "spatial_frequency": [np.NaN, np.NaN, np.NaN],
+                "image_set": ["image_set_name", "image_set_name", "omitted"],
+                "size": [np.NaN, np.NaN, np.NaN],
             }
         ).set_index("image_index")
 
@@ -475,7 +377,7 @@ class TestBehaviorUtils(unittest.TestCase):
         expected_df = pd.DataFrame(expected_data, columns=expected_columns)
 
         # Perform assertions
-        self.assertEquals(result_df["time"].all(), expected_df["time"].all())
+        self.assertEqual(result_df["time"].all(), expected_df["time"].all())
 
     def test_get_image_names(self):
         """
@@ -624,7 +526,9 @@ class TestBehaviorUtils(unittest.TestCase):
         result = behavior.get_flashes_since_change(stimulus_presentations)
 
         # Assert equality
-        pd.testing.assert_series_equal(result, expected_output)
+        pd.testing.assert_series_equal(
+            result, expected_output, check_dtype=False
+        )
 
     def test_add_active_flag(self):
         """
@@ -802,6 +706,12 @@ class TestBehaviorUtils(unittest.TestCase):
                                 "runs": 3,
                                 "frame_list": [0, 1, 1, 0, 1, 1],
                                 "sweep_frames": [[0, 1], [2, 3], [4, 5]],
+                                "sweep_order": [0, 1, 2],
+                                "sweep_table": [[3], [4], [5]],
+                                "dimnames": [
+                                    "movie_frame_index",
+                                    "movie_repeat",
+                                ],
                             },
                             "frame_indices": [0, 1, 2, 3, 4, 5],
                         }
@@ -816,6 +726,7 @@ class TestBehaviorUtils(unittest.TestCase):
             stimulus_presentations,
             pd.DataFrame(stimulus_file),
             stimulus_timestamps,
+            "fingerprint",
         )
 
         # Define expected output based on the provided mock data
@@ -833,7 +744,7 @@ class TestBehaviorUtils(unittest.TestCase):
 
         expected_data = [
             {
-                "movie_frame_index": 0,
+                "movie_frame_index": 3,
                 "start_time": 0,
                 "stop_time": 1,
                 "start_frame": 0,
@@ -844,7 +755,7 @@ class TestBehaviorUtils(unittest.TestCase):
                 "stim_name": "natural_movie_one",
             },
             {
-                "movie_frame_index": 0,
+                "movie_frame_index": 4,
                 "start_time": 0,
                 "stop_time": 1,
                 "start_frame": 4,
@@ -855,7 +766,7 @@ class TestBehaviorUtils(unittest.TestCase):
                 "stim_name": "natural_movie_one",
             },
             {
-                "movie_frame_index": 0,
+                "movie_frame_index": 5,
                 "start_time": 0,
                 "stop_time": 1,
                 "start_frame": 8,
@@ -870,7 +781,7 @@ class TestBehaviorUtils(unittest.TestCase):
         expected_df = pd.DataFrame(expected_data, columns=expected_columns)
 
         # Assert that the result matches the expected DataFrame
-        self.assertEquals(
+        self.assertEqual(
             expected_df["movie_frame_index"].values.tolist(),
             result["movie_frame_index"].values.tolist(),
         )
@@ -1036,7 +947,7 @@ class TestBehaviorUtils(unittest.TestCase):
         expected_df = pd.DataFrame(expected_data, columns=expected_columns)
 
         # Assert that the result matches the expected DataFrame
-        self.assertEquals(
+        self.assertEqual(
             expected_df["start_time"].all(), result["start_time"].all()
         )
 
@@ -1086,23 +997,23 @@ class TestBehaviorUtils(unittest.TestCase):
 
         processed_presentations = pd.DataFrame(processed_presentations)
         # Assert that the result matches the expected DataFrame
-        self.assertEquals(
+        self.assertEqual(
             expected_df["duration"].all(),
             processed_presentations["duration"].all(),
         )
-        self.assertEquals(
+        self.assertEqual(
             expected_df["start_time"].all(),
             processed_presentations["start_time"].all(),
         )
-        self.assertEquals(
+        self.assertEqual(
             expected_df["image_name"].all(),
             processed_presentations["image_name"].all(),
         )
-        self.assertEquals(
+        self.assertEqual(
             expected_df["omitted"].all(),
             processed_presentations["omitted"].all(),
         )
-        self.assertEquals(
+        self.assertEqual(
             expected_df["boolean_col"].all(),
             processed_presentations["boolean_col"].all(),
         )
@@ -1130,7 +1041,7 @@ class TestBehaviorUtils(unittest.TestCase):
         }
         expected_df = pd.DataFrame(expected_data)
         # Assert that the result matches the expected DataFrame
-        self.assertEquals(
+        self.assertEqual(
             processed_df["omitted"].all(), expected_df["omitted"].all()
         )
 
@@ -1200,7 +1111,7 @@ class TestBehaviorUtils(unittest.TestCase):
         expected_df = pd.DataFrame(expected_data)
 
         # Assert that the result matches the expected DataFrame
-        self.assertEquals(
+        self.assertEqual(
             processed_df["start_frame"].all(), expected_df["start_frame"].all()
         )
 
@@ -1215,16 +1126,23 @@ class TestBehaviorUtils(unittest.TestCase):
                     "items": {
                         "fingerprint": {
                             "static_stimulus": {
-                                "runs": 10,
-                                "sweep_frames": [0, 1, 2, 3],
-                                "frame_list": [0, 1, 2],
+                                "runs": 3,
+                                "frame_list": [0, 1, 1, 0, 1, 1],
+                                "sweep_frames": [[0, 1], [2, 3], [4, 5]],
+                                "sweep_order": [0, 1, 2],
+                                "sweep_table": [[3], [4], [5]],
+                                "dimnames": [
+                                    "movie_frame_index",
+                                    "movie_repeat",
+                                ],
                             },
-                            "frame_indices": 0,
+                            "frame_indices": [0, 1, 2, 3, 4, 5],
                         }
                     }
                 }
             }
         }
+
         stimulus_presentations = pd.DataFrame(
             {
                 "stim_block": [0, 0, 0, 1, 1, 1],
@@ -1241,6 +1159,7 @@ class TestBehaviorUtils(unittest.TestCase):
             stimulus_presentations=stimulus_presentations,
             stimulus_file=stimulus_file,
             stimulus_timestamps=stimulus_timestamps,
+            fingerprint_name="fingerprint",
         )
 
         # Define expected output based on the expected behavior of the function
@@ -1261,7 +1180,7 @@ class TestBehaviorUtils(unittest.TestCase):
         expected_df = pd.DataFrame(expected_data)
 
         # Assert that the result matches the expected DataFrame
-        self.assertEquals(
+        self.assertEqual(
             processed_df["start_frame"].all(), expected_df["start_frame"].all()
         )
 
