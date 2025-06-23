@@ -208,13 +208,15 @@ class Camstim:
             frame_times = stim_utils.extract_frame_times_from_photodiode(
                 self.sync_data
             )
+            times = [frame_times]
+
         elif modality == "ophys":
             delay = stim_utils.extract_frame_times_with_delay(self.sync_data)
             frame_times = stim_utils.extract_frame_times_from_vsync(
                 self.sync_data
             )
             frame_times = frame_times + delay
-        times = [frame_times, vsync_times]
+            times = [frame_times, vsync_times]
 
         for i, time in enumerate(times):
             minimum_spontaneous_activity_duration = (
