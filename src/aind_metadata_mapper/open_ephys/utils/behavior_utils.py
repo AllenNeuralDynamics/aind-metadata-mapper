@@ -1039,7 +1039,9 @@ def from_stimulus_file(
     )
     print(stimulus_index_df.head)
     if not stimulus_index_df["image_index"].isna().any():
-        stimulus_index_df["image_index"] = stimulus_index_df["image_index"].astype(int)
+        stimulus_index_df["image_index"] = stimulus_index_df[
+            "image_index"
+        ].astype(int)
     stim_pres_df = raw_stim_pres_df.merge(
         stimulus_index_df,
         left_on="start_time",
@@ -1101,8 +1103,6 @@ def from_stimulus_file(
 
     # Replace "pkl" row's image_set with non-pkl version
     # df.loc[merged.index, "image_set"] = merged["image_set_without_pkl"]
-
-
 
     # Reset index for clarity
     df.reset_index(drop=True, inplace=True)
