@@ -1106,34 +1106,32 @@ def from_stimulus_file(
     dupes = df[df.duplicated(subset=["start_time", "image_name"], keep=False)]
 
     # Make sure image_set exists in dupes:
-    if "image_set" in dupes.columns:
-        # Separate rows with and without "pkl"
-        with_pkl = dupes[dupes["image_set"].str.contains("pkl", na=False)]
-        without_pkl = dupes[~dupes["image_set"].str.contains("pkl", na=False)]
+    if "image_set" in df.columns:
+        # Identify duplicated image presentations
+        dupes = df[
+            df.duplicated(subset=["start_time", "image_name"], keep=False)
+        ]
 
-        # Merge to replace "image_set" of "pkl" rows with the other row's value
-        merged = with_pkl.merge(
-            without_pkl[["start_time", "image_name", "image_set"]],
-            on=["start_time", "image_name"],
-            suffixes=("_with_pkl", "_without_pkl"),
+        # Remove 'pkl' rows when there's a matching non-pkl row
+        pkl_mask = dupes["image_set"].str.contains("pkl", na=False)
+        non_pkl_dupes = dupes[~pkl_mask][["start_time", "image_name"]]
+        duplicate_keys = set(non_pkl_dupes.itertuples(index=False, name=None))
+
+        df = df[
+            ~df.set_index(["start_time", "image_name"]).index.isin(
+                duplicate_keys
+            )
+            | ~df["image_set"].str.contains("pkl", na=False)
+        ]
+
+        # Normalize image_set by stripping `.pkl` extension if present
+        df["image_set"] = df["image_set"].where(
+            ~df["image_set"].fillna("").str.endswith(".pkl"),
+            df["image_set"].str.extract(r"([^/]+)\.pkl$")[0],
         )
-        # Drop the original non-"pkl" rows
-        df = df[~df.index.isin(without_pkl.index)]
-    else:
-        merged = df
-
-    # Replace "pkl" row's image_set with non-pkl version
-    # df.loc[merged.index, "image_set"] = merged["image_set_without_pkl"]
 
     # Reset index for clarity
     df.reset_index(drop=True, inplace=True)
-    if "image_set" in df.columns:
-        df["image_set"] = df["image_set"].where(
-            ~(df["image_set"].fillna("").str.endswith(".pkl")),
-            df["image_set"].str.extract(r"([^/]+)\.pkl$")[
-                0
-            ],  # Extracted values are in the first column
-        )
     df = names.map_column_names(df, constants.default_column_renames)
     duplicates = df.columns[df.columns.duplicated()].unique()
     # Merge each group of duplicated columns
@@ -1150,9 +1148,7 @@ def from_stimulus_file(
         # Add back the merged column
         df[col] = merged
     df = remove_short_sandwiched_spontaneous(df)
-
-    if "Pos" in df.columns or "constrast" in df.columns:
-        df = clean_position_and_contrast(df)
+    df = clean_position_and_contrast(df)
 
     df.drop(columns=["stim_block"], inplace=True, errors="ignore")
     df = df.drop(columns=["start_frame", "end_frame"], errors="ignore")
