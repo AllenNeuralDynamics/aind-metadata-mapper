@@ -940,6 +940,30 @@ def clean_position_and_contrast(df):
     return df
 
 
+def _load_and_validate_stimulus_presentations(data, stimulus_timestamps):
+    """
+    Load and validate stimulus presentations from stimulus file data.
+
+    Parameters
+    ----------
+    data : dict
+        The loaded stimulus file data.
+    stimulus_timestamps : StimulusTimestamps
+        Timestamps of the stimuli.
+
+    Returns
+    -------
+    pd.DataFrame
+        Cleaned and validated stimulus presentations dataframe.
+    """
+    raw_stim_pres_df = get_stimulus_presentations(data, stimulus_timestamps)
+    raw_stim_pres_df = raw_stim_pres_df.drop(columns=["index"])
+    raw_stim_pres_df = check_for_errant_omitted_stimulus(
+        input_df=raw_stim_pres_df
+    )
+    return raw_stim_pres_df
+
+
 def from_stimulus_file(
     stimulus_file,
     stimulus_timestamps,
@@ -980,10 +1004,8 @@ def from_stimulus_file(
         and whose columns are presentation characteristics.
     """
     data = pkl.load_pkl(stimulus_file)
-    raw_stim_pres_df = get_stimulus_presentations(data, stimulus_timestamps)
-    raw_stim_pres_df = raw_stim_pres_df.drop(columns=["index"])
-    raw_stim_pres_df = check_for_errant_omitted_stimulus(
-        input_df=raw_stim_pres_df
+    raw_stim_pres_df = _load_and_validate_stimulus_presentations(
+        data, stimulus_timestamps
     )
 
     # print(raw_stim_pres_df.head(100))
@@ -1037,7 +1059,6 @@ def from_stimulus_file(
         .sort_index()
         .set_index("timestamps", drop=True)
     )
-    print(stimulus_index_df.head)
     if not stimulus_index_df["image_index"].isna().any():
         stimulus_index_df["image_index"] = stimulus_index_df[
             "image_index"
