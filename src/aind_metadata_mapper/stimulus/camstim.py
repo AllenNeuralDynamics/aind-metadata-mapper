@@ -322,6 +322,7 @@ class Camstim:
                 ]
             else:
                 current_epoch[2] = row["stop_time"]
+            epochs.append(current_epoch)
 
             stim_name = row.get("stim_name", "") or ""
             image_set = row.get("image_set", "")
