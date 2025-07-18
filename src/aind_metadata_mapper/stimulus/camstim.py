@@ -333,7 +333,7 @@ class Camstim:
                 current_epoch[4].add(row["stim_name"])
         return epochs[1:]
 
-    def get_stimulus_epochs(self) -> StimulusEpoch:
+    def get_stimulus_epochs(self) -> list[StimulusEpoch]:
         """
         Extracts stimulus epochs from the provided data dictionary.
         This method is a wrapper around `epochs_from_stim_table` to
@@ -344,38 +344,39 @@ class Camstim:
         StimulusEpoch
             StimulusEpoch objects.
         """
-        start_time = self.pkl_data['start_time']
-        stop_time = self.pkl_data['stop_time']
+        start_time = self.pkl_data["start_time"]
+        stop_time = self.pkl_data["stop_time"]
         version = "unknown"
-        if self.pkl_data['items'].get('behavior', None):
-            params = self.pkl_data['items']['behavior']['params']
-            version = self.pkl_data['platform_info'].get('camstim', 'unknown')
+        if self.pkl_data["items"].get("behavior", None):
+            params = self.pkl_data["items"]["behavior"]["params"]
+            version = self.pkl_data["platform_info"].get("camstim", "unknown")
         else:
-            params = self.pkl_data['items']['foraging']['params']
+            params = self.pkl_data["items"]["foraging"]["params"]
 
+        return [
+            StimulusEpoch(
+                stimulus_start_time=start_time,
+                stimulus_end_time=stop_time,
+                stimulus_name=params.get("stage", "unknown"),
+                software=[
+                    Software(
+                        name="camstim",
+                        version=version,
+                        url="https://eng-gitlab.corp.alleninstitute.org/braintv/camstim",
+                    )
+                ],
+                script=Software(name=self.stage_name, version="1.0"),
+                stimulus_modalities=[StimulusModality.VISUAL],
+                stimulus_parameters=[
+                    VisualStimulation(
+                        stimulus_name=params.get("stage", "unknown"),
+                        stimulus_parameters=params,
+                        stimulus_template_name=[],
+                    )
+                ],
+            )
+        ]
 
-        return StimulusEpoch(
-            stimulus_start_time=start_time,
-            stimulus_end_time=stop_time,
-            stimulus_name=params.get('stage', 'unknown'),
-            software=[
-                Software(
-                    name="camstim",
-                    version=version,
-                    url="https://eng-gitlab.corp.alleninstitute.org/braintv/camstim",
-                )
-            ],
-            script=Software(name=self.stage_name, version="1.0"),
-            stimulus_modalities=[StimulusModality.VISUAL],
-            stimulus_parameters=[
-                VisualStimulation(
-                    stimulus_name=params.get('stage', 'unknown'),
-                    stimulus_parameters=params,
-                    stimulus_template_name='',
-                )
-            ],
-        )
-    
     def epochs_from_stim_table(self) -> list[StimulusEpoch]:
         """
         From the stimulus epochs table, return a list of schema stimulus
