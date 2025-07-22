@@ -301,11 +301,10 @@ class Camstim:
         of values for that column are listed as parameter values.
         """
         epochs = []
-
         current_epoch = [None, 0.0, 0.0, {}, set()]
         epoch_start_idx = 0
         for current_idx, row in stim_table.iterrows():
-            if row["stim_name"] == "spontaneous":
+            if row["stim_name"] == "spontaneous" or row['start_time'] == current_epoch[1]:
                 continue
             if row["stim_name"] != current_epoch[0]:
                 self._summarize_epoch_params(
@@ -322,7 +321,6 @@ class Camstim:
                 ]
             else:
                 current_epoch[2] = row["stop_time"]
-            epochs.append(current_epoch)
 
             stim_name = row.get("stim_name", "") or ""
             image_set = row.get("image_set", "")
@@ -331,6 +329,13 @@ class Camstim:
 
             if "image" in stim_name.lower() or "movie" in stim_name.lower():
                 current_epoch[4].add(row["stim_name"])
+        
+        # append final epoch after iteration
+        self._summarize_epoch_params(
+            stim_table, current_epoch, epoch_start_idx, current_idx
+        )
+        epochs.append(current_epoch)
+        # slice off the default starting epoch
         return epochs[1:]
 
     def epochs_from_stim_table(self) -> list[StimulusEpoch]:
