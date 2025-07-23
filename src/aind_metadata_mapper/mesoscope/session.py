@@ -291,6 +291,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
             stimulus_epochs=stim_epochs,
             mouse_platform_name=self.job_settings.mouse_platform_name,
             active_mouse_platform=True,
+            lims_project_code=self.job_settings.lims_project_code
         )
 
     def run_job(self) -> None:
