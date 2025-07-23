@@ -67,7 +67,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
             output_directory=camstim_output,
             session_id=self.job_settings.session_id,
             subject_id=self.job_settings.subject_id,
-            lims_project_code=self.job_settings.lims_project_code
+            lims_project_code=self.job_settings.lims_project_code,
         )
         self.camstim = Camstim(camstim_settings)
 
@@ -291,7 +291,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
             data_streams=data_streams,
             stimulus_epochs=stim_epochs,
             mouse_platform_name=self.job_settings.mouse_platform_name,
-            active_mouse_platform=True
+            active_mouse_platform=True,
         )
 
     def run_job(self) -> None:

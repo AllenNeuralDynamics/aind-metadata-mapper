@@ -288,7 +288,6 @@ class Camstim:
                 elif param_set:
                     current_epoch[3][column] = param_set
 
-
     def extract_whole_session_epoch(
         self, stim_table: pd.DataFrame
     ) -> list[list[str, int, int, dict, set]]:
@@ -300,9 +299,7 @@ class Camstim:
             {},
             set(),
         ]
-        self._summarize_epoch_params(
-            stim_table, single_epoch, 0, -1
-        )
+        self._summarize_epoch_params(stim_table, single_epoch, 0, -1)
         stim_name = row.get("stim_name", "") or ""
         image_set = row.get("image_set", "")
         if pd.notnull(image_set):
@@ -311,7 +308,6 @@ class Camstim:
         if "image" in stim_name.lower() or "movie" in stim_name.lower():
             single_epoch[4].add(row["stim_name"])
         return [single_epoch]
-
 
     def extract_stim_epochs(
         self, stim_table: pd.DataFrame
@@ -332,8 +328,11 @@ class Camstim:
         epochs = []
         current_epoch = [None, 0.0, 0.0, {}, set()]
         epoch_start_idx = 0
-        for current_idx, row in stim_table.iterrows():            
-            if row["stim_name"] == "spontaneous" or row['start_time'] == current_epoch[1]:
+        for current_idx, row in stim_table.iterrows():
+            if (
+                row["stim_name"] == "spontaneous"
+                or row["start_time"] == current_epoch[1]
+            ):
                 continue
             if row["stim_name"] != current_epoch[0]:
                 self._summarize_epoch_params(
@@ -358,7 +357,7 @@ class Camstim:
 
             if "image" in stim_name.lower() or "movie" in stim_name.lower():
                 current_epoch[4].add(row["stim_name"])
-        
+
         # append final epoch after iteration
         self._summarize_epoch_params(
             stim_table, current_epoch, epoch_start_idx, current_idx
