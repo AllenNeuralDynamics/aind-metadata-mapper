@@ -291,6 +291,11 @@ class Camstim:
     def extract_whole_session_epoch(
         self, stim_table: pd.DataFrame
     ) -> list[list[str, int, int, dict, set]]:
+        """
+        Extracts a single epoch covering the entire session from the stimulus table.
+        Returns a list containing one epoch with the first stim_name, the first
+        start_time, the last stop_time, an empty dict, and a set of template names.
+        """
         row = stim_table.iloc[0]
         single_epoch = [
             stim_table["stim_name"].iloc[0],

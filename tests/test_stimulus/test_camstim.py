@@ -315,6 +315,10 @@ class TestCamstim(unittest.TestCase):
         pd.testing.assert_frame_equal(result, expected_result)
 
     def test_extract_whole_session_epoch(self):
+        """
+        Test that extract_whole_session_epoch returns the correct start and stop
+        times for a mock stim_table DataFrame.
+        """
         # Create a mock stim_table DataFrame
         stim_table = pd.DataFrame(
             {"start_time": [0.0, 10.0, 20.0], "stop_time": [5.0, 15.0, 25.0]}
