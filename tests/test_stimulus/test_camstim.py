@@ -314,6 +314,19 @@ class TestCamstim(unittest.TestCase):
         expected_result = pd.DataFrame({"a": [1, 2, 3]})
         pd.testing.assert_frame_equal(result, expected_result)
 
+    def test_extract_whole_session_epoch(self):
+        # Create a mock stim_table DataFrame
+        stim_table = pd.DataFrame({
+            'start_time': [0.0, 10.0, 20.0],
+            'stop_time': [5.0, 15.0, 25.0]
+        })
+        camstim = self.camstim
+        # Call the method
+        result = camstim.extract_whole_session_epoch(stim_table)
+        # Check that the result is as expected (tuple of (start, stop))
+        self.assertEqual(result[0], stim_table.start_time.iloc[0])
+        self.assertEqual(result[1], stim_table.stop_time.iloc[-1])
+
 
 if __name__ == "__main__":
     unittest.main()
