@@ -48,6 +48,9 @@ class JobSettings(BaseJobSettings):
     optional_output: Optional[Path] = Field(
         default=None, title="Optional output path"
     )
+    lims_project_code: Optional[str] = Field(
+        default="", title="LIMS project code"
+    )
 
     @field_validator("input_source", "behavior_source", "output_directory")
     @classmethod
