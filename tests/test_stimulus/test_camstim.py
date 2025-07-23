@@ -316,10 +316,9 @@ class TestCamstim(unittest.TestCase):
 
     def test_extract_whole_session_epoch(self):
         # Create a mock stim_table DataFrame
-        stim_table = pd.DataFrame({
-            'start_time': [0.0, 10.0, 20.0],
-            'stop_time': [5.0, 15.0, 25.0]
-        })
+        stim_table = pd.DataFrame(
+            {"start_time": [0.0, 10.0, 20.0], "stop_time": [5.0, 15.0, 25.0]}
+        )
         camstim = self.camstim
         # Call the method
         result = camstim.extract_whole_session_epoch(stim_table)
