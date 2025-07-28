@@ -312,7 +312,12 @@ class GatherMetadataJob:
     def get_rig_metadata(self) -> Optional[dict]:
         """Get rig metadata"""
         file_name = Rig.default_filename()
-        if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
+        if self._does_file_exist_in_user_defined_dir(file_name=file_name):
+            contents = self._get_file_from_user_defined_directory(
+                file_name=file_name
+            )
+            return contents
+        elif self.settings.rig_settings is not None:
             rig_file_path = (
                 self.settings.rig_settings.metadata_service_path
             )
@@ -330,10 +335,7 @@ class GatherMetadataJob:
                 )
                 return None
         else:
-            contents = self._get_file_from_user_defined_directory(
-                file_name=file_name
-            )
-            return contents
+            return None
 
     def get_quality_control_metadata(self) -> Optional[dict]:
         """Get quality_control metadata"""
@@ -369,7 +371,12 @@ class GatherMetadataJob:
     def get_instrument_metadata(self) -> Optional[dict]:
         """Get instrument metadata"""
         file_name = Instrument.default_filename()
-        if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
+        if self._does_file_exist_in_user_defined_dir(file_name=file_name):
+            contents = self._get_file_from_user_defined_directory(
+                file_name=file_name
+            )
+            return contents
+        elif self.settings.instrument_settings is not None:
             instrument_file_path = (
                 self.settings.instrument_settings.metadata_service_path
             )
@@ -387,10 +394,7 @@ class GatherMetadataJob:
                 )
                 return None
         else:
-            contents = self._get_file_from_user_defined_directory(
-                file_name=file_name
-            )
-            return contents
+            return None
 
     def _get_location(self, metadata_status: MetadataStatus) -> str:
         """
@@ -577,16 +581,23 @@ class GatherMetadataJob:
             self._write_json_file(
                 filename=Processing.default_filename(), contents=contents
             )
+        if self.settings.rig_settings is not None:
+            contents = self.get_rig_metadata()
+            if contents is not None:
+                self._write_json_file(
+                    filename=Rig.default_filename(), contents=contents
+                )
+        if self.settings.instrument_settings is not None:
+            contents = self.get_instrument_metadata()
+            if contents is not None:
+                self._write_json_file(
+                    filename=Instrument.default_filename(), contents=contents
+                )
 
     def _gather_non_automated_metadata(self):
         """Gather metadata that cannot yet be retrieved automatically but
         may be in a user defined directory."""
         if self.settings.metadata_settings is None:
-            rig_contents = self.get_rig_metadata()
-            if rig_contents:
-                self._write_json_file(
-                    filename=Rig.default_filename(), contents=rig_contents
-                )
             session_contents = self.get_session_metadata()
             if session_contents:
                 self._write_json_file(
@@ -598,6 +609,12 @@ class GatherMetadataJob:
                 self._write_json_file(
                     filename=Acquisition.default_filename(),
                     contents=acq_contents,
+                )
+            rig_contents = self.get_rig_metadata()
+            if rig_contents:
+                self._write_json_file(
+                    filename=Rig.default_filename(),
+                    contents=rig_contents,
                 )
             instrument_contents = self.get_instrument_metadata()
             if instrument_contents:

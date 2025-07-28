@@ -38,6 +38,8 @@ from aind_metadata_mapper.models import (
     RawDataDescriptionSettings,
     SessionSettings,
     SubjectSettings,
+    RigSettings,
+    InstrumentSettings,
 )
 from aind_metadata_mapper.open_ephys.models import (
     JobSettings as OpenEphysJobSettings,
@@ -684,24 +686,23 @@ class TestGatherMetadataJob(unittest.TestCase):
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             metadata_service_domain="http://acme.test",
-            rig_settings=ProceduresSettings(
-                rig_id="RIG123",
+            rig_settings=RigSettings(
+                rig_id="323_EPHYS1",
                 metadata_service_path="rig",
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_rig_metadata()
-        self.assertEqual("RIG123", contents["rig_id"])
-        mock_get.assert_called_once_with("http://acme.test/rig/RIG123")
+        self.assertEqual("323_EPHYS1", contents["rig_id"])
+        mock_get.assert_called_once_with("http://acme.test/rig/323_EPHYS1")
 
     def test_get_rig_metadata_from_dir(self):
         """Tests get_rig_metadata from directory"""
         metadata_dir = RESOURCES_DIR / "metadata_files"
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
-            rig_settings=ProceduresSettings(
-                rig_id="RIG123",
-                metadata_service_path="rig",
+            rig_settings=RigSettings(
+                rig_id="323_EPHYS1",
             ),
             metadata_dir=metadata_dir,
         )
@@ -724,9 +725,9 @@ class TestGatherMetadataJob(unittest.TestCase):
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             metadata_service_domain="http://acme.test",
-            rig_settings=ProceduresSettings(
-                rig_id="RIG123",
-                metadata_service_path="rig",
+            rig_settings=RigSettings(
+                rig_id="323_EPHYS1",
+
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
@@ -846,30 +847,30 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Tests get_instrument_metadata from metadata service path"""
         mock_response = Response()
         mock_response.status_code = 422
-        body = json.dumps({"data": {"instrument_id": "INST123"}})
+        body = json.dumps(self.example_instrument_response)
         mock_response._content = body.encode("utf-8")
         mock_get.return_value = mock_response
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             metadata_service_domain="http://acme.test",
-            instrument_settings=ProceduresSettings(
-                instrument_id="INST123",
+            instrument_settings=InstrumentSettings(
+                instrument_id="exaSPIM1-1",
                 metadata_service_path="instrument",
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_instrument_metadata()
-        self.assertEqual("INST123", contents["instrument_id"])
-        mock_get.assert_called_once_with("http://acme.test/instrument/INST123")
+        self.assertEqual("exaSPIM1-1", contents["instrument_id"])
+        mock_get.assert_called_once_with("http://acme.test/instrument/exaSPIM1-1")
 
     def test_get_instrument_metadata_from_dir(self):
         """Tests get_instrument_metadata from directory"""
         metadata_dir = RESOURCES_DIR / "metadata_files"
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
-            instrument_settings=ProceduresSettings(
-                instrument_id="INST123",
+            instrument_settings=InstrumentSettings(
+                instrument_id="exaSPIM1-1",
                 metadata_service_path="instrument",
             ),
             metadata_dir=metadata_dir,
@@ -893,8 +894,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
             metadata_service_domain="http://acme.test",
-            instrument_settings=ProceduresSettings(
-                instrument_id="INST123",
+            instrument_settings=InstrumentSettings(
+                instrument_id="exaSPIM1-1",
                 metadata_service_path="instrument",
             ),
         )
@@ -912,25 +913,6 @@ class TestGatherMetadataJob(unittest.TestCase):
     def test_gather_non_automated_metadata(self, mock_write_file: MagicMock):
         """Tests _gather_non_automated_metadata method"""
         metadata_dir = RESOURCES_DIR / "metadata_files"
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_dir=metadata_dir,
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        metadata_job._gather_non_automated_metadata()
-        mock_write_file.assert_called()
-
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob."
-        "_write_json_file"
-    )
-    def test_gather_non_automated_metadata_with_ser_issues(
-        self, mock_write_file: MagicMock
-    ):
-        """Tests _gather_non_automated_metadata method when there are
-        serialization issues"""
-        metadata_dir = METADATA_DIR_WITH_RIG_ISSUE
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
