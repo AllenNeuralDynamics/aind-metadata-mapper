@@ -336,11 +336,11 @@ class Camstim:
         # Create a grouping key based on start/stop times
         stim_table["time_key"] = stim_table[["start_time", "stop_time"]].apply(tuple, axis=1)
 
-        epochs_by_stim = defaultdict(list)  # stim_name -> list of (start, stop)
+        epochs_by_stim = defaultdict(list) 
 
         prev_time_key = None
         prev_stim_set = set()
-        stim_epoch_buffers = {}  # stim_name -> [start, stop]
+        stim_epoch_buffers = {} 
 
         for time_key, group in stim_table.groupby("time_key"):
             current_stim_set = set(group["stim_name"])
