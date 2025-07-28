@@ -74,7 +74,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             RESOURCES_DIR / "example_funding_multiple_response.json", "r"
         ) as f:
             example_funding_multi_response = json.load(f)
-        with open(RESOURCES_DIR / "exxample_rig_response.json", "r") as f:
+        with open(RESOURCES_DIR / "example_rig_response.json", "r") as f:
             example_rig_response = json.load(f)
         with open(
             RESOURCES_DIR / "example_instrument_response.json", "r"
