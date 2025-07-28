@@ -312,13 +312,28 @@ class GatherMetadataJob:
     def get_rig_metadata(self) -> Optional[dict]:
         """Get rig metadata"""
         file_name = Rig.default_filename()
-        if self._does_file_exist_in_user_defined_dir(file_name=file_name):
+        if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
+            rig_file_path = (
+                self.settings.rig_settings.metadata_service_path
+            )
+            response = requests.get(
+                self.settings.metadata_service_domain
+                + f"/{rig_file_path}/"
+                + f"{self.settings.rig_settings.rig_id}"
+            )
+            if response.status_code < 300 or response.status_code == 422:
+                json_content = response.json()
+                return json_content["data"]
+            else:
+                logging.warning(
+                    f"Rig metadata is not valid! {response.status_code}"
+                )
+                return None
+        else: 
             contents = self._get_file_from_user_defined_directory(
                 file_name=file_name
             )
             return contents
-        else:
-            return None
 
     def get_quality_control_metadata(self) -> Optional[dict]:
         """Get quality_control metadata"""
@@ -354,13 +369,28 @@ class GatherMetadataJob:
     def get_instrument_metadata(self) -> Optional[dict]:
         """Get instrument metadata"""
         file_name = Instrument.default_filename()
-        if self._does_file_exist_in_user_defined_dir(file_name=file_name):
+        if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
+            instrument_file_path = (
+                self.settings.instrument_settings.metadata_service_path
+            )
+            response = requests.get(
+                self.settings.metadata_service_domain
+                + f"/{instrument_file_path}/"
+                + f"{self.settings.instrument_settings.instrument_id}"
+            )
+            if response.status_code < 300 or response.status_code == 422:
+                json_content = response.json()
+                return json_content["data"]
+            else:
+                logging.warning(
+                    f"Instrument metadata is not valid! {response.status_code}"
+                )
+                return None
+        else: 
             contents = self._get_file_from_user_defined_directory(
                 file_name=file_name
             )
             return contents
-        else:
-            return None
 
     def _get_location(self, metadata_status: MetadataStatus) -> str:
         """
