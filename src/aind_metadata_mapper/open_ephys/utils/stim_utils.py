@@ -295,6 +295,13 @@ def create_stim_table(
     stim_table_full = pd.concat(stimulus_tables, ignore_index=True, sort=False)
     stim_table_full.sort_values(by=[sort_key], inplace=True)
     stim_table_full.reset_index(drop=True, inplace=True)
+    # organize rows with the same start and stop time alphabetically by stim_name
+    # For example, if there are two stimuli with the same start and stop time,
+    # one with stim_name "A" and the other with "B", the row with
+    # "A" will come before "B"
+    # This is to keep ordering of stim epochs consistent
+    print("Sorting stim table by start_time, stop_time, and stim_name")
+    stim_table_full = stim_table_full.sort_values(["start_time", "stop_time", "stim_name"])
 
     return stim_table_full
 
