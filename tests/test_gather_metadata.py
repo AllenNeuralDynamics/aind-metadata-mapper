@@ -862,7 +862,9 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_instrument_metadata()
         self.assertEqual("exaSPIM1-1", contents["instrument_id"])
-        mock_get.assert_called_once_with("http://acme.test/instrument/exaSPIM1-1")
+        mock_get.assert_called_once_with(
+            "http://acme.test/instrument/exaSPIM1-1"
+        )
 
     def test_get_instrument_metadata_from_dir(self):
         """Tests get_instrument_metadata from directory"""

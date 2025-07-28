@@ -92,10 +92,6 @@ class RigSettings(BaseSettings, extra="allow"):
     """Fields needed to retrieve rig metadata"""
 
     rig_id: str
-    partial_match: Optional[bool] = Field(
-        default=False,
-        description="Whether to partially match the rig metadata."
-    )
     metadata_service_path: str = "rig"
 
 
@@ -103,10 +99,6 @@ class InstrumentSettings(BaseSettings, extra="allow"):
     """Fields needed to retrieve instrument metadata"""
 
     instrument_id: str
-    partial_match: Optional[bool] = Field(
-        default=False,
-        description="Whether to partially match the instrument metadata."
-    )
     metadata_service_path: str = "instrument"
 
 
