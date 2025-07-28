@@ -318,69 +318,62 @@ class Camstim:
 
     def extract_stim_epochs(
         self, stim_table: pd.DataFrame
-    ) -> list[list[str, float, float, dict, set]]:
+    ) -> list[list[str, int, int, dict, set]]:
         """
         Returns a list of stimulus epochs, where an epoch takes the form
-        [name, start, stop, params_dict, template_names]. Merges consecutive rows
-        that share the same stim_name and timing into single epochs, or groups
-        stim_names with identical timing windows into shared epochs.
+        (name, start, stop, params_dict, template names). Iterates over the
+        stimulus epochs table, identifying epochs based on when the
+        'stim_name' field of the table changes.
+
+        For each epoch, every unknown column (not start_time, stop_time,
+        stim_name, stim_type, or frame) are listed as parameters, and the set
+        of values for that column are listed as parameter values.
         """
         if self.camstim_settings.lims_project_code == "U01BFCT":
             return self.extract_whole_session_epoch(stim_table)
 
-        stim_table = stim_table.copy()
-        stim_table = stim_table[
-            stim_table["stim_name"] != "spontaneous"
-        ].reset_index(drop=True)
-
-        # Create a grouping key based on start/stop times
-        stim_table["time_key"] = stim_table[["start_time", "stop_time"]].apply(tuple, axis=1)
-
-        epochs_by_stim = defaultdict(list) 
-
-        prev_time_key = None
-        prev_stim_set = set()
-        stim_epoch_buffers = {} 
-
-        for time_key, group in stim_table.groupby("time_key"):
-            current_stim_set = set(group["stim_name"])
-            if current_stim_set == prev_stim_set:
-                # extend current buffers
-                for stim_name in current_stim_set:
-                    stim_epoch_buffers[stim_name][1] = time_key[1]
-            else:
-                # finalize previous blocks
-                for stim_name in prev_stim_set:
-                    if stim_name in stim_epoch_buffers:
-                        epochs_by_stim[stim_name].append(stim_epoch_buffers[stim_name])
-                # start new blocks
-                stim_epoch_buffers = {
-                    stim_name: [time_key[0], time_key[1]] for stim_name in current_stim_set
-                }
-            prev_time_key = time_key
-            prev_stim_set = current_stim_set
-
-        # finalize remaining buffers
-        for stim_name, time_window in stim_epoch_buffers.items():
-            epochs_by_stim[stim_name].append(time_window)
-
-        # now collect final epochs
-        final_epochs = []
-        for stim_name, time_ranges in epochs_by_stim.items():
-            for start, stop in time_ranges:
-                epoch_rows = stim_table[
-                    (stim_table["stim_name"] == stim_name)
-                    & (stim_table["start_time"] >= start)
-                    & (stim_table["stop_time"] <= stop)
+        epochs = []
+        current_epoch = [None, 0.0, 0.0, {}, set()]
+        current_epochs = defaultdict(list)
+        # Initialize the first epoch with the first row of the stim table
+        epoch_start_idx = 0
+        for current_idx, row in stim_table.iterrows():
+            if (
+                row["stim_name"] == "spontaneous"
+                or row["start_time"] == current_epoch[1]
+            ):
+                continue
+            if row["stim_name"] != current_epoch[0]:
+                self._summarize_epoch_params(
+                    stim_table, current_epoch, epoch_start_idx, current_idx
+                )
+                epochs.append(current_epoch)
+                epoch_start_idx = current_idx
+                current_epoch = [
+                    row["stim_name"],
+                    row["start_time"],
+                    row["stop_time"],
+                    {},
+                    set(),
                 ]
-                params_dict = self._summarize_params(epoch_rows)
-                template_names = set()
-                if any("image" in stim_name.lower() or "movie" in stim_name.lower() for stim_name in epoch_rows["stim_name"]):
-                    template_names.update(epoch_rows["stim_name"].dropna().unique())
-                final_epochs.append([stim_name, start, stop, params_dict, template_names])
+            else:
+                current_epoch[2] = row["stop_time"]
 
-        # optional: slice off first default epoch (if applicable)
-        return final_epochs[1:] if final_epochs else final_epochs
+            stim_name = row.get("stim_name", "") or ""
+            image_set = row.get("image_set", "")
+            if pd.notnull(image_set):
+                stim_name = image_set
+
+            if "image" in stim_name.lower() or "movie" in stim_name.lower():
+                current_epoch[4].add(row["stim_name"])
+
+        # append final epoch after iteration
+        self._summarize_epoch_params(
+            stim_table, current_epoch, epoch_start_idx, current_idx
+        )
+        epochs.append(current_epoch)
+        # slice off the default starting epoch
+        return epochs[1:]
 
 
     def _summarize_params(self, rows: pd.DataFrame) -> dict:

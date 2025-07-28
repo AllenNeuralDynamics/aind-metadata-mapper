@@ -1165,11 +1165,51 @@ def from_stimulus_file(
     # one with stim_name "A" and the other with "B", the row with
     # "A" will come before "B"
     # This is to keep ordering of stim epochs consistent
-    df = df.sort_values(["start_time", "stop_time", "stim_name"])
-    df = df.reset_index(drop=True)
+    #df = df.sort_values(["start_time", "stop_time", "stim_name"])
+    #df = df.reset_index(drop=True)
+    df = reorder_by_stim_in_temporal_blocks(
+        df=df,
+    )
 
     return (df, column_list)
 
+
+def reorder_by_stim_in_temporal_blocks(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.sort_values(by=["start_time", "stop_time"]).reset_index(drop=True)
+
+    # Step 1: Create temporal blocks
+    grouped = df.groupby(["start_time", "stop_time"], sort=False)
+
+    blocks = []
+    for _, group in grouped:
+        blocks.append(group.reset_index(drop=True))
+
+    # Step 2: Process blocks to form chunks of consecutive blocks with same stim_name set
+    chunks = []
+    current_chunk = [blocks[0]]
+    current_stims = set(blocks[0]["stim_name"])
+
+    for block in blocks[1:]:
+        block_stims = set(block["stim_name"])
+        if block_stims == current_stims:
+            current_chunk.append(block)
+        else:
+            chunks.append(current_chunk)
+            current_chunk = [block]
+            current_stims = block_stims
+    chunks.append(current_chunk)  # Add the last one
+
+    # Step 3: Within each chunk, order by stim_name
+    output_blocks = []
+    for chunk in chunks:
+        combined = pd.concat(chunk, ignore_index=True)
+        for stim in combined["stim_name"].unique():
+            stim_rows = combined[combined["stim_name"] == stim]
+            output_blocks.append(stim_rows)
+
+    # Step 4: Combine all blocks into final result
+    final_df = pd.concat(output_blocks, ignore_index=True)
+    return final_df
 
 def get_is_image_novel(
     image_names: List[str],
