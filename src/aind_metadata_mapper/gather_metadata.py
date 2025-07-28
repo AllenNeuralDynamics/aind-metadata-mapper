@@ -610,18 +610,6 @@ class GatherMetadataJob:
                     filename=Acquisition.default_filename(),
                     contents=acq_contents,
                 )
-            rig_contents = self.get_rig_metadata()
-            if rig_contents:
-                self._write_json_file(
-                    filename=Rig.default_filename(),
-                    contents=rig_contents,
-                )
-            instrument_contents = self.get_instrument_metadata()
-            if instrument_contents:
-                self._write_json_file(
-                    filename=Instrument.default_filename(),
-                    contents=instrument_contents,
-                )
 
     def run_job(self) -> None:
         """Run job"""
