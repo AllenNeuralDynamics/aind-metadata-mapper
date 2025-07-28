@@ -87,6 +87,7 @@ class ProcessingSettings(BaseSettings, extra="allow"):
         ),
     )
 
+
 class RigSettings(BaseSettings, extra="allow"):
     """Fields needed to retrieve rig metadata"""
 
@@ -107,6 +108,7 @@ class InstrumentSettings(BaseSettings, extra="allow"):
         description="Whether to partially match the instrument metadata."
     )
     metadata_service_path: str = "instrument"
+
 
 class MetadataSettings(BaseSettings, extra="allow"):
     """Fields needed to retrieve main Metadata"""

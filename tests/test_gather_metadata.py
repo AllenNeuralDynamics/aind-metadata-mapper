@@ -76,7 +76,9 @@ class TestGatherMetadataJob(unittest.TestCase):
             example_funding_multi_response = json.load(f)
         with open(RESOURCES_DIR / "exxample_rig_response.json", "r") as f:
             example_rig_response = json.load(f)
-        with open(RESOURCES_DIR / "example_instrument_response.json", "r") as f:
+        with open(
+            RESOURCES_DIR / "example_instrument_response.json", "r"
+        ) as f:
             example_instrument_response = json.load(f)
         cls.example_subject_response = example_subject_response
         cls.example_procedures_response = example_procedures_response
@@ -709,7 +711,9 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     @patch("requests.get")
     @patch("logging.warning")
-    def test_get_rig_metadata_warning(self, mock_warn: MagicMock, mock_get: MagicMock):
+    def test_get_rig_metadata_warning(
+        self, mock_warn: MagicMock, mock_get: MagicMock
+    ):
         """Tests get_rig_metadata when an error is raised"""
         mock_response = Response()
         mock_response.status_code = 500
@@ -731,6 +735,111 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_warn.assert_called_once_with(
             "Rig metadata is not valid! 500"
         )
+
+    def test_get_quality_control_metadata(self):
+        """Tests get_quality_control_metadata"""
+        metadata_dir = RESOURCES_DIR / "metadata_files"
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_dir=metadata_dir,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_quality_control_metadata()
+        self.assertIsNotNone(contents)
+
+    def test_get_quality_control_metadata_none(self):
+        """Tests get_quality_control_metadata returns none"""
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_quality_control_metadata()
+        self.assertIsNone(contents)
+
+    def test_get_problematic_rig_metadata(self):
+        """Tests get_rig_metadata when there is a pydantic serialization
+        issue."""
+        metadata_dir = METADATA_DIR_WITH_RIG_ISSUE
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_dir=metadata_dir,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_rig_metadata()
+        self.assertIsNotNone(contents)
+
+    def test_get_acquisition_metadata(self):
+        """Tests get_acquisition_metadata"""
+        metadata_dir = RESOURCES_DIR / "metadata_files"
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_dir=metadata_dir,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_acquisition_metadata()
+        self.assertIsNotNone(contents)
+
+    def test_get_acquisition_metadata_none(self):
+        """Tests get_acquisition_metadata returns none"""
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_acquisition_metadata()
+        self.assertIsNone(contents)
+
+    @patch("aind_metadata_mapper.smartspim.acquisition.SmartspimETL.run_job")
+    def test_get_acquisition_metadata_smartspim_success(
+        self, mock_run_job: MagicMock
+    ):
+        """Tests get_acquisition_metadata returns something when requesting
+        SmartSPIM metadata"""
+
+        mock_run_job.return_value = JobResponse(
+            status_code=200, data=json.dumps({"some_key": "some_value"})
+        )
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            acquisition_settings=AcquisitionSettings(
+                job_settings=SmartSpimAcquisitionJobSettings(
+                    subject_id="695464",
+                    input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
+                    metadata_service_path="http://acme/test",
+                )
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_acquisition_metadata()
+        self.assertEqual({"some_key": "some_value"}, contents)
+
+    @patch("aind_metadata_mapper.smartspim.acquisition.SmartspimETL.run_job")
+    def test_get_acquisition_metadata_smartspim_error(
+        self, mock_run_job: MagicMock
+    ):
+        """Tests get_acquisition_metadata returns None when requesting
+        SmartSPIM metadata and a 500 response is returned."""
+
+        mock_run_job.return_value = JobResponse(status_code=500, data=None)
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            acquisition_settings=AcquisitionSettings(
+                job_settings=SmartSpimAcquisitionJobSettings(
+                    subject_id="695464",
+                    input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
+                    metadata_service_path="http://acme/test",
+                )
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_acquisition_metadata()
+        self.assertIsNone(contents)
 
     @patch("requests.get")
     def test_get_instrument_metadata(self, mock_get: MagicMock):
@@ -771,7 +880,9 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     @patch("requests.get")
     @patch("logging.warning")
-    def test_get_instrument_metadata_warning(self, mock_warn: MagicMock, mock_get: MagicMock):
+    def test_get_instrument_metadata_warning(
+        self, mock_warn: MagicMock, mock_get: MagicMock
+    ):
         """Tests get_instrument_metadata when an error is raised"""
         mock_response = Response()
         mock_response.status_code = 500

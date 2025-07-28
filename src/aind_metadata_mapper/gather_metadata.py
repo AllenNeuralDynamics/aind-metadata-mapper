@@ -329,7 +329,7 @@ class GatherMetadataJob:
                     f"Rig metadata is not valid! {response.status_code}"
                 )
                 return None
-        else: 
+        else:
             contents = self._get_file_from_user_defined_directory(
                 file_name=file_name
             )
@@ -386,7 +386,7 @@ class GatherMetadataJob:
                     f"Instrument metadata is not valid! {response.status_code}"
                 )
                 return None
-        else: 
+        else:
             contents = self._get_file_from_user_defined_directory(
                 file_name=file_name
             )
