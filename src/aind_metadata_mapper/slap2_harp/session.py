@@ -5,10 +5,11 @@ import requests
 import yaml
 import harp
 import io
+from datetime import datetime, timedelta
 
 from aind_data_schema.core.session import Session
 from aind_metadata_mapper.core import GenericEtl
-from aind_metadata_mapper.open_ephys.models import JobSettings
+from aind_metadata_mapper.slap2_harp.models import JobSettings
 from aind_data_schema.core.session import Stream
 from aind_data_schema_models.modalities import Modality
 
@@ -86,7 +87,6 @@ class Slap2HarpSessionEtl(GenericEtl):
         self.output_dir = job_settings.output_directory
         logger.debug(f"Initialized SLAP2 Harp ETL for {self.session_path}")
 
-
     def get_timing(self, harp_path):
         """
         Extract session start and end times from HARP files and set as class attributes.
@@ -100,37 +100,46 @@ class Slap2HarpSessionEtl(GenericEtl):
         reader = harp.create_reader(harp_path)
 
         # Get SLAP2 trial start and end times
-        start_trial = reader.PulseDO0.read()["PulseDO0"].index.to_numpy()[2:]
-        end_trial = reader.PulseDO1.read().index.to_numpy()[2:]
+        start_trial_times = reader.PulseDO0.read()["PulseDO0"].index.to_numpy()[2:]
+        end_trial_times = reader.PulseDO1.read().index.to_numpy()[2:]
+        self.harp_time_offset = start_trial_times[0]
+        norm_end_trial_times = end_trial_times - self.harp_time_offset
 
-        self.session_start = float(start_trial[0])
-        self.session_end = float(end_trial[-1])
+        timestamp_str = self.session_path.name.split('_')[-1]
+        session_start_datetime = datetime.strptime(timestamp_str, "%Y%m%dT%H%M%S")
+
+        self.session_start = session_start_datetime
+        self.session_end = session_start_datetime + timedelta(seconds=norm_end_trial_times[-1])
 
     def extract_mouse_id(self):
         """
-        Extract mouse id from the session_path folder name (first 6 digit number) and set as class attribute.
+        Extract mouse id from the session_path folder name (first 6 digit number)
+        and set as class attribute. For example, from '794237_20250508T145040',
+        extract '794237'.
         """
         import re
-        match = re.search(r"(\\d{6})", self.session_path.name)
+        match = re.search(r"(\d{6})", self.session_path.name)
         if match:
             self.mouse_id = match.group(1)
         else:
             self.mouse_id = None
         logger.debug(f"Extracted mouse_id: {self.mouse_id}")
-
+        print(f"Extracted mouse_id: {self.mouse_id}")
 
     def run_job(self):
         """Transforms all metadata for the session into relevant files"""
         self._extract()
         self._transform()
-        return self._load(self.session_json, self.output_dir)
+        res = self._load(self.session_json, self.output_dir)
+        print(f"got status when writing session.json to {self.output_dir}: {res}")
+        return res
 
     def _extract(self):
         """
         Extract raw data and metadata from session files.
         """
         # Find the harp folder as a subdirectory ending with .harp
-        harp_dirs = list(self.session_path.glob("*.harp"))
+        harp_dirs = list(self.session_path.rglob("*.harp"))
         if not harp_dirs:
             raise FileNotFoundError("No .harp directory found in session path")
         if len(harp_dirs) > 1:
@@ -173,14 +182,16 @@ class Slap2HarpSessionEtl(GenericEtl):
             times = data[channel_name].index.to_numpy()
         else:
             raise ValueError(f"Unknown stream_type: {stream_type}")
+        normalized_times = [float(t)-self.harp_time_offset for t in times]
+
         # Assign modality: SLAP for DO0/DO1, otherwise BEHAVIOR
         if channel_name in ["PulseDO0", "PulseDO1"]:
             modality = Modality.SLAP
         else:
             modality = Modality.BEHAVIOR
         # Use the first and last time as stream start/end (relative to session start)
-        stream_start_time = float(times[0]) if len(times) > 0 else self.session_start
-        stream_end_time = float(times[-1]) if len(times) > 0 else self.session_end
+        stream_start_time = self.session_start + timedelta(seconds=normalized_times[0])
+        stream_end_time = self.session_start + timedelta(seconds=normalized_times[-1])
         return Stream(
             stream_start_time=stream_start_time,
             stream_end_time=stream_end_time,
@@ -213,13 +224,13 @@ class Slap2HarpSessionEtl(GenericEtl):
             session_end_time=self.session_end,
             session_type=self.job_settings.session_type,
             iacuc_protocol=self.job_settings.iacuc_protocol,
-            rig_id=None,
+            rig_id="SLAP2_1",
             subject_id=self.mouse_id,
             data_streams=self.make_data_streams(),
             stimulus_epochs=[],
-            mouse_platform_name=None,
-            active_mouse_platform=None,
-            reward_consumed_unit=None,
+            mouse_platform_name=self.job_settings.mouse_platform_name,
+            active_mouse_platform=self.job_settings.active_mouse_platform,
+            reward_consumed_unit="milliliter",
             notes="",
         )
         logger.debug("Transformed data into Session schema.")
