@@ -1,10 +1,12 @@
 import logging
 from pathlib import Path
+import shutil
 from typing import Union
 import requests
 import yaml
 import harp
 import io
+import os
 from datetime import datetime, timedelta
 
 from aind_data_schema.core.session import Session
@@ -14,6 +16,8 @@ from aind_data_schema.core.session import Stream
 from aind_data_schema_models.modalities import Modality
 
 logger = logging.getLogger(__name__)
+
+SLAP2_RIG_JSON = r"\\allen\aind\scratch\OpenScope\Slap2\rigDescription.json"
 
 # HARP utility functions for timing alignment
 def _get_who_am_i_list(url: str = "https://raw.githubusercontent.com/harp-tech/protocol/main/whoami.yml"):
@@ -130,9 +134,7 @@ class Slap2HarpSessionEtl(GenericEtl):
         """Transforms all metadata for the session into relevant files"""
         self._extract()
         self._transform()
-        res = self._load(self.session_json, self.output_dir)
-        print(f"got status when writing session.json to {self.output_dir}: {res}")
-        return res
+        return self._load(self.session_json, self.output_dir)
 
     def _extract(self):
         """
@@ -234,6 +236,10 @@ class Slap2HarpSessionEtl(GenericEtl):
             notes="",
         )
         logger.debug("Transformed data into Session schema.")
+
+        if not os.path.exists(self.output_dir / "rigDescription.json"):
+            logger.info(f"Copying Rig.json")
+            shutil.copy(Path(SLAP2_RIG_JSON), self.output_dir)
         return self.session_json
 
     # Add additional methods as needed for SLAP2 Harp specifics
