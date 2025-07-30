@@ -237,9 +237,9 @@ class Slap2HarpSessionEtl(GenericEtl):
         )
         logger.debug("Transformed data into Session schema.")
 
-        if not os.path.exists(self.output_dir / "rigDescription.json"):
-            logger.info(f"Copying Rig.json")
-            shutil.copy(Path(SLAP2_RIG_JSON), self.output_dir)
+        if not os.path.exists(self.output_dir / "rig.json"):
+            logger.info(f"Copying rig.json")
+            shutil.copy(Path(SLAP2_RIG_JSON), self.output_dir / 'rig.json')
         return self.session_json
 
     # Add additional methods as needed for SLAP2 Harp specifics
