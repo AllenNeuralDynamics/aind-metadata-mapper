@@ -830,15 +830,21 @@ def fingerprint_from_stimulus_file(
     pd.DataFrame
         Table of fingerprint stimulus intervals.
     """
-    fingerprint_stim = stimulus_file["items"]["behavior"]["items"][fingerprint_name]["static_stimulus"]
+    fingerprint_stim = stimulus_file["items"]["behavior"]["items"][
+        fingerprint_name
+    ]["static_stimulus"]
     save_sweep_table = fingerprint_stim.get("save_sweep_table", False)
 
     # Get frame indices relative to full session
     stimulus_session_frame_indices = np.array(
-        stimulus_file["items"]["behavior"]["items"][fingerprint_name]["frame_indices"]
+        stimulus_file["items"]["behavior"]["items"][fingerprint_name][
+            "frame_indices"
+        ]
     )
 
-    movie_start_index = sum(1 for frame in fingerprint_stim["frame_list"] if frame == -1)
+    movie_start_index = sum(
+        1 for frame in fingerprint_stim["frame_list"] if frame == -1
+    )
     sweep_frames = fingerprint_stim["sweep_frames"]
 
     res = []
@@ -852,27 +858,35 @@ def fingerprint_from_stimulus_file(
         dimnames = fingerprint_stim["dimnames"]
 
         for i, stimulus_frame_indices in enumerate(sweep_frames):
-            stimulus_frame_indices = np.array(stimulus_frame_indices).astype(int)
+            stimulus_frame_indices = np.array(stimulus_frame_indices).astype(
+                int
+            )
             valid_indices = np.clip(
                 stimulus_frame_indices + movie_start_index,
                 0,
                 len(stimulus_session_frame_indices) - 1,
             )
-            start_frame, end_frame = stimulus_session_frame_indices[valid_indices]
+            start_frame, end_frame = stimulus_session_frame_indices[
+                valid_indices
+            ]
             start_time = stimulus_timestamps[start_frame]
-            stop_time = stimulus_timestamps[min(end_frame + 1, len(stimulus_timestamps) - 1)]
+            stop_time = stimulus_timestamps[
+                min(end_frame + 1, len(stimulus_timestamps) - 1)
+            ]
 
             stim_row = sweep_table[i]
             stim_info = dict(zip(dimnames, stim_row))
 
-            res.append({
-                "start_time": start_time,
-                "stop_time": stop_time,
-                "start_frame": start_frame,
-                "end_frame": end_frame,
-                "duration": stop_time - start_time,
-                **stim_info,
-            })
+            res.append(
+                {
+                    "start_time": start_time,
+                    "stop_time": stop_time,
+                    "start_frame": start_frame,
+                    "end_frame": end_frame,
+                    "duration": stop_time - start_time,
+                    **stim_info,
+                }
+            )
     else:
         # Fallback to older logic
         n_repeats = fingerprint_stim["runs"]
@@ -881,25 +895,33 @@ def fingerprint_from_stimulus_file(
         for repeat in range(n_repeats):
             for frame in range(movie_length):
                 idx = frame + (repeat * movie_length)
-                stimulus_frame_indices = np.array(sweep_frames[idx]).astype(int)
+                stimulus_frame_indices = np.array(sweep_frames[idx]).astype(
+                    int
+                )
                 valid_indices = np.clip(
                     stimulus_frame_indices + movie_start_index,
                     0,
                     len(stimulus_session_frame_indices) - 1,
                 )
-                start_frame, end_frame = stimulus_session_frame_indices[valid_indices]
+                start_frame, end_frame = stimulus_session_frame_indices[
+                    valid_indices
+                ]
                 start_time = stimulus_timestamps[start_frame]
-                stop_time = stimulus_timestamps[min(end_frame + 1, len(stimulus_timestamps) - 1)]
+                stop_time = stimulus_timestamps[
+                    min(end_frame + 1, len(stimulus_timestamps) - 1)
+                ]
 
-                res.append({
-                    "movie_frame_index": frame,
-                    "movie_repeat": repeat,
-                    "start_time": start_time,
-                    "stop_time": stop_time,
-                    "start_frame": start_frame,
-                    "end_frame": end_frame,
-                    "duration": stop_time - start_time,
-                })
+                res.append(
+                    {
+                        "movie_frame_index": frame,
+                        "movie_repeat": repeat,
+                        "start_time": start_time,
+                        "stop_time": stop_time,
+                        "start_frame": start_frame,
+                        "end_frame": end_frame,
+                        "duration": stop_time - start_time,
+                    }
+                )
 
     table = pd.DataFrame(res)
 
@@ -908,9 +930,12 @@ def fingerprint_from_stimulus_file(
     table["stim_name"] = fingerprint_name
 
     # Coerce ints cleanly
-    table = table.astype({c: "int64" for c in table.select_dtypes(include="int")})
+    table = table.astype(
+        {c: "int64" for c in table.select_dtypes(include="int")}
+    )
 
     return table
+
 
 def clean_position_and_contrast(df):
     """Clean position and contrast columns in stimulus presentation table.
@@ -1160,13 +1185,13 @@ def from_stimulus_file(
 
     df.drop(columns=["stim_block"], inplace=True, errors="ignore")
     df = df.drop(columns=["start_frame", "end_frame"], errors="ignore")
-    # organize rows with the same start and stop time alphabetically by stim_name
+    # organize rows with the same start/stop time alphabetically by stim_name
     # For example, if there are two stimuli with the same start and stop time,
     # one with stim_name "A" and the other with "B", the row with
     # "A" will come before "B"
     # This is to keep ordering of stim epochs consistent
-    #df = df.sort_values(["start_time", "stop_time", "stim_name"])
-    #df = df.reset_index(drop=True)
+    # df = df.sort_values(["start_time", "stop_time", "stim_name"])
+    # df = df.reset_index(drop=True)
     df = reorder_by_stim_in_temporal_blocks(
         df=df,
     )
@@ -1184,7 +1209,8 @@ def reorder_by_stim_in_temporal_blocks(df: pd.DataFrame) -> pd.DataFrame:
     for _, group in grouped:
         blocks.append(group.reset_index(drop=True))
 
-    # Step 2: Process blocks to form chunks of consecutive blocks with same stim_name set
+    # Step 2: Process blocks to form chunks of consecutive blocks
+    # with same stim_name set
     chunks = []
     current_chunk = [blocks[0]]
     current_stims = set(blocks[0]["stim_name"])
@@ -1203,13 +1229,14 @@ def reorder_by_stim_in_temporal_blocks(df: pd.DataFrame) -> pd.DataFrame:
     output_blocks = []
     for chunk in chunks:
         combined = pd.concat(chunk, ignore_index=True)
-        for stim in combined["stim_name"].unique():
-            stim_rows = combined[combined["stim_name"] == stim]
+        for stimulus in combined["stim_name"].unique():
+            stim_rows = combined[combined["stim_name"] == stimulus]
             output_blocks.append(stim_rows)
 
     # Step 4: Combine all blocks into final result
     final_df = pd.concat(output_blocks, ignore_index=True)
     return final_df
+
 
 def get_is_image_novel(
     image_names: List[str],

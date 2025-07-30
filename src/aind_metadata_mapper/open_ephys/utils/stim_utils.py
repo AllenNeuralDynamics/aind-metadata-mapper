@@ -290,24 +290,29 @@ def create_stim_table(
     for ii, stim_table in enumerate(stimulus_tables):
         stim_table[block_key] = ii
 
-    
     stim_table_full = pd.concat(stimulus_tables, ignore_index=True, sort=False)
     stim_table_full.sort_values(by=[sort_key], inplace=True)
     stim_table_full.reset_index(drop=True, inplace=True)
     print("Sorting stim table by start_time, stop_time, and stim_name")
     stim_table_full = reorder_by_stim_in_temporal_blocks(stim_table_full)
 
-    spontaneous_df = pd.concat(spontaneous_activity_tabler(stimulus_tables), ignore_index=True)
+    spontaneous_df = pd.concat(
+        spontaneous_activity_tabler(stimulus_tables), ignore_index=True
+    )
 
     # Now insert spontaneous rows into stim_table_full in correct position
 
     for idx, spont_row in spontaneous_df.iterrows():
-        insert_pos = stim_table_full['start_time'].searchsorted(spont_row['start_time'])
-        stim_table_full = pd.concat([
-            stim_table_full.iloc[:insert_pos],
-            pd.DataFrame([spont_row]),
-            stim_table_full.iloc[insert_pos:]
-        ]).reset_index(drop=True)
+        insert_pos = stim_table_full["start_time"].searchsorted(
+            spont_row["start_time"]
+        )
+        stim_table_full = pd.concat(
+            [
+                stim_table_full.iloc[:insert_pos],
+                pd.DataFrame([spont_row]),
+                stim_table_full.iloc[insert_pos:],
+            ]
+        ).reset_index(drop=True)
 
     return stim_table_full
 
@@ -322,7 +327,8 @@ def reorder_by_stim_in_temporal_blocks(df: pd.DataFrame) -> pd.DataFrame:
     for _, group in grouped:
         blocks.append(group.reset_index(drop=True))
 
-    # Step 2: Process blocks to form chunks of consecutive blocks with same stim_name set
+    # Step 2: Process blocks to form chunks of consecutive blocks
+    # with same stim_name set
     chunks = []
     current_chunk = [blocks[0]]
     current_stims = set(blocks[0]["stim_name"])
@@ -348,6 +354,7 @@ def reorder_by_stim_in_temporal_blocks(df: pd.DataFrame) -> pd.DataFrame:
     # Step 4: Combine all blocks into final result
     final_df = pd.concat(output_blocks, ignore_index=True)
     return final_df
+
 
 def make_spontaneous_activity_tables(
     stimulus_tables,
