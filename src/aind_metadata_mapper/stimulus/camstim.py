@@ -6,7 +6,6 @@ import functools
 from datetime import timedelta
 from pathlib import Path
 from typing import Optional
-from collections import defaultdict
 
 import pandas as pd
 from aind_data_schema.components.devices import Software
@@ -334,7 +333,6 @@ class Camstim:
 
         epochs = []
         current_epoch = [None, 0.0, 0.0, {}, set()]
-        current_epochs = defaultdict(list)
         # Initialize the first epoch with the first row of the stim table
         epoch_start_idx = 0
         for current_idx, row in stim_table.iterrows():
@@ -375,9 +373,13 @@ class Camstim:
         # slice off the default starting epoch
         return epochs[1:]
 
-
     def _summarize_params(self, rows: pd.DataFrame) -> dict:
-        ignore_columns = {"start_time", "stop_time", "stim_name", "stim_type", "frame", "time_key"}
+        ignore_columns = {"start_time",
+                          "stop_time",
+                          "stim_name",
+                          "stim_type",
+                          "frame",
+                          "time_key"}
         params = {}
         for col in rows.columns:
             if col not in ignore_columns:

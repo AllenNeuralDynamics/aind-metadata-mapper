@@ -1189,9 +1189,6 @@ def from_stimulus_file(
     # For example, if there are two stimuli with the same start and stop time,
     # one with stim_name "A" and the other with "B", the row with
     # "A" will come before "B"
-    # This is to keep ordering of stim epochs consistent
-    # df = df.sort_values(["start_time", "stop_time", "stim_name"])
-    # df = df.reset_index(drop=True)
     df = reorder_by_stim_in_temporal_blocks(
         df=df,
     )
