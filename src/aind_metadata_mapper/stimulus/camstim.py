@@ -374,6 +374,21 @@ class Camstim:
         return epochs[1:]
 
     def _summarize_params(self, rows: pd.DataFrame) -> dict:
+        """
+        Summarizes the parameters from the stimulus epochs table.
+
+        Parameters
+        ----------
+        rows : pd.DataFrame
+            DataFrame containing the rows of the stimulus epochs table.
+
+        Returns
+        -------
+        dict
+            A dictionary where keys are parameter names and values are
+            either a single value or a list of unique values for that
+            parameter across the rows.
+        """
         ignore_columns = {"start_time",
                           "stop_time",
                           "stim_name",

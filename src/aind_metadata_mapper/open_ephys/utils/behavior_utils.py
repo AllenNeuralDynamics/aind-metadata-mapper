@@ -1197,6 +1197,24 @@ def from_stimulus_file(
 
 
 def reorder_by_stim_in_temporal_blocks(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Reorders the stimulus presentations DataFrame by grouping consecutive
+    blocks of stimuli with the same start and stop times, and then ordering
+    the rows within each block by their `stim_name`.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing stimulus presentations with columns:
+        - `start_time`: Start time of the stimulus presentation
+        - `stop_time`: Stop time of the stimulus presentation
+        - `stim_name`: Name of the stimulus
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with rows ordered by temporal blocks and `stim_name`.
+    """
     df = df.sort_values(by=["start_time", "stop_time"]).reset_index(drop=True)
 
     # Step 1: Create temporal blocks
