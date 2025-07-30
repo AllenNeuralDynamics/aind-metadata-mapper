@@ -259,43 +259,89 @@ class TestStimUtils(unittest.TestCase):
                 assert result_params == expected_params
                 mock_logger.debug.assert_called_with(expected_params)
 
-    def test_make_spontaneous_activity_tables(self):
+    def test_create_stim_table(self):
         """
-        Test the make_spontaneous_activity_tables function.
+        Test the create_stim_table function.
         """
 
         # Sample input data
-        stimulus_tables = [
-            pd.DataFrame({"start_time": [0, 20], "stop_time": [10, 30]}),
-            pd.DataFrame({"start_time": [40, 60], "stop_time": [50, 70]}),
-        ]
+        pkl_file = "test.pkl"
+        stimuli = [{"stimulus": "stim1"}, {"stimulus": "stim2"}]
 
-        # Expected result without duration threshold
-        expected_spon_sweeps_no_threshold = pd.DataFrame(
-            {"start_time": [30], "stop_time": [40]}
+        # Mock stimulus tables
+        stim_table_1 = pd.DataFrame(
+            {
+                "start_time": [10, 20],
+                "end_time": [15, 25],
+                "stim_param": ["a", "b"],
+            }
         )
-
-        # Expected result with duration threshold of 10
-        expected_spon_sweeps_with_threshold = pd.DataFrame(
-            {"start_time": [], "stop_time": []}, dtype="int64"
+        stim_table_2 = pd.DataFrame(
+            {
+                "start_time": [30, 40],
+                "end_time": [35, 45],
+                "stim_param": ["c", "d"],
+            }
         )
-
-        # Call the function without duration threshold
-        result_no_threshold = stim.make_spontaneous_activity_tables(
-            stimulus_tables, duration_threshold=0.0
-        )
-        pd.testing.assert_frame_equal(
-            result_no_threshold[0], expected_spon_sweeps_no_threshold
-        )
-
-        # Call the function with duration threshold
-        result_with_threshold = stim.make_spontaneous_activity_tables(
-            stimulus_tables, duration_threshold=10.0
-        )
-        pd.testing.assert_frame_equal(
-            result_with_threshold[0], expected_spon_sweeps_with_threshold
+        stim_table_3 = pd.DataFrame(
+            {
+                "start_time": [5, 50],
+                "end_time": [10, 55],
+                "stim_param": ["e", "f"],
+            }
         )
 
+        # Expected full stimulus table
+        expected_stim_table_full = pd.DataFrame(
+            {
+                "start_time": [5, 10, 20, 30, 40, 50],
+                "end_time": [10, 15, 25, 35, 45, 55],
+                "stim_param": ["e", "a", "b", "c", "d", "f"],
+                "stim_index": [pd.NA, 0.0, 0.0, 1.0, 1.0, pd.NA],
+                "stim_block": [0, 0, 0, 1, 1, 2],
+            }
+        )
+
+        # Mock stimulus_tabler function
+        def mock_stimulus_tabler(pkl_file, stimulus):
+            """
+            Mock function for stim intermediary func
+            """
+            if stimulus["stimulus"] == "stim1":
+                return [stim_table_1]
+            elif stimulus["stimulus"] == "stim2":
+                return [stim_table_2]
+            return []
+
+        # Mock spontaneous_activity_tabler function
+        def mock_spontaneous_activity_tabler(stimulus_tables):
+            """
+            Mock of the spontaneous activity tabler
+            """
+            return [stim_table_3]
+
+        result_stim_table_full = stim.create_stim_table(
+            pkl_file,
+            stimuli,
+            mock_stimulus_tabler,
+            mock_spontaneous_activity_tabler,
+        )
+        self.assertEquals(
+            result_stim_table_full["start_time"].all(),
+            expected_stim_table_full["start_time"].all(),
+        )
+        self.assertEquals(
+            result_stim_table_full["end_time"].all(),
+            expected_stim_table_full["end_time"].all(),
+        )
+        self.assertEquals(
+            result_stim_table_full["stim_param"].all(),
+            expected_stim_table_full["stim_param"].all(),
+        )
+        self.assertEquals(
+            result_stim_table_full["stim_block"].all(),
+            expected_stim_table_full["stim_block"].all(),
+        )
 
     def test_make_spontaneous_activity_tables(self):
         """
