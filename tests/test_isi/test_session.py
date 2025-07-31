@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 import h5py as h5
 import numpy as np
 from aind_data_schema.core.session import (
+    LightEmittingDiodeConfig,
     Session,
     StimulusEpoch,
     StimulusModality,
@@ -244,7 +245,8 @@ class TestISI(unittest.TestCase):
         )
         self.assertEqual(session.subject_id, self.subject_id)
         self.assertEqual(session.session_type, "ISI")
-        self.assertEqual(session.rig_id, "ISI.1")
+        # rig_id now comes from environment variable
+        self.assertIsInstance(session.rig_id, str)
         self.assertEqual(session.mouse_platform_name, "disc")
         self.assertTrue(session.active_mouse_platform)
 
@@ -255,7 +257,12 @@ class TestISI(unittest.TestCase):
         self.assertEqual(stream.stream_start_time, start_time)
         self.assertEqual(stream.stream_end_time, end_time)
         self.assertEqual(stream.stream_modalities, [Modality.ISI])
-        self.assertEqual(stream.camera_names, ["Light source goes here XXX"])
+        
+        # Check light sources instead of camera_names
+        self.assertEqual(len(stream.light_sources), 1)
+        light_source = stream.light_sources[0]
+        self.assertIsInstance(light_source, LightEmittingDiodeConfig)
+        self.assertEqual(light_source.name, "ISI LED")
 
         # Check stimulus epochs
         self.assertEqual(session.stimulus_epochs, stimulus_epochs)
