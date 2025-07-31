@@ -17,7 +17,7 @@ from aind_data_schema_models.modalities import Modality
 
 logger = logging.getLogger(__name__)
 
-SLAP2_RIG_JSON = r"\\allen\aind\scratch\OpenScope\Slap2\rigDescription.json"
+SLAP2_RIG_JSON = r"\\allen\aind\scratch\OpenScope\Slap2\rig.json"
 
 # HARP utility functions for timing alignment
 def _get_who_am_i_list(url: str = "https://raw.githubusercontent.com/harp-tech/protocol/main/whoami.yml"):
