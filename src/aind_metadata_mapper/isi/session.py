@@ -5,9 +5,15 @@ import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Tuple, Union
+from zoneinfo import ZoneInfo
 
 import h5py as h5
-from aind_data_schema.core.session import Session, StimulusEpoch, Stream, StimulusModality
+from aind_data_schema.core.session import (
+    Session,
+    StimulusEpoch,
+    Stream,
+    StimulusModality,
+)
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.core import GenericEtl
@@ -62,10 +68,13 @@ class ISI(GenericEtl[JobSettings]):
         tuple
             (start_time: datetime, end_time: datetime)
         """
+        tz = ZoneInfo(self.job_settings.local_timezone)
         start_time = datetime.fromtimestamp(
-            self.trial_files[0].stat().st_ctime
+            self.trial_files[0].stat().st_ctime, tz=tz
         )
-        end_time = datetime.fromtimestamp(self.trial_files[-1].stat().st_ctime)
+        end_time = datetime.fromtimestamp(
+            self.trial_files[-1].stat().st_ctime, tz=tz
+        )
         return start_time, end_time
 
     def _extract(self) -> List[StimulusEpoch]:
@@ -77,24 +86,28 @@ class ISI(GenericEtl[JobSettings]):
             A list of stimulus epochs extracted from the trial files.
         """
         stimulus_epochs = []
+        tz = ZoneInfo(self.job_settings.local_timezone)
         for trial in self.trial_files:
             with h5.File(trial, "r") as f:
                 trial_times = f["raw_images_timestamp"][()]
-                trial_start = datetime.fromtimestamp(trial.stat().st_ctime)
+                trial_start = datetime.fromtimestamp(
+                    trial.stat().st_ctime, tz=tz
+                )
                 trial_end = datetime.fromtimestamp(
-                    trial_start.timestamp() + trial_times[-1]
+                    trial_start.timestamp() + trial_times[-1], tz=tz
                 )
                 stim_epoch = StimulusEpoch(
                     stimulus_start_time=trial_start,
                     stimulus_end_time=trial_end,
-                    stimulus_name=trial.name.split(".hdf5")[0],  # Use the file name without extension
+                    # Use the file name without extension
+                    stimulus_name=trial.name.split(".hdf5")[0],
                     stimulus_modalities=[StimulusModality.VISUAL]
                 )
             stimulus_epochs.append(stim_epoch)
 
         return stimulus_epochs
 
-    def _transform(self, stimulus_epochs: List[StimulusEpoch]) -> None:
+    def _transform(self, stimulus_epochs: List[StimulusEpoch]) -> Session:
         """Transforms the job settings into a Session model.
 
         Parameters
@@ -130,19 +143,17 @@ class ISI(GenericEtl[JobSettings]):
             active_mouse_platform=True,
         )
 
-        
     def run_job(self) -> None:
         """Loads the session into the database."""
-        # Here you would implement the logic to save the session to your database
+        # Here you would implement the logic to save the session to your
+        # database
         # For example, using an ORM or direct database connection
         epoch_data = self._extract()
         transformed = self._transform(epoch_data)
         transformed.write_standard_file(
             output_directory=self.job_settings.output_directory
         )
-        logging.info(
-            f"Session loaded successfully."
-        )
+        logging.info("Session loaded successfully.")
 
 
 if __name__ == "__main__":
