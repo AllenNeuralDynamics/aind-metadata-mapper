@@ -1,8 +1,8 @@
-"""Mesoscope ETL"""
+"""ISI ETL"""
 
 import argparse
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple, Union
 from zoneinfo import ZoneInfo
@@ -11,8 +11,8 @@ import h5py as h5
 from aind_data_schema.core.session import (
     Session,
     StimulusEpoch,
-    Stream,
     StimulusModality,
+    Stream,
 )
 from aind_data_schema_models.modalities import Modality
 
@@ -89,19 +89,19 @@ class ISI(GenericEtl[JobSettings]):
         tz = ZoneInfo(self.job_settings.local_timezone)
         for trial in self.trial_files:
             with h5.File(trial, "r") as f:
-                trial_times = f["raw_images_timestamp"][()]
+                trial_times = f["raw_images_timestamp"][()].astype(float)
                 trial_start = datetime.fromtimestamp(
                     trial.stat().st_ctime, tz=tz
                 )
                 trial_end = datetime.fromtimestamp(
-                    trial_start.timestamp() + trial_times[-1], tz=tz
+                    trial_start.timestamp() + float(trial_times[-1]), tz=tz
                 )
                 stim_epoch = StimulusEpoch(
                     stimulus_start_time=trial_start,
                     stimulus_end_time=trial_end,
                     # Use the file name without extension
                     stimulus_name=trial.name.split(".hdf5")[0],
-                    stimulus_modalities=[StimulusModality.VISUAL]
+                    stimulus_modalities=[StimulusModality.VISUAL],
                 )
             stimulus_epochs.append(stim_epoch)
 
@@ -126,8 +126,7 @@ class ISI(GenericEtl[JobSettings]):
                 stream_start_time=self.start_time,
                 stream_end_time=self.end_time,
                 camera_names=["Light source goes here XXX"],
-                stream_modalities=[Modality.ISI]
-
+                stream_modalities=[Modality.ISI],
             )
         ]
         return Session(
@@ -145,9 +144,6 @@ class ISI(GenericEtl[JobSettings]):
 
     def run_job(self) -> None:
         """Loads the session into the database."""
-        # Here you would implement the logic to save the session to your
-        # database
-        # For example, using an ORM or direct database connection
         epoch_data = self._extract()
         transformed = self._transform(epoch_data)
         transformed.write_standard_file(
