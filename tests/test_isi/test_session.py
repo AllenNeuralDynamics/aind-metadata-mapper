@@ -257,7 +257,7 @@ class TestISI(unittest.TestCase):
         self.assertEqual(stream.stream_start_time, start_time)
         self.assertEqual(stream.stream_end_time, end_time)
         self.assertEqual(stream.stream_modalities, [Modality.ISI])
-        
+
         # Check light sources instead of camera_names
         self.assertEqual(len(stream.light_sources), 1)
         light_source = stream.light_sources[0]
