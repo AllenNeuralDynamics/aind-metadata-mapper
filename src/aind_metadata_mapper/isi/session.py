@@ -128,7 +128,7 @@ class ISI(GenericEtl[JobSettings]):
                 stream_end_time=self.end_time,
                 light_sources=[
                     LightEmittingDiodeConfig(
-                      name="ISI LED",
+                        name="ISI LED",
                     )
                 ],
                 stream_modalities=[Modality.ISI],
