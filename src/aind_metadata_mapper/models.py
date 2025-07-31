@@ -88,6 +88,20 @@ class ProcessingSettings(BaseSettings, extra="allow"):
     )
 
 
+class RigSettings(BaseSettings, extra="allow"):
+    """Fields needed to retrieve rig metadata"""
+
+    rig_id: str
+    metadata_service_path: str = "rig"
+
+
+class InstrumentSettings(BaseSettings, extra="allow"):
+    """Fields needed to retrieve instrument metadata"""
+
+    instrument_id: str
+    metadata_service_path: str = "instrument"
+
+
 class MetadataSettings(BaseSettings, extra="allow"):
     """Fields needed to retrieve main Metadata"""
 
@@ -124,6 +138,8 @@ class JobSettings(BaseSettings, extra="allow"):
     raw_data_description_settings: Optional[RawDataDescriptionSettings] = None
     procedures_settings: Optional[ProceduresSettings] = None
     processing_settings: Optional[ProcessingSettings] = None
+    rig_settings: Optional[RigSettings] = None
+    instrument_settings: Optional[InstrumentSettings] = None
     metadata_settings: Optional[MetadataSettings] = None
     directory_to_write_to: Path
     metadata_dir: Optional[Union[Path, str]] = Field(
