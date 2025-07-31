@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 
 import h5py as h5
 from aind_data_schema.core.session import (
+    LightEmittingDiodeConfig,
     Session,
     StimulusEpoch,
     StimulusModality,
@@ -125,7 +126,11 @@ class ISI(GenericEtl[JobSettings]):
             Stream(
                 stream_start_time=self.start_time,
                 stream_end_time=self.end_time,
-                camera_names=["Light source goes here XXX"],
+                light_sources=[
+                    LightEmittingDiodeConfig(
+                      name="ISI LED",
+                    )
+                ],
                 stream_modalities=[Modality.ISI],
             )
         ]
@@ -137,7 +142,7 @@ class ISI(GenericEtl[JobSettings]):
             data_streams=data_streams,
             stimulus_epochs=stimulus_epochs,
             session_type="ISI",
-            rig_id="ISI.1",
+            rig_id=os.getenv("aibs_rig_id", ""),
             mouse_platform_name="disc",
             active_mouse_platform=True,
         )
