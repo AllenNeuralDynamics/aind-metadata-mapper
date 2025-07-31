@@ -232,7 +232,9 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_procedures()
         self.assertEqual("632269", contents["subject_id"])
-        mock_get.assert_called_once_with("http://example.com/procedures/632269")
+        mock_get.assert_called_once_with(
+            "http://example.com/procedures/632269"
+        )
 
     @patch("requests.get")
     def test_get_procedures_from_dir(self, mock_get: MagicMock):
