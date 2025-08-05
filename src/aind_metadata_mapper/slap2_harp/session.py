@@ -17,8 +17,6 @@ from aind_data_schema_models.modalities import Modality
 
 logger = logging.getLogger(__name__)
 
-SLAP2_RIG_JSON = r"\\allen\aind\scratch\OpenScope\Slap2\rig.json"
-
 # HARP utility functions for timing alignment
 def _get_who_am_i_list(url: str = "https://raw.githubusercontent.com/harp-tech/protocol/main/whoami.yml"):
     response = requests.get(url, allow_redirects=True, timeout=5)
@@ -237,9 +235,6 @@ class Slap2HarpSessionEtl(GenericEtl):
         )
         logger.debug("Transformed data into Session schema.")
 
-        if not os.path.exists(self.output_dir / "rig.json"):
-            logger.info(f"Copying rig.json")
-            shutil.copy(Path(SLAP2_RIG_JSON), self.output_dir / 'rig.json')
         return self.session_json
 
     # Add additional methods as needed for SLAP2 Harp specifics
