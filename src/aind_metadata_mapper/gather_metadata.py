@@ -43,12 +43,6 @@ from aind_metadata_mapper.mesoscope.models import (
 )
 from aind_metadata_mapper.mesoscope.session import MesoscopeEtl
 from aind_metadata_mapper.models import JobSettings
-from aind_metadata_mapper.open_ephys.camstim_ephys_session import (
-    CamstimEphysSessionEtl,
-)
-from aind_metadata_mapper.open_ephys.models import (
-    JobSettings as OpenEphysJobSettings,
-)
 from aind_metadata_mapper.smartspim.acquisition import SmartspimETL
 
 
@@ -295,10 +289,6 @@ class GatherMetadataJob:
                 session_job = FIBEtl(job_settings=session_settings)
             elif isinstance(session_settings, MesoscopeSessionJobSettings):
                 session_job = MesoscopeEtl(job_settings=session_settings)
-            elif isinstance(session_settings, OpenEphysJobSettings):
-                session_job = CamstimEphysSessionEtl(
-                    job_settings=session_settings
-                )
             else:
                 raise ValueError("Unknown session job settings class!")
             job_response = session_job.run_job()
@@ -318,9 +308,7 @@ class GatherMetadataJob:
             )
             return contents
         elif self.settings.rig_settings is not None:
-            rig_file_path = (
-                self.settings.rig_settings.metadata_service_path
-            )
+            rig_file_path = self.settings.rig_settings.metadata_service_path
             response = requests.get(
                 self.settings.metadata_service_domain
                 + f"/{rig_file_path}/"

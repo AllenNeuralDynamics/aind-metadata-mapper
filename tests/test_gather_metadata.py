@@ -3,10 +3,10 @@
 import json
 import os
 import unittest
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
-from requests import Response
 
 from aind_data_schema.core.metadata import Metadata, MetadataStatus
 from aind_data_schema.core.processing import DataProcess, PipelineProcess
@@ -14,6 +14,7 @@ from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 from aind_data_schema_models.process_names import ProcessName
 from pydantic import ValidationError
+from requests import Response
 
 from aind_metadata_mapper.bergamo.models import (
     JobSettings as BergamoSessionJobSettings,
@@ -31,18 +32,15 @@ from aind_metadata_mapper.mesoscope.models import (
 )
 from aind_metadata_mapper.models import (
     AcquisitionSettings,
+    InstrumentSettings,
     JobSettings,
     MetadataSettings,
     ProceduresSettings,
     ProcessingSettings,
     RawDataDescriptionSettings,
+    RigSettings,
     SessionSettings,
     SubjectSettings,
-    RigSettings,
-    InstrumentSettings,
-)
-from aind_metadata_mapper.open_ephys.models import (
-    JobSettings as OpenEphysJobSettings,
 )
 from aind_metadata_mapper.smartspim.acquisition import (
     JobSettings as SmartSpimAcquisitionJobSettings,
@@ -497,6 +495,28 @@ class TestGatherMetadataJob(unittest.TestCase):
             contents["processing_pipeline"]["data_processes"][0]["name"],
         )
 
+    def test_get_processing_metadata_invalid(self):
+        """Tests get_processing_metadata method with validation errors"""
+        data_process = DataProcess.model_construct()
+        processing_pipeline = PipelineProcess.model_construct(
+            data_processes=[data_process]
+        )
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            processing_settings=ProcessingSettings(
+                pipeline_process=json.loads(
+                    processing_pipeline.model_dump_json()
+                )
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            contents = metadata_job.get_processing_metadata()
+        self.assertIsNotNone(contents)
+        self.assertEqual(1, len(w))
+
     def test_get_session_metadata(self):
         """Tests get_session_metadata"""
         metadata_dir = RESOURCES_DIR / "metadata_files"
@@ -567,45 +587,6 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual({"some_key": "some_value"}, contents)
         mock_run_job.assert_called_once()
 
-    @patch(
-        "aind_metadata_mapper.open_ephys.camstim_ephys_session"
-        ".CamstimEphysSessionEtl.run_job"
-    )
-    @patch(
-        "aind_metadata_mapper.open_ephys.camstim_ephys_session"
-        ".CamstimEphysSessionEtl.__init__"
-    )
-    def test_get_session_metadata_camstim_success(
-        self, mock_camstim: MagicMock, mock_run_job: MagicMock
-    ):
-        """Tests get_session_metadata openephys creates
-        CamstimEphysSessionEtl class."""
-        mock_run_job.return_value = JobResponse(
-            status_code=200, data=json.dumps({"some_key": "some_value"})
-        )
-        mock_camstim.return_value = None
-        openephys_session_settings = OpenEphysJobSettings.model_construct(
-            session_type="ecephys",
-            project_name="testing",
-            iacuc_protocol="0000",
-            description="test description",
-            overwrite_tables=True,
-            mtrain_server="http://mtrain:5000",
-            session_id="000000",
-            input_source="some/path",
-            output_directory="some/other/path",
-        )
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            session_settings=SessionSettings(
-                job_settings=openephys_session_settings,
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_session_metadata()
-        self.assertEqual({"some_key": "some_value"}, contents)
-        mock_run_job.assert_called_once()
-
     @patch("aind_metadata_mapper.mesoscope.session.MesoscopeEtl.run_job")
     @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
     def test_get_session_metadata_mesoscope_success(
@@ -666,6 +647,19 @@ class TestGatherMetadataJob(unittest.TestCase):
         contents = metadata_job.get_session_metadata()
         self.assertIsNone(contents)
 
+    def test_get_session_metadata_error_unknown_session(self):
+        """Tests get_session_metadata raises and error"""
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            session_settings=SessionSettings.model_construct(
+                job_settings={"job_settings_name": "def"}
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        with self.assertRaises(ValueError):
+            metadata_job.get_session_metadata()
+
     def test_get_session_metadata_none(self):
         """Tests get_session_metadata returns none"""
 
@@ -712,6 +706,15 @@ class TestGatherMetadataJob(unittest.TestCase):
         contents = metadata_job.get_rig_metadata()
         self.assertIsNotNone(contents)
 
+    def test_get_rig_metadata_none(self):
+        """Tests get_rig_metadata when no file or settings are provided."""
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_rig_metadata()
+        self.assertIsNone(contents)
+
     @patch("requests.get")
     @patch("logging.warning")
     def test_get_rig_metadata_warning(
@@ -729,15 +732,12 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_service_domain="http://example.com",
             rig_settings=RigSettings(
                 rig_id="323_EPHYS1",
-
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         output = metadata_job.get_rig_metadata()
         self.assertIsNone(output)
-        mock_warn.assert_called_once_with(
-            "Rig metadata is not valid! 500"
-        )
+        mock_warn.assert_called_once_with("Rig metadata is not valid! 500")
 
     def test_get_quality_control_metadata(self):
         """Tests get_quality_control_metadata"""
@@ -882,6 +882,15 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_instrument_metadata()
         self.assertIsNotNone(contents)
+
+    def test_get_instrument_metadata_none(self):
+        """Tests get_instrument_metadata when no file or settings."""
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_instrument_metadata()
+        self.assertIsNone(contents)
 
     @patch("requests.get")
     @patch("logging.warning")
