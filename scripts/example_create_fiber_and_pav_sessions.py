@@ -63,6 +63,7 @@ def create_unified_session_metadata(
     fiber_output: str = "session_fib.json",
     merged_output: str = "session.json",
     active_mouse_platform: bool = False,
+    local_timezone: str = "America/Los_Angeles",
     anaesthesia: str | None = None,
     animal_weight_post: float | None = None,
     animal_weight_prior: float | None = None,
@@ -104,6 +105,8 @@ def create_unified_session_metadata(
         Filename for merged session metadata, by default "session.json"
     active_mouse_platform : bool, optional
         Whether the mouse platform was active, by default False
+    local_timezone : str, optional
+        Local timezone for the session, by default "America/Los_Angeles"
     anaesthesia : str | None, optional
         Anaesthesia used, by default None
     animal_weight_post : float | None, optional
@@ -143,6 +146,7 @@ def create_unified_session_metadata(
         "reward_consumed_unit": reward_unit,
         "session_type": session_type,
         "active_mouse_platform": active_mouse_platform,
+        "local_timezone": local_timezone,
         "anaesthesia": anaesthesia,
         "animal_weight_post": animal_weight_post,
         "animal_weight_prior": animal_weight_prior,
@@ -167,6 +171,7 @@ def create_unified_session_metadata(
         "notes": notes,
         "session_type": session_type,
         "active_mouse_platform": active_mouse_platform,
+        "local_timezone": local_timezone,
         "anaesthesia": anaesthesia,
         "animal_weight_post": animal_weight_post,
         "animal_weight_prior": animal_weight_prior,
@@ -308,6 +313,12 @@ def main():
         help="Whether the mouse platform was active",
     )
     parser.add_argument(
+        "--local-timezone",
+        type=str,
+        default=None,
+        help="Local timezone for the session",
+    )
+    parser.add_argument(
         "--anaesthesia",
         type=str,
         default=None,
@@ -350,6 +361,7 @@ def main():
             fiber_output=args.fiber_output,
             merged_output=args.merged_output,
             active_mouse_platform=args.active_mouse_platform,
+            local_timezone=args.local_timezone,
             anaesthesia=args.anaesthesia,
             animal_weight_post=args.animal_weight_post,
             animal_weight_prior=args.animal_weight_prior,

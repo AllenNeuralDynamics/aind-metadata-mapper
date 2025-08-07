@@ -290,13 +290,88 @@ def create_stim_table(
     for ii, stim_table in enumerate(stimulus_tables):
         stim_table[block_key] = ii
 
-    stimulus_tables.extend(spontaneous_activity_tabler(stimulus_tables))
-
     stim_table_full = pd.concat(stimulus_tables, ignore_index=True, sort=False)
     stim_table_full.sort_values(by=[sort_key], inplace=True)
     stim_table_full.reset_index(drop=True, inplace=True)
+    print("Sorting stim table by start_time, stop_time, and stim_name")
+    stim_table_full = reorder_by_stim_in_temporal_blocks(stim_table_full)
+
+    spontaneous_df = pd.concat(
+        spontaneous_activity_tabler(stimulus_tables), ignore_index=True
+    )
+
+    # Now insert spontaneous rows into stim_table_full in correct position
+
+    for idx, spont_row in spontaneous_df.iterrows():
+        insert_pos = stim_table_full["start_time"].searchsorted(
+            spont_row["start_time"]
+        )
+        stim_table_full = pd.concat(
+            [
+                stim_table_full.iloc[:insert_pos],
+                pd.DataFrame([spont_row]),
+                stim_table_full.iloc[insert_pos:],
+            ]
+        ).reset_index(drop=True)
 
     return stim_table_full
+
+
+def reorder_by_stim_in_temporal_blocks(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Reorders the stimulus presentations DataFrame by grouping consecutive
+    blocks of stimuli with the same start and stop times, and then ordering
+    the rows within each block by their `stim_name`.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing stimulus presentations with columns:
+        - `start_time`: Start time of the stimulus presentation
+        - `stop_time`: Stop time of the stimulus presentation
+        - `stim_name`: Name of the stimulus
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with rows ordered by temporal blocks and `stim_name`.
+    """
+    df = df.sort_values(by=["start_time", "stop_time"]).reset_index(drop=True)
+
+    # Step 1: Create temporal blocks
+    grouped = df.groupby(["start_time", "stop_time"], sort=False)
+
+    blocks = []
+    for _, group in grouped:
+        blocks.append(group.reset_index(drop=True))
+
+    # Step 2: Process blocks to form chunks of consecutive blocks
+    # with same stim_name set
+    chunks = []
+    current_chunk = [blocks[0]]
+    current_stims = set(blocks[0]["stim_name"])
+
+    for block in blocks[1:]:
+        block_stims = set(block["stim_name"])
+        if block_stims == current_stims:
+            current_chunk.append(block)
+        else:
+            chunks.append(current_chunk)
+            current_chunk = [block]
+            current_stims = block_stims
+    chunks.append(current_chunk)  # Add the last one
+
+    # Step 3: Within each chunk, order by stim_name
+    output_blocks = []
+    for chunk in chunks:
+        combined = pd.concat(chunk, ignore_index=True)
+        for stim in combined["stim_name"].unique():
+            stim_rows = combined[combined["stim_name"] == stim]
+            output_blocks.append(stim_rows)
+
+    # Step 4: Combine all blocks into final result
+    final_df = pd.concat(output_blocks, ignore_index=True)
+    return final_df
 
 
 def make_spontaneous_activity_tables(

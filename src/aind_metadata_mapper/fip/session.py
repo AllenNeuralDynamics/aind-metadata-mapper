@@ -36,6 +36,9 @@ from aind_metadata_mapper.fip.utils import (
     extract_session_start_time_from_files,
     extract_session_end_time_from_files,
 )
+from aind_metadata_mapper.utils.timing_utils import (
+    validate_session_temporal_consistency,
+)
 
 
 @dataclass
@@ -160,9 +163,14 @@ class FIBEtl(GenericEtl[JobSettings]):
         data_dir = Path(settings.data_directory)
 
         data_files = list(data_dir.glob("FIP_Data*.csv"))
-        start_time = extract_session_start_time_from_files(data_dir)
+        local_timezone = settings.local_timezone
+        start_time = extract_session_start_time_from_files(
+            data_dir, local_timezone
+        )
         end_time = (
-            extract_session_end_time_from_files(data_dir, start_time)
+            extract_session_end_time_from_files(
+                data_dir, start_time, local_timezone
+            )
             if start_time
             else None
         )
@@ -241,6 +249,9 @@ class FIBEtl(GenericEtl[JobSettings]):
             animal_weight_post=fiber_data.animal_weight_post,
             animal_weight_prior=fiber_data.animal_weight_prior,
         )
+
+        # Validate temporal consistency (end time > start time)
+        validate_session_temporal_consistency(session)
 
         return session
 
