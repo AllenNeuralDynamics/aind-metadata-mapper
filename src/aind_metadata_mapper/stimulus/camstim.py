@@ -328,7 +328,7 @@ class Camstim:
         stim_name, stim_type, or frame) are listed as parameters, and the set
         of values for that column are listed as parameter values.
         """
-        if self.camstim_settings.lims_project_code == "U01BFCT":
+        if type(self) is Camstim and self.camstim_settings.lims_project_code == "U01BFCT":
             return self.extract_whole_session_epoch(stim_table)
 
         epochs = []
