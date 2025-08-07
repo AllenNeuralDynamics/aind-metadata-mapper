@@ -434,7 +434,7 @@ class CamstimEphysSessionEtl(
 
         opto_params = {}
         for column in opto_table:
-            if column in ("start_time", "stop_time", "stim_name"):
+            if column in ("start_time", "stop_time", "stim_name", "name"):
                 continue
             param_set = set(opto_table[column].dropna())
             opto_params[column] = param_set
