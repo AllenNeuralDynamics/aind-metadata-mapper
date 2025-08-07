@@ -104,6 +104,9 @@ class CamstimEphysSessionEtl(
         self.stim_table_path = (
             self.session_path / f"{self.folder_name}_stim_epochs.csv"
         )
+        self.vsync_table_path = (
+            self.session_path / f"{self.folder_name}_vsync_epochs.csv"
+        )
         self.sync_path = self.session_path / f"{self.folder_name}.sync"
 
         platform_path = next(
@@ -431,7 +434,7 @@ class CamstimEphysSessionEtl(
 
         opto_params = {}
         for column in opto_table:
-            if column in ("start_time", "stop_time", "stim_name"):
+            if column in ("start_time", "stop_time", "stim_name", "name"):
                 continue
             param_set = set(opto_table[column].dropna())
             opto_params[column] = param_set

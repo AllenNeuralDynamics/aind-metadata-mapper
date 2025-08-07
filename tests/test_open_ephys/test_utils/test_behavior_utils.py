@@ -712,6 +712,7 @@ class TestBehaviorUtils(unittest.TestCase):
                                     "movie_frame_index",
                                     "movie_repeat",
                                 ],
+                                "save_sweep_table": True,
                             },
                             "frame_indices": [0, 1, 2, 3, 4, 5],
                         }
@@ -729,6 +730,7 @@ class TestBehaviorUtils(unittest.TestCase):
             "fingerprint",
         )
 
+        print(result)
         # Define expected output based on the provided mock data
         expected_columns = [
             "movie_frame_index",

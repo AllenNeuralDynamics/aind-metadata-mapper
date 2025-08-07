@@ -272,22 +272,25 @@ class TestStimUtils(unittest.TestCase):
         stim_table_1 = pd.DataFrame(
             {
                 "start_time": [10, 20],
-                "end_time": [15, 25],
+                "stop_time": [15, 25],
                 "stim_param": ["a", "b"],
+                "stim_name": ["stim1", "stim1"],
             }
         )
         stim_table_2 = pd.DataFrame(
             {
                 "start_time": [30, 40],
-                "end_time": [35, 45],
+                "stop_time": [35, 45],
                 "stim_param": ["c", "d"],
+                "stim_name": ["stim2", "stim2"],
             }
         )
         stim_table_3 = pd.DataFrame(
             {
                 "start_time": [5, 50],
-                "end_time": [10, 55],
+                "stop_time": [10, 55],
                 "stim_param": ["e", "f"],
+                "stim_name": ["spontaneous", "spontaneous"],
             }
         )
 
@@ -295,9 +298,17 @@ class TestStimUtils(unittest.TestCase):
         expected_stim_table_full = pd.DataFrame(
             {
                 "start_time": [5, 10, 20, 30, 40, 50],
-                "end_time": [10, 15, 25, 35, 45, 55],
+                "stop_time": [10, 15, 25, 35, 45, 55],
                 "stim_param": ["e", "a", "b", "c", "d", "f"],
                 "stim_index": [pd.NA, 0.0, 0.0, 1.0, 1.0, pd.NA],
+                "stim_name": [
+                    "spontaneous",
+                    "stim1",
+                    "stim1",
+                    "stim2",
+                    "stim2",
+                    "spontaneous",
+                ],
                 "stim_block": [0, 0, 0, 1, 1, 2],
             }
         )
@@ -326,19 +337,19 @@ class TestStimUtils(unittest.TestCase):
             mock_stimulus_tabler,
             mock_spontaneous_activity_tabler,
         )
-        self.assertEquals(
+        self.assertEqual(
             result_stim_table_full["start_time"].all(),
             expected_stim_table_full["start_time"].all(),
         )
-        self.assertEquals(
-            result_stim_table_full["end_time"].all(),
-            expected_stim_table_full["end_time"].all(),
+        self.assertEqual(
+            result_stim_table_full["stop_time"].all(),
+            expected_stim_table_full["stop_time"].all(),
         )
-        self.assertEquals(
+        self.assertEqual(
             result_stim_table_full["stim_param"].all(),
             expected_stim_table_full["stim_param"].all(),
         )
-        self.assertEquals(
+        self.assertEqual(
             result_stim_table_full["stim_block"].all(),
             expected_stim_table_full["stim_block"].all(),
         )
