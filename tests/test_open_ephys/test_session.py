@@ -17,7 +17,9 @@ from aind_data_schema.core.session import Session
 from aind_metadata_mapper.open_ephys.camstim_ephys_session import (
     CamstimEphysSessionEtl
 )
-from aind_metadata_mapper.open_ephys.session import EphysEtl
+from aind_metadata_mapper.open_ephys.models import (
+    JobSettings as CamstimEphysJobSettings
+)from aind_metadata_mapper.open_ephys.session import EphysEtl
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
@@ -262,7 +264,7 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.job_settings = JobSettings()
+        self.job_settings = CamstimEphysJobSettings()
         self.etl = CamstimEphysSessionEtl(job_settings=self.job_settings)
 
     def test_init(self):
