@@ -9,6 +9,8 @@ import unittest
 import zoneinfo
 from pathlib import Path
 from xml.dom import minidom
+from unittest.mock import Mock, patch
+
 
 from aind_data_schema.core.session import Session
 
