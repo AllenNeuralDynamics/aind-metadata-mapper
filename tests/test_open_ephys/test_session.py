@@ -9,7 +9,7 @@ import unittest
 import zoneinfo
 from pathlib import Path
 from xml.dom import minidom
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 
 from aind_data_schema.core.session import Session
@@ -273,20 +273,28 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
     def test_input_source_directory_property(self, mock_path):
         """Test input_source_directory property."""
         self.job_settings.input_source = "/test/path"
-        result = self.etl.input_source_directory
+        self.etl.input_source_directory  # Access property without storing
         mock_path.assert_called_with("/test/path")
 
     def test_run_job_basic(self):
         """Test basic run_job functionality."""
-        with patch.object(self.etl, 'extract_session_data', return_value={'test': 'data'}):
-            with patch.object(self.etl, 'transform_session_data', return_value={'transformed': 'data'}):
+        with patch.object(
+            self.etl, 'extract_session_data', return_value={'test': 'data'}
+        ):
+            with patch.object(
+                self.etl, 'transform_session_data',
+                return_value={'transformed': 'data'}
+            ):
                 with patch.object(self.etl, 'load_session_data'):
                     # Should not raise an exception
                     self.etl.run_job()
 
     def test_extract_session_data_file_not_found(self):
         """Test extract_session_data with missing files."""
-        with patch.object(self.etl, 'input_source_directory', return_value=Path("/fake/path")):
+        with patch.object(
+            self.etl, 'input_source_directory',
+            return_value=Path("/fake/path")
+        ):
             with patch('pathlib.Path.exists', return_value=False):
                 with self.assertRaises(FileNotFoundError):
                     self.etl.extract_session_data()
