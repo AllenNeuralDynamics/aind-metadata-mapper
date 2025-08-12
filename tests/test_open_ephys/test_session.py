@@ -13,7 +13,7 @@ from xml.dom import minidom
 from aind_data_schema.core.session import Session
 
 from aind_metadata_mapper.open_ephys.camstim_ephys_session import (
-    CamstimEphysSession
+    CamstimEphysSessionEtl
 )
 from aind_metadata_mapper.open_ephys.session import EphysEtl
 
