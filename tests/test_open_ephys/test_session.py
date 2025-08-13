@@ -5,7 +5,7 @@
 import os
 import unittest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from aind_metadata_mapper.open_ephys.camstim_ephys_session import (
     CamstimEphysSessionEtl
@@ -42,7 +42,7 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
     def setUp(self, mock_oebin):
         """Set up test fixtures."""
         mock_oebin.return_value = Path("/fake/oebin/path")
-        
+
         self.job_settings = CamstimEphysJobSettings(
             session_type="test_session",
             project_name="test_project",
