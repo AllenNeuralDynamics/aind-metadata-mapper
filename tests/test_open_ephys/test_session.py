@@ -2,7 +2,8 @@
 
 # TODO: implement tests once np package issues are resolved
 
-import os
+import shutil
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -15,10 +16,7 @@ from aind_metadata_mapper.open_ephys.models import (
 )
 
 RESOURCES_DIR = (
-    Path(os.path.dirname(os.path.realpath(__file__)))
-    / ".."
-    / "resources"
-    / "open_ephys"
+    Path(__file__).parent.parent / "resources" / "open_ephys"
 )
 
 EXAMPLE_STAGE_LOGS = [
@@ -41,8 +39,9 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
     @patch('npc_ephys.openephys.get_single_oebin_path')
     def setUp(self, mock_oebin):
         """Set up test fixtures."""
-        mock_oebin.return_value = Path("/fake/oebin/path")
-
+        self.temp_dir = tempfile.mkdtemp()
+        mock_oebin.return_value = Path(self.temp_dir) / "fake.oebin"
+        
         self.job_settings = CamstimEphysJobSettings(
             session_type="test_session",
             project_name="test_project",
@@ -50,9 +49,13 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
             description="test_description",
             mtrain_server="test_server",
             session_id="test_session_id",
-            input_source="/fake/input/path"
+            input_source=self.temp_dir
         )
         self.etl = CamstimEphysSessionEtl(job_settings=self.job_settings)
+
+    def tearDown(self):
+        """Clean up temporary directory."""
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_init(self):
         """Test initialization."""
