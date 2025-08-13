@@ -41,7 +41,7 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
         """Set up test fixtures."""
         self.temp_dir = tempfile.mkdtemp()
         mock_oebin.return_value = Path(self.temp_dir) / "fake.oebin"
-        
+
         self.job_settings = CamstimEphysJobSettings(
             session_type="test_session",
             project_name="test_project",
