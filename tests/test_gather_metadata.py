@@ -3,6 +3,7 @@
 import json
 import os
 import unittest
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
@@ -31,16 +32,15 @@ from aind_metadata_mapper.mesoscope.models import (
 )
 from aind_metadata_mapper.models import (
     AcquisitionSettings,
+    InstrumentSettings,
     JobSettings,
     MetadataSettings,
     ProceduresSettings,
     ProcessingSettings,
     RawDataDescriptionSettings,
+    RigSettings,
     SessionSettings,
     SubjectSettings,
-)
-from aind_metadata_mapper.open_ephys.models import (
-    JobSettings as OpenEphysJobSettings,
 )
 from aind_metadata_mapper.smartspim.acquisition import (
     JobSettings as SmartSpimAcquisitionJobSettings,
@@ -74,10 +74,18 @@ class TestGatherMetadataJob(unittest.TestCase):
             RESOURCES_DIR / "example_funding_multiple_response.json", "r"
         ) as f:
             example_funding_multi_response = json.load(f)
+        with open(RESOURCES_DIR / "example_rig_response.json", "r") as f:
+            example_rig_response = json.load(f)
+        with open(
+            RESOURCES_DIR / "example_instrument_response.json", "r"
+        ) as f:
+            example_instrument_response = json.load(f)
         cls.example_subject_response = example_subject_response
         cls.example_procedures_response = example_procedures_response
         cls.example_funding_response = example_funding_response
         cls.example_funding_multi_response = example_funding_multi_response
+        cls.example_rig_response = example_rig_response
+        cls.example_instrument_response = example_instrument_response
 
     def test_class_constructor(self):
         """Tests class is constructed properly"""
@@ -144,7 +152,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get.return_value = mock_response
 
         job_settings = JobSettings(
-            metadata_service_domain="http://acme.test",
+            metadata_service_domain="http://example.com",
             directory_to_write_to=RESOURCES_DIR,
             subject_settings=SubjectSettings(
                 subject_id="632269",
@@ -153,7 +161,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_subject()
         self.assertEqual("632269", contents["subject_id"])
-        mock_get.assert_called_once_with("http://acme.test/subject/632269")
+        mock_get.assert_called_once_with("http://example.com/subject/632269")
 
     @patch("requests.get")
     def test_get_subject_from_dir(self, mock_get: MagicMock):
@@ -166,7 +174,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         metadata_dir = RESOURCES_DIR / "metadata_files"
         job_settings = JobSettings(
-            metadata_service_domain="http://acme.test",
+            metadata_service_domain="http://example.com",
             directory_to_write_to=RESOURCES_DIR,
             subject_settings=SubjectSettings(
                 subject_id="632269",
@@ -189,7 +197,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://acme.test",
+            metadata_service_domain="http://example.com",
             subject_settings=SubjectSettings(
                 subject_id="632269",
             ),
@@ -214,7 +222,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://acme.test",
+            metadata_service_domain="http://example.com",
             procedures_settings=ProceduresSettings(
                 subject_id="632269",
             ),
@@ -222,7 +230,9 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_procedures()
         self.assertEqual("632269", contents["subject_id"])
-        mock_get.assert_called_once_with("http://acme.test/procedures/632269")
+        mock_get.assert_called_once_with(
+            "http://example.com/procedures/632269"
+        )
 
     @patch("requests.get")
     def test_get_procedures_from_dir(self, mock_get: MagicMock):
@@ -235,7 +245,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_dir = RESOURCES_DIR / "metadata_files"
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://acme.test",
+            metadata_service_domain="http://example.com",
             procedures_settings=ProceduresSettings(
                 subject_id="632269",
             ),
@@ -260,7 +270,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://acme.test",
+            metadata_service_domain="http://example.com",
             procedures_settings=ProceduresSettings(
                 subject_id="632269",
             ),
@@ -284,7 +294,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://acme.test",
+            metadata_service_domain="http://example.com",
             raw_data_description_settings=RawDataDescriptionSettings(
                 project_name="Ephys Platform",
                 name="ecephys_632269_2023-10-10_10-10-10",
@@ -302,7 +312,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             "ecephys_632269_2023-10-10_10-10-10", contents["name"]
         )
         mock_get.assert_called_once_with(
-            "http://acme.test/funding/Ephys Platform"
+            "http://example.com/funding/Ephys Platform"
         )
 
     @patch("requests.get")
@@ -319,7 +329,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://acme.test",
+            metadata_service_domain="http://example.com",
             raw_data_description_settings=RawDataDescriptionSettings(
                 project_name="Ephys Platform",
                 name="ecephys_632269_2023-10-10_10-10-10",
@@ -354,7 +364,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://acme.test",
+            metadata_service_domain="http://example.com",
             raw_data_description_settings=RawDataDescriptionSettings(
                 project_name="Ephys Platform",
                 name="ecephys_632269_2023-10-10_10-10-10",
@@ -373,7 +383,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             "ecephys_632269_2023-10-10_10-10-10", contents["name"]
         )
         mock_get.assert_called_once_with(
-            "http://acme.test/funding/Ephys Platform"
+            "http://example.com/funding/Ephys Platform"
         )
 
     @patch("requests.get")
@@ -387,7 +397,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://acme.test",
+            metadata_service_domain="http://example.com",
             raw_data_description_settings=RawDataDescriptionSettings(
                 project_name="foo",
                 name="ecephys_632269_2023-10-10_10-10-10",
@@ -485,6 +495,28 @@ class TestGatherMetadataJob(unittest.TestCase):
             contents["processing_pipeline"]["data_processes"][0]["name"],
         )
 
+    def test_get_processing_metadata_invalid(self):
+        """Tests get_processing_metadata method with validation errors"""
+        data_process = DataProcess.model_construct()
+        processing_pipeline = PipelineProcess.model_construct(
+            data_processes=[data_process]
+        )
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            processing_settings=ProcessingSettings(
+                pipeline_process=json.loads(
+                    processing_pipeline.model_dump_json()
+                )
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            contents = metadata_job.get_processing_metadata()
+        self.assertIsNotNone(contents)
+        self.assertEqual(1, len(w))
+
     def test_get_session_metadata(self):
         """Tests get_session_metadata"""
         metadata_dir = RESOURCES_DIR / "metadata_files"
@@ -555,45 +587,6 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual({"some_key": "some_value"}, contents)
         mock_run_job.assert_called_once()
 
-    @patch(
-        "aind_metadata_mapper.open_ephys.camstim_ephys_session"
-        ".CamstimEphysSessionEtl.run_job"
-    )
-    @patch(
-        "aind_metadata_mapper.open_ephys.camstim_ephys_session"
-        ".CamstimEphysSessionEtl.__init__"
-    )
-    def test_get_session_metadata_camstim_success(
-        self, mock_camstim: MagicMock, mock_run_job: MagicMock
-    ):
-        """Tests get_session_metadata openephys creates
-        CamstimEphysSessionEtl class."""
-        mock_run_job.return_value = JobResponse(
-            status_code=200, data=json.dumps({"some_key": "some_value"})
-        )
-        mock_camstim.return_value = None
-        openephys_session_settings = OpenEphysJobSettings.model_construct(
-            session_type="ecephys",
-            project_name="testing",
-            iacuc_protocol="0000",
-            description="test description",
-            overwrite_tables=True,
-            mtrain_server="http://mtrain:5000",
-            session_id="000000",
-            input_source="some/path",
-            output_directory="some/other/path",
-        )
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            session_settings=SessionSettings(
-                job_settings=openephys_session_settings,
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_session_metadata()
-        self.assertEqual({"some_key": "some_value"}, contents)
-        mock_run_job.assert_called_once()
-
     @patch("aind_metadata_mapper.mesoscope.session.MesoscopeEtl.run_job")
     @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
     def test_get_session_metadata_mesoscope_success(
@@ -654,6 +647,19 @@ class TestGatherMetadataJob(unittest.TestCase):
         contents = metadata_job.get_session_metadata()
         self.assertIsNone(contents)
 
+    def test_get_session_metadata_error_unknown_session(self):
+        """Tests get_session_metadata raises and error"""
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            session_settings=SessionSettings.model_construct(
+                job_settings={"job_settings_name": "def"}
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        with self.assertRaises(ValueError):
+            metadata_job.get_session_metadata()
+
     def test_get_session_metadata_none(self):
         """Tests get_session_metadata returns none"""
 
@@ -664,12 +670,36 @@ class TestGatherMetadataJob(unittest.TestCase):
         contents = metadata_job.get_session_metadata()
         self.assertIsNone(contents)
 
-    def test_get_rig_metadata(self):
-        """Tests get_rig_metadata"""
-        metadata_dir = RESOURCES_DIR / "metadata_files"
+    @patch("requests.get")
+    def test_get_rig_metadata(self, mock_get: MagicMock):
+        """Tests get_rig_metadata from metadata service path"""
+        mock_response = Response()
+        mock_response.status_code = 422
+        body = json.dumps(self.example_rig_response)
+        mock_response._content = body.encode("utf-8")
+        mock_get.return_value = mock_response
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
+            metadata_service_domain="http://example.com",
+            rig_settings=RigSettings(
+                rig_id="323_EPHYS1",
+                metadata_service_path="rig",
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_rig_metadata()
+        self.assertEqual("323_EPHYS1", contents["rig_id"])
+        mock_get.assert_called_once_with("http://example.com/rig/323_EPHYS1")
+
+    def test_get_rig_metadata_from_dir(self):
+        """Tests get_rig_metadata from directory"""
+        metadata_dir = RESOURCES_DIR / "metadata_files"
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            rig_settings=RigSettings(
+                rig_id="323_EPHYS1",
+            ),
             metadata_dir=metadata_dir,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
@@ -677,14 +707,37 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertIsNotNone(contents)
 
     def test_get_rig_metadata_none(self):
-        """Tests get_rig_metadata returns none"""
-
+        """Tests get_rig_metadata when no file or settings are provided."""
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_rig_metadata()
         self.assertIsNone(contents)
+
+    @patch("requests.get")
+    @patch("logging.warning")
+    def test_get_rig_metadata_warning(
+        self, mock_warn: MagicMock, mock_get: MagicMock
+    ):
+        """Tests get_rig_metadata when an error is raised"""
+        mock_response = Response()
+        mock_response.status_code = 500
+        body = json.dumps({"message": "Internal Server Error"})
+        mock_response._content = body.encode("utf-8")
+        mock_get.return_value = mock_response
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_service_domain="http://example.com",
+            rig_settings=RigSettings(
+                rig_id="323_EPHYS1",
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        output = metadata_job.get_rig_metadata()
+        self.assertIsNone(output)
+        mock_warn.assert_called_once_with("Rig metadata is not valid! 500")
 
     def test_get_quality_control_metadata(self):
         """Tests get_quality_control_metadata"""
@@ -760,7 +813,7 @@ class TestGatherMetadataJob(unittest.TestCase):
                 job_settings=SmartSpimAcquisitionJobSettings(
                     subject_id="695464",
                     input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
-                    metadata_service_path="http://acme/test",
+                    metadata_service_path="http://example.com/test",
                 )
             ),
         )
@@ -783,7 +836,7 @@ class TestGatherMetadataJob(unittest.TestCase):
                 job_settings=SmartSpimAcquisitionJobSettings(
                     subject_id="695464",
                     input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
-                    metadata_service_path="http://acme/test",
+                    metadata_service_path="http://example.com/test",
                 )
             ),
         )
@@ -791,12 +844,39 @@ class TestGatherMetadataJob(unittest.TestCase):
         contents = metadata_job.get_acquisition_metadata()
         self.assertIsNone(contents)
 
-    def test_get_instrument_metadata(self):
-        """Tests get_instrument_metadata"""
-        metadata_dir = RESOURCES_DIR / "metadata_files"
+    @patch("requests.get")
+    def test_get_instrument_metadata(self, mock_get: MagicMock):
+        """Tests get_instrument_metadata from metadata service path"""
+        mock_response = Response()
+        mock_response.status_code = 422
+        body = json.dumps(self.example_instrument_response)
+        mock_response._content = body.encode("utf-8")
+        mock_get.return_value = mock_response
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
+            metadata_service_domain="http://example.com",
+            instrument_settings=InstrumentSettings(
+                instrument_id="exaSPIM1-1",
+                metadata_service_path="instrument",
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        contents = metadata_job.get_instrument_metadata()
+        self.assertEqual("exaSPIM1-1", contents["instrument_id"])
+        mock_get.assert_called_once_with(
+            "http://example.com/instrument/exaSPIM1-1"
+        )
+
+    def test_get_instrument_metadata_from_dir(self):
+        """Tests get_instrument_metadata from directory"""
+        metadata_dir = RESOURCES_DIR / "metadata_files"
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            instrument_settings=InstrumentSettings(
+                instrument_id="exaSPIM1-1",
+                metadata_service_path="instrument",
+            ),
             metadata_dir=metadata_dir,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
@@ -804,14 +884,40 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertIsNotNone(contents)
 
     def test_get_instrument_metadata_none(self):
-        """Tests get_instrument_metadata returns none"""
-
+        """Tests get_instrument_metadata when no file or settings."""
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_instrument_metadata()
         self.assertIsNone(contents)
+
+    @patch("requests.get")
+    @patch("logging.warning")
+    def test_get_instrument_metadata_warning(
+        self, mock_warn: MagicMock, mock_get: MagicMock
+    ):
+        """Tests get_instrument_metadata when an error is raised"""
+        mock_response = Response()
+        mock_response.status_code = 500
+        body = json.dumps({"message": "Internal Server Error"})
+        mock_response._content = body.encode("utf-8")
+        mock_get.return_value = mock_response
+
+        job_settings = JobSettings(
+            directory_to_write_to=RESOURCES_DIR,
+            metadata_service_domain="http://example.com",
+            instrument_settings=InstrumentSettings(
+                instrument_id="exaSPIM1-1",
+                metadata_service_path="instrument",
+            ),
+        )
+        metadata_job = GatherMetadataJob(settings=job_settings)
+        output = metadata_job.get_instrument_metadata()
+        self.assertIsNone(output)
+        mock_warn.assert_called_once_with(
+            "Instrument metadata is not valid! 500"
+        )
 
     @patch(
         "aind_metadata_mapper.gather_metadata.GatherMetadataJob."
@@ -820,25 +926,6 @@ class TestGatherMetadataJob(unittest.TestCase):
     def test_gather_non_automated_metadata(self, mock_write_file: MagicMock):
         """Tests _gather_non_automated_metadata method"""
         metadata_dir = RESOURCES_DIR / "metadata_files"
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_dir=metadata_dir,
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        metadata_job._gather_non_automated_metadata()
-        mock_write_file.assert_called()
-
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob."
-        "_write_json_file"
-    )
-    def test_gather_non_automated_metadata_with_ser_issues(
-        self, mock_write_file: MagicMock
-    ):
-        """Tests _gather_non_automated_metadata method when there are
-        serialization issues"""
-        metadata_dir = METADATA_DIR_WITH_RIG_ISSUE
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
@@ -1078,7 +1165,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://acme.test",
+            metadata_service_domain="http://example.com",
             subject_settings=SubjectSettings(
                 subject_id="632269",
             ),

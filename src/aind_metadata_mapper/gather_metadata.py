@@ -43,12 +43,6 @@ from aind_metadata_mapper.mesoscope.models import (
 )
 from aind_metadata_mapper.mesoscope.session import MesoscopeEtl
 from aind_metadata_mapper.models import JobSettings
-from aind_metadata_mapper.open_ephys.camstim_ephys_session import (
-    CamstimEphysSessionEtl,
-)
-from aind_metadata_mapper.open_ephys.models import (
-    JobSettings as OpenEphysJobSettings,
-)
 from aind_metadata_mapper.smartspim.acquisition import SmartspimETL
 
 
@@ -295,10 +289,6 @@ class GatherMetadataJob:
                 session_job = FIBEtl(job_settings=session_settings)
             elif isinstance(session_settings, MesoscopeSessionJobSettings):
                 session_job = MesoscopeEtl(job_settings=session_settings)
-            elif isinstance(session_settings, OpenEphysJobSettings):
-                session_job = CamstimEphysSessionEtl(
-                    job_settings=session_settings
-                )
             else:
                 raise ValueError("Unknown session job settings class!")
             job_response = session_job.run_job()
@@ -317,6 +307,21 @@ class GatherMetadataJob:
                 file_name=file_name
             )
             return contents
+        elif self.settings.rig_settings is not None:
+            rig_file_path = self.settings.rig_settings.metadata_service_path
+            response = requests.get(
+                self.settings.metadata_service_domain
+                + f"/{rig_file_path}/"
+                + f"{self.settings.rig_settings.rig_id}"
+            )
+            if response.status_code < 300 or response.status_code == 422:
+                json_content = response.json()
+                return json_content["data"]
+            else:
+                logging.warning(
+                    f"Rig metadata is not valid! {response.status_code}"
+                )
+                return None
         else:
             return None
 
@@ -359,6 +364,23 @@ class GatherMetadataJob:
                 file_name=file_name
             )
             return contents
+        elif self.settings.instrument_settings is not None:
+            instrument_file_path = (
+                self.settings.instrument_settings.metadata_service_path
+            )
+            response = requests.get(
+                self.settings.metadata_service_domain
+                + f"/{instrument_file_path}/"
+                + f"{self.settings.instrument_settings.instrument_id}"
+            )
+            if response.status_code < 300 or response.status_code == 422:
+                json_content = response.json()
+                return json_content["data"]
+            else:
+                logging.warning(
+                    f"Instrument metadata is not valid! {response.status_code}"
+                )
+                return None
         else:
             return None
 
@@ -547,16 +569,23 @@ class GatherMetadataJob:
             self._write_json_file(
                 filename=Processing.default_filename(), contents=contents
             )
+        if self.settings.rig_settings is not None:
+            contents = self.get_rig_metadata()
+            if contents is not None:
+                self._write_json_file(
+                    filename=Rig.default_filename(), contents=contents
+                )
+        if self.settings.instrument_settings is not None:
+            contents = self.get_instrument_metadata()
+            if contents is not None:
+                self._write_json_file(
+                    filename=Instrument.default_filename(), contents=contents
+                )
 
     def _gather_non_automated_metadata(self):
         """Gather metadata that cannot yet be retrieved automatically but
         may be in a user defined directory."""
         if self.settings.metadata_settings is None:
-            rig_contents = self.get_rig_metadata()
-            if rig_contents:
-                self._write_json_file(
-                    filename=Rig.default_filename(), contents=rig_contents
-                )
             session_contents = self.get_session_metadata()
             if session_contents:
                 self._write_json_file(
@@ -568,12 +597,6 @@ class GatherMetadataJob:
                 self._write_json_file(
                     filename=Acquisition.default_filename(),
                     contents=acq_contents,
-                )
-            instrument_contents = self.get_instrument_metadata()
-            if instrument_contents:
-                self._write_json_file(
-                    filename=Instrument.default_filename(),
-                    contents=instrument_contents,
                 )
 
     def run_job(self) -> None:
