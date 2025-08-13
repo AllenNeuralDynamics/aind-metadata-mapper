@@ -2,17 +2,17 @@
 
 # TODO: implement tests once np package issues are resolved
 
-import csv
-import json
+# import csv
+# import json
 import os
 import unittest
-import zoneinfo
+# import zoneinfo
 from pathlib import Path
-from xml.dom import minidom
+# from xml.dom import minidom
 from unittest.mock import patch
 
 
-from aind_data_schema.core.session import Session
+# from aind_data_schema.core.session import Session
 
 from aind_metadata_mapper.open_ephys.camstim_ephys_session import (
     CamstimEphysSessionEtl
@@ -20,7 +20,7 @@ from aind_metadata_mapper.open_ephys.camstim_ephys_session import (
 from aind_metadata_mapper.open_ephys.models import (
     JobSettings as CamstimEphysJobSettings
 )
-from aind_metadata_mapper.open_ephys.session import EphysEtl
+# from aind_metadata_mapper.open_ephys.session import EphysEtl
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
