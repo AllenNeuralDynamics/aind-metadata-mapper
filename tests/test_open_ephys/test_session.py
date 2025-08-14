@@ -2,284 +2,138 @@
 
 # TODO: implement tests once np package issues are resolved
 
-# import csv
-# import json
-# import os
-# import unittest
-# import zoneinfo
-# from pathlib import Path
-# from xml.dom import minidom
-#
-# from aind_data_schema.core.session import Session
-#
-# from aind_metadata_mapper.open_ephys.camstim_ephys_session import (
-#     CamstimEphysSession,
-# )
-# from aind_metadata_mapper.open_ephys.session import EphysEtl
-#
-# RESOURCES_DIR = (
-#     Path(os.path.dirname(os.path.realpath(__file__)))
-#     / ".."
-#     / "resources"
-#     / "open_ephys"
-# )
-#
-# EXAMPLE_STAGE_LOGS = [
-#     RESOURCES_DIR / "newscale_main.csv",
-#     RESOURCES_DIR / "newscale_surface_finding.csv",
-# ]
-# EXAMPLE_OPENEPHYS_LOGS = [
-#     RESOURCES_DIR / "settings_main.xml",
-#     RESOURCES_DIR / "settings_surface_finding.xml",
-# ]
-#
-# EXPECTED_SESSION = RESOURCES_DIR / "ephys_session.json"
-#
-# EXPECTED_CAMSTIM_JSON = RESOURCES_DIR / "camstim_ephys_session.json"
-#
-#
-# class TestEphysSession(unittest.TestCase):
-#     """Test methods in open_ephys session module."""
-#
-#     maxDiff = None  # show full diff without truncation
-#
-#     @classmethod
-#     def setUpClass(cls):
-#         """Load record object and user settings before running tests."""
-#         # TODO: Add visual stimulus
-#         cls.experiment_data = {
-#             "experimenter_full_name": ["Al Dente"],
-#             "subject_id": "699889",
-#             "session_type": "Receptive field mapping",
-#             "iacuc_protocol": "2109",
-#             "rig_id": "323_EPHYS2-RF_2024-01-18_01",
-#             "animal_weight_prior": None,
-#             "animal_weight_post": None,
-#             "calibrations": [],
-#             "maintenance": [],
-#             "camera_names": [],
-#             "stick_microscopes": [
-#                 {
-#                     "assembly_name": "20516338",
-#                     "arc_angle": -180.0,
-#                     "module_angle": -180.0,
-#                     "angle_unit": "degrees",
-#                     "notes": "Did not record arc or module angles, "
-#                     "did not calibrate",
-#                 },
-#                 {
-#                     "assembly_name": "22437106",
-#                     "arc_angle": -180.0,
-#                     "module_angle": -180.0,
-#                     "angle_unit": "degrees",
-#                     "notes": "Did not record arc or module angles, "
-#                     "did not calibrate",
-#                 },
-#                 {
-#                     "assembly_name": "22437107",
-#                     "arc_angle": -180.0,
-#                     "module_angle": -180.0,
-#                     "angle_unit": "degrees",
-#                     "notes": "Did not record arc or module angles, "
-#                     "did not calibrate",
-#                 },
-#                 {
-#                     "assembly_name": "22438379",
-#                     "arc_angle": -180.0,
-#                     "module_angle": -180.0,
-#                     "angle_unit": "degrees",
-#                     "notes": "Did not record arc or module angles, "
-#                     "did not calibrate",
-#                 },
-#             ],
-#             "daqs": "Basestation",
-#             # data streams have to be in same
-#             # order as setting.xml's and newscale.csv's
-#             "data_streams": [
-#                 {
-#                     "ephys_module_46121": {
-#                         "arc_angle": 5.3,
-#                         "module_angle": -27.1,
-#                         "angle_unit": "degrees",
-#                         "coordinate_transform": "behavior/"
-#                         "calibration_info_np2_2024_01_17T15_04_00.npy",
-#                         "calibration_date": "2024-01-17T15:04:00+00:00",
-#                         "notes": "Easy insertion. Recorded 8 minutes, "
-#                         "serially, so separate from prior insertion.",
-#                         "primary_targeted_structure": "AntComMid",
-#                         "targeted_ccf_coordinates": [
-#                             {
-#                                 "ml": 5700.0,
-#                                 "ap": 5160.0,
-#                                 "dv": 5260.0,
-#                                 "unit": "micrometer",
-#                                 "ccf_version": "CCFv3",
-#                             }
-#                         ],
-#                     },
-#                     "ephys_module_46118": {
-#                         "arc_angle": 14,
-#                         "module_angle": 20,
-#                         "angle_unit": "degrees",
-#                         "coordinate_transform": "behavior/"
-#                         "calibration_info_np2_2024_01_17T15_04_00.npy",
-#                         "calibration_date": "2024-01-17T15:04:00+00:00",
-#                         "notes": "Easy insertion. Recorded 8 minutes, "
-#                         "serially, so separate from prior insertion.",
-#                         "primary_targeted_structure": "VISp",
-#                         "targeted_ccf_coordinates": [
-#                             {
-#                                 "ml": 5700.0,
-#                                 "ap": 5160.0,
-#                                 "dv": 5260.0,
-#                                 "unit": "micrometer",
-#                                 "ccf_version": "CCFv3",
-#                             }
-#                         ],
-#                     },
-#                     "mouse_platform_name": "Running Wheel",
-#                     "active_mouse_platform": False,
-#                     "notes": "699889_2024-01-18_12-12-04",
-#                 },
-#                 {
-#                     "ephys_module_46121": {
-#                         "arc_angle": 5.3,
-#                         "module_angle": -27.1,
-#                         "angle_unit": "degrees",
-#                         "coordinate_transform": "behavior/"
-#                         "calibration_info_np2_2024_01_17T15_04_00.npy",
-#                         "calibration_date": "2024-01-17T15:04:00+00:00",
-#                         "notes": "Easy insertion. Recorded 8 minutes, "
-#                         "serially, so separate from prior insertion.",
-#                         "primary_targeted_structure": "AntComMid",
-#                         "targeted_ccf_coordinates": [
-#                             {
-#                                 "ml": 5700.0,
-#                                 "ap": 5160.0,
-#                                 "dv": 5260.0,
-#                                 "unit": "micrometer",
-#                                 "ccf_version": "CCFv3",
-#                             }
-#                         ],
-#                     },
-#                     "ephys_module_46118": {
-#                         "arc_angle": 14,
-#                         "module_angle": 20,
-#                         "angle_unit": "degrees",
-#                         "coordinate_transform": "behavior/"
-#                         "calibration_info_np2_2024_01_17T15_04_00.npy",
-#                         "calibration_date": "2024-01-17T15:04:00+00:00",
-#                         "notes": "Easy insertion. Recorded 8 minutes, "
-#                         "serially, so separate from prior insertion.",
-#                         "primary_targeted_structure": "VISp",
-#                         "targeted_ccf_coordinates": [
-#                             {
-#                                 "ml": 5700.0,
-#                                 "ap": 5160.0,
-#                                 "dv": 5260.0,
-#                                 "unit": "micrometer",
-#                                 "ccf_version": "CCFv3",
-#                             }
-#                         ],
-#                     },
-#                     "mouse_platform_name": "Running Wheel",
-#                     "active_mouse_platform": False,
-#                     "notes": "699889_2024-01-18_12-24-55; Surface Finding",
-#                 },
-#             ],
-#         }
-#
-#         stage_logs = []
-#         openephys_logs = []
-#         for stage, openephys in zip(
-#             EXAMPLE_STAGE_LOGS, EXAMPLE_OPENEPHYS_LOGS
-#         ):
-#             with open(stage, "r") as f:
-#                 stage_logs.append([row for row in csv.reader(f)])
-#             with open(openephys, "r") as f:
-#                 openephys_logs.append(minidom.parse(f))
-#
-#         with open(EXPECTED_SESSION, "r") as f:
-#             expected_session = Session(**json.load(f))
-#
-#         cls.stage_logs = stage_logs
-#         cls.openephys_logs = openephys_logs
-#         cls.expected_session = expected_session
-#
-#     def test_extract(self):
-#         """Tests that the stage and openophys logs and experiment
-#         data is extracted correctly"""
-#
-#         etl_job1 = EphysEtl(
-#             output_directory=RESOURCES_DIR,
-#             stage_logs=self.stage_logs,
-#             openephys_logs=self.openephys_logs,
-#             experiment_data=self.experiment_data,
-#         )
-#         parsed_info = etl_job1._extract()
-#         self.assertEqual(self.stage_logs, parsed_info.stage_logs)
-#         self.assertEqual(self.openephys_logs, parsed_info.openephys_logs)
-#         self.assertEqual(self.experiment_data, parsed_info.experiment_data)
-#
-#     def test_transform(self):
-#         """Tests that the teensy response maps correctly to ophys session."""
-#
-#         etl_job1 = EphysEtl(
-#             output_directory=RESOURCES_DIR,
-#             stage_logs=self.stage_logs,
-#             openephys_logs=self.openephys_logs,
-#             experiment_data=self.experiment_data,
-#         )
-#         parsed_info = etl_job1._extract()
-#         actual_session = etl_job1._transform(parsed_info)
-#         actual_session.session_start_time = (
-#             actual_session.session_start_time.replace(
-#                 tzinfo=zoneinfo.ZoneInfo("UTC")
-#             )
-#         )
-#         actual_session.session_end_time = (
-#             actual_session.session_end_time.replace(
-#                 tzinfo=zoneinfo.ZoneInfo("UTC")
-#             )
-#         )
-#         for stream in actual_session.data_streams:
-#             stream.stream_start_time = stream.stream_start_time.replace(
-#                 tzinfo=zoneinfo.ZoneInfo("UTC")
-#             )
-#             stream.stream_end_time = stream.stream_end_time.replace(
-#                 tzinfo=zoneinfo.ZoneInfo("UTC")
-#             )
-#         self.assertEqual(
-#             self.expected_session.model_dump(),
-#             actual_session.model_dump(),
-#         )
-#
-#
-# class TestCamstimEphysSession(unittest.TestCase):
-#     """Test methods in camstim ephys session module."""
-#
-#     @classmethod
-#     def setUpClass(cls):
-#         """
-#         Load expected json
-#         """
-#         cls.expected_json = json.load(EXPECTED_CAMSTIM_JSON)
-#
-#     def test_generate_json(cls):
-#         """
-#         Attempt to generate a temporal barcoding json
-#         """
-#         json_settings = {
-#             "description": "OpenScope's Temporal Barcoding project",
-#             "iacuc_protocol": "2117",
-#             "session_type": "",
-#         }
-#         camstim_session_mapper = CamstimEphysSession(
-#             "1315994569", json_settings
-#         )
-#         output_session_json = camstim_session_mapper.generate_session_json()
-#         cls.assertEqual(cls.expected_json, output_session_json)
-#
-#
-# if __name__ == "__main__":
-#     unittest.main()
+import shutil
+import tempfile
+import unittest
+from datetime import datetime
+from pathlib import Path
+from unittest.mock import patch
+import pandas as pd
+
+from aind_metadata_mapper.open_ephys.camstim_ephys_session import (
+    CamstimEphysSessionEtl
+)
+from aind_metadata_mapper.open_ephys.models import (
+    JobSettings as CamstimEphysJobSettings
+)
+
+RESOURCES_DIR = (
+    Path(__file__).parent.parent / "resources" / "open_ephys"
+)
+
+EXAMPLE_STAGE_LOGS = [
+    RESOURCES_DIR / "newscale_main.csv",
+    RESOURCES_DIR / "newscale_surface_finding.csv",
+]
+EXAMPLE_OPENEPHYS_LOGS = [
+    RESOURCES_DIR / "settings_main.xml",
+    RESOURCES_DIR / "settings_surface_finding.xml",
+]
+
+EXPECTED_SESSION = RESOURCES_DIR / "ephys_session.json"
+
+EXPECTED_CAMSTIM_JSON = RESOURCES_DIR / "camstim_ephys_session.json"
+
+
+class TestCamstimEphysSessionEtl(unittest.TestCase):
+    """Test methods in camstim ephys session module."""
+
+    @patch('aind_metadata_mapper.open_ephys.utils.pkl_utils.get_stage')
+    @patch('aind_metadata_mapper.open_ephys.utils.pkl_utils.get_fps')
+    @patch('aind_metadata_mapper.open_ephys.utils.sync_utils.get_stop_time')
+    @patch('aind_metadata_mapper.open_ephys.utils.sync_utils.get_start_time')
+    @patch('aind_metadata_mapper.open_ephys.utils.sync_utils.load_sync')
+    @patch('aind_metadata_mapper.open_ephys.utils.pkl_utils.load_pkl')
+    @patch('pandas.read_csv')
+    @patch('json.loads')
+    @patch('pathlib.Path.read_text')
+    @patch('pathlib.Path.glob')
+    @patch('pathlib.Path.exists')
+    @patch(
+        'aind_metadata_mapper.open_ephys.camstim_ephys_session.'
+        'get_single_oebin_path'
+    )
+    def setUp(
+        self,
+        mock_oebin,
+        mock_exists,
+        mock_glob,
+        mock_read_text,
+        mock_json_loads,
+        mock_read_csv,
+        mock_load_pkl,
+        mock_load_sync,
+        mock_start_time,
+        mock_stop_time,
+        mock_fps,
+        mock_stage,
+    ):
+        """Set up test fixtures."""
+        self.temp_dir = tempfile.mkdtemp()
+
+        # Configure all mocks
+        mock_oebin.return_value = Path(self.temp_dir) / "fake.oebin"
+        mock_exists.return_value = True
+        # Return an iterator instead of a list
+        mock_glob.return_value = iter([Path(self.temp_dir) / "platform.json"])
+        mock_read_text.return_value = '{"project": "test_project"}'
+        mock_json_loads.return_value = {
+            "project": "test_project",
+            "operatorID": "test.operator",
+            "rig_id": "test_rig",
+            "InsertionNotes": {}
+        }
+
+        # Mock pandas.read_csv to return a DataFrame with all expected columns
+        mock_read_csv.return_value = pd.DataFrame({
+            'Start': [0.0, 10.0, 20.0],
+            'End': [5.0, 15.0, 25.0],
+            'start_time': [0.0, 10.0, 20.0],
+            'stop_time': [5.0, 15.0, 25.0],
+            'stim_name': ['stim1', 'stim2', 'stim3']
+        })
+
+        mock_load_pkl.return_value = {
+            "fps": 60,
+            "stage": "test_stage",
+            "session_uuid": "test-session-uuid-123"
+        }
+        mock_load_sync.return_value = None
+        # Return datetime objects instead of floats
+        mock_start_time.return_value = datetime(2023, 1, 1, 10, 0, 0)
+        mock_stop_time.return_value = datetime(2023, 1, 1, 12, 0, 0)
+        mock_fps.return_value = 60
+        mock_stage.return_value = "test_stage"
+
+        self.job_settings = CamstimEphysJobSettings(
+            session_type="test_session",
+            project_name="test_project",
+            iacuc_protocol="test_protocol",
+            description="test_description",
+            mtrain_server="test_server",
+            session_id="test_session_id",
+            input_source=self.temp_dir
+        )
+        self.etl = CamstimEphysSessionEtl(job_settings=self.job_settings)
+
+    def tearDown(self):
+        """Clean up temporary directory."""
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_init(self):
+        """Test initialization."""
+        self.assertIsInstance(self.etl, CamstimEphysSessionEtl)
+
+    def test_has_job_settings(self):
+        """Test that job_settings attribute exists."""
+        self.assertTrue(hasattr(self.etl, 'job_settings'))
+
+    def test_basic_attributes_exist(self):
+        """Test that basic attributes exist."""
+        attrs = ['job_settings', 'recording_dir']
+        for attr in attrs:
+            self.assertTrue(hasattr(self.etl, attr))
+
+
+if __name__ == "__main__":
+    unittest.main()

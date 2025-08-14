@@ -67,6 +67,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
             output_directory=camstim_output,
             session_id=self.job_settings.session_id,
             subject_id=self.job_settings.subject_id,
+            lims_project_code=self.job_settings.lims_project_code,
         )
         self.camstim = Camstim(camstim_settings)
 
