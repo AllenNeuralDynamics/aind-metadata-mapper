@@ -94,8 +94,8 @@ class TestSmartspimETL(unittest.TestCase):
         }
 
         result = (
-            self.example_smartspim_etl_success.
-            _extract_metadata_from_microscope_files()
+            self.example_smartspim_etl_success
+                ._extract_metadata_from_microscope_files()
         )
 
         expected_result = {
@@ -286,8 +286,8 @@ class TestSmartspimETL(unittest.TestCase):
         }
 
         test_extracted = (
-            self.example_smartspim_etl_fail_mouseid.
-            _extract_metadata_from_microscope_files()
+            self.example_smartspim_etl_fail_mouseid
+                ._extract_metadata_from_microscope_files()
         )
 
         with self.assertRaises(ValueError):
@@ -371,9 +371,7 @@ class TestSmartspimETL(unittest.TestCase):
         mock_write.return_value = None
         job_settings = self.example_job_settings_success.model_copy(deep=True)
         job_settings.slims_datetime = "2024-10-10_10-10-10"
-        etl = SmartspimETL(
-            job_settings=job_settings
-        )
+        etl = SmartspimETL(job_settings=job_settings)
         response = etl.run_job()
         mock_write.assert_called_once()
         self.assertEqual(200, response.status_code)
