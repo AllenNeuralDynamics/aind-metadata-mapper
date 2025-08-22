@@ -1,4 +1,4 @@
-"""Module to define models for Gather Metadata Job"""
+"""Module to define models for the metadata mapper"""
 
 from typing import Optional
 
@@ -40,3 +40,12 @@ class JobSettings(
         default="http://aind-metadata-service",
         description="Metadata service URL to download metadata info.",
     )
+
+
+class Mapper():
+    """Base class for all mappers"""
+
+    def transform(self, metadata: dict):
+        """Transforms raw metadata into a complete model.
+        """
+        raise NotImplementedError("This method should be overridden in subclass")

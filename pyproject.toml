@@ -19,7 +19,8 @@ dynamic = ["version"]
 dependencies = [
     "requests",
     "aind-data-schema==2.0.0",
-    "pydantic-settings>=2.8.0"
+    "pydantic-settings>=2.8.0",
+    "aind-metadata-extractor",
 ]
 
 [project.optional-dependencies]
