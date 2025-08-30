@@ -4,6 +4,7 @@ import argparse
 import json
 import logging
 import sys
+from inspect import signature
 from pathlib import Path
 from typing import Optional, Type
 
@@ -589,14 +590,16 @@ class GatherMetadataJob:
 
     def _setup_session_and_gather_metadata_from_service(self):
         """Create a session object and use it to get metadata from service"""
+        retry_args = {
+            "total": 3,
+            "backoff_factor": 30,
+            "status_forcelist": [500],
+            "allowed_methods": ["GET"],
+        }
+        if "backoff_jitter" in signature(Retry.__init__).parameters:
+            retry_args["backoff_jitter"] = 15
 
-        retries = Retry(
-            total=3,
-            backoff_factor=30,
-            status_forcelist=[500],
-            allowed_methods=["GET"],
-            backoff_jitter=15,
-        )
+        retries = Retry(**retry_args)
 
         adapter = HTTPAdapter(max_retries=retries)
         service_session = requests.Session()
