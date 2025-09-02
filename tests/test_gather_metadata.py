@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
+import requests
 from aind_data_schema.core.metadata import Metadata, MetadataStatus
 from aind_data_schema.core.processing import DataProcess, PipelineProcess
 from aind_data_schema_models.modalities import Modality
@@ -142,7 +143,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         self.assertIsNotNone(contents)
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     def test_get_subject(self, mock_get: MagicMock):
         """Tests get_subject method when use service is true"""
         mock_response = Response()
@@ -150,6 +151,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         body = json.dumps(self.example_subject_response)
         mock_response._content = body.encode("utf-8")
         mock_get.return_value = mock_response
+        service_session = requests.Session()
 
         job_settings = JobSettings(
             metadata_service_domain="http://example.com",
@@ -159,11 +161,11 @@ class TestGatherMetadataJob(unittest.TestCase):
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_subject()
+        contents = metadata_job.get_subject(service_session)
         self.assertEqual("632269", contents["subject_id"])
         mock_get.assert_called_once_with("http://example.com/subject/632269")
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     def test_get_subject_from_dir(self, mock_get: MagicMock):
         """Tests get_subject method when use service is false"""
         mock_response = Response()
@@ -182,11 +184,12 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir=metadata_dir,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_subject()
+        service_session = requests.Session()
+        contents = metadata_job.get_subject(service_session)
         self.assertEqual("632269", contents["subject_id"])
         mock_get.assert_not_called()
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     def test_get_subject_error(self, mock_get: MagicMock):
         """Tests get_subject when an error is raised"""
         mock_response = Response()
@@ -203,15 +206,16 @@ class TestGatherMetadataJob(unittest.TestCase):
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
+        service_session = requests.Session()
         with self.assertRaises(AssertionError) as e:
-            metadata_job.get_subject()
+            metadata_job.get_subject(service_session)
         expected_error_message = (
             "Subject metadata is not valid! "
             "{'message': 'Internal Server Error'}"
         )
         self.assertTrue(expected_error_message in str(e.exception))
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     def test_get_procedures(self, mock_get: MagicMock):
         """Tests get_procedures method"""
         mock_response = Response()
@@ -228,13 +232,14 @@ class TestGatherMetadataJob(unittest.TestCase):
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_procedures()
+        service_session = requests.Session()
+        contents = metadata_job.get_procedures(service_session)
         self.assertEqual("632269", contents["subject_id"])
         mock_get.assert_called_once_with(
             "http://example.com/procedures/632269"
         )
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     def test_get_procedures_from_dir(self, mock_get: MagicMock):
         """Tests get_procedures method from dir"""
         mock_response = Response()
@@ -252,15 +257,13 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir=metadata_dir,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_procedures()
+        service_session = requests.Session()
+        contents = metadata_job.get_procedures(service_session)
         self.assertEqual("632269", contents["subject_id"])
         mock_get.assert_not_called()
 
-    @patch("requests.get")
-    @patch("logging.warning")
-    def test_get_procedures_warning(
-        self, mock_warn: MagicMock, mock_get: MagicMock
-    ):
+    @patch("requests.Session.get")
+    def test_get_procedures_error(self, mock_get: MagicMock):
         """Tests get_procedures when an error is raised"""
         mock_response = Response()
         mock_response.status_code = 500
@@ -276,13 +279,16 @@ class TestGatherMetadataJob(unittest.TestCase):
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        output = metadata_job.get_procedures()
-        self.assertIsNone(output)
-        mock_warn.assert_called_once_with(
-            "Procedures metadata is not valid! 500"
+        service_session = requests.Session()
+        with self.assertRaises(AssertionError) as e:
+            metadata_job.get_procedures(service_session)
+        expected_error_message = (
+            "Procedures metadata is not valid! "
+            "{'message': 'Internal Server Error'}"
         )
+        self.assertTrue(expected_error_message in str(e.exception))
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     def test_get_raw_data_description(self, mock_get: MagicMock):
         """Tests get_raw_data_description method with valid model"""
 
@@ -302,7 +308,8 @@ class TestGatherMetadataJob(unittest.TestCase):
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_raw_data_description()
+        service_session = requests.Session()
+        contents = metadata_job.get_raw_data_description(service_session)
         expected_investigators = ["Anna Apple"]
         actual_investigators = [i["name"] for i in contents["investigators"]]
         self.assertEqual(expected_investigators, actual_investigators)
@@ -315,7 +322,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             "http://example.com/funding/Ephys Platform"
         )
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     def test_get_raw_data_description_from_dir(self, mock_get: MagicMock):
         """Tests get_raw_data_description method from dir"""
 
@@ -338,7 +345,8 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir=metadata_dir,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_raw_data_description()
+        service_session = requests.Session()
+        contents = metadata_job.get_raw_data_description(service_session)
         expected_investigators = ["Anna Apple", "John Smith"]
         actual_investigators = [i["name"] for i in contents["investigators"]]
         self.assertEqual(expected_investigators, actual_investigators)
@@ -349,7 +357,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         mock_get.assert_not_called()
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     def test_get_raw_data_description_multi_response(
         self, mock_get: MagicMock
     ):
@@ -372,7 +380,8 @@ class TestGatherMetadataJob(unittest.TestCase):
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_raw_data_description()
+        service_session = requests.Session()
+        contents = metadata_job.get_raw_data_description(service_session)
         expected_investigators = ["Anna Apple"]
         actual_investigators = [i["name"] for i in contents["investigators"]]
         self.assertEqual(2, len(contents["funding_source"]))
@@ -386,7 +395,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             "http://example.com/funding/Ephys Platform"
         )
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     def test_get_raw_data_description_invalid(self, mock_get: MagicMock):
         """Tests get_raw_data_description method with invalid model"""
         mock_response = Response()
@@ -405,8 +414,8 @@ class TestGatherMetadataJob(unittest.TestCase):
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        # with self.assertWarns(UserWarning) as w:
-        contents = metadata_job.get_raw_data_description()
+        service_session = requests.Session()
+        contents = metadata_job.get_raw_data_description(service_session)
         self.assertEqual("ecephys", contents["platform"]["abbreviation"])
         self.assertEqual("632269", contents["subject_id"])
         self.assertEqual(
@@ -670,7 +679,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         contents = metadata_job.get_session_metadata()
         self.assertIsNone(contents)
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     def test_get_rig_metadata(self, mock_get: MagicMock):
         """Tests get_rig_metadata from metadata service path"""
         mock_response = Response()
@@ -688,11 +697,13 @@ class TestGatherMetadataJob(unittest.TestCase):
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_rig_metadata()
+        service_session = requests.Session()
+        contents = metadata_job.get_rig_metadata(service_session)
         self.assertEqual("323_EPHYS1", contents["rig_id"])
         mock_get.assert_called_once_with("http://example.com/rig/323_EPHYS1")
 
-    def test_get_rig_metadata_from_dir(self):
+    @patch("requests.Session")
+    def test_get_rig_metadata_from_dir(self, mock_session: MagicMock):
         """Tests get_rig_metadata from directory"""
         metadata_dir = RESOURCES_DIR / "metadata_files"
         job_settings = JobSettings(
@@ -703,19 +714,22 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir=metadata_dir,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_rig_metadata()
+        contents = metadata_job.get_rig_metadata(mock_session)
         self.assertIsNotNone(contents)
+        mock_session.assert_not_called()
 
-    def test_get_rig_metadata_none(self):
+    @patch("requests.Session")
+    def test_get_rig_metadata_none(self, mock_session: MagicMock):
         """Tests get_rig_metadata when no file or settings are provided."""
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_rig_metadata()
+        contents = metadata_job.get_rig_metadata(mock_session)
         self.assertIsNone(contents)
+        mock_session.assert_not_called()
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     @patch("logging.warning")
     def test_get_rig_metadata_warning(
         self, mock_warn: MagicMock, mock_get: MagicMock
@@ -735,7 +749,8 @@ class TestGatherMetadataJob(unittest.TestCase):
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        output = metadata_job.get_rig_metadata()
+        service_session = requests.Session()
+        output = metadata_job.get_rig_metadata(service_session)
         self.assertIsNone(output)
         mock_warn.assert_called_once_with("Rig metadata is not valid! 500")
 
@@ -761,7 +776,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         contents = metadata_job.get_quality_control_metadata()
         self.assertIsNone(contents)
 
-    def test_get_problematic_rig_metadata(self):
+    @patch("requests.Session")
+    def test_get_problematic_rig_metadata(self, mock_session: MagicMock):
         """Tests get_rig_metadata when there is a pydantic serialization
         issue."""
         metadata_dir = METADATA_DIR_WITH_RIG_ISSUE
@@ -771,8 +787,9 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir=metadata_dir,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_rig_metadata()
+        contents = metadata_job.get_rig_metadata(mock_session)
         self.assertIsNotNone(contents)
+        mock_session.assert_not_called()
 
     def test_get_acquisition_metadata(self):
         """Tests get_acquisition_metadata"""
@@ -844,7 +861,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         contents = metadata_job.get_acquisition_metadata()
         self.assertIsNone(contents)
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     def test_get_instrument_metadata(self, mock_get: MagicMock):
         """Tests get_instrument_metadata from metadata service path"""
         mock_response = Response()
@@ -862,13 +879,15 @@ class TestGatherMetadataJob(unittest.TestCase):
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_instrument_metadata()
+        service_session = requests.Session()
+        contents = metadata_job.get_instrument_metadata(service_session)
         self.assertEqual("exaSPIM1-1", contents["instrument_id"])
         mock_get.assert_called_once_with(
             "http://example.com/instrument/exaSPIM1-1"
         )
 
-    def test_get_instrument_metadata_from_dir(self):
+    @patch("requests.Session")
+    def test_get_instrument_metadata_from_dir(self, mock_session: MagicMock):
         """Tests get_instrument_metadata from directory"""
         metadata_dir = RESOURCES_DIR / "metadata_files"
         job_settings = JobSettings(
@@ -880,19 +899,22 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir=metadata_dir,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_instrument_metadata()
+        contents = metadata_job.get_instrument_metadata(mock_session)
         self.assertIsNotNone(contents)
+        mock_session.assert_not_called()
 
-    def test_get_instrument_metadata_none(self):
+    @patch("requests.Session")
+    def test_get_instrument_metadata_none(self, mock_session: MagicMock):
         """Tests get_instrument_metadata when no file or settings."""
         job_settings = JobSettings(
             directory_to_write_to=RESOURCES_DIR,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_instrument_metadata()
+        contents = metadata_job.get_instrument_metadata(mock_session)
         self.assertIsNone(contents)
+        mock_session.assert_not_called()
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     @patch("logging.warning")
     def test_get_instrument_metadata_warning(
         self, mock_warn: MagicMock, mock_get: MagicMock
@@ -913,7 +935,8 @@ class TestGatherMetadataJob(unittest.TestCase):
             ),
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
-        output = metadata_job.get_instrument_metadata()
+        service_session = requests.Session()
+        output = metadata_job.get_instrument_metadata(service_session)
         self.assertIsNone(output)
         mock_warn.assert_called_once_with(
             "Instrument metadata is not valid! 500"
@@ -1291,7 +1314,8 @@ class TestGatherMetadataJob(unittest.TestCase):
             job_settings.session_settings.job_settings.experimenter_full_name,
         )
 
-    def test_project_name_is_set(self):
+    @patch("requests.Session")
+    def test_project_name_is_set(self, mock_session: MagicMock):
         """Tests project_name makes it to the data_description file"""
 
         settings = JobSettings(
@@ -1308,11 +1332,12 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
 
         job = GatherMetadataJob(settings=settings)
-        data_description_contents = job.get_raw_data_description()
+        data_description_contents = job.get_raw_data_description(mock_session)
         self.assertEqual(
             "Cognitive flexibility in patch foraging",
             data_description_contents["project_name"],
         )
+        mock_session.assert_not_called()
 
 
 if __name__ == "__main__":
