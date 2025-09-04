@@ -90,7 +90,7 @@ class TestISI(unittest.TestCase):
         epoch = stimulus_epochs[0]
         self.assertEqual(epoch.stimulus_start_time, self.session_start_time)
         self.assertEqual(epoch.stimulus_end_time, self.session_end_time)
-        self.assertEqual(epoch.stimulus_name, "DriftingCheckerboardBar")
+        self.assertEqual(epoch.stimulus_name, "IntrinsicStim")
         self.assertEqual(epoch.stimulus_modalities, [StimulusModality.VISUAL])
 
         # Check that stimulus_parameters includes VisualStimulation object
@@ -111,7 +111,7 @@ class TestISI(unittest.TestCase):
             StimulusEpoch(
                 stimulus_start_time=self.session_start_time,
                 stimulus_end_time=self.session_end_time,
-                stimulus_name="DriftingCheckerboardBar",
+                stimulus_name="IntrinsicStim",
                 stimulus_modalities=[StimulusModality.VISUAL],
                 stimulus_parameters=[
                     VisualStimulation(stimulus_name="DriftingCheckerboardBar")
@@ -182,7 +182,7 @@ class TestISI(unittest.TestCase):
         stimulus_epochs = isi._extract()
         self.assertEqual(len(stimulus_epochs), 1)
         self.assertEqual(
-            stimulus_epochs[0].stimulus_name, "DriftingCheckerboardBar"
+            stimulus_epochs[0].stimulus_name, "IntrinsicStim"
         )
 
         # Test transformation
