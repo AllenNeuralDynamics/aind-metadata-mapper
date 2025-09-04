@@ -73,14 +73,14 @@ class ISI(GenericEtl[JobSettings]):
                 "flipHoriz": False,
                 "flipVert": False,
                 "texRes": 256,
-                "spherical": True
+                "warp": True
             }
         )
         stimulus_epoch = [
             StimulusEpoch(
                 stimulus_start_time=self.job_settings.session_start_time,
                 stimulus_end_time=self.job_settings.session_end_time,
-                stimulus_name="DriftingCheckerboardBar",
+                stimulus_name="IntrinsicStim",
                 stimulus_modalities=[StimulusModality.VISUAL],
                 stimulus_parameters=[visual_stim_params]
             )
