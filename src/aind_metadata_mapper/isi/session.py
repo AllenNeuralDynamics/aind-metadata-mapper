@@ -3,18 +3,16 @@
 import argparse
 import logging
 import os
-from datetime import datetime
 from pathlib import Path
-from typing import List, Tuple, Union
-from zoneinfo import ZoneInfo
+from typing import List, Union
 
-import h5py as h5
 from aind_data_schema.core.session import (
     LightEmittingDiodeConfig,
     Session,
     StimulusEpoch,
     StimulusModality,
     Stream,
+    VisualStimulation,
 )
 from aind_data_schema_models.modalities import Modality
 
@@ -41,43 +39,6 @@ class ISI(GenericEtl[JobSettings]):
             job_settings_model = job_settings
 
         super().__init__(job_settings=job_settings_model)
-        self.trial_files = self.get_trial_files()
-        self.start_time, self.end_time = self.get_start_end_times()
-
-    def get_trial_files(self) -> List[Path]:
-        """Gets the trial files from the input source directory and sorts them
-        by their creation time.
-
-        Returns
-        -------
-        List[Path]
-            A list of sorted trial file paths.
-        """
-        trials = list(self.job_settings.input_source.glob("*trial*.hdf5"))
-        if not trials:
-            raise ValueError("No trials found in the input source directory.")
-        trials.sort(
-            key=lambda x: x.stat().st_ctime
-        )  # Trials contain <unique_id>_trial<trial_number>
-        return trials
-
-    def get_start_end_times(self) -> Tuple[datetime, datetime]:
-        """Grabs the start and end times from the first trials
-        creation time and the last trials completion time
-
-        Returns
-        -------
-        tuple
-            (start_time: datetime, end_time: datetime)
-        """
-        tz = ZoneInfo(self.job_settings.local_timezone)
-        start_time = datetime.fromtimestamp(
-            self.trial_files[0].stat().st_ctime, tz=tz
-        )
-        end_time = datetime.fromtimestamp(
-            self.trial_files[-1].stat().st_ctime, tz=tz
-        )
-        return start_time, end_time
 
     def _extract(self) -> List[StimulusEpoch]:
         """Extracts the session and modality from the job settings.
@@ -87,27 +48,45 @@ class ISI(GenericEtl[JobSettings]):
         List[StimulusEpoch]
             A list of stimulus epochs extracted from the trial files.
         """
-        stimulus_epochs = []
-        tz = ZoneInfo(self.job_settings.local_timezone)
-        for trial in self.trial_files:
-            with h5.File(trial, "r") as f:
-                trial_times = f["raw_images_timestamp"][()].astype(float)
-                trial_start = datetime.fromtimestamp(
-                    trial.stat().st_ctime, tz=tz
-                )
-                trial_end = datetime.fromtimestamp(
-                    trial_start.timestamp() + float(trial_times[-1]), tz=tz
-                )
-                stim_epoch = StimulusEpoch(
-                    stimulus_start_time=trial_start,
-                    stimulus_end_time=trial_end,
-                    # Use the file name without extension
-                    stimulus_name=trial.name.split(".hdf5")[0],
-                    stimulus_modalities=[StimulusModality.VISUAL],
-                )
-            stimulus_epochs.append(stim_epoch)
+        # Create visual stimulation parameters
+        visual_stim_params = VisualStimulation(
+            stimulus_name="DriftingCheckerboardBar",
+            stimulus_parameters={
+                "window": {
+                    "size": [1920, 1200],
+                    "monitor": "testMonitor",
+                    "fullscr": True,
+                    "color": [0, 0, 0],
+                    "screen": 2
+                },
+                "mask": None,
+                "units": "pix",
+                "pos": [0, 0],
+                "size": [1920, 1200],
+                "ori": [0, 90, 180, 270],
+                "color": [1, 1, 1],
+                "colorSpace": "rgb",
+                "contrast": 1.0,
+                "opacity": 1.0,
+                "depth": 0,
+                "interpolate": False,
+                "flipHoriz": False,
+                "flipVert": False,
+                "texRes": 256,
+                "spherical": True
+            }
+        )
+        stimulus_epoch = [
+            StimulusEpoch(
+                stimulus_start_time=self.job_settings.session_start_time,
+                stimulus_end_time=self.job_settings.session_end_time,
+                stimulus_name="DriftingCheckerboardBar",
+                stimulus_modalities=[StimulusModality.VISUAL],
+                stimulus_parameters=[visual_stim_params]
+            )
+        ]
 
-        return stimulus_epochs
+        return stimulus_epoch
 
     def _transform(self, stimulus_epochs: List[StimulusEpoch]) -> Session:
         """Transforms the job settings into a Session model.
@@ -125,8 +104,8 @@ class ISI(GenericEtl[JobSettings]):
         # Create the data stream
         data_streams = [
             Stream(
-                stream_start_time=self.start_time,
-                stream_end_time=self.end_time,
+                stream_start_time=self.job_settings.session_start_time,
+                stream_end_time=self.job_settings.session_end_time,
                 light_sources=[
                     LightEmittingDiodeConfig(
                         name="ISI LED",
@@ -136,8 +115,8 @@ class ISI(GenericEtl[JobSettings]):
             )
         ]
         return Session(
-            session_start_time=self.start_time,
-            session_end_time=self.end_time,
+            session_start_time=self.job_settings.session_start_time,
+            session_end_time=self.job_settings.session_end_time,
             experimenter_full_name=self.job_settings.experimenter_full_name,
             subject_id=self.job_settings.subject_id,
             data_streams=data_streams,
