@@ -24,8 +24,11 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_fail_response.status_code = 500
         mock_success_response = Response()
         mock_success_response.status_code = 200
+        mock_invalid_response = Response()
+        mock_invalid_response.status_code = 400
         body = json.dumps({"example": "only"})
         mock_success_response._content = body.encode("utf-8")
+        mock_invalid_response._content = body.encode("utf-8")
         example_job_settings = JobSettings(metadata_dir=str(TEST_DIR))
         cls.success_response = mock_success_response
         cls.fail_response = mock_fail_response
@@ -99,6 +102,31 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_requests_get: MagicMock,
     ):
         """Tests get_subject method when a file does not exist."""
+        mock_does_file_exist.return_value = False
+        mock_requests_get.return_value = self.success_response
+        with self.assertLogs(level="DEBUG") as captured:
+            contents = self.example_job.get_subject()
+        self.assertEqual({"example": "only"}, contents)
+        self.assertEqual(2, len(captured.output))
+        mock_get_file.assert_not_called()
+
+    @patch("requests.get")
+    @patch(
+        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
+        "._does_file_exist_in_user_defined_dir"
+    )
+    @patch(
+        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
+        "._get_file_from_user_defined_directory"
+    )
+    def test_get_subject_from_service_invalid(
+        self,
+        mock_get_file: MagicMock,
+        mock_does_file_exist: MagicMock,
+        mock_requests_get: MagicMock,
+    ):
+        """Tests get_subject method when the response from metadata service
+        has validation errors."""
         mock_does_file_exist.return_value = False
         mock_requests_get.return_value = self.success_response
         with self.assertLogs(level="DEBUG") as captured:

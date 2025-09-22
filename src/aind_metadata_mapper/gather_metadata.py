@@ -76,7 +76,7 @@ class GatherMetadataJob:
                 f"{self.settings.metadata_service_url}"
                 f"/api/v2/subject/{subject_id}"
             )
-            if response.status_code not in ["200", "406"]:
+            if response.status_code not in [200, 400]:
                 response.raise_for_status()
             contents = response.json()
         else:
