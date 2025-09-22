@@ -4,7 +4,7 @@ import json
 import os
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, call, mock_open, patch
 
 from requests import Response
 
@@ -163,6 +163,111 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual(2, len(captured.output))
         mock_get_file.assert_not_called()
 
+    @patch("requests.get")
+    @patch(
+        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
+        "._does_file_exist_in_user_defined_dir"
+    )
+    @patch(
+        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
+        "._get_file_from_user_defined_directory"
+    )
+    def test_get_procedures_from_file(
+        self,
+        mock_get_file: MagicMock,
+        mock_does_file_exist: MagicMock,
+        mock_requests_get: MagicMock,
+    ):
+        """Tests get_procedures method when a file exists."""
+
+        mock_does_file_exist.return_value = True
+        mock_get_file.return_value = {"example": "only"}
+        with self.assertLogs(level="DEBUG") as captured:
+            contents = self.example_job.get_procedures()
+        self.assertEqual({"example": "only"}, contents)
+        self.assertEqual(2, len(captured.output))
+        mock_requests_get.assert_not_called()
+
+    @patch("requests.get")
+    @patch(
+        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
+        "._does_file_exist_in_user_defined_dir"
+    )
+    @patch(
+        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
+        "._get_file_from_user_defined_directory"
+    )
+    def test_get_procedures_from_service(
+        self,
+        mock_get_file: MagicMock,
+        mock_does_file_exist: MagicMock,
+        mock_requests_get: MagicMock,
+    ):
+        """Tests get_procedures method when a file does not exist."""
+        mock_does_file_exist.return_value = False
+        mock_requests_get.return_value = self.success_response
+        with self.assertLogs(level="DEBUG") as captured:
+            contents = self.example_job.get_procedures()
+        self.assertEqual({"example": "only"}, contents)
+        self.assertEqual(2, len(captured.output))
+        mock_get_file.assert_not_called()
+
+    @patch("requests.get")
+    @patch(
+        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
+        "._does_file_exist_in_user_defined_dir"
+    )
+    @patch(
+        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
+        "._get_file_from_user_defined_directory"
+    )
+    def test_get_procedures_from_service_invalid(
+        self,
+        mock_get_file: MagicMock,
+        mock_does_file_exist: MagicMock,
+        mock_requests_get: MagicMock,
+    ):
+        """Tests get_procedures method when the response from metadata service
+        has validation errors."""
+        mock_does_file_exist.return_value = False
+        mock_requests_get.return_value = self.success_response
+        with self.assertLogs(level="DEBUG") as captured:
+            contents = self.example_job.get_procedures()
+        self.assertEqual({"example": "only"}, contents)
+        self.assertEqual(2, len(captured.output))
+        mock_get_file.assert_not_called()
+
+    @patch("requests.get")
+    @patch(
+        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
+        "._does_file_exist_in_user_defined_dir"
+    )
+    @patch(
+        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
+        "._get_file_from_user_defined_directory"
+    )
+    def test_get_procedures_from_service_error(
+        self,
+        mock_get_file: MagicMock,
+        mock_does_file_exist: MagicMock,
+        mock_requests_get: MagicMock,
+    ):
+        """
+        Tests get_procedures method when a file does not exist and there is an
+        error with the metadata service.
+        """
+        mock_does_file_exist.return_value = False
+        mock_requests_get.return_value = self.fail_response
+        with self.assertRaises(Exception) as e:
+            with self.assertLogs(level="DEBUG") as captured:
+                self.example_job.get_procedures()
+        self.assertIn("500 Server Error", str(e.exception))
+        self.assertEqual(2, len(captured.output))
+        mock_get_file.assert_not_called()
+
+    @patch(
+        "aind_metadata_mapper.gather_metadata.GatherMetadataJob.get_procedures"
+    )
     @patch(
         "aind_metadata_mapper.gather_metadata.GatherMetadataJob.get_subject"
     )
@@ -173,22 +278,35 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_json_dump: MagicMock,
         mock_file: MagicMock,
         mock_get_subject: MagicMock,
+        mock_get_procedures: MagicMock,
     ):
         """Tests run_job method."""
         mock_open_file = MagicMock()
         mock_file.return_value.__enter__.return_value = mock_open_file
         mock_get_subject.return_value = {"example": "only"}
+        mock_get_procedures.return_value = {"example": "only"}
         with self.assertLogs(level="DEBUG") as captured:
             self.example_job.run_job()
         mock_file.assert_called()
-        mock_json_dump.assert_called_once_with(
-            {"example": "only"},
-            mock_open_file,
-            indent=3,
-            ensure_ascii=False,
-            sort_keys=True,
+        mock_json_dump.assert_has_calls(
+            [
+                call(
+                    {"example": "only"},
+                    mock_open_file,
+                    indent=3,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                call(
+                    {"example": "only"},
+                    mock_open_file,
+                    indent=3,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+            ]
         )
-        self.assertEqual(3, len(captured.output))
+        self.assertEqual(4, len(captured.output))
 
 
 if __name__ == "__main__":
