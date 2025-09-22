@@ -1,4 +1,5 @@
 """Tests gather_metadata module"""
+
 import json
 import os
 import unittest
@@ -23,7 +24,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_fail_response.status_code = 500
         mock_success_response = Response()
         mock_success_response.status_code = 200
-        body = json.dumps({"data": {"example": "only"}})
+        body = json.dumps({"example": "only"})
         mock_success_response._content = body.encode("utf-8")
         example_job_settings = JobSettings(metadata_dir=str(TEST_DIR))
         cls.success_response = mock_success_response

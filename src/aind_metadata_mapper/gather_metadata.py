@@ -73,11 +73,12 @@ class GatherMetadataJob:
                 f"{self.settings.metadata_service_url}"
             )
             response = requests.get(
-                f"{self.settings.metadata_service_url}/subject/{subject_id}"
+                f"{self.settings.metadata_service_url}"
+                f"/api/v2/subject/{subject_id}"
             )
             if response.status_code not in ["200", "406"]:
                 response.raise_for_status()
-            contents = response.json()["data"]
+            contents = response.json()
         else:
             logging.debug(f"Using existing {file_name}.")
             contents = self._get_file_from_user_defined_directory(
