@@ -5,6 +5,7 @@ import logging
 import os
 
 import requests
+from aind_data_schema.core.procedures import Procedures
 from aind_data_schema.core.subject import Subject
 
 from aind_metadata_mapper.models import JobSettings
@@ -73,11 +74,37 @@ class GatherMetadataJob:
                 f"{self.settings.metadata_service_url}"
             )
             response = requests.get(
-                f"{self.settings.metadata_service_url}/subject/{subject_id}"
+                f"{self.settings.metadata_service_url}"
+                f"/api/v2/subject/{subject_id}"
             )
-            if response.status_code not in ["200", "406"]:
+            if response.status_code not in [200, 400]:
                 response.raise_for_status()
-            contents = response.json()["data"]
+            contents = response.json()
+        else:
+            logging.debug(f"Using existing {file_name}.")
+            contents = self._get_file_from_user_defined_directory(
+                file_name=file_name
+            )
+        return contents
+
+    def get_procedures(self) -> dict:
+        """Get procedures metadata"""
+        logging.info("Gathering procedures metadata.")
+        file_name = Procedures.default_filename()
+        subject_id = self.settings.subject_id
+        if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
+            logging.debug(
+                f"No procedures file found in directory. Downloading "
+                f"{self.settings.subject_id} from "
+                f"{self.settings.metadata_service_url}"
+            )
+            response = requests.get(
+                f"{self.settings.metadata_service_url}"
+                f"/api/v2/procedures/{subject_id}"
+            )
+            if response.status_code not in [200, 400]:
+                response.raise_for_status()
+            contents = response.json()
         else:
             logging.debug(f"Using existing {file_name}.")
             contents = self._get_file_from_user_defined_directory(
@@ -90,6 +117,7 @@ class GatherMetadataJob:
         logging.info("Starting run_job")
         core_metadata = dict()
         core_metadata[Subject.default_filename()] = self.get_subject()
+        core_metadata[Procedures.default_filename()] = self.get_procedures()
 
         for k, v in core_metadata.items():
             logging.debug(f"Writing {k} file")
