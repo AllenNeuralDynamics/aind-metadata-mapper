@@ -20,7 +20,7 @@ dependencies = [
     "requests",
     "aind-data-schema==2.0.0",
     "pydantic-settings>=2.8.0",
-    "aind-metadata-extractor",
+    "aind-metadata-extractor>=0.2.1",
 ]
 
 [project.optional-dependencies]

@@ -34,6 +34,12 @@ from typing import List, Dict, Any, Optional
 
 class SmartspimMapper(Mapper):
     """Smartspim Mapper"""
+
+    def transform(self, metadata: dict) -> Acquisition:
+        """Transforms raw metadata into a complete model.
+        """
+        smartspim_metadata = SmartspimModel.model_validate(metadata)
+        return self._transform(smartspim_metadata)
     
     def _transform(self, metadata: SmartspimModel) -> Acquisition:
         """

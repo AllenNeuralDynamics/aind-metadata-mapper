@@ -1,4 +1,5 @@
 """Tests gather_metadata module"""
+
 import json
 import os
 import unittest
