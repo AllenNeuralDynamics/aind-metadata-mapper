@@ -63,6 +63,10 @@ bruker = [
     "bruker2nifti==1.0.4",
 ]
 
+isi = [
+    "aind-metadata-mapper[schema]"
+]
+
 mesoscope = [
     "aind-metadata-mapper[bergamo]",
     "pillow >= 10.4.0",
