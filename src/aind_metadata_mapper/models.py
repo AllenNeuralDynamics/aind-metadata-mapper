@@ -7,49 +7,12 @@ from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 from pydantic import Field
 from pydantic_settings import BaseSettings
-from typing_extensions import Annotated
-
-from aind_metadata_mapper.bergamo.models import (
-    JobSettings as BergamoSessionJobSettings,
-)
-from aind_metadata_mapper.bruker.models import (
-    JobSettings as BrukerSessionJobSettings,
-)
-from aind_metadata_mapper.fip.models import (
-    JobSettings as FipSessionJobSettings,
-)
-from aind_metadata_mapper.mesoscope.models import (
-    JobSettings as MesoscopeSessionJobSettings,
-)
-from aind_metadata_mapper.open_ephys.models import (
-    JobSettings as OpenEphysJobSettings,
-)
-from aind_metadata_mapper.smartspim.models import (
-    JobSettings as SmartSpimAcquisitionJobSettings,
-)
-
-
-class SessionSettings(BaseSettings, extra="allow"):
-    """Settings needed to retrieve session metadata"""
-
-    job_settings: Annotated[
-        Union[
-            BergamoSessionJobSettings,
-            BrukerSessionJobSettings,
-            FipSessionJobSettings,
-            MesoscopeSessionJobSettings,
-            OpenEphysJobSettings,
-        ],
-        Field(discriminator="job_settings_name"),
-    ]
 
 
 class AcquisitionSettings(BaseSettings, extra="allow"):
     """Fields needed to retrieve acquisition metadata"""
 
-    # TODO: we can change this to a tagged union once more acquisition settings
-    #  are added
-    job_settings: SmartSpimAcquisitionJobSettings
+    acquisition_path: str
 
 
 class SubjectSettings(BaseSettings, extra="allow"):
@@ -66,7 +29,7 @@ class ProceduresSettings(BaseSettings, extra="allow"):
     metadata_service_path: str = "procedures"
 
 
-class RawDataDescriptionSettings(BaseSettings, extra="allow"):
+class DataDescriptionSettings(BaseSettings, extra="allow"):
     """Fields needed to retrieve data description metadata"""
 
     name: str
@@ -86,13 +49,6 @@ class ProcessingSettings(BaseSettings, extra="allow"):
             "PipelineProcess model downstream."
         ),
     )
-
-
-class RigSettings(BaseSettings, extra="allow"):
-    """Fields needed to retrieve rig metadata"""
-
-    rig_id: str
-    metadata_service_path: str = "rig"
 
 
 class InstrumentSettings(BaseSettings, extra="allow"):
@@ -133,12 +89,10 @@ class JobSettings(BaseSettings, extra="allow"):
     job_settings_name: Literal["GatherMetadata"] = "GatherMetadata"
     metadata_service_domain: Optional[str] = None
     subject_settings: Optional[SubjectSettings] = None
-    session_settings: Optional[SessionSettings] = None
     acquisition_settings: Optional[AcquisitionSettings] = None
-    raw_data_description_settings: Optional[RawDataDescriptionSettings] = None
+    data_description_settings: Optional[DataDescriptionSettings] = None
     procedures_settings: Optional[ProceduresSettings] = None
     processing_settings: Optional[ProcessingSettings] = None
-    rig_settings: Optional[RigSettings] = None
     instrument_settings: Optional[InstrumentSettings] = None
     metadata_settings: Optional[MetadataSettings] = None
     directory_to_write_to: Path
