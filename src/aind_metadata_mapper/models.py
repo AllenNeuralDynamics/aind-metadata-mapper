@@ -36,7 +36,7 @@ class DataDescriptionSettings(BaseSettings, extra="allow"):
     project_name: str
     modality: List[Modality.ONE_OF]
     institution: Optional[Organization.ONE_OF] = Organization.AIND
-    metadata_service_path: str = "funding"
+    metadata_service_path_funding: str = "funding"
 
 
 class ProcessingSettings(BaseSettings, extra="allow"):
