@@ -90,7 +90,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     def test_class_constructor(self):
         """Tests class is constructed properly"""
-        job_settings = JobSettings(directory_to_write_to=RESOURCES_DIR)
+        job_settings = JobSettings(output_dir=RESOURCES_DIR)
         metadata_job = GatherMetadataJob(settings=job_settings)
         self.assertIsNotNone(metadata_job)
 
@@ -103,7 +103,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         mock_is_file.return_value = True
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR, metadata_dir="some_path"
+            output_dir=RESOURCES_DIR, metadata_dir="some_path"
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         self.assertTrue(
@@ -118,10 +118,10 @@ class TestGatherMetadataJob(unittest.TestCase):
         not exist"""
 
         mock_is_file.return_value = False
-        job_settings1 = JobSettings(directory_to_write_to=RESOURCES_DIR)
+        job_settings1 = JobSettings(output_dir=RESOURCES_DIR)
         metadata_job = GatherMetadataJob(settings=job_settings1)
         job_settings2 = JobSettings(
-            directory_to_write_to=RESOURCES_DIR, metadata_dir="some_path"
+            output_dir=RESOURCES_DIR, metadata_dir="some_path"
         )
         metadata_job2 = GatherMetadataJob(settings=job_settings2)
         self.assertFalse(
@@ -135,7 +135,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Tests json contents are pulled correctly"""
         metadata_dir = RESOURCES_DIR / "metadata_files"
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR, metadata_dir=metadata_dir
+            output_dir=RESOURCES_DIR, metadata_dir=metadata_dir
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job._get_file_from_user_defined_directory(
@@ -154,8 +154,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         service_session = requests.Session()
 
         job_settings = JobSettings(
-            metadata_service_domain="http://example.com",
-            directory_to_write_to=RESOURCES_DIR,
+            metadata_service_url="http://example.com",
+            output_dir=RESOURCES_DIR,
             subject_settings=SubjectSettings(
                 subject_id="632269",
             ),
@@ -176,8 +176,8 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         metadata_dir = RESOURCES_DIR / "metadata_files"
         job_settings = JobSettings(
-            metadata_service_domain="http://example.com",
-            directory_to_write_to=RESOURCES_DIR,
+            metadata_service_url="http://example.com",
+            output_dir=RESOURCES_DIR,
             subject_settings=SubjectSettings(
                 subject_id="632269",
             ),
@@ -199,8 +199,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get.return_value = mock_response
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
+            output_dir=RESOURCES_DIR,
+            metadata_service_url="http://example.com",
             subject_settings=SubjectSettings(
                 subject_id="632269",
             ),
@@ -225,8 +225,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get.return_value = mock_response
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
+            output_dir=RESOURCES_DIR,
+            metadata_service_url="http://example.com",
             procedures_settings=ProceduresSettings(
                 subject_id="632269",
             ),
@@ -249,8 +249,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get.return_value = mock_response
         metadata_dir = RESOURCES_DIR / "metadata_files"
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
+            output_dir=RESOURCES_DIR,
+            metadata_service_url="http://example.com",
             procedures_settings=ProceduresSettings(
                 subject_id="632269",
             ),
@@ -272,8 +272,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get.return_value = mock_response
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
+            output_dir=RESOURCES_DIR,
+            metadata_service_url="http://example.com",
             procedures_settings=ProceduresSettings(
                 subject_id="632269",
             ),
@@ -299,8 +299,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get.return_value = mock_response
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
+            output_dir=RESOURCES_DIR,
+            metadata_service_url="http://example.com",
             raw_data_description_settings=RawDataDescriptionSettings(
                 project_name="Ephys Platform",
                 name="ecephys_632269_2023-10-10_10-10-10",
@@ -335,8 +335,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_dir = RESOURCES_DIR / "metadata_files"
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
+            output_dir=RESOURCES_DIR,
+            metadata_service_url="http://example.com",
             raw_data_description_settings=RawDataDescriptionSettings(
                 project_name="Ephys Platform",
                 name="ecephys_632269_2023-10-10_10-10-10",
@@ -371,8 +371,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get.return_value = mock_response
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
+            output_dir=RESOURCES_DIR,
+            metadata_service_url="http://example.com",
             raw_data_description_settings=RawDataDescriptionSettings(
                 project_name="Ephys Platform",
                 name="ecephys_632269_2023-10-10_10-10-10",
@@ -405,8 +405,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get.return_value = mock_response
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
+            output_dir=RESOURCES_DIR,
+            metadata_service_url="http://example.com",
             raw_data_description_settings=RawDataDescriptionSettings(
                 project_name="foo",
                 name="ecephys_632269_2023-10-10_10-10-10",
@@ -448,7 +448,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             processing_settings=ProcessingSettings(
                 pipeline_process=json.loads(
                     processing_pipeline.model_dump_json()
@@ -489,7 +489,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_dir = RESOURCES_DIR / "metadata_files"
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             processing_settings=ProcessingSettings(
                 pipeline_process=json.loads(
                     processing_pipeline.model_dump_json()
@@ -512,7 +512,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             processing_settings=ProcessingSettings(
                 pipeline_process=json.loads(
                     processing_pipeline.model_dump_json()
@@ -531,7 +531,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_dir = RESOURCES_DIR / "metadata_files"
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             metadata_dir=metadata_dir,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
@@ -548,7 +548,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         bergamo_session_settings = BergamoSessionJobSettings.model_construct()
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             session_settings=SessionSettings(
                 job_settings=bergamo_session_settings
             ),
@@ -568,7 +568,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         bruker_session_settings = BrukerSessionJobSettings.model_construct()
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             session_settings=SessionSettings(
                 job_settings=bruker_session_settings,
             ),
@@ -586,7 +586,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         fip_session_settings = FipSessionJobSettings.model_construct()
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             session_settings=SessionSettings(
                 job_settings=fip_session_settings,
             ),
@@ -620,7 +620,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             )
         )
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             session_settings=SessionSettings(
                 job_settings=mesoscope_session_settings,
             ),
@@ -635,7 +635,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         session_settings = SmartSpimAcquisitionJobSettings.model_construct()
         with self.assertRaises(ValidationError):
             JobSettings(
-                directory_to_write_to=RESOURCES_DIR,
+                output_dir=RESOURCES_DIR,
                 session_settings=SessionSettings(
                     job_settings=session_settings,
                 ),
@@ -647,7 +647,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         Bergamo metadata and a 500 response is returned."""
         mock_run_job.return_value = JobResponse(status_code=500, data=None)
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             session_settings=SessionSettings(
                 job_settings=BergamoSessionJobSettings.model_construct()
             ),
@@ -660,7 +660,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Tests get_session_metadata raises and error"""
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             session_settings=SessionSettings.model_construct(
                 job_settings={"job_settings_name": "def"}
             ),
@@ -673,7 +673,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Tests get_session_metadata returns none"""
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_session_metadata()
@@ -689,8 +689,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get.return_value = mock_response
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
+            output_dir=RESOURCES_DIR,
+            metadata_service_url="http://example.com",
             rig_settings=RigSettings(
                 rig_id="323_EPHYS1",
                 metadata_service_path="rig",
@@ -707,7 +707,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Tests get_rig_metadata from directory"""
         metadata_dir = RESOURCES_DIR / "metadata_files"
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             rig_settings=RigSettings(
                 rig_id="323_EPHYS1",
             ),
@@ -722,7 +722,7 @@ class TestGatherMetadataJob(unittest.TestCase):
     def test_get_rig_metadata_none(self, mock_session: MagicMock):
         """Tests get_rig_metadata when no file or settings are provided."""
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_rig_metadata(mock_session)
@@ -742,8 +742,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get.return_value = mock_response
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
+            output_dir=RESOURCES_DIR,
+            metadata_service_url="http://example.com",
             rig_settings=RigSettings(
                 rig_id="323_EPHYS1",
             ),
@@ -759,7 +759,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_dir = RESOURCES_DIR / "metadata_files"
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             metadata_dir=metadata_dir,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
@@ -770,7 +770,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Tests get_quality_control_metadata returns none"""
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_quality_control_metadata()
@@ -783,7 +783,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_dir = METADATA_DIR_WITH_RIG_ISSUE
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             metadata_dir=metadata_dir,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
@@ -796,7 +796,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_dir = RESOURCES_DIR / "metadata_files"
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             metadata_dir=metadata_dir,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
@@ -807,7 +807,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Tests get_acquisition_metadata returns none"""
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_acquisition_metadata()
@@ -825,7 +825,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             acquisition_settings=AcquisitionSettings(
                 job_settings=SmartSpimAcquisitionJobSettings(
                     subject_id="695464",
@@ -848,7 +848,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_run_job.return_value = JobResponse(status_code=500, data=None)
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             acquisition_settings=AcquisitionSettings(
                 job_settings=SmartSpimAcquisitionJobSettings(
                     subject_id="695464",
@@ -871,8 +871,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get.return_value = mock_response
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
+            output_dir=RESOURCES_DIR,
+            metadata_service_url="http://example.com",
             instrument_settings=InstrumentSettings(
                 instrument_id="exaSPIM1-1",
                 metadata_service_path="instrument",
@@ -891,7 +891,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Tests get_instrument_metadata from directory"""
         metadata_dir = RESOURCES_DIR / "metadata_files"
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             instrument_settings=InstrumentSettings(
                 instrument_id="exaSPIM1-1",
                 metadata_service_path="instrument",
@@ -907,7 +907,7 @@ class TestGatherMetadataJob(unittest.TestCase):
     def test_get_instrument_metadata_none(self, mock_session: MagicMock):
         """Tests get_instrument_metadata when no file or settings."""
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         contents = metadata_job.get_instrument_metadata(mock_session)
@@ -927,8 +927,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get.return_value = mock_response
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
+            output_dir=RESOURCES_DIR,
+            metadata_service_url="http://example.com",
             instrument_settings=InstrumentSettings(
                 instrument_id="exaSPIM1-1",
                 metadata_service_path="instrument",
@@ -951,7 +951,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         metadata_dir = RESOURCES_DIR / "metadata_files"
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             metadata_dir=metadata_dir,
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
@@ -962,7 +962,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Tests _get_location method with no location_map"""
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             metadata_settings=MetadataSettings(
                 name="asset_name", location="some_bucket"
             ),
@@ -977,7 +977,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Tests _get_location method with location_map"""
 
         job_settings = JobSettings(
-            directory_to_write_to="abc",
+            output_dir="abc",
             metadata_settings=MetadataSettings(
                 name="asset_name",
                 location_map={
@@ -1005,7 +1005,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Tests _get_location method when location_map is corrupt"""
 
         job_settings = JobSettings(
-            directory_to_write_to="abc",
+            output_dir="abc",
             metadata_settings=MetadataSettings(
                 name="asset_name", location_map={"Valid": "valid_bucket"}
             ),
@@ -1019,7 +1019,7 @@ class TestGatherMetadataJob(unittest.TestCase):
     def test_get_main_metadata_with_warnings(self, mock_warn: MagicMock):
         """Tests get_main_metadata method raises validation warnings"""
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             metadata_settings=MetadataSettings(
                 name="ecephys_632269_2023-10-10_10-10-10",
                 location="s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
@@ -1053,7 +1053,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Tests get_main_metadata method when rig.json file has
         serialization issues."""
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             metadata_settings=MetadataSettings(
                 name="ecephys_632269_2023-10-10_10-10-10",
                 location="s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
@@ -1080,7 +1080,7 @@ class TestGatherMetadataJob(unittest.TestCase):
     ):
         """Tests get_main_metadata method handles validation errors"""
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             metadata_settings=MetadataSettings(
                 name="ecephys_632269_2023-10-10_10-10-10",
                 location="s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
@@ -1118,7 +1118,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             RESOURCES_DIR / "subject.json"
         )
 
-        job_settings = JobSettings(directory_to_write_to=RESOURCES_DIR)
+        job_settings = JobSettings(output_dir=RESOURCES_DIR)
         metadata_job = GatherMetadataJob(settings=job_settings)
         metadata_job._write_json_file(
             filename="subject.json", contents={"subject_id": "123456"}
@@ -1187,8 +1187,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
+            output_dir=RESOURCES_DIR,
+            metadata_service_url="http://example.com",
             subject_settings=SubjectSettings(
                 subject_id="632269",
             ),
@@ -1245,7 +1245,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Tests run job writes metadata json correctly"""
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             metadata_settings=MetadataSettings(
                 name="ecephys_632269_2023-10-10_10-10-10",
                 location="s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
@@ -1267,7 +1267,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         set"""
 
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
+            output_dir=RESOURCES_DIR,
             metadata_settings=MetadataSettings(
                 name="ecephys_632269_2023-10-10_10-10-10",
                 location_map={
@@ -1320,7 +1320,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         settings = JobSettings(
             job_settings_name="GatherMetadata",
-            metadata_service_domain="http://example.com",
+            metadata_service_url="http://example.com",
             raw_data_description_settings=RawDataDescriptionSettings(
                 name="behavior_123456_2024-10-01_09-00-23",
                 project_name="Cognitive flexibility in patch foraging",
@@ -1328,7 +1328,7 @@ class TestGatherMetadataJob(unittest.TestCase):
                 institution=Organization.AIND,
                 metadata_service_path="funding",
             ),
-            directory_to_write_to="/some/dir/data_dir",
+            output_dir="/some/dir/data_dir",
         )
 
         job = GatherMetadataJob(settings=settings)

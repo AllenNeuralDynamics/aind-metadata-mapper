@@ -36,7 +36,7 @@ class GatherMetadataJob:
         """
         self.settings = settings
         self.validation_errors: List[str] = []
-        
+
         # Convert metadata_dir to Path object if it's a string
         if isinstance(self.settings.metadata_dir, str):
             self.settings.metadata_dir = Path(self.settings.metadata_dir)
@@ -44,7 +44,7 @@ class GatherMetadataJob:
     def _does_file_exist_in_user_defined_dir(self, file_name: str) -> bool:
         """
         Check whether a file exists in a directory.
-        
+
         Parameters
         ----------
         file_name : str
@@ -56,9 +56,8 @@ class GatherMetadataJob:
             True if self.settings.metadata_dir is not None and file is in
             that dir
         """
-        if (
-            self.settings.metadata_dir is not None and
-            isinstance(self.settings.metadata_dir, Path)
+        if self.settings.metadata_dir is not None and isinstance(
+            self.settings.metadata_dir, Path
         ):
             file_path_to_check = self.settings.metadata_dir / file_name
             return file_path_to_check.is_file()
@@ -67,7 +66,7 @@ class GatherMetadataJob:
     def _get_file_from_user_defined_directory(self, file_name: str) -> dict:
         """
         Get a file from a user defined directory
-        
+
         Parameters
         ----------
         file_name : str
@@ -78,12 +77,11 @@ class GatherMetadataJob:
         dict
             File contents as a dictionary
         """
-        if (
-            self.settings.metadata_dir is None or
-            not isinstance(self.settings.metadata_dir, Path)
+        if self.settings.metadata_dir is None or not isinstance(
+            self.settings.metadata_dir, Path
         ):
             return {}
-            
+
         file_path = self.settings.metadata_dir / file_name
         try:
             with open(file_path, "r") as f:
@@ -99,18 +97,18 @@ class GatherMetadataJob:
         """Get subject metadata"""
         if self.settings.subject_settings is None:
             raise ValueError("Subject settings must be provided")
-            
+
         file_name = Subject.default_filename()
-        
+
         if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
             try:
-                if self.settings.metadata_service_domain is None:
+                if self.settings.metadata_service_url is None:
                     raise ValueError(
                         "Metadata service domain must be provided"
                     )
-                    
+
                 response = service_session.get(
-                    f"{self.settings.metadata_service_domain}/"
+                    f"{self.settings.metadata_service_url}/"
                     f"{self.settings.subject_settings.metadata_service_path}/"
                     f"{self.settings.subject_settings.subject_id}"
                 )
@@ -141,21 +139,21 @@ class GatherMetadataJob:
         """Get procedures metadata"""
         if self.settings.procedures_settings is None:
             return None
-            
+
         file_name = Procedures.default_filename()
-        
+
         if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
             try:
-                if self.settings.metadata_service_domain is None:
+                if self.settings.metadata_service_url is None:
                     raise ValueError(
                         "Metadata service domain must be provided"
                     )
-                    
+
                 procedures_file_path = (
                     self.settings.procedures_settings.metadata_service_path
                 )
                 response = service_session.get(
-                    f"{self.settings.metadata_service_domain}/"
+                    f"{self.settings.metadata_service_url}/"
                     f"{procedures_file_path}/"
                     f"{self.settings.procedures_settings.subject_id}"
                 )
@@ -182,58 +180,61 @@ class GatherMetadataJob:
             )
 
     def _get_funding_info(
-        self, service_session: requests.Session, domain: str,
-        url_path: str, project_name: str
+        self,
+        service_session: requests.Session,
+        domain: str,
+        url_path: str,
+        project_name: str,
     ):
         """Utility method to retrieve funding info from metadata service"""
         try:
             url = "/".join([domain, url_path, project_name])
             response = service_session.get(url)
-            
+
             if response.status_code == 200:
                 funding_info = [response.json().get("data")]
             elif response.status_code == 300:
                 funding_info = response.json().get("data")
             else:
                 funding_info = []
-                
+
             investigators = set()
             parsed_funding_info = []
-            
+
             for f in funding_info:
                 project_investigators = (
-                    "" if f.get("investigators", None) is None
+                    ""
+                    if f.get("investigators", None) is None
                     else f.get("investigators", "").split(",")
                 )
                 investigators_pid_names = [
                     PIDName(name=p.strip()).model_dump_json()
-                    for p in project_investigators if p.strip()
+                    for p in project_investigators
+                    if p.strip()
                 ]
                 investigators.update(investigators_pid_names)
-                
+
                 funding_info_without_investigators = {
                     k: v for k, v in f.items() if k != "investigators"
                 }
                 parsed_funding_info.append(funding_info_without_investigators)
-                
+
             investigators = [
                 PIDName.model_validate_json(i) for i in investigators
             ]
             investigators.sort(key=lambda x: x.name)
             return parsed_funding_info, investigators
-            
+
         except Exception as e:
             error_msg = f"Failed to retrieve funding info: {e}"
             logging.error(error_msg)
             self.validation_errors.append(error_msg)
             return [], []
 
-    def get_data_description(
-        self, service_session: requests.Session
-    ) -> dict:
+    def get_data_description(self, service_session: requests.Session) -> dict:
         """Get data description metadata"""
         file_name = DataDescription.default_filename()
-        
+
         if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
             return self._create_data_description_from_settings(service_session)
         else:
@@ -247,22 +248,22 @@ class GatherMetadataJob:
         """Create data description from settings"""
         if self.settings.data_description_settings is None:
             raise ValueError("Data description settings must be provided")
-            
+
         try:
             # Parse basic settings from name
             basic_settings = DataDescription.parse_name(
                 name=self.settings.data_description_settings.name
             )
-            
+
             ds_settings = self.settings.data_description_settings
             project_name = ds_settings.project_name
-            
-            if self.settings.metadata_service_domain is None:
+
+            if self.settings.metadata_service_url is None:
                 raise ValueError("Metadata service domain must be provided")
-            
+
             funding_source, investigator_list = self._get_funding_info(
                 service_session,
-                self.settings.metadata_service_domain,
+                self.settings.metadata_service_url,
                 ds_settings.metadata_service_path_funding,
                 project_name,
             )
@@ -277,9 +278,9 @@ class GatherMetadataJob:
                 "funding_source": funding_source,
                 "investigators": investigator_list,
             }
-            
+
             return data_description_dict
-            
+
         except ValidationError as e:
             error_msg = f"Data description validation error: {e}"
             logging.error(error_msg)
@@ -294,7 +295,7 @@ class GatherMetadataJob:
     def get_processing_metadata(self) -> Optional[dict]:
         """Get processing metadata"""
         file_name = Processing.default_filename()
-        
+
         if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
             if self.settings.processing_settings is not None:
                 try:
@@ -316,7 +317,7 @@ class GatherMetadataJob:
     def get_acquisition_metadata(self) -> Optional[dict]:
         """Get acquisition metadata from provided file path"""
         file_name = Acquisition.default_filename()
-        
+
         if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
             if self.settings.acquisition_settings is not None:
                 try:
@@ -350,7 +351,7 @@ class GatherMetadataJob:
     ) -> Optional[dict]:
         """Get instrument metadata from service or file"""
         file_name = Instrument.default_filename()
-        
+
         if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
             if self.settings.instrument_settings is not None:
                 try:
@@ -358,14 +359,14 @@ class GatherMetadataJob:
                         self.settings.instrument_settings.metadata_service_path
                     )
                     response = service_session.get(
-                        f"{self.settings.metadata_service_domain}/"
+                        f"{self.settings.metadata_service_url}/"
                         f"{instrument_file_path}/"
                         f"{self.settings.instrument_settings.instrument_id}"
                     )
-                    
+
                     if (
-                        response.status_code < 300 or
-                        response.status_code == 422
+                        response.status_code < 300
+                        or response.status_code == 422
                     ):
                         json_content = response.json()
                         return json_content.get("data", json_content)
@@ -393,7 +394,7 @@ class GatherMetadataJob:
     def get_quality_control_metadata(self) -> Optional[dict]:
         """Get quality_control metadata"""
         file_name = QualityControl.default_filename()
-        
+
         if self._does_file_exist_in_user_defined_dir(file_name=file_name):
             return self._get_file_from_user_defined_directory(
                 file_name=file_name
@@ -406,11 +407,11 @@ class GatherMetadataJob:
     ) -> Optional[dict]:
         """
         Validates contents of file with an AindCoreModel
-        
+
         Parameters
         ----------
         filepath : Optional[Path]
-        model : Type[AindCoreModel]
+        model : Type[DataCoreModel]
 
         Returns
         -------
@@ -438,10 +439,10 @@ class GatherMetadataJob:
 
     def get_main_metadata(self) -> dict:
         """Get serialized main Metadata model"""
-        
+
         if self.settings.metadata_settings is None:
             raise ValueError("Metadata settings must be provided")
-            
+
         subject = self._validate_and_load_model(
             self.settings.metadata_settings.subject_filepath, Subject
         )
@@ -465,7 +466,7 @@ class GatherMetadataJob:
         processing = self._validate_and_load_model(
             self.settings.metadata_settings.processing_filepath, Processing
         )
-        
+
         # For schema 2.0, we'll create a basic metadata structure
         # This avoids complex validation during construction
         metadata_json = {
@@ -479,7 +480,7 @@ class GatherMetadataJob:
             "instrument": instrument,
             "quality_control": quality_control,
         }
-        
+
         # Try to validate by constructing a Metadata object
         try:
             # This is just for validation - we don't use the result
@@ -488,13 +489,13 @@ class GatherMetadataJob:
             error_msg = f"Metadata validation warning: {e}"
             logging.warning(error_msg)
             self.validation_errors.append(error_msg)
-            
+
         return metadata_json
 
     def _write_json_file(self, filename: str, contents: dict) -> None:
         """
         Write a json file
-        
+
         Parameters
         ----------
         filename : str
@@ -506,7 +507,7 @@ class GatherMetadataJob:
         -------
         None
         """
-        output_path = self.settings.directory_to_write_to / filename
+        output_path = self.settings.output_dir / filename
         try:
             with open(output_path, "w") as f:
                 json.dump(contents, f, indent=3)
@@ -553,7 +554,7 @@ class GatherMetadataJob:
             if contents:
                 self._write_json_file(
                     filename=DataDescription.default_filename(),
-                    contents=contents
+                    contents=contents,
                 )
 
     def _gather_processing_metadata(self):
@@ -589,7 +590,7 @@ class GatherMetadataJob:
         adapter = HTTPAdapter(max_retries=retries)
         service_session = requests.Session()
         service_session.mount("http://", adapter)
-        
+
         try:
             self._gather_automated_metadata(service_session=service_session)
         finally:
@@ -597,7 +598,7 @@ class GatherMetadataJob:
 
     def _gather_file_based_metadata(self):
         """Gather metadata from user-provided files"""
-        
+
         # Acquisition metadata (from file path)
         acq_contents = self.get_acquisition_metadata()
         if acq_contents:
@@ -610,26 +611,26 @@ class GatherMetadataJob:
         if qc_contents:
             self._write_json_file(
                 filename=QualityControl.default_filename(),
-                contents=qc_contents
+                contents=qc_contents,
             )
 
     def run_job(self) -> None:
         """Run job and gather all metadata"""
         # Clear any previous validation errors
         self.validation_errors = []
-        
+
         # Gather metadata from service and user directory
         self._setup_session_and_gather_metadata_from_service()
-        
+
         # Gather metadata from user-provided file paths
         self._gather_file_based_metadata()
-        
+
         # Create main metadata file if settings provided
         if self.settings.metadata_settings is not None:
             contents = self.get_main_metadata()
             output_path = (
-                self.settings.directory_to_write_to /
-                Metadata.default_filename()
+                self.settings.output_dir
+                / Metadata.default_filename()
             )
             try:
                 with open(output_path, "w") as f:
@@ -638,7 +639,7 @@ class GatherMetadataJob:
                 error_msg = f"Failed to write metadata.nd.json: {e}"
                 logging.error(error_msg)
                 self.validation_errors.append(error_msg)
-        
+
         # Report validation errors to user
         if self.validation_errors:
             logging.warning(
@@ -655,7 +656,7 @@ class GatherMetadataJob:
 if __name__ == "__main__":
     import argparse
     import sys
-    
+
     sys_args = sys.argv[1:]
     parser = argparse.ArgumentParser()
     parser.add_argument(
