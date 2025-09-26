@@ -3,7 +3,6 @@ from aind_data_schema.components.configs import (
     ImagingConfig,
     Channel,
     DetectorConfig,
-    LightEmittingDiodeConfig,
     LaserConfig,
     DeviceConfig,
     TriggerType,
@@ -88,21 +87,35 @@ class SmartspimMapper(Mapper):
             chamber_config = self._build_chamber_config(metadata)
             configurations.append(chamber_config)
 
+        # Process session times with proper timezone handling
+        session_start_time, session_end_time = self._process_session_times(
+            metadata.file_metadata.session_start_time,
+            metadata.file_metadata.session_end_time,
+        )
+
         # Build the datastream
         data_stream = DataStream(
-            stream_start_time=metadata.file_metadata.session_start_time,
-            stream_end_time=metadata.file_metadata.session_end_time,
+            stream_start_time=session_start_time,
+            stream_end_time=session_end_time,
             modalities=[Modality.SPIM],
             active_devices=self._get_active_devices(metadata),
-            configurations=configurations,
+            configurations=configurations,  # type: ignore
         )
+
+        # Validate required fields
+        if not subject_id:
+            raise ValueError("subject_id is required")
+        if not specimen_id:
+            raise ValueError("specimen_id is required")
+        if not instrument_id:
+            raise ValueError("instrument_id is required")
 
         # Build the full Acquisition model
         acquisition = Acquisition(
             subject_id=subject_id,
             specimen_id=specimen_id,
-            acquisition_start_time=metadata.file_metadata.session_start_time,
-            acquisition_end_time=metadata.file_metadata.session_end_time,
+            acquisition_start_time=session_start_time,
+            acquisition_end_time=session_end_time,
             experimenters=[experimenter_name] if experimenter_name else [],
             protocol_id=protocol_id,
             instrument_id=instrument_id,
@@ -119,9 +132,10 @@ class SmartspimMapper(Mapper):
         channels = []
 
         # Get imaging channels from SLIMS metadata
-        imaging_channels = metadata.slims_metadata.imaging_channels or []
+        imaging_channels = metadata.slims_metadata.imaging_channels
+        if not imaging_channels:
+            raise ValueError("imaging_channels is required")
         wavelength_config = metadata.file_metadata.wavelength_config
-        filter_mapping = metadata.file_metadata.filter_mapping
 
         for channel_name in imaging_channels:
             # Extract wavelength information
@@ -146,21 +160,25 @@ class SmartspimMapper(Mapper):
                     )
                 )
 
+            # Extract exposure time from tile configuration
+            exposure_time = self._extract_exposure_time_from_tiles(
+                channel_name, metadata
+            )
+
             # Build detector config
             detector = DetectorConfig(
                 device_name=f"Detector_{channel_name}",
-                exposure_time=1.0,  # Default exposure time
+                exposure_time=exposure_time,
                 exposure_time_unit=TimeUnit.MS,
                 trigger_type=TriggerType.INTERNAL,
             )
 
             # Build emission filters if available
-            emission_filters = []
-            emission_wavelength = None
-            if filter_mapping and str(wavelength) in filter_mapping:
-                emission_wavelength = filter_mapping[str(wavelength)]
-                filter_name = f"Filter_{emission_wavelength}"
-                emission_filters.append(DeviceConfig(device_name=filter_name))
+            emission_filters, emission_wavelength = (
+                self._build_emission_filters(
+                    channel_name, wavelength, metadata
+                )
+            )
 
             # Build channel with proper naming convention
             channel_display_name = (
@@ -225,7 +243,9 @@ class SmartspimMapper(Mapper):
             devices.append(metadata.slims_metadata.instrument_id)
 
         # Add channel-specific devices
-        imaging_channels = metadata.slims_metadata.imaging_channels or []
+        imaging_channels = metadata.slims_metadata.imaging_channels
+        if not imaging_channels:
+            raise ValueError("imaging_channels is required")
         for channel_name in imaging_channels:
             devices.append(f"Laser_{channel_name}")
             devices.append(f"Detector_{channel_name}")
@@ -261,27 +281,54 @@ class SmartspimMapper(Mapper):
     ) -> tuple[Optional[float], Optional[PowerUnit]]:
         """Extract power information from wavelength config."""
         if not wavelength_config or channel_name not in wavelength_config:
-            return None, None
+            raise ValueError(
+                f"wavelength_config missing for channel {channel_name}"
+            )
 
         channel_config = wavelength_config[channel_name]
-        if isinstance(channel_config, dict):
-            # Look for power settings (left/right or general)
-            power = (
-                channel_config.get("power")
-                or channel_config.get("power_left")
-                or channel_config.get("power_right")
+        if not isinstance(channel_config, dict):
+            raise ValueError(
+                f"Invalid channel_config format for {channel_name}"
             )
-            if power is not None:
-                return float(power), PowerUnit.PERCENT
 
-        return None, None
+        # Look for power settings (left/right or general)
+        power = (
+            channel_config.get("power")
+            or channel_config.get("power_left")
+            or channel_config.get("power_right")
+        )
+        if power is None:
+            raise ValueError(
+                f"No power setting found for channel {channel_name}"
+            )
+
+        # Check for power unit specification
+        power_unit_str = channel_config.get("power_unit")
+        if not power_unit_str:
+            raise ValueError(
+                f"No power_unit specified for channel {channel_name}"
+            )
+
+        if power_unit_str.lower() in ["milliwatt", "mw"]:
+            return float(power), PowerUnit.MW
+        elif power_unit_str.lower() in ["microwatt", "uw"]:
+            return float(power), PowerUnit.UW
+        elif power_unit_str.lower() in ["percent", "%"]:
+            return float(power), PowerUnit.PERCENT
+        else:
+            raise ValueError(
+                f"Unknown power_unit '{power_unit_str}' for channel "
+                f"{channel_name}"
+            )
 
     def _build_images(self, metadata: SmartspimModel) -> List[ImageSPIM]:
         """Build ImageSPIM objects for spatial/tile information."""
         images = []
 
         # Get imaging channels and create images for each
-        imaging_channels = metadata.slims_metadata.imaging_channels or []
+        imaging_channels = metadata.slims_metadata.imaging_channels
+        if not imaging_channels:
+            raise ValueError("imaging_channels is required")
         filter_mapping = metadata.file_metadata.filter_mapping
 
         for channel_name in imaging_channels:
@@ -329,7 +376,7 @@ class SmartspimMapper(Mapper):
     def _build_coordinate_system(
         self, metadata: SmartspimModel
     ) -> Optional[CoordinateSystem]:
-        """Build CoordinateSystem from axis direction information in SLIMS metadata."""
+        """Build CoordinateSystem from axis direction info in SLIMS."""
         slims = metadata.slims_metadata
 
         # Check if we have the required direction information
@@ -337,42 +384,76 @@ class SmartspimMapper(Mapper):
             return None
 
         # Map direction strings to Direction enums
+        # Support both underscore and space formats for compatibility
         direction_mapping = {
             "Left to Right": Direction.LR,
+            "Left_to_right": Direction.LR,
             "Right to Left": Direction.RL,
+            "Right_to_left": Direction.RL,
             "Anterior to Posterior": Direction.AP,
+            "Anterior_to_posterior": Direction.AP,
             "Posterior to Anterior": Direction.PA,
+            "Posterior_to_anterior": Direction.PA,
             "Superior to Inferior": Direction.SI,
+            "Superior_to_inferior": Direction.SI,
             "Inferior to Superior": Direction.IS,
+            "Inferior_to_superior": Direction.IS,
+        }
+
+        # Map direction enums to coordinate system letters
+        direction_to_letter = {
+            Direction.LR: "R",
+            Direction.RL: "L",
+            Direction.AP: "P",
+            Direction.PA: "A",
+            Direction.SI: "I",
+            Direction.IS: "S",
         }
 
         # Build axes from the direction information
         axes = []
+        direction_letters = []
 
-        # X axis
-        x_direction = direction_mapping.get(slims.x_direction)
-        if x_direction:
+        try:
+            # X axis
+            if slims.x_direction is None:
+                raise ValueError("X direction is None")
+            x_direction = direction_mapping.get(slims.x_direction)
+            if not x_direction:
+                raise ValueError(f"Invalid X direction: {slims.x_direction}")
             axes.append(Axis(name=AxisName.X, direction=x_direction))
+            direction_letters.append(direction_to_letter[x_direction])
 
-        # Y axis
-        y_direction = direction_mapping.get(slims.y_direction)
-        if y_direction:
+            # Y axis
+            if slims.y_direction is None:
+                raise ValueError("Y direction is None")
+            y_direction = direction_mapping.get(slims.y_direction)
+            if not y_direction:
+                raise ValueError(f"Invalid Y direction: {slims.y_direction}")
             axes.append(Axis(name=AxisName.Y, direction=y_direction))
+            direction_letters.append(direction_to_letter[y_direction])
 
-        # Z axis
-        z_direction = direction_mapping.get(slims.z_direction)
-        if z_direction:
+            # Z axis
+            if slims.z_direction is None:
+                raise ValueError("Z direction is None")
+            z_direction = direction_mapping.get(slims.z_direction)
+            if not z_direction:
+                raise ValueError(f"Invalid Z direction: {slims.z_direction}")
             axes.append(Axis(name=AxisName.Z, direction=z_direction))
+            direction_letters.append(direction_to_letter[z_direction])
 
-        # Only create coordinate system if we have all 3 axes
-        if len(axes) != 3:
+        except (ValueError, KeyError) as e:
+            print(f"Invalid axes configuration: {e}")
             return None
 
+        # Create coordinate system name based on anatomical directions
+        coordinate_system_name = f"SPIM_{''.join(direction_letters)}"
+
         return CoordinateSystem(
-            name="SmartSPIM_coordinate_system",
-            origin=Origin.ORIGIN,  # SmartSPIM typically uses specimen as origin
+            name=coordinate_system_name,
+            origin=Origin.ORIGIN,
             axes=axes,
-            axis_unit=SizeUnit.UM,  # SmartSPIM typically works in micrometers
+            axis_unit=SizeUnit.UM,
         )
 
     def _map_immersion_medium(self, medium: Optional[str]) -> ImmersionMedium:
@@ -382,14 +463,121 @@ class SmartspimMapper(Mapper):
 
         medium_lower = medium.lower().strip()
 
-        # Map based on the old implementation patterns
-        if medium_lower in ["dih2o", "water"]:
-            return ImmersionMedium.WATER
-        elif "cargille oil" in medium_lower:
-            return ImmersionMedium.OIL
-        elif "ethyl cinnamate" in medium_lower:
-            return ImmersionMedium.ECI
-        elif "easyindex" in medium_lower:
-            return ImmersionMedium.EASYINDEX
-        else:
-            return ImmersionMedium.OTHER
+        # Comprehensive medium mapping based on upgrader patterns
+        medium_mappings = {
+            "cargille 1.52": ImmersionMedium.OIL,
+            "cargille 1.5200": ImmersionMedium.OIL,
+            "cargille oil 1.5200": ImmersionMedium.OIL,
+            "cargille oil 1.52": ImmersionMedium.OIL,
+            "cargille oil": ImmersionMedium.OIL,
+            "easyindex": ImmersionMedium.EASYINDEX,
+            "0.05x ssc": ImmersionMedium.WATER,
+            "acb": ImmersionMedium.ACB,
+            "ethyl cinnamate": ImmersionMedium.ECI,
+            "dih2o": ImmersionMedium.WATER,
+            "water": ImmersionMedium.WATER,
+        }
+
+        # First check for exact matches
+        if medium_lower in medium_mappings:
+            return medium_mappings[medium_lower]
+
+        # Then check for partial matches
+        for key, value in medium_mappings.items():
+            if key in medium_lower:
+                return value
+
+        # Try to match against enum values (case-insensitive)
+        for enum_member in ImmersionMedium:
+            if medium_lower == enum_member.value.lower():
+                return enum_member
+
+        return ImmersionMedium.OTHER
+
+    def _extract_exposure_time_from_tiles(
+        self, channel_name: str, metadata: SmartspimModel
+    ) -> float:
+        """Extract exposure time for a channel from tile configuration."""
+        tile_config = metadata.file_metadata.tile_config
+        if not tile_config:
+            raise ValueError(
+                "tile_config is required for exposure time extraction"
+            )
+
+        # Look for tiles with the matching laser/channel
+        wavelength = self._extract_wavelength_from_channel(channel_name)
+        if not wavelength:
+            raise ValueError(
+                f"Cannot extract wavelength from channel {channel_name}"
+            )
+
+        # Find tiles that use this wavelength
+        for tile_key, tile_info in tile_config.items():
+            if isinstance(tile_info, dict) and str(
+                tile_info.get("Laser")
+            ) == str(wavelength):
+                exposure = tile_info.get("Exposure")
+                if exposure is not None:
+                    try:
+                        return float(exposure)
+                    except (ValueError, TypeError):
+                        continue
+
+        raise ValueError(
+            f"No exposure time found for wavelength {wavelength} "
+            f"in tile_config"
+        )
+
+    def _build_emission_filters(
+        self,
+        channel_name: str,
+        wavelength: Optional[int],
+        metadata: SmartspimModel,
+    ) -> tuple[List[DeviceConfig], Optional[int]]:
+        """Build emission filters for a channel."""
+        emission_filters = []
+        emission_wavelength = None
+
+        # Use filter mapping from file metadata
+        filter_mapping = metadata.file_metadata.filter_mapping
+        if filter_mapping and wavelength and str(wavelength) in filter_mapping:
+            emission_wavelength = filter_mapping[str(wavelength)]
+            filter_name = f"Filter_{emission_wavelength}"
+            emission_filters.append(DeviceConfig(device_name=filter_name))
+
+        # Additional logic could be added here to extract filter info
+        # from tile configuration if needed
+
+        return emission_filters, emission_wavelength
+
+    def _process_session_times(self, session_start_time, session_end_time):
+        """Process and validate session times with Pacific timezone."""
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+
+        # Pacific timezone - automatically handles PST/PDT transitions
+        pacific_tz = ZoneInfo("America/Los_Angeles")
+
+        def ensure_pacific_timezone(dt):
+            """Ensure datetime is in Pacific timezone"""
+            if dt is None:
+                # Return current time as fallback
+                return datetime.now(pacific_tz)
+            if isinstance(dt, str):
+                dt = datetime.fromisoformat(dt)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=pacific_tz)
+            return dt
+
+        # Convert start and end times and ensure Pacific timezone
+        session_start_time = ensure_pacific_timezone(session_start_time)
+        session_end_time = ensure_pacific_timezone(session_end_time)
+
+        # Invert start/end time if they are in the wrong order
+        if session_start_time > session_end_time:
+            session_start_time, session_end_time = (
+                session_end_time,
+                session_start_time,
+            )
+
+        return session_start_time, session_end_time
