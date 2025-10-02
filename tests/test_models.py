@@ -1,4 +1,5 @@
 """Tests methods in models module"""
+
 import sys
 import unittest
 from unittest.mock import patch
