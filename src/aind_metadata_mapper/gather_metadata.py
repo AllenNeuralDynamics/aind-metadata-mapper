@@ -1,6 +1,6 @@
 """Module to gather metadata from different sources."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import logging
 import os
@@ -133,12 +133,30 @@ class GatherMetadataJob:
             logging.debug(f"Using existing {file_name}.")
             return self._get_file_from_user_defined_directory(file_name=file_name)
 
+        # Get acquisition data to extract start time
+        acquisition_data = self.get_acquisition()
+        creation_time = datetime.now()
+
+        if acquisition_data and "acquisition_start_time" in acquisition_data:
+            start_time_str = acquisition_data["acquisition_start_time"]
+            try:
+                if isinstance(start_time_str, str):
+                    from dateutil.parser import parse as parse_datetime
+
+                    creation_time = parse_datetime(start_time_str)
+                elif isinstance(start_time_str, datetime):
+                    creation_time = start_time_str
+                logging.info(f"Using acquisition start time: {creation_time}")
+            except Exception as e:
+                logging.warning(f"Failed to parse acquisition_start_time: {e}")
+                logging.info("Falling back to current time")
+
         # Get funding information
         funding_source, investigators = self.get_funding()
 
         # Create new data description
         new_data_description = DataDescription(
-            creation_time=datetime.now(),
+            creation_time=creation_time,
             institution=Organization.AIND,
             project_name=self.settings.project_name,
             modalities=self.settings.modalities,
@@ -151,6 +169,10 @@ class GatherMetadataJob:
             restrictions=self.settings.restrictions,
             data_summary=self.settings.data_summary,
         )
+
+        # Over-write creation_time now that the .name field has been populated
+        new_data_description.creation_time = datetime.now(tz=timezone.utc)
+
         return json.loads(new_data_description.model_dump_json())
 
     def get_subject(self) -> Optional[dict]:

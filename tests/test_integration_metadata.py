@@ -331,6 +331,58 @@ class TestIntegrationMetadata(unittest.TestCase):
             except Exception as e:
                 self.fail(f"run_job with all local files failed: {e}")
 
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_get_file_from_user_defined_directory")
+    def test_build_data_description_uses_acquisition_start_time_for_name(self, mock_get_file, mock_file_exists):
+        """Test that build_data_description uses acquisition_start_time for DataDescription name formatting"""
+        # Load the real acquisition data
+        acquisition_data = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
+
+        # Mock that no data_description.json exists locally, but acquisition.json does
+        def mock_exists(file_name):
+            return file_name == "acquisition.json"
+
+        mock_file_exists.side_effect = mock_exists
+
+        # Mock reading acquisition file
+        def mock_read_file(file_name):
+            if file_name == "acquisition.json":
+                return acquisition_data
+            else:
+                raise FileNotFoundError(f"File {file_name} not found")
+
+        mock_get_file.side_effect = mock_read_file
+
+        # Mock the funding API call to use real funding data
+        funding_data = self._load_resource_file(METADATA_SERVICE_DIR, "funding_response.json")
+
+        with patch("requests.get") as mock_get:
+            mock_response = MagicMock()
+            mock_response.status_code = 300
+            mock_response.json.return_value = {"data": funding_data}
+            mock_get.return_value = mock_response
+
+            result = self.job.build_data_description()
+
+        # Verify the result has the expected structure
+        self.assertIn("name", result)
+        self.assertIn("creation_time", result)
+
+        # The acquisition_start_time is "2025-09-17 10:26:00.474680-07:00"
+        # The name field should use acquisition start time in format: subject_id_YYYY-MM-DD_HH-MM-SS
+        expected_name = "804670_2025-09-17_10-26-00"
+        self.assertEqual(result["name"], expected_name)
+
+        # The creation_time should be current time (when metadata was created)
+        # This verifies the metadata creation timestamp, not the acquisition time
+        from datetime import datetime
+
+        now = datetime.now()
+        creation_time_str = result["creation_time"]
+        # Should be today's date in the creation_time
+        self.assertIn(str(now.year), creation_time_str)
+        self.assertIn(f"{now.month:02d}", creation_time_str)
+
 
 if __name__ == "__main__":
     unittest.main()
