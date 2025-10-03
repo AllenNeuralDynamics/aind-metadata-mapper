@@ -292,6 +292,7 @@ class TestIntegrationMetadata(unittest.TestCase):
 
         # Mock file reading
         def mock_read_file(file_name):
+            """Mock file reading"""
             if file_name in v2_files:
                 return v2_files[file_name]
             elif file_name == "data_description.json":
