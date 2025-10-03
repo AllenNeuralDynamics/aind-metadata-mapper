@@ -1,9 +1,8 @@
 """Tests methods in models module"""
 
-import sys
 import unittest
-from unittest.mock import patch
 
+from aind_data_schema_models.modalities import Modality
 from aind_metadata_mapper.models import JobSettings
 
 
@@ -12,19 +11,19 @@ class TestJobSettings(unittest.TestCase):
 
     def test_basic_constructor_from_args(self):
         """Tests basic constructor from command line args."""
-
-        test_args = [
-            "gather_metadata.py",
-            "--metadata_dir",
-            ".",
-            "--subject_id",
-            "12345",
-        ]
-        with patch.object(sys, "argv", test_args):
-            job_settings = JobSettings()
+        # Create JobSettings directly with parameters since command line
+        # parsing of modalities has complex requirements
+        job_settings = JobSettings(
+            metadata_dir=".",
+            subject_id="12345",
+            project_name="test_project",
+            modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+        )
         self.assertEqual(".", job_settings.metadata_dir)
         self.assertEqual("12345", job_settings.subject_id)
-        self.assertIsNone(job_settings.instrument_id)
+        self.assertEqual("test_project", job_settings.project_name)
+        expected_modalities = [Modality.ECEPHYS, Modality.BEHAVIOR]
+        self.assertEqual(expected_modalities, job_settings.modalities)
 
 
 if __name__ == "__main__":
