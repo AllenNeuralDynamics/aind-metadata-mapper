@@ -285,6 +285,7 @@ class TestIntegrationMetadata(unittest.TestCase):
 
         # Mock file existence - return True for files that exist locally
         def mock_exists(file_name):
+            """Mock file existence check"""
             return file_name in v2_files or file_name == "data_description.json"
 
         mock_file_exists.side_effect = mock_exists
@@ -340,12 +341,14 @@ class TestIntegrationMetadata(unittest.TestCase):
 
         # Mock that no data_description.json exists locally, but acquisition.json does
         def mock_exists(file_name):
+            """Mock file existence check"""
             return file_name == "acquisition.json"
 
         mock_file_exists.side_effect = mock_exists
 
         # Mock reading acquisition file
         def mock_read_file(file_name):
+            """Mock file reading"""
             if file_name == "acquisition.json":
                 return acquisition_data
             else:
