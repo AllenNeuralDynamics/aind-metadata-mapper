@@ -406,26 +406,27 @@ class TestIntegrationMetadata(unittest.TestCase):
             "acquisition": {
                 "subject_id": "yet_another_subject_id",  # Another mismatch
                 "acquisition_start_time": "invalid-datetime",  # Invalid datetime
-            }
+            },
         }
 
         # Capture stdout to verify error messages are printed
         from io import StringIO
         import sys
+
         captured_output = StringIO()
         sys.stdout = captured_output
 
         try:
             # This should trigger the ValidationError path and use create_metadata_json fallback
             result = self.job.validate_and_create_metadata(core_metadata)
-            
+
             # Verify the result is returned (either as dict or Metadata object)
             self.assertIsNotNone(result)
-            
+
             # Verify error messages were printed to stdout
             output = captured_output.getvalue()
             self.assertIn("Validation Errors Found:", output)
-            
+
         finally:
             # Restore stdout
             sys.stdout = sys.__stdout__
