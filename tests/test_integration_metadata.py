@@ -383,6 +383,53 @@ class TestIntegrationMetadata(unittest.TestCase):
         self.assertIn(str(now.year), creation_time_str)
         self.assertIn(f"{now.month:02d}", creation_time_str)
 
+    def test_validate_and_create_metadata_with_validation_errors(self):
+        """Test validate_and_create_metadata when validation fails and uses create_metadata_json fallback"""
+        # Create core metadata with invalid data that will cause ValidationError
+        core_metadata = {
+            "data_description": {
+                "name": "test_dataset",
+                "creation_time": "2023-01-01T12:00:00",
+                "institution": {"name": "Allen Institute for Neural Dynamics"},
+                "data_level": "raw",
+                "modalities": ["Behavior videos"],
+                "project_name": "Test Project",
+                "funding_source": [{"funder": "Test Funder"}],
+                "investigators": [{"name": "Test Investigator"}],
+                "subject_id": "invalid_subject_id",  # This will cause validation issues
+            },
+            "subject": {
+                "subject_id": "different_subject_id",  # Mismatch with data_description will cause validation error
+                "sex": "Invalid Sex Value",  # Invalid enum value
+                "date_of_birth": "invalid-date-format",  # Invalid date format
+            },
+            "acquisition": {
+                "subject_id": "yet_another_subject_id",  # Another mismatch
+                "acquisition_start_time": "invalid-datetime",  # Invalid datetime
+            }
+        }
+
+        # Capture stdout to verify error messages are printed
+        from io import StringIO
+        import sys
+        captured_output = StringIO()
+        sys.stdout = captured_output
+
+        try:
+            # This should trigger the ValidationError path and use create_metadata_json fallback
+            result = self.job.validate_and_create_metadata(core_metadata)
+            
+            # Verify the result is returned (either as dict or Metadata object)
+            self.assertIsNotNone(result)
+            
+            # Verify error messages were printed to stdout
+            output = captured_output.getvalue()
+            self.assertIn("Validation Errors Found:", output)
+            
+        finally:
+            # Restore stdout
+            sys.stdout = sys.__stdout__
+
 
 if __name__ == "__main__":
     unittest.main()
