@@ -140,3 +140,4 @@ dmypy.json
 
 # ignore the data folder in the root
 data/
+.github/copilot-instructions.md
