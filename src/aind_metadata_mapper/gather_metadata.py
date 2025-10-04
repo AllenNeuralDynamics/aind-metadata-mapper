@@ -36,9 +36,7 @@ class GatherMetadataJob:
         True if self.settings.metadata_dir is not None and file is in that dir
 
         """
-        file_path_to_check = os.path.join(
-            self.settings.metadata_dir, file_name
-        )
+        file_path_to_check = os.path.join(self.settings.metadata_dir, file_name)
         if os.path.isfile(file_path_to_check):
             return True
         else:
@@ -73,18 +71,13 @@ class GatherMetadataJob:
                 f"{self.settings.subject_id} from "
                 f"{self.settings.metadata_service_url}"
             )
-            response = requests.get(
-                f"{self.settings.metadata_service_url}"
-                f"/api/v2/subject/{subject_id}"
-            )
+            response = requests.get(f"{self.settings.metadata_service_url}" f"/api/v2/subject/{subject_id}")
             if response.status_code not in [200, 400]:
                 response.raise_for_status()
             contents = response.json()
         else:
             logging.debug(f"Using existing {file_name}.")
-            contents = self._get_file_from_user_defined_directory(
-                file_name=file_name
-            )
+            contents = self._get_file_from_user_defined_directory(file_name=file_name)
         return contents
 
     def get_procedures(self) -> dict:
@@ -98,18 +91,13 @@ class GatherMetadataJob:
                 f"{self.settings.subject_id} from "
                 f"{self.settings.metadata_service_url}"
             )
-            response = requests.get(
-                f"{self.settings.metadata_service_url}"
-                f"/api/v2/procedures/{subject_id}"
-            )
+            response = requests.get(f"{self.settings.metadata_service_url}" f"/api/v2/procedures/{subject_id}")
             if response.status_code not in [200, 400]:
                 response.raise_for_status()
             contents = response.json()
         else:
             logging.debug(f"Using existing {file_name}.")
-            contents = self._get_file_from_user_defined_directory(
-                file_name=file_name
-            )
+            contents = self._get_file_from_user_defined_directory(file_name=file_name)
         return contents
 
     def run_job(self) -> None:

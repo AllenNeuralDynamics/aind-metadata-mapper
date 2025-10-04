@@ -38,38 +38,24 @@ class TestGatherMetadataJob(unittest.TestCase):
     def test_does_file_exist_in_user_defined_dir(self, mock_isfile: MagicMock):
         """Tests _does_file_exist_in_user_defined_dir"""
         mock_isfile.return_value = True
-        self.assertTrue(
-            self.example_job._does_file_exist_in_user_defined_dir("example")
-        )
+        self.assertTrue(self.example_job._does_file_exist_in_user_defined_dir("example"))
 
     @patch("os.path.isfile")
-    def test_does_file_exist_in_user_defined_dir_false(
-        self, mock_isfile: MagicMock
-    ):
+    def test_does_file_exist_in_user_defined_dir_false(self, mock_isfile: MagicMock):
         """Tests _does_file_exist_in_user_defined_dir when False"""
         mock_isfile.return_value = False
-        self.assertFalse(
-            self.example_job._does_file_exist_in_user_defined_dir("example")
-        )
+        self.assertFalse(self.example_job._does_file_exist_in_user_defined_dir("example"))
 
     @patch("builtins.open", new_callable=mock_open, read_data='{"a": "1"}')
     def test_get_file_from_user_defined_directory(self, mock_file: MagicMock):
         """Tests _get_file_from_user_defined_directory"""
-        contents = self.example_job._get_file_from_user_defined_directory(
-            file_name="example"
-        )
+        contents = self.example_job._get_file_from_user_defined_directory(file_name="example")
         mock_file.assert_called()
         self.assertEqual({"a": "1"}, contents)
 
     @patch("requests.get")
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._does_file_exist_in_user_defined_dir"
-    )
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._get_file_from_user_defined_directory"
-    )
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._get_file_from_user_defined_directory")
     def test_get_subject_from_file(
         self,
         mock_get_file: MagicMock,
@@ -87,14 +73,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_requests_get.assert_not_called()
 
     @patch("requests.get")
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._does_file_exist_in_user_defined_dir"
-    )
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._get_file_from_user_defined_directory"
-    )
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._get_file_from_user_defined_directory")
     def test_get_subject_from_service(
         self,
         mock_get_file: MagicMock,
@@ -111,14 +91,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get_file.assert_not_called()
 
     @patch("requests.get")
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._does_file_exist_in_user_defined_dir"
-    )
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._get_file_from_user_defined_directory"
-    )
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._get_file_from_user_defined_directory")
     def test_get_subject_from_service_invalid(
         self,
         mock_get_file: MagicMock,
@@ -136,14 +110,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get_file.assert_not_called()
 
     @patch("requests.get")
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._does_file_exist_in_user_defined_dir"
-    )
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._get_file_from_user_defined_directory"
-    )
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._get_file_from_user_defined_directory")
     def test_get_subject_from_service_error(
         self,
         mock_get_file: MagicMock,
@@ -164,14 +132,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get_file.assert_not_called()
 
     @patch("requests.get")
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._does_file_exist_in_user_defined_dir"
-    )
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._get_file_from_user_defined_directory"
-    )
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._get_file_from_user_defined_directory")
     def test_get_procedures_from_file(
         self,
         mock_get_file: MagicMock,
@@ -189,14 +151,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_requests_get.assert_not_called()
 
     @patch("requests.get")
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._does_file_exist_in_user_defined_dir"
-    )
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._get_file_from_user_defined_directory"
-    )
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._get_file_from_user_defined_directory")
     def test_get_procedures_from_service(
         self,
         mock_get_file: MagicMock,
@@ -213,14 +169,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get_file.assert_not_called()
 
     @patch("requests.get")
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._does_file_exist_in_user_defined_dir"
-    )
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._get_file_from_user_defined_directory"
-    )
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._get_file_from_user_defined_directory")
     def test_get_procedures_from_service_invalid(
         self,
         mock_get_file: MagicMock,
@@ -238,14 +188,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get_file.assert_not_called()
 
     @patch("requests.get")
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._does_file_exist_in_user_defined_dir"
-    )
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._get_file_from_user_defined_directory"
-    )
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob" "._get_file_from_user_defined_directory")
     def test_get_procedures_from_service_error(
         self,
         mock_get_file: MagicMock,
@@ -265,12 +209,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual(2, len(captured.output))
         mock_get_file.assert_not_called()
 
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob.get_procedures"
-    )
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob.get_subject"
-    )
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob.get_procedures")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob.get_subject")
     @patch("builtins.open", new_callable=mock_open)
     @patch("json.dump")
     def test_run_job(

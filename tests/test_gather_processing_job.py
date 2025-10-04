@@ -25,9 +25,7 @@ class TestGatherProcessingJob(unittest.TestCase):
 
     @patch("builtins.open", new_callable=mock_open)
     @patch("json.dump")
-    def test_run_job(
-        self, mock_json_dump: MagicMock, mock_file_open: MagicMock
-    ):
+    def test_run_job(self, mock_json_dump: MagicMock, mock_file_open: MagicMock):
         """Tests run_job method."""
         # noinspection PyArgumentList
         example_processing = Processing(
@@ -54,14 +52,10 @@ class TestGatherProcessingJob(unittest.TestCase):
                 ),
             ]
         )
-        example_settings = JobSettings(
-            output_directory="example", processing=example_processing
-        )
+        example_settings = JobSettings(output_directory="example", processing=example_processing)
         job = GatherProcessingJob(settings=example_settings)
         job.run_job()
-        mock_file_open.assert_has_calls(
-            calls=[call(Path("example") / "processing.json", "w")]
-        )
+        mock_file_open.assert_has_calls(calls=[call(Path("example") / "processing.json", "w")])
         mock_json_dump.assert_called_once()
 
 
