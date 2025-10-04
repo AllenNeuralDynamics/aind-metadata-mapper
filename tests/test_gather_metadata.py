@@ -508,7 +508,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         # Verify that validate_and_create_metadata was called
         mock_validate.assert_called_once()
-        
+
         # Verify that _write_json_file was called for data_description
         calls = mock_write.call_args_list
         data_desc_call = [call for call in calls if call[0][0] == "data_description.json"]
