@@ -1,0 +1,240 @@
+{
+    "object_type": "Quality control",
+    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/quality_control.py",
+    "schema_version": "2.0.8",
+    "metrics": [
+    {
+        "object_type": "QC metric",
+        "name": "researcher name",
+        "modality": {
+        "name": "Behavior",
+        "abbreviation": "behavior"
+        },
+        "stage": "Raw data",
+        "value": "Meghan Olsen",
+        "status_history": [
+        {
+            "object_type": "QC status",
+            "evaluator": "Automated",
+            "status": "Pass",
+            "timestamp": "2025-09-08 20:59:53.825880-07:00"
+        }
+        ],
+        "description": "Experimenter name should not be set to the default value of \"the ghost in the shell\"",
+        "reference": null,
+        "tags": [
+        "Basic Configuration"
+        ],
+        "evaluated_assets": null
+    },
+    {
+        "object_type": "QC metric",
+        "name": "untracked local changes",
+        "modality": {
+        "name": "Behavior",
+        "abbreviation": "behavior"
+        },
+        "stage": "Raw data",
+        "value": "",
+        "status_history": [
+        {
+            "object_type": "QC status",
+            "evaluator": "Automated",
+            "status": "Pass",
+            "timestamp": "2025-09-08 20:59:53.826016-07:00"
+        }
+        ],
+        "description": "Whether the code base had untracked changes, and if so, which files",
+        "reference": null,
+        "tags": [
+        "Basic Configuration"
+        ],
+        "evaluated_assets": null
+    },
+    {
+        "object_type": "QC metric",
+        "name": "average side bias",
+        "modality": {
+        "name": "Behavior",
+        "abbreviation": "behavior"
+        },
+        "stage": "Raw data",
+        "value": 0,
+        "status_history": [
+        {
+            "object_type": "QC status",
+            "evaluator": "Automated",
+            "status": "Pass",
+            "timestamp": "2025-09-08 20:59:53.826567-07:00"
+        }
+        ],
+        "description": "average side bias should be less than 0.5",
+        "reference": "dynamic-foraging-qc/side_bias.png",
+        "tags": [
+        "Side bias"
+        ],
+        "evaluated_assets": null
+    },
+    {
+        "object_type": "QC metric",
+        "name": "Left Lick Interval (%)",
+        "modality": {
+        "name": "Behavior",
+        "abbreviation": "behavior"
+        },
+        "stage": "Raw data",
+        "value": 6.96,
+        "status_history": [
+        {
+            "object_type": "QC status",
+            "evaluator": "Automated",
+            "status": "Pass",
+            "timestamp": "2025-09-08 20:59:53.827811-07:00"
+        }
+        ],
+        "description": "% of lick intervals < 50ms. These indicate grooming bouts",
+        "reference": "dynamic-foraging-qc/lick_intervals.png",
+        "tags": [
+        "Lick Intervals"
+        ],
+        "evaluated_assets": null
+    },
+    {
+        "object_type": "QC metric",
+        "name": "Right Lick Interval (%)",
+        "modality": {
+        "name": "Behavior",
+        "abbreviation": "behavior"
+        },
+        "stage": "Raw data",
+        "value": 10,
+        "status_history": [
+        {
+            "object_type": "QC status",
+            "evaluator": "Automated",
+            "status": "Fail",
+            "timestamp": "2025-09-08 20:59:53.827911-07:00"
+        }
+        ],
+        "description": "% of lick intervals < 50ms. These indicate grooming bouts",
+        "reference": "dynamic-foraging-qc/lick_intervals.png",
+        "tags": [
+        "Lick Intervals"
+        ],
+        "evaluated_assets": null
+    },
+    {
+        "object_type": "QC metric",
+        "name": "Cross Side Lick Interval (%)",
+        "modality": {
+        "name": "Behavior",
+        "abbreviation": "behavior"
+        },
+        "stage": "Raw data",
+        "value": 0,
+        "status_history": [
+        {
+            "object_type": "QC status",
+            "evaluator": "Automated",
+            "status": "Pass",
+            "timestamp": "2025-09-08 20:59:53.827986-07:00"
+        }
+        ],
+        "description": "% of lick intervals < 50ms. These indicate grooming bouts",
+        "reference": "dynamic-foraging-qc/lick_intervals.png",
+        "tags": [
+        "Lick Intervals"
+        ],
+        "evaluated_assets": null
+    },
+    {
+        "object_type": "QC metric",
+        "name": "Artifact Percent (%)",
+        "modality": {
+        "name": "Behavior",
+        "abbreviation": "behavior"
+        },
+        "stage": "Raw data",
+        "value": 0,
+        "status_history": [
+        {
+            "object_type": "QC status",
+            "evaluator": "Automated",
+            "status": "Pass",
+            "timestamp": "2025-09-08 20:59:53.828056-07:00"
+        }
+        ],
+        "description": "% of lick intervals less than 0.5ms. These indicate electical artifacts",
+        "reference": "dynamic-foraging-qc/lick_intervals.png",
+        "tags": [
+        "Lick Intervals"
+        ],
+        "evaluated_assets": null
+    },
+    {
+        "object_type": "QC metric",
+        "name": "Number of completed trials",
+        "modality": {
+        "name": "Behavior",
+        "abbreviation": "behavior"
+        },
+        "stage": "Raw data",
+        "value": 17,
+        "status_history": [
+        {
+            "object_type": "QC status",
+            "evaluator": "Automated",
+            "status": "Fail",
+            "timestamp": "2025-09-08 20:59:53.828350-07:00"
+        }
+        ],
+        "description": "Must complete at least 50 trials to pass",
+        "reference": null,
+        "tags": [
+        "Session Length Check"
+        ],
+        "evaluated_assets": null
+    },
+    {
+        "object_type": "QC metric",
+        "name": "Length of stimulus epoch",
+        "modality": {
+        "name": "Behavior",
+        "abbreviation": "behavior"
+        },
+        "stage": "Raw data",
+        "value": 128.700365,
+        "status_history": [
+        {
+            "object_type": "QC status",
+            "evaluator": "Automated",
+            "status": "Fail",
+            "timestamp": "2025-09-08 20:59:53.828402-07:00"
+        }
+        ],
+        "description": "Must be at least 10 minutes",
+        "reference": null,
+        "tags": [
+        "Session Length Check"
+        ],
+        "evaluated_assets": null
+    }
+    ],
+    "key_experimenters": null,
+    "notes": null,
+    "default_grouping": [
+    "Basic Configuration",
+    "Side bias",
+    "Lick Intervals",
+    "Session Length Check"
+    ],
+    "allow_tag_failures": [],
+    "status": {
+    "Lick Intervals": "Fail",
+    "Side bias": "Pass",
+    "Basic Configuration": "Pass",
+    "Session Length Check": "Fail",
+    "behavior": "Fail",
+    "Raw data": "Fail"
+    }
+}
