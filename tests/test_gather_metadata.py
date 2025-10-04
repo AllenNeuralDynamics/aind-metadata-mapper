@@ -6,10 +6,10 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
-from aind_data_schema.core.metadata import Metadata
-from aind_data_schema_models.organizations import Organization
-from aind_data_schema_models.modalities import Modality
 from aind_data_schema.components.identifiers import Person
+from aind_data_schema.core.metadata import Metadata
+from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.organizations import Organization
 
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
 from aind_metadata_mapper.models import JobSettings

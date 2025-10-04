@@ -4,17 +4,17 @@ import json
 import os
 import unittest
 from pathlib import Path
+from typing import Any, Dict
 from unittest.mock import MagicMock, patch
-from typing import Dict, Any
 
-from aind_data_schema.core.metadata import Metadata
-from aind_data_schema.core.data_description import DataDescription
-from aind_data_schema.core.subject import Subject
-from aind_data_schema.core.procedures import Procedures
 from aind_data_schema.core.acquisition import Acquisition
+from aind_data_schema.core.data_description import DataDescription
 from aind_data_schema.core.instrument import Instrument
+from aind_data_schema.core.metadata import Metadata
+from aind_data_schema.core.procedures import Procedures
 from aind_data_schema.core.processing import Processing
 from aind_data_schema.core.quality_control import QualityControl
+from aind_data_schema.core.subject import Subject
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob

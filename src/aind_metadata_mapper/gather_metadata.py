@@ -1,26 +1,24 @@
 """Module to gather metadata from different sources."""
 
-from datetime import datetime, timezone
 import json
 import logging
 import os
-from pathlib import Path
-from typing import Optional, Dict, Any
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 
 import requests
-from pydantic import ValidationError
-from aind_data_schema.core.procedures import Procedures
-from aind_data_schema.core.subject import Subject
 from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema.core.data_description import DataDescription
 from aind_data_schema.core.instrument import Instrument
+from aind_data_schema.core.metadata import Metadata, create_metadata_json
+from aind_data_schema.core.model import Model
+from aind_data_schema.core.procedures import Procedures
 from aind_data_schema.core.processing import Processing
 from aind_data_schema.core.quality_control import QualityControl
-from aind_data_schema.core.model import Model
-from aind_data_schema.core.metadata import Metadata, create_metadata_json
-
-from aind_data_schema_models.organizations import Organization
+from aind_data_schema.core.subject import Subject
 from aind_data_schema_models.data_name_patterns import DataLevel
+from aind_data_schema_models.organizations import Organization
+from pydantic import ValidationError
 
 from aind_metadata_mapper.models import JobSettings
 

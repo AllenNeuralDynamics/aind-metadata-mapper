@@ -3,6 +3,7 @@
 import unittest
 
 from aind_data_schema_models.modalities import Modality
+
 from aind_metadata_mapper.models import JobSettings
 
 
