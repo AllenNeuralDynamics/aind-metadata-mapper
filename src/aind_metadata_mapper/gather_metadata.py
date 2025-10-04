@@ -137,12 +137,8 @@ class GatherMetadataJob:
 
         if acquisition_data and "acquisition_start_time" in acquisition_data:
             start_time_str = acquisition_data["acquisition_start_time"]
-            if isinstance(start_time_str, str):
-                # Handle ISO format with Z timezone suffix
-                iso_time_str = start_time_str.replace("Z", "+00:00")
-                creation_time = datetime.fromisoformat(iso_time_str)
-            elif isinstance(start_time_str, datetime):
-                creation_time = start_time_str
+            iso_time_str = start_time_str.replace("Z", "+00:00")
+            creation_time = datetime.fromisoformat(iso_time_str)
             logging.info(f"Using acquisition start time: {creation_time}")
 
         # Get funding information
