@@ -428,17 +428,7 @@ class GatherMetadataJob:
             core_metadata["model"] = model
             self._write_json_file(Model.default_filename(), model)
 
-        # Validate and create full metadata object
-        metadata = self.validate_and_create_metadata(core_metadata)
-
-        if isinstance(metadata, dict):
-            # Metadata was created with create_metadata_json, write directly
-            self._write_json_file("metadata.nd.json", metadata)
-        else:
-            metadata.write_standard_file(
-                output_directory=Path(self.settings.metadata_dir),
-                suffix="nd.json",
-            )
+        self.validate_and_create_metadata(core_metadata)
 
         logging.info("Finished job.")
 
