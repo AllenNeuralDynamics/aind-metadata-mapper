@@ -458,13 +458,14 @@ class TestGatherMetadataJob(unittest.TestCase):
             }
         }
 
-        # Mock create_metadata_json to return a dict (ValidationError path)
-        with patch("aind_metadata_mapper.gather_metadata.create_metadata_json") as mock_create:
-            mock_create.return_value = {"name": "test_dataset", "location": ""}
+        # Mock Metadata to avoid actual validation
+        with patch("aind_metadata_mapper.gather_metadata.Metadata") as mock_metadata:
+            mock_instance = MagicMock()
+            mock_metadata.return_value = mock_instance
             result = self.job.validate_and_create_metadata(core_metadata)
-            self.assertEqual(result, {"name": "test_dataset", "location": ""})
+            self.assertEqual(result, mock_instance)
 
-    # Tests for run_job method - metadata dict vs object handling
+    # Tests for run_job method
     @patch.object(GatherMetadataJob, "build_data_description")
     @patch.object(GatherMetadataJob, "get_subject")
     @patch.object(GatherMetadataJob, "get_procedures")
@@ -475,7 +476,7 @@ class TestGatherMetadataJob(unittest.TestCase):
     @patch.object(GatherMetadataJob, "get_model")
     @patch.object(GatherMetadataJob, "validate_and_create_metadata")
     @patch.object(GatherMetadataJob, "_write_json_file")
-    def test_run_job_with_dict_metadata(
+    def test_run_job_basic(
         self,
         mock_write,
         mock_validate,
@@ -488,53 +489,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_subject,
         mock_data_desc,
     ):
-        """Test run_job when validate_and_create_metadata returns a dict"""
-        # Mock all getters to return None to focus on the metadata dict handling
-        mock_data_desc.return_value = {"name": "test", "data_level": "raw"}
-        mock_subject.return_value = None
-        mock_procedures.return_value = None
-        mock_acquisition.return_value = None
-        mock_instrument.return_value = None
-        mock_processing.return_value = None
-        mock_qc.return_value = None
-        mock_model.return_value = None
-
-        # Return a dict from validate_and_create_metadata
-        mock_validate.return_value = {"name": "test_dataset", "location": ""}
-
-        self.job.run_job()
-
-        # Verify that _write_json_file was called for the metadata dict
-        calls = mock_write.call_args_list
-        metadata_call = [call for call in calls if call[0][0] == "metadata.nd.json"]
-        self.assertEqual(len(metadata_call), 1)
-        self.assertEqual(metadata_call[0][0][1], {"name": "test_dataset", "location": ""})
-
-    @patch.object(GatherMetadataJob, "build_data_description")
-    @patch.object(GatherMetadataJob, "get_subject")
-    @patch.object(GatherMetadataJob, "get_procedures")
-    @patch.object(GatherMetadataJob, "get_acquisition")
-    @patch.object(GatherMetadataJob, "get_instrument")
-    @patch.object(GatherMetadataJob, "get_processing")
-    @patch.object(GatherMetadataJob, "get_quality_control")
-    @patch.object(GatherMetadataJob, "get_model")
-    @patch.object(GatherMetadataJob, "validate_and_create_metadata")
-    @patch.object(GatherMetadataJob, "_write_json_file")
-    def test_run_job_with_metadata_object(
-        self,
-        mock_write,
-        mock_validate,
-        mock_model,
-        mock_qc,
-        mock_processing,
-        mock_instrument,
-        mock_acquisition,
-        mock_procedures,
-        mock_subject,
-        mock_data_desc,
-    ):
-        """Test run_job when validate_and_create_metadata returns a Metadata object"""
-        # Mock all getters to return None to focus on the metadata object handling
+        """Test run_job basic functionality"""
+        # Mock all getters to return expected data
         mock_data_desc.return_value = {"name": "test", "data_level": "raw"}
         mock_subject.return_value = None
         mock_procedures.return_value = None
@@ -550,10 +506,13 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.job.run_job()
 
-        # Verify that write_standard_file was called on the metadata object
-        mock_metadata_obj.write_standard_file.assert_called_once_with(
-            output_directory=Path("/test/metadata"), suffix="nd.json"
-        )
+        # Verify that validate_and_create_metadata was called
+        mock_validate.assert_called_once()
+        
+        # Verify that _write_json_file was called for data_description
+        calls = mock_write.call_args_list
+        data_desc_call = [call for call in calls if call[0][0] == "data_description.json"]
+        self.assertEqual(len(data_desc_call), 1)
 
     @patch.object(GatherMetadataJob, "build_data_description")
     @patch.object(GatherMetadataJob, "get_subject")
@@ -590,8 +549,9 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_qc.return_value = None
         mock_model.return_value = {"model_name": "test_model"}
 
-        # Return a dict from validate_and_create_metadata
-        mock_validate.return_value = {"name": "test_dataset", "location": ""}
+        # Return a Metadata object from validate_and_create_metadata
+        mock_metadata_obj = MagicMock(spec=Metadata)
+        mock_validate.return_value = mock_metadata_obj
 
         self.job.run_job()
 

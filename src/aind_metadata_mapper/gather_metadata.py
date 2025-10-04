@@ -139,17 +139,13 @@ class GatherMetadataJob:
 
         if acquisition_data and "acquisition_start_time" in acquisition_data:
             start_time_str = acquisition_data["acquisition_start_time"]
-            try:
-                if isinstance(start_time_str, str):
-                    from dateutil.parser import parse as parse_datetime
-
-                    creation_time = parse_datetime(start_time_str)
-                elif isinstance(start_time_str, datetime):
-                    creation_time = start_time_str
-                logging.info(f"Using acquisition start time: {creation_time}")
-            except Exception as e:
-                logging.warning(f"Failed to parse acquisition_start_time: {e}")
-                logging.info("Falling back to current time")
+            if isinstance(start_time_str, str):
+                # Handle ISO format with Z timezone suffix
+                iso_time_str = start_time_str.replace("Z", "+00:00")
+                creation_time = datetime.fromisoformat(iso_time_str)
+            elif isinstance(start_time_str, datetime):
+                creation_time = start_time_str
+            logging.info(f"Using acquisition start time: {creation_time}")
 
         # Get funding information
         funding_source, investigators = self.get_funding()

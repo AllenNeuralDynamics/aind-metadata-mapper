@@ -304,10 +304,7 @@ class TestIntegrationMetadata(unittest.TestCase):
         mock_get_file.side_effect = mock_read_file
 
         # Mock file writing methods to avoid actual file writing
-        with (
-            patch.object(self.job, "_write_json_file") as mock_write,
-            patch("aind_data_schema.core.metadata.Metadata." "write_standard_file"),
-        ):
+        with patch.object(self.job, "_write_json_file") as mock_write:
             # Run the job
             try:
                 self.job.run_job()
@@ -315,8 +312,7 @@ class TestIntegrationMetadata(unittest.TestCase):
                 # Verify that files were "written" (mocked)
                 written_files = [call[0][0] for call in mock_write.call_args_list]
 
-                # Check that files were written through _write_json_file
-                # Note: metadata.nd.json is written via write_standard_file
+                # Check that individual metadata files were written through _write_json_file
                 expected_files = [
                     "data_description.json",
                     "subject.json",
