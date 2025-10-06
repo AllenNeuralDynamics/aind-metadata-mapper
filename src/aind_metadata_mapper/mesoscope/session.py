@@ -27,16 +27,6 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
     """Class to manage transforming mesoscope platform json and metadata into
     a Session model."""
 
-    _STRUCTURE_LOOKUP_DICT = {
-        385: "VISp",
-        394: "VISam",
-        402: "VISal",
-        409: "VISl",
-        417: "VISrl",
-        533: "VISpm",
-        312782574: "VISli",
-    }
-
     # TODO: Deprecate this constructor. Use GenericEtl constructor instead
     def __init__(self, job_settings: Union[JobSettings, str]):
         """
@@ -240,9 +230,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
                     magnification=self.job_settings.magnification,
                     fov_scale_factor=0.78,
                     imaging_depth=plane["targeted_depth"],
-                    targeted_structure=self._STRUCTURE_LOOKUP_DICT[
-                        plane["targeted_structure_id"]
-                    ],
+                    targeted_structure=plane["targeted_structure_id"],
                     scanimage_roi_index=plane["scanimage_roi_index"],
                     fov_width=meta[0]["SI.hRoiManager.pixelsPerLine"],
                     fov_height=meta[0]["SI.hRoiManager.linesPerFrame"],
