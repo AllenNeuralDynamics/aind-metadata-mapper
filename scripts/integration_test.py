@@ -1,4 +1,6 @@
 # flake8: noqa: C901, F541
+"""Integration test script for GatherMetadataJob functionality."""
+
 import logging
 import shutil
 import tempfile
