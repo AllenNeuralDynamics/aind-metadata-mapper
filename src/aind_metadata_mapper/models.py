@@ -6,9 +6,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
-class JobSettings(
-    BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=True
-):
+class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=True):
     """Settings required to fetch metadata from metadata service"""
 
     metadata_dir: str = Field(
@@ -20,21 +18,15 @@ class JobSettings(
     )
     subject_id: Optional[str] = Field(
         default=None,
-        description=(
-            "Subject ID. Will be used to download metadata from a service."
-        ),
+        description=("Subject ID. Will be used to download metadata from a service."),
     )
     instrument_id: Optional[str] = Field(
         default=None,
-        description=(
-            "Instrument ID. Will be used to download metadata from a service."
-        ),
+        description=("Instrument ID. Will be used to download metadata from a service."),
     )
     project_name: Optional[str] = Field(
         default=None,
-        description=(
-            "Project Name. Will be used to download metadata from a service."
-        ),
+        description=("Project Name. Will be used to download metadata from a service."),
     )
     metadata_service_url: Optional[str] = Field(
         default="http://aind-metadata-service",

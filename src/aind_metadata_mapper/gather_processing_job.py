@@ -19,9 +19,7 @@ class JobSettings(
     Settings required to generate a processing.json file."""
 
     model_config = SettingsConfigDict(env_prefix="PROCESSING_")
-    output_directory: str | Path = Field(
-        ..., description="Directory to write the file to."
-    )
+    output_directory: str | Path = Field(..., description="Directory to write the file to.")
     processing: Processing = Field(..., description="Processing")
 
 
@@ -37,13 +35,9 @@ class GatherProcessingJob:
 
         file_name = Processing.default_filename()
         output_path = Path(self.settings.output_directory) / file_name
-        json_contents = self.settings.processing.model_dump(
-            mode="json", exclude_none=True
-        )
+        json_contents = self.settings.processing.model_dump(mode="json", exclude_none=True)
         with open(output_path, "w") as f:
-            json.dump(
-                json_contents, f, indent=3, ensure_ascii=False, sort_keys=True
-            )
+            json.dump(json_contents, f, indent=3, ensure_ascii=False, sort_keys=True)
 
 
 if __name__ == "__main__":
