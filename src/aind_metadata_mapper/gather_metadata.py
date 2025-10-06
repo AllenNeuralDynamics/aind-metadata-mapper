@@ -186,14 +186,15 @@ class GatherMetadataJob:
                 if response.status_code == 200:
                     contents = response.json().get("data", response.json())
                 elif response.status_code == 400:
-                    logging.warning(f"Subject {subject_id} not found in service")
-                    contents = response.json()
+                    logging.error(f"Subject {subject_id} not found in service")
+                    response.raise_for_status()
+                    contents = None
                 else:
                     response.raise_for_status()
-                    contents = response.json()
+                    contents = None
             except Exception as e:
                 logging.error(f"Failed to retrieve subject metadata: {e}")
-                return None
+                contents = None
         else:
             logging.debug(f"Using existing {file_name}.")
             contents = self._get_file_from_user_defined_directory(file_name=file_name)
@@ -220,14 +221,15 @@ class GatherMetadataJob:
                 if response.status_code == 200:
                     contents = response.json().get("data", response.json())
                 elif response.status_code == 400:
-                    logging.warning(f"Procedures for {subject_id} not found in service")
-                    contents = response.json()
+                    logging.error(f"Procedures for {subject_id} not found in service")
+                    response.raise_for_status()
+                    contents = None
                 else:
                     response.raise_for_status()
-                    contents = response.json()
+                    contents = None
             except Exception as e:
                 logging.error(f"Failed to retrieve procedures metadata: {e}")
-                return None
+                contents = None
         else:
             logging.debug(f"Using existing {file_name}.")
             contents = self._get_file_from_user_defined_directory(file_name=file_name)
