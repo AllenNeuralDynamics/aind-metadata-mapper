@@ -87,9 +87,7 @@ class GatherMetadataJob:
             funding_url = f"{self.settings.metadata_service_url}" f"/api/v2/funding/{self.settings.project_name}"
             response = requests.get(funding_url)
             if response.status_code == 200:
-                funding_info = [response.json().get("data")]
-            elif response.status_code == 300:
-                funding_info = response.json().get("data", [])
+                funding_info = response.json()
             else:
                 logging.warning(f"Unable to retrieve funding info: {response.status_code}")
                 return [], []
@@ -185,12 +183,8 @@ class GatherMetadataJob:
                 response = requests.get(f"{self.settings.metadata_service_url}" f"/api/v2/subject/{subject_id}")
                 if response.status_code == 200:
                     contents = response.json().get("data", response.json())
-                elif response.status_code == 400:
-                    logging.error(f"Subject {subject_id} not found in service")
-                    response.raise_for_status()
-                    contents = None
                 else:
-                    response.raise_for_status()
+                    logging.error(f"Subject {subject_id} not found in service (status: {response.status_code})")
                     contents = None
             except Exception as e:
                 logging.error(f"Failed to retrieve subject metadata: {e}")
@@ -220,12 +214,8 @@ class GatherMetadataJob:
                 response = requests.get(f"{self.settings.metadata_service_url}" f"/api/v2/procedures/{subject_id}")
                 if response.status_code == 200:
                     contents = response.json().get("data", response.json())
-                elif response.status_code == 400:
-                    logging.error(f"Procedures for {subject_id} not found in service")
-                    response.raise_for_status()
-                    contents = None
                 else:
-                    response.raise_for_status()
+                    logging.error(f"Procedures for {subject_id} not found in service (status: {response.status_code})")
                     contents = None
             except Exception as e:
                 logging.error(f"Failed to retrieve procedures metadata: {e}")

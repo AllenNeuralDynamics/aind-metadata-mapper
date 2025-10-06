@@ -112,8 +112,8 @@ class TestIntegrationMetadata(unittest.TestCase):
 
         # Mock API response - funding_data is already a list, use it directly
         mock_response = MagicMock()
-        mock_response.status_code = 300  # Multiple results
-        mock_response.json.return_value = {"data": funding_data}
+        mock_response.status_code = 200
+        mock_response.json.return_value = funding_data
         mock_get.return_value = mock_response
 
         # Call the method
@@ -358,8 +358,8 @@ class TestIntegrationMetadata(unittest.TestCase):
 
         with patch("requests.get") as mock_get:
             mock_response = MagicMock()
-            mock_response.status_code = 300
-            mock_response.json.return_value = {"data": funding_data}
+            mock_response.status_code = 200
+            mock_response.json.return_value = funding_data
             mock_get.return_value = mock_response
 
             result = self.job.build_data_description()

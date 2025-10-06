@@ -77,8 +77,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Test get_funding with successful single result"""
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "data": {
+        mock_response.json.return_value = [
+            {
                 "funder": "Test Funder",
                 "award_number": "12345",
                 "investigators": [
@@ -86,7 +86,7 @@ class TestGatherMetadataJob(unittest.TestCase):
                     Person(name="Jane Smith").model_dump(),
                 ],
             }
-        }
+        ]
         mock_get.return_value = mock_response
 
         funding, investigators = self.job.get_funding()
@@ -98,42 +98,40 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     @patch("requests.get")
     def test_get_funding_success_multiple_results(self, mock_get):
-        """Test get_funding with successful multiple results (300 status)"""
+        """Test get_funding with successful multiple results"""
         mock_response = MagicMock()
-        mock_response.status_code = 300
-        mock_response.json.return_value = {
-            "data": [
-                {
-                    "funder": "Funder 1",
-                    "award_number": "111",
-                    "investigators": [{"name": "Alice"}],
-                },
-                {
-                    "funder": "Funder 2",
-                    "award_number": "222",
-                    "investigators": [{"name": "Bob"}, {"name": "Charlie"}],
-                },
-            ]
-        }
+        mock_response.status_code = 200
+        mock_response.json.return_value = [
+            {
+                "funder": "Funder 1",
+                "award_number": "111",
+                "investigators": [{"name": "Alice"}],
+            },
+            {
+                "funder": "Funder 2",
+                "award_number": "222",
+                "investigators": [{"name": "Bob"}, {"name": "Charlie"}],
+            },
+        ]
         mock_get.return_value = mock_response
 
         funding, investigators = self.job.get_funding()
 
         self.assertEqual(len(funding), 2)
-        self.assertEqual(len(investigators), 3)  # Alice, Bob, Charlie
+        self.assertEqual(len(investigators), 3)
 
     @patch("requests.get")
     def test_get_funding_empty_investigators(self, mock_get):
         """Test get_funding with empty investigators"""
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "data": {
+        mock_response.json.return_value = [
+            {
                 "funder": "Test Funder",
                 "award_number": "12345",
                 "investigators": [],
             }
-        }
+        ]
         mock_get.return_value = mock_response
 
         funding, investigators = self.job.get_funding()
@@ -264,13 +262,13 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Test get_subject when subject not found in API"""
         mock_file_exists.return_value = False
         mock_response = MagicMock()
-        mock_response.status_code = 400
+        mock_response.status_code = 500
         mock_response.json.return_value = {"error": "Subject not found"}
         mock_get.return_value = mock_response
 
         result = self.job.get_subject()
 
-        self.assertEqual(result, {"error": "Subject not found"})
+        self.assertIsNone(result)
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
     @patch("requests.get")
@@ -278,14 +276,13 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Test get_subject when API returns other error"""
         mock_file_exists.return_value = False
         mock_response = MagicMock()
-        mock_response.status_code = 500
+        mock_response.status_code = 503
         mock_response.json.return_value = {"error": "Server error"}
-        mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
 
         result = self.job.get_subject()
 
-        self.assertEqual(result, {"error": "Server error"})
+        self.assertIsNone(result)
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
     @patch("requests.get")
@@ -347,13 +344,13 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Test get_procedures when procedures not found in API"""
         mock_file_exists.return_value = False
         mock_response = MagicMock()
-        mock_response.status_code = 400
+        mock_response.status_code = 500
         mock_response.json.return_value = {"error": "Procedures not found"}
         mock_get.return_value = mock_response
 
         result = self.job.get_procedures()
 
-        self.assertEqual(result, {"error": "Procedures not found"})
+        self.assertIsNone(result)
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
     @patch("requests.get")
@@ -361,14 +358,13 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Test get_procedures when API returns other status code"""
         mock_file_exists.return_value = False
         mock_response = MagicMock()
-        mock_response.status_code = 500
+        mock_response.status_code = 503
         mock_response.json.return_value = {"error": "Server error"}
-        mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
 
         result = self.job.get_procedures()
 
-        self.assertEqual(result, {"error": "Server error"})
+        self.assertIsNone(result)
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
     @patch("requests.get")
