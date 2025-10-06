@@ -38,7 +38,7 @@ class TestGatherProcessingJob(unittest.TestCase):
                     stage=ProcessStage.PROCESSING,
                     code=Code(
                         url="www.example.com/ephys_compression",
-                        parameters=GenericModel(compression_name="BLOSC"),
+                        parameters=GenericModel(),
                     ),
                 ),
                 DataProcess(
