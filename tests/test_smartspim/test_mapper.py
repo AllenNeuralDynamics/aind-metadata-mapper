@@ -18,12 +18,7 @@ class TestSmartspimMapper(unittest.TestCase):
         self.mapper = SmartspimMapper()
 
         # Load test data
-        test_data_path = (
-            Path(__file__).parent.parent
-            / "resources"
-            / "smartspim"
-            / "smartspim.json"
-        )
+        test_data_path = Path(__file__).parent.parent / "resources" / "smartspim" / "smartspim.json"
         with open(test_data_path, "r") as f:
             self.test_metadata = json.load(f)
 
@@ -44,9 +39,7 @@ class TestSmartspimMapper(unittest.TestCase):
         self.assertEqual(result.acquisition_type, "SmartSPIM")
 
         # Check protocol information
-        expected_protocol = [
-            "https://dx.doi.org/10.17504/protocols.io.3byl4jo1rlo5/v1"
-        ]
+        expected_protocol = ["https://dx.doi.org/10.17504/protocols.io.3byl4jo1rlo5/v1"]
         self.assertEqual(result.protocol_id, expected_protocol)
 
     def test_transform_timestamps(self):
@@ -77,12 +70,8 @@ class TestSmartspimMapper(unittest.TestCase):
         self.assertEqual(data_stream.modalities, [Modality.SPIM])
 
         # Check timestamps match acquisition times
-        self.assertEqual(
-            data_stream.stream_start_time, result.acquisition_start_time
-        )
-        self.assertEqual(
-            data_stream.stream_end_time, result.acquisition_end_time
-        )
+        self.assertEqual(data_stream.stream_start_time, result.acquisition_start_time)
+        self.assertEqual(data_stream.stream_end_time, result.acquisition_end_time)
 
     def test_transform_imaging_channels(self):
         """Test that imaging channels are correctly processed"""
@@ -100,9 +89,7 @@ class TestSmartspimMapper(unittest.TestCase):
                 imaging_config = config
                 break
 
-        self.assertIsNotNone(
-            imaging_config, "Should have an imaging configuration"
-        )
+        self.assertIsNotNone(imaging_config, "Should have an imaging configuration")
 
         # Check that we have channels corresponding to the imaging channels in metadata
         expected_channels = [
@@ -123,10 +110,7 @@ class TestSmartspimMapper(unittest.TestCase):
         self.assertGreaterEqual(len(data_stream.configurations), 2)
 
         # Should have a sample chamber config since test data has chamber_immersion_medium
-        has_chamber_config = any(
-            hasattr(config, "chamber_immersion")
-            for config in data_stream.configurations
-        )
+        has_chamber_config = any(hasattr(config, "chamber_immersion") for config in data_stream.configurations)
         self.assertTrue(
             has_chamber_config,
             "Should have chamber configuration when immersion medium is specified",
@@ -143,9 +127,7 @@ class TestSmartspimMapper(unittest.TestCase):
         """Test experimenter field when experimenter name is provided"""
         # Modify test data to include experimenter name
         test_data_copy = self.test_metadata.copy()
-        test_data_copy["slims_metadata"][
-            "experimenter_name"
-        ] = "Test Experimenter"
+        test_data_copy["slims_metadata"]["experimenter_name"] = "Test Experimenter"
 
         result = self.mapper.transform(test_data_copy)
 

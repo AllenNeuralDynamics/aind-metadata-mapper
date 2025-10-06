@@ -31,7 +31,7 @@ from aind_metadata_extractor.models.smartspim import SmartspimModel
 from typing import List, Dict, Any, Optional, cast
 
 
-class SmartspimMapper():
+class SmartspimMapper:
     """Smartspim Mapper"""
 
     def transform(self, metadata: dict) -> Acquisition:
@@ -57,20 +57,16 @@ class SmartspimMapper():
         # Extract basic information
         subject_id = metadata.slims_metadata.subject_id
         raw_specimen_id = metadata.slims_metadata.specimen_id
-        
+
         # If subject_id doesn't appear in specimen_id, construct proper format
         if subject_id and raw_specimen_id and subject_id not in raw_specimen_id:
             specimen_id = f"{subject_id}-{raw_specimen_id}"
         else:
             specimen_id = raw_specimen_id
-        
+
         instrument_id = metadata.slims_metadata.instrument_id
-        protocol_id = (
-            [metadata.slims_metadata.protocol_id]
-            if metadata.slims_metadata.protocol_id
-            else None
-        )
-        
+        protocol_id = [metadata.slims_metadata.protocol_id] if metadata.slims_metadata.protocol_id else None
+
         # Get experimenter name, use order_created_by as fallback
         experimenter_name = metadata.slims_metadata.experimenter_name
         if not experimenter_name and metadata.slims_metadata.order_created_by:
@@ -174,7 +170,7 @@ class SmartspimMapper():
                 if wavelength_key in wavelength_config:
                     channel_config = wavelength_config[wavelength_key]
                     power_unit_str = channel_config.get("power_unit", "percent")
-                    
+
                     # Map power unit
                     if power_unit_str.lower() in ["milliwatt", "mw"]:
                         power_unit = PowerUnit.MW
@@ -182,7 +178,7 @@ class SmartspimMapper():
                         power_unit = PowerUnit.UW
                     else:
                         power_unit = PowerUnit.PERCENT
-                    
+
                     # Left side
                     power_left = channel_config.get("power_left")
                     if power_left:
@@ -195,7 +191,7 @@ class SmartspimMapper():
                                 power_unit=power_unit,
                             )
                         )
-                    
+
                     # Right side
                     power_right = channel_config.get("power_right")
                     if power_right:
@@ -210,9 +206,7 @@ class SmartspimMapper():
                         )
 
             # Extract exposure time from tile configuration
-            exposure_time = self._extract_exposure_time_from_tiles(
-                channel_name, metadata
-            )
+            exposure_time = self._extract_exposure_time_from_tiles(channel_name, metadata)
 
             # Build detector config with clean device name
             detector = DetectorConfig(
@@ -223,38 +217,26 @@ class SmartspimMapper():
             )
 
             # Build emission filters if available
-            emission_filters, emission_wavelength = (
-                self._build_emission_filters(
-                    channel_name, wavelength, metadata
-                )
-            )
+            emission_filters, emission_wavelength = self._build_emission_filters(channel_name, wavelength, metadata)
 
             # Get consistent channel display name
-            channel_display_name = self._get_channel_display_name(
-                channel_name, wavelength, metadata
-            )
+            channel_display_name = self._get_channel_display_name(channel_name, wavelength, metadata)
 
             channel = Channel(
                 channel_name=channel_display_name,
                 intended_measurement=None,
                 detector=detector,
                 light_sources=light_sources,
-                emission_filters=(
-                    emission_filters if emission_filters else None
-                ),
+                emission_filters=(emission_filters if emission_filters else None),
                 emission_wavelength=emission_wavelength,
-                emission_wavelength_unit=(
-                    SizeUnit.NM if emission_wavelength else None
-                ),
+                emission_wavelength_unit=(SizeUnit.NM if emission_wavelength else None),
             )
 
             channels.append(channel)
 
         return channels
 
-    def _build_chamber_config(
-        self, metadata: SmartspimModel
-    ) -> SampleChamberConfig:
+    def _build_chamber_config(self, metadata: SmartspimModel) -> SampleChamberConfig:
         """Build SampleChamberConfig from immersion metadata."""
         # Parse chamber immersion data
         chamber_medium = metadata.slims_metadata.chamber_immersion_medium
@@ -296,13 +278,13 @@ class SmartspimMapper():
         imaging_channels = metadata.slims_metadata.imaging_channels
         if not imaging_channels:
             raise ValueError("imaging_channels is required")
-        
+
         wavelengths_used = set()
         for channel_name in imaging_channels:
             wavelength = self._extract_wavelength_from_channel(channel_name)
             if wavelength:
                 wavelengths_used.add(wavelength)
-        
+
         for wavelength in sorted(wavelengths_used):
             devices.append(f"Ex_{wavelength}")
 
@@ -312,9 +294,7 @@ class SmartspimMapper():
 
         return devices
 
-    def _extract_wavelength_from_channel(
-        self, channel_name: str
-    ) -> Optional[int]:
+    def _extract_wavelength_from_channel(self, channel_name: str) -> Optional[int]:
         """Extract wavelength from channel name."""
         # Try to parse wavelength directly from channel name
         if channel_name.isdigit():
@@ -347,28 +327,18 @@ class SmartspimMapper():
         """Extract power information from wavelength config."""
         wavelength = self._extract_wavelength_from_channel(channel_name)
         wavelength_key = str(wavelength) if wavelength else channel_name
-        
+
         if not wavelength_config or wavelength_key not in wavelength_config:
-            raise ValueError(
-                f"wavelength_config missing for channel {channel_name} (key: {wavelength_key})"
-            )
+            raise ValueError(f"wavelength_config missing for channel {channel_name} (key: {wavelength_key})")
 
         channel_config = wavelength_config[wavelength_key]
         if not isinstance(channel_config, dict):
-            raise ValueError(
-                f"Invalid channel_config format for {channel_name}"
-            )
+            raise ValueError(f"Invalid channel_config format for {channel_name}")
 
         # Look for power settings (left/right or general)
-        power = (
-            channel_config.get("power")
-            or channel_config.get("power_left")
-            or channel_config.get("power_right")
-        )
+        power = channel_config.get("power") or channel_config.get("power_left") or channel_config.get("power_right")
         if power is None:
-            raise ValueError(
-                f"No power setting found for channel {channel_name}"
-            )
+            raise ValueError(f"No power setting found for channel {channel_name}")
 
         # Check for power unit specification, default to percent if not specified
         power_unit_str = channel_config.get("power_unit", "percent")
@@ -380,19 +350,12 @@ class SmartspimMapper():
         elif power_unit_str.lower() in ["percent", "%"]:
             return float(power), PowerUnit.PERCENT
         else:
-            raise ValueError(
-                f"Unknown power_unit '{power_unit_str}' for channel "
-                f"{channel_name}"
-            )
+            raise ValueError(f"Unknown power_unit '{power_unit_str}' for channel " f"{channel_name}")
 
-    def _get_channel_display_name(
-        self, channel_name: str, wavelength: Optional[int], metadata: SmartspimModel
-    ) -> str:
+    def _get_channel_display_name(self, channel_name: str, wavelength: Optional[int], metadata: SmartspimModel) -> str:
         """Get consistent channel display name."""
-        _, emission_wavelength = self._build_emission_filters(
-            channel_name, wavelength, metadata
-        )
-        
+        _, emission_wavelength = self._build_emission_filters(channel_name, wavelength, metadata)
+
         if wavelength and emission_wavelength:
             return f"Ex_{wavelength}_Em_{emission_wavelength}"
         return channel_name
@@ -417,12 +380,10 @@ class SmartspimMapper():
 
         for channel_name in imaging_channels:
             wavelength = self._extract_wavelength_from_channel(channel_name)
-            
+
             # Get consistent channel display name
-            channel_display_name = self._get_channel_display_name(
-                channel_name, wavelength, metadata
-            )
-            
+            channel_display_name = self._get_channel_display_name(channel_name, wavelength, metadata)
+
             # Create filename pattern based on channel
             filename = f"{channel_display_name}.ims"
 
@@ -447,9 +408,7 @@ class SmartspimMapper():
 
         return images
 
-    def _build_coordinate_system(
-        self, metadata: SmartspimModel
-    ) -> Optional[CoordinateSystem]:
+    def _build_coordinate_system(self, metadata: SmartspimModel) -> Optional[CoordinateSystem]:
         """Build CoordinateSystem from axis direction info in SLIMS."""
         slims = metadata.slims_metadata
 
@@ -568,28 +527,20 @@ class SmartspimMapper():
 
         return ImmersionMedium.OTHER
 
-    def _extract_exposure_time_from_tiles(
-        self, channel_name: str, metadata: SmartspimModel
-    ) -> float:
+    def _extract_exposure_time_from_tiles(self, channel_name: str, metadata: SmartspimModel) -> float:
         """Extract exposure time for a channel from tile configuration."""
         tile_config = metadata.file_metadata.tile_config
         if not tile_config:
-            raise ValueError(
-                "tile_config is required for exposure time extraction"
-            )
+            raise ValueError("tile_config is required for exposure time extraction")
 
         # Look for tiles with the matching laser/channel
         wavelength = self._extract_wavelength_from_channel(channel_name)
         if not wavelength:
-            raise ValueError(
-                f"Cannot extract wavelength from channel {channel_name}"
-            )
+            raise ValueError(f"Cannot extract wavelength from channel {channel_name}")
 
         # Find tiles that use this wavelength
         for tile_key, tile_info in tile_config.items():
-            if isinstance(tile_info, dict) and str(
-                tile_info.get("Laser")
-            ) == str(wavelength):
+            if isinstance(tile_info, dict) and str(tile_info.get("Laser")) == str(wavelength):
                 exposure = tile_info.get("Exposure")
                 if exposure is not None:
                     try:
@@ -597,10 +548,7 @@ class SmartspimMapper():
                     except (ValueError, TypeError):
                         continue
 
-        raise ValueError(
-            f"No exposure time found for wavelength {wavelength} "
-            f"in tile_config"
-        )
+        raise ValueError(f"No exposure time found for wavelength {wavelength} " f"in tile_config")
 
     def _build_emission_filters(
         self,
@@ -625,7 +573,7 @@ class SmartspimMapper():
                 for part in parts:
                     if "emission filter" in part.lower():
                         filter_spec = part.split("=")[-1].strip()
-                        
+
                         # Try to extract center wavelength from spec like "525/45"
                         if "/" in filter_spec:
                             try:
