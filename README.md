@@ -11,38 +11,32 @@ Repository to contain code that will parse source files into aind-data-schema mo
 
 ## Usage
 
-## Installation
-To use the software, in the root directory, run
-```bash
-pip install -e ".[all]"
+### Using the GatherMetadataJob
+
+Install the metadata mapper (requires Python >=3.10).
+
+```{python}
+pip install aind-metadata-mapper
 ```
 
-It's possible to install just a small subset of dependencies. For example,
-```bash
-pip install -e ".[bergamo]"
+```{python}
+from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.gather_metadata import GatherMetadataJob
+from aind_data_schema_models.modalities import Modality
+
+# Create JobSettings with minimal required parameters
+settings = JobSettings(
+    metadata_dir=".",  # Directory where metadata files are currently stored and will be saved
+    subject_id="123456",         # Replace with actual subject ID
+    project_name="my_project",  # Replace with actual project name
+    modalities=[Modality.ECEPHYS]  # Replace with relevant modalities
+)
+
+# Create and run the job
+job = GatherMetadataJob(settings=settings)
+job.run_job()
 ```
 
-To develop the code, run
-```bash
-pip install -e ".[dev]"
-```
+### Using the individual mappers
 
-## Issues and Discussions
-If you've found a bug in the schemas or would like to make a minor change, open an [issue](https://github.com/AllenNeuralDynamics/aind-metadata-mapper/issues) and please use the provided templates. If you'd like to propose a large change or addition, or generally have a question about how things work, head start a new Discussion!
-
-## Contributing
-Contributions are more than welcome for this project! If you'd like to develop the code, please follow the standards outlined in the [contribution guide](https://github.com/AllenNeuralDynamics/aind-metadata-mapper/blob/dev/CONTRIBUTING.md).
-
-### Documentation
-To generate the rst files source files for documentation, run
-```bash
-sphinx-apidoc -o docs/source/ src 
-```
-Then to create the documentation HTML files, run
-```bash
-sphinx-build -b html docs/source/ docs/build/html
-```
-More info on sphinx installation can be found [here](https://www.sphinx-doc.org/en/master/usage/installation.html).
-
-
-More information including a user guide and contributor guidelines can be found at [readthedocs](https://aind-metadata-mapper.readthedocs.io/en/latest/).
+[todo]
