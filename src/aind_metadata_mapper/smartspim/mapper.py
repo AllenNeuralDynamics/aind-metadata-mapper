@@ -27,7 +27,7 @@ from aind_data_schema_models.units import (
 from aind_data_schema_models.devices import ImmersionMedium
 from aind_data_schema_models.coordinates import AxisName, Direction, Origin
 from aind_metadata_extractor.models.smartspim import SmartspimModel
-from aind_metadata_mapper.models import Mapper
+from aind_metadata_mapper.base import Mapper
 from typing import List, Dict, Any, Optional
 
 
