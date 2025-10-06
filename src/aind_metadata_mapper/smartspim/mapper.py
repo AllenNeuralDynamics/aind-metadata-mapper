@@ -16,6 +16,7 @@ from aind_data_schema.components.coordinates import (
     Scale,
     Translation,
 )
+from aind_data_schema.components.identifiers import Code
 from aind_data_schema.components.wrappers import AssetPath
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import (
@@ -27,11 +28,10 @@ from aind_data_schema_models.units import (
 from aind_data_schema_models.devices import ImmersionMedium
 from aind_data_schema_models.coordinates import AxisName, Direction, Origin
 from aind_metadata_extractor.models.smartspim import SmartspimModel
-from aind_metadata_mapper.base import Mapper
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, cast
 
 
-class SmartspimMapper(Mapper):
+class SmartspimMapper():
     """Smartspim Mapper"""
 
     def transform(self, metadata: dict) -> Acquisition:
@@ -56,14 +56,25 @@ class SmartspimMapper(Mapper):
         """
         # Extract basic information
         subject_id = metadata.slims_metadata.subject_id
-        specimen_id = metadata.slims_metadata.specimen_id
+        raw_specimen_id = metadata.slims_metadata.specimen_id
+        
+        # If subject_id doesn't appear in specimen_id, construct proper format
+        if subject_id and raw_specimen_id and subject_id not in raw_specimen_id:
+            specimen_id = f"{subject_id}-{raw_specimen_id}"
+        else:
+            specimen_id = raw_specimen_id
+        
         instrument_id = metadata.slims_metadata.instrument_id
         protocol_id = (
             [metadata.slims_metadata.protocol_id]
             if metadata.slims_metadata.protocol_id
             else None
         )
+        
+        # Get experimenter name, use order_created_by as fallback
         experimenter_name = metadata.slims_metadata.experimenter_name
+        if not experimenter_name and metadata.slims_metadata.order_created_by:
+            experimenter_name = metadata.slims_metadata.order_created_by
 
         # Build channels from wavelength config and imaging channels
         channels = self._build_channels(metadata)
@@ -78,11 +89,12 @@ class SmartspimMapper(Mapper):
         imaging_config = ImagingConfig(
             device_name=instrument_id or "SmartSPIM",
             channels=channels,
-            images=images,
+            images=cast(Any, images),
+            coordinate_system=coordinate_system,
         )
 
         # Build sample chamber config if immersion data is available
-        configurations = [imaging_config]
+        configurations: List[Any] = [imaging_config]
         if metadata.slims_metadata.chamber_immersion_medium:
             chamber_config = self._build_chamber_config(metadata)
             configurations.append(chamber_config)
@@ -93,11 +105,24 @@ class SmartspimMapper(Mapper):
             metadata.file_metadata.session_end_time,
         )
 
+        # Build Code object for acquisition software version
+        code_list = None
+        software_version = metadata.file_metadata.session_config.get("Version")
+        if software_version:
+            code_list = [
+                Code(
+                    name="SmartSPIM Acquisition Software",
+                    version=software_version,
+                    url="https://github.com/AllenNeuralDynamics/smartspim-acquisition",
+                )
+            ]
+
         # Build the datastream
         data_stream = DataStream(
             stream_start_time=session_start_time,
             stream_end_time=session_end_time,
             modalities=[Modality.SPIM],
+            code=code_list,
             active_devices=self._get_active_devices(metadata),
             configurations=configurations,  # type: ignore
         )
@@ -141,33 +166,57 @@ class SmartspimMapper(Mapper):
             # Extract wavelength information
             wavelength = self._extract_wavelength_from_channel(channel_name)
 
-            # Extract power information from wavelength config
-            power, power_unit = self._extract_power_from_config(
-                channel_name, wavelength_config
-            )
-
-            # Build light source config
+            # Build light source configs with clean device names
+            # SmartSPIM has dual-sided illumination (left and right)
             light_sources = []
             if wavelength:
-                # Assume laser for SmartSPIM
-                light_sources.append(
-                    LaserConfig(
-                        device_name=f"Laser_{channel_name}",
-                        wavelength=wavelength,
-                        wavelength_unit=SizeUnit.NM,
-                        power=power,
-                        power_unit=power_unit,
-                    )
-                )
+                wavelength_key = str(wavelength)
+                if wavelength_key in wavelength_config:
+                    channel_config = wavelength_config[wavelength_key]
+                    power_unit_str = channel_config.get("power_unit", "percent")
+                    
+                    # Map power unit
+                    if power_unit_str.lower() in ["milliwatt", "mw"]:
+                        power_unit = PowerUnit.MW
+                    elif power_unit_str.lower() in ["microwatt", "uw"]:
+                        power_unit = PowerUnit.UW
+                    else:
+                        power_unit = PowerUnit.PERCENT
+                    
+                    # Left side
+                    power_left = channel_config.get("power_left")
+                    if power_left:
+                        light_sources.append(
+                            LaserConfig(
+                                device_name=f"Ex_{wavelength}",
+                                wavelength=wavelength,
+                                wavelength_unit=SizeUnit.NM,
+                                power=float(power_left),
+                                power_unit=power_unit,
+                            )
+                        )
+                    
+                    # Right side
+                    power_right = channel_config.get("power_right")
+                    if power_right:
+                        light_sources.append(
+                            LaserConfig(
+                                device_name=f"Ex_{wavelength}",
+                                wavelength=wavelength,
+                                wavelength_unit=SizeUnit.NM,
+                                power=float(power_right),
+                                power_unit=power_unit,
+                            )
+                        )
 
             # Extract exposure time from tile configuration
             exposure_time = self._extract_exposure_time_from_tiles(
                 channel_name, metadata
             )
 
-            # Build detector config
+            # Build detector config with clean device name
             detector = DetectorConfig(
-                device_name=f"Detector_{channel_name}",
+                device_name="Camera",
                 exposure_time=exposure_time,
                 exposure_time_unit=TimeUnit.MS,
                 trigger_type=TriggerType.INTERNAL,
@@ -180,16 +229,14 @@ class SmartspimMapper(Mapper):
                 )
             )
 
-            # Build channel with proper naming convention
-            channel_display_name = (
-                f"Ex_{wavelength}_Em_{emission_wavelength}"
-                if wavelength and emission_wavelength
-                else channel_name
+            # Get consistent channel display name
+            channel_display_name = self._get_channel_display_name(
+                channel_name, wavelength, metadata
             )
 
             channel = Channel(
                 channel_name=channel_display_name,
-                intended_measurement=f"Channel {channel_name} signal",
+                intended_measurement=None,
                 detector=detector,
                 light_sources=light_sources,
                 emission_filters=(
@@ -242,13 +289,22 @@ class SmartspimMapper(Mapper):
         if metadata.slims_metadata.instrument_id:
             devices.append(metadata.slims_metadata.instrument_id)
 
-        # Add channel-specific devices
+        # Add camera
+        devices.append("Camera")
+
+        # Add lasers for each wavelength (left and right for SmartSPIM)
         imaging_channels = metadata.slims_metadata.imaging_channels
         if not imaging_channels:
             raise ValueError("imaging_channels is required")
+        
+        wavelengths_used = set()
         for channel_name in imaging_channels:
-            devices.append(f"Laser_{channel_name}")
-            devices.append(f"Detector_{channel_name}")
+            wavelength = self._extract_wavelength_from_channel(channel_name)
+            if wavelength:
+                wavelengths_used.add(wavelength)
+        
+        for wavelength in sorted(wavelengths_used):
+            devices.append(f"Ex_{wavelength}")
 
         # Add sample chamber if immersion data exists
         if metadata.slims_metadata.chamber_immersion_medium:
@@ -263,6 +319,15 @@ class SmartspimMapper(Mapper):
         # Try to parse wavelength directly from channel name
         if channel_name.isdigit():
             return int(channel_name)
+
+        # Try to extract from "Laser = 488; Emission Filter = 525/45" format
+        if "Laser =" in channel_name or "Laser=" in channel_name:
+            parts = channel_name.split(";")[0]
+            laser_part = parts.split("=")[-1].strip()
+            try:
+                return int(laser_part)
+            except ValueError:
+                pass
 
         # Try to extract from Ex_XXX_Em_YYY format
         if "Ex_" in channel_name:
@@ -280,12 +345,15 @@ class SmartspimMapper(Mapper):
         self, channel_name: str, wavelength_config: Dict[str, Any]
     ) -> tuple[Optional[float], Optional[PowerUnit]]:
         """Extract power information from wavelength config."""
-        if not wavelength_config or channel_name not in wavelength_config:
+        wavelength = self._extract_wavelength_from_channel(channel_name)
+        wavelength_key = str(wavelength) if wavelength else channel_name
+        
+        if not wavelength_config or wavelength_key not in wavelength_config:
             raise ValueError(
-                f"wavelength_config missing for channel {channel_name}"
+                f"wavelength_config missing for channel {channel_name} (key: {wavelength_key})"
             )
 
-        channel_config = wavelength_config[channel_name]
+        channel_config = wavelength_config[wavelength_key]
         if not isinstance(channel_config, dict):
             raise ValueError(
                 f"Invalid channel_config format for {channel_name}"
@@ -302,12 +370,8 @@ class SmartspimMapper(Mapper):
                 f"No power setting found for channel {channel_name}"
             )
 
-        # Check for power unit specification
-        power_unit_str = channel_config.get("power_unit")
-        if not power_unit_str:
-            raise ValueError(
-                f"No power_unit specified for channel {channel_name}"
-            )
+        # Check for power unit specification, default to percent if not specified
+        power_unit_str = channel_config.get("power_unit", "percent")
 
         if power_unit_str.lower() in ["milliwatt", "mw"]:
             return float(power), PowerUnit.MW
@@ -321,6 +385,18 @@ class SmartspimMapper(Mapper):
                 f"{channel_name}"
             )
 
+    def _get_channel_display_name(
+        self, channel_name: str, wavelength: Optional[int], metadata: SmartspimModel
+    ) -> str:
+        """Get consistent channel display name."""
+        _, emission_wavelength = self._build_emission_filters(
+            channel_name, wavelength, metadata
+        )
+        
+        if wavelength and emission_wavelength:
+            return f"Ex_{wavelength}_Em_{emission_wavelength}"
+        return channel_name
+
     def _build_images(self, metadata: SmartspimModel) -> List[ImageSPIM]:
         """Build ImageSPIM objects for spatial/tile information."""
         images = []
@@ -329,39 +405,37 @@ class SmartspimMapper(Mapper):
         imaging_channels = metadata.slims_metadata.imaging_channels
         if not imaging_channels:
             raise ValueError("imaging_channels is required")
-        filter_mapping = metadata.file_metadata.filter_mapping
+
+        # Extract pixel size from session config
+        session_config = metadata.file_metadata.session_config
+        pixel_size_um = session_config.get("um/pix")
+        if pixel_size_um is None:
+            pixel_size_um = session_config.get("m/pix")
+        if pixel_size_um is None:
+            raise ValueError("Could not find pixel size in session_config")
+        pixel_size = float(pixel_size_um)
 
         for channel_name in imaging_channels:
             wavelength = self._extract_wavelength_from_channel(channel_name)
-            emission_wavelength = None
-
-            if filter_mapping and str(wavelength) in filter_mapping:
-                emission_wavelength = filter_mapping[str(wavelength)]
-
+            
+            # Get consistent channel display name
+            channel_display_name = self._get_channel_display_name(
+                channel_name, wavelength, metadata
+            )
+            
             # Create filename pattern based on channel
-            filename = (
-                f"Ex_{wavelength}_Em_{emission_wavelength}.ims"
-                if wavelength and emission_wavelength
-                else f"{channel_name}.ims"
-            )
+            filename = f"{channel_display_name}.ims"
 
-            # Build channel display name
-            channel_display_name = (
-                f"Ex_{wavelength}_Em_{emission_wavelength}"
-                if wavelength and emission_wavelength
-                else channel_name
-            )
-
-            # Create basic transform (identity for now)
+            # Create transform with actual pixel size
             image_transform = [
-                Scale(scale=[1.0, 1.0, 1.0]),
+                Scale(scale=[pixel_size, pixel_size, pixel_size]),
                 Translation(translation=[0.0, 0.0, 0.0]),
             ]
 
             image = ImageSPIM(
                 channel_name=channel_display_name,
                 file_name=AssetPath(filename),
-                imaging_angle=0,  # Default angle
+                imaging_angle=0,
                 imaging_angle_unit=AngleUnit.DEG,
                 image_start_time=metadata.file_metadata.session_start_time,
                 image_end_time=metadata.file_metadata.session_end_time,
@@ -538,15 +612,28 @@ class SmartspimMapper(Mapper):
         emission_filters = []
         emission_wavelength = None
 
-        # Use filter mapping from file metadata
+        # Get emission wavelength from filter mapping first
         filter_mapping = metadata.file_metadata.filter_mapping
         if filter_mapping and wavelength and str(wavelength) in filter_mapping:
             emission_wavelength = filter_mapping[str(wavelength)]
-            filter_name = f"Filter_{emission_wavelength}"
-            emission_filters.append(DeviceConfig(device_name=filter_name))
-
-        # Additional logic could be added here to extract filter info
-        # from tile configuration if needed
+            emission_filters.append(DeviceConfig(device_name=f"Em_{emission_wavelength}"))
+        else:
+            # Extract emission filter specification from channel_name as fallback
+            # e.g., "Laser = 488; Emission Filter = 525/45"
+            if "Emission Filter" in channel_name or "emission filter" in channel_name.lower():
+                parts = channel_name.split(";")
+                for part in parts:
+                    if "emission filter" in part.lower():
+                        filter_spec = part.split("=")[-1].strip()
+                        
+                        # Try to extract center wavelength from spec like "525/45"
+                        if "/" in filter_spec:
+                            try:
+                                center_wl = int(filter_spec.split("/")[0])
+                                emission_wavelength = center_wl
+                                emission_filters.append(DeviceConfig(device_name=f"Em_{emission_wavelength}"))
+                            except ValueError:
+                                emission_filters.append(DeviceConfig(device_name=filter_spec))
 
         return emission_filters, emission_wavelength
 
