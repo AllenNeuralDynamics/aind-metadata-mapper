@@ -11,9 +11,13 @@ Repository to contain code that will parse source files into aind-data-schema mo
 
 ## Usage
 
+The `GatherMetadataJob` is used to create the `data_description.json` and pull the `subject.json` and `procedures.json` from `aind-metadata-service`. Users are expected to provide the `instrument.json` and the `acquisition.json` as well as optional `processing.json`, `quality_control.json` and `model.json`. The job will attempt to validate all of the metadata files, displaying errors, and then will save all metadata fields into the selected folder. Users can then initiate a call to the `aind-data-transfer-service`.
+
 ### Using the GatherMetadataJob
 
 Install the metadata mapper (requires Python >=3.10).
+
+Before running the mapper, generate valid `instrument.json` and `acquisition.json` files, plus any optional metadata.
 
 ```{python}
 pip install aind-metadata-mapper
