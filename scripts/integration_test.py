@@ -1,3 +1,4 @@
+# flake8: noqa: C901, F541
 import logging
 import shutil
 import tempfile
