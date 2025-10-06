@@ -1,3 +1,5 @@
+"""Smartspim mapper 
+"""
 from aind_data_schema.core.acquisition import Acquisition, DataStream
 from aind_data_schema.components.configs import (
     ImagingConfig,
