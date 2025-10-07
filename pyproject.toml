@@ -32,6 +32,10 @@ dev = [
     "furo",
 ]
 
+opto_fiber_benchmark = [
+    "aind_metadata_mapper[fip]"
+]
+
 fip = [
     "aind-metadata-mapper[schema]",
     "tzlocal>=5.3.1",
