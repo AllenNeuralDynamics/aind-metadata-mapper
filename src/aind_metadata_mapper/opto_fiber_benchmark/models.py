@@ -1,9 +1,12 @@
-from aind_metadata_mapper.fip.models import JobSettings as FiberJobSettings
-from aind_metadata_mapper.core_models import BaseJobSettings
+"""Job Settings for Opto Fiber Benchmark"""
+
+from typing import List, Literal, Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings
-from typing import List, Literal, Optional
+
+from aind_metadata_mapper.core_models import BaseJobSettings
+from aind_metadata_mapper.fip.models import JobSettings as FiberJobSettings
 
 
 class OptoJobSettings(BaseJobSettings):
@@ -37,14 +40,17 @@ class OptoJobSettings(BaseJobSettings):
     baseline_duration: float = Field(
         ...,
         title="Baseline duration (s)",
-        description="Duration of baseline recording prior to first pulse train",
+        description="Duration of baseline recording prior to first pulse",
     )
 
     # Stimulus epoch laser configs
     wavelength: int = Field(..., title="Wavelength (nm)")
     power: float = Field(..., title="Excitation power")
 
+
 class JobSettings(BaseJobSettings, BaseSettings, cli_parse_args=True):
+    """Job Settings for combined opto fiber benchmark"""
+
     job_settings_name: Literal["Opto_Fiber_Benchmark"] = Field(
         default="Opto_Fiber_Benchmark", title="Name of the job settings"
     )
