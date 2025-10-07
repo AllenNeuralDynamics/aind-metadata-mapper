@@ -185,7 +185,6 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
             data_streams=[stream],
             mouse_platform_name=model.fiber_data.mouse_platform_name,
             active_mouse_platform=model.fiber_data.active_mouse_platform,
-            anaesthesia=model.fiber_data.anaesthesia,
             animal_weight_post=model.fiber_data.animal_weight_post,
             animal_weight_prior=model.fiber_data.animal_weight_prior,
             stimulus_epochs=[model.stimulus_epoch]
