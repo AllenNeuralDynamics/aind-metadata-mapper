@@ -14,6 +14,8 @@ class OptoJobSettings(BaseJobSettings):
         description="Path to data directory",
     )
 
+    job_settings_name: Literal["Optogenetics"] = "Optogenetics"
+
     # Optogenetics parameters
     stimulus_name: str = Field(default="OptoStim", description="Stimulus name")
     pulse_shape: str = Field(default="Square", title="Pulse shape")
