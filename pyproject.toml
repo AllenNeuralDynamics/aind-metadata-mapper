@@ -50,6 +50,7 @@ all = [
     "aind-metadata-mapper[dynamicrouting]",
     "aind-metadata-mapper[u19]",
     "aind-metadata-mapper[fip]",
+    "aind_metadata_mapper[opto_fiber_benchmark]",
 ]
 
 schema = [
