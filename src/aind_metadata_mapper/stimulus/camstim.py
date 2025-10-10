@@ -125,6 +125,7 @@ class Camstim:
         timestamps = sync.get_ophys_stimulus_timestamps(
             self.sync_data, self.pkl_path
         )
+        timestamps = stim_utils.extract_frame_times_with_delay(self.sync_data)
         behavior_table = behavior_utils.from_stimulus_file(
             self.pkl_path, timestamps
         )
@@ -306,7 +307,7 @@ class Camstim:
             set(),
         ]
         self._summarize_epoch_params(stim_table, single_epoch, 0, -1)
-        stim_name = row.get("stim_name", "") or ""
+        stim_name = row.get("stim_block", "") or ""
         image_set = row.get("image_set", "")
         if pd.notnull(image_set):
             stim_name = image_set
