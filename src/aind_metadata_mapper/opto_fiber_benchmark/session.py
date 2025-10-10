@@ -255,6 +255,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     with open(Path(args.config_json_path), "r") as f:
         config = json.load(f)
-    print(config)
+
     job_settings = JobSettings(**config)
     OptoFiberBenchmark(job_settings).run_job()
