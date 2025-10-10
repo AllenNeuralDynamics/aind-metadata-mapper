@@ -3,7 +3,6 @@
 from typing import List, Literal, Optional
 
 from pydantic import Field
-from pydantic_settings import BaseSettings
 
 from aind_metadata_mapper.core_models import BaseJobSettings
 from aind_metadata_mapper.fip.models import JobSettings as FiberJobSettings
@@ -48,7 +47,7 @@ class OptoJobSettings(BaseJobSettings):
     power: float = Field(..., title="Excitation power")
 
 
-class JobSettings(BaseJobSettings, BaseSettings, cli_parse_args=True):
+class JobSettings(BaseJobSettings):
     """Job Settings for combined opto fiber benchmark"""
 
     job_settings_name: Literal["Opto_Fiber_Benchmark"] = Field(

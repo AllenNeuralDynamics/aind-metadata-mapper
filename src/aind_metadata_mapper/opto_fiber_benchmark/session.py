@@ -1,5 +1,7 @@
 """Session mapper for opto fiber benchmark"""
 
+import argparse
+import json
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -243,5 +245,16 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
 
 
 if __name__ == "__main__":
-    job_settings = JobSettings()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config_json_path",
+        type=str,
+        required=True,
+        help="Path to the config json file with parameters",
+    )
+    args = parser.parse_args()
+    with open(Path(args.config_json_path), "r") as f:
+        config = json.load(f)
+    print(config)
+    job_settings = JobSettings(**config)
     OptoFiberBenchmark(job_settings).run_job()
