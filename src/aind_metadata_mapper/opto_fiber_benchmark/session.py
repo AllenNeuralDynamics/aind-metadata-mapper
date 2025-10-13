@@ -98,7 +98,7 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
 
         end_time = start_time + pd.to_timedelta(
             (
-                self.job_settings.opto.baseline_duration
+                self.job_settings.opto.pulse_train_duration[0]
                 + self.job_settings.opto.pulse_train_interval
             )
             * self.job_settings.opto.number_pulse_trains[0],
