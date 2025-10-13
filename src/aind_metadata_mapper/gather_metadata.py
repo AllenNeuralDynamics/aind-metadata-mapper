@@ -328,7 +328,7 @@ class GatherMetadataJob:
         )
         return metadata
 
-    def validate_and_create_metadata(self, core_metadata: Dict[str, Any]) -> Metadata:
+    def validate_and_create_metadata(self, core_metadata: Dict[str, Any]) -> Metadata | dict:
         """
         Validate core metadata and create Metadata object
 

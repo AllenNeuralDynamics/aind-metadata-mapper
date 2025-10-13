@@ -476,7 +476,7 @@ class TestIntegrationMetadata(unittest.TestCase):
             strict_job.validate_and_create_metadata(core_metadata)
 
     def test_validate_and_create_metadata_success_with_location(self):
-        """Test validate_and_create_metadata with location field using real metadata resources"""
+        """Test validate_and_create_metadata with location field using valid real metadata resources"""
         # Create job settings with location specified
         location_settings = JobSettings(
             metadata_dir="/test/metadata",
@@ -488,7 +488,7 @@ class TestIntegrationMetadata(unittest.TestCase):
         )
         location_job = GatherMetadataJob(settings=location_settings)
 
-        # Load real metadata files
+        # Load real metadata files (these should be valid)
         data_description = self._load_resource_file(V2_METADATA_DIR, "data_description.json")
         subject = self._load_resource_file(V2_METADATA_DIR, "subject.json")
         acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
@@ -497,7 +497,6 @@ class TestIntegrationMetadata(unittest.TestCase):
         processing = self._load_resource_file(V2_METADATA_DIR, "processing.json")
         quality_control = self._load_resource_file(V2_METADATA_DIR, "quality_control.json")
 
-        # Create core metadata dictionary
         core_metadata = {
             "data_description": data_description,
             "subject": subject,
@@ -508,20 +507,15 @@ class TestIntegrationMetadata(unittest.TestCase):
             "quality_control": quality_control,
         }
 
-        # Test validation with location
+        # With valid data, this should return a Metadata object
         metadata = location_job.validate_and_create_metadata(core_metadata)
 
-        # Verify the result has the location field set
-        self.assertIsInstance(metadata, (Metadata, dict))
-        if isinstance(metadata, Metadata):
-            self.assertEqual(metadata.location, "s3://my-bucket/my-data")
-        else:
-            # If it's a dict (from create_metadata_json), check the location field
-            self.assertEqual(metadata.get("location"), "s3://my-bucket/my-data")
+        self.assertIsInstance(metadata, Metadata)
+        self.assertEqual(metadata.location, "s3://my-bucket/my-data")
 
     def test_validate_and_create_metadata_success_without_location(self):
-        """Test validate_and_create_metadata without location field (default None) using real metadata resources"""
-        # Load real metadata files
+        """Test validate_and_create_metadata without location field using valid real metadata resources"""
+        # Load real metadata files (these should be valid)
         data_description = self._load_resource_file(V2_METADATA_DIR, "data_description.json")
         subject = self._load_resource_file(V2_METADATA_DIR, "subject.json")
         acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
@@ -530,7 +524,6 @@ class TestIntegrationMetadata(unittest.TestCase):
         processing = self._load_resource_file(V2_METADATA_DIR, "processing.json")
         quality_control = self._load_resource_file(V2_METADATA_DIR, "quality_control.json")
 
-        # Create core metadata dictionary
         core_metadata = {
             "data_description": data_description,
             "subject": subject,
@@ -541,16 +534,83 @@ class TestIntegrationMetadata(unittest.TestCase):
             "quality_control": quality_control,
         }
 
-        # Test validation without location (should default to empty string)
+        # With valid data, this should return a Metadata object
         metadata = self.job.validate_and_create_metadata(core_metadata)
 
-        # Verify the result has location set to empty string (default behavior)
-        self.assertIsInstance(metadata, (Metadata, dict))
-        if isinstance(metadata, Metadata):
-            self.assertEqual(metadata.location, "")
-        else:
-            # If it's a dict (from create_metadata_json), check the location field
-            self.assertEqual(metadata.get("location"), "")
+        self.assertIsInstance(metadata, Metadata)
+        self.assertEqual(metadata.location, "")
+
+    def test_validate_and_create_metadata_failure_fallback_with_location(self):
+        """Test validate_and_create_metadata fallback with location field using real metadata with invalid field"""
+        # Create job settings with location specified
+        location_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            subject_id="804670",
+            project_name="Visual Behavior",
+            modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+            metadata_service_url="http://test-service.com",
+            location="s3://my-bucket/my-data",
+            raise_if_invalid=False,  # Explicit for clarity
+        )
+        location_job = GatherMetadataJob(settings=location_settings)
+
+        # Load ALL real metadata files
+        data_description = self._load_resource_file(V2_METADATA_DIR, "data_description.json")
+        subject = self._load_resource_file(V2_METADATA_DIR, "subject.json")
+        acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
+        procedures = self._load_resource_file(V2_METADATA_DIR, "procedures.json")
+        instrument = self._load_resource_file(V2_METADATA_DIR, "instrument.json")
+        processing = self._load_resource_file(V2_METADATA_DIR, "processing.json")
+        quality_control = self._load_resource_file(V2_METADATA_DIR, "quality_control.json")
+
+        # Remove required subject_id field to cause Metadata validation to fail
+        del data_description["subject_id"]
+
+        core_metadata = {
+            "data_description": data_description,
+            "subject": subject,
+            "acquisition": acquisition,
+            "procedures": procedures,
+            "instrument": instrument,
+            "processing": processing,
+            "quality_control": quality_control,
+        }
+
+        # With invalid data and raise_if_invalid=False, should return dict from create_metadata_json
+        metadata = location_job.validate_and_create_metadata(core_metadata)
+
+        self.assertIsInstance(metadata, dict)
+        self.assertEqual(metadata["location"], "s3://my-bucket/my-data")
+
+    def test_validate_and_create_metadata_failure_fallback_without_location(self):
+        """Test validate_and_create_metadata fallback without location field using real metadata with invalid field"""
+        # Load ALL real metadata files
+        data_description = self._load_resource_file(V2_METADATA_DIR, "data_description.json")
+        subject = self._load_resource_file(V2_METADATA_DIR, "subject.json")
+        acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
+        procedures = self._load_resource_file(V2_METADATA_DIR, "procedures.json")
+        instrument = self._load_resource_file(V2_METADATA_DIR, "instrument.json")
+        processing = self._load_resource_file(V2_METADATA_DIR, "processing.json")
+        quality_control = self._load_resource_file(V2_METADATA_DIR, "quality_control.json")
+
+        # Remove required name subject_id to cause Metadata validation to fail
+        del data_description["subject_id"]
+
+        core_metadata = {
+            "data_description": data_description,
+            "subject": subject,
+            "acquisition": acquisition,
+            "procedures": procedures,
+            "instrument": instrument,
+            "processing": processing,
+            "quality_control": quality_control,
+        }
+
+        # With invalid data and raise_if_invalid=False (default), should return dict from create_metadata_json
+        metadata = self.job.validate_and_create_metadata(core_metadata)
+
+        self.assertIsInstance(metadata, dict)
+        self.assertEqual(metadata["location"], "")
 
 
 if __name__ == "__main__":
