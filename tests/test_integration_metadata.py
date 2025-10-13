@@ -409,14 +409,10 @@ class TestIntegrationMetadata(unittest.TestCase):
             },
         }
 
-        # Capture stdout to verify error messages are printed
-        from io import StringIO
-        import sys
+        # Capture logging output to verify error messages are logged
+        from unittest.mock import patch
 
-        captured_output = StringIO()
-        sys.stdout = captured_output
-
-        try:
+        with patch("logging.warning") as mock_warning:
             # This should trigger the ValidationError path and use create_metadata_json fallback
             # Default raise_if_invalid=False should not raise an exception
             result = self.job.validate_and_create_metadata(core_metadata)
@@ -424,13 +420,10 @@ class TestIntegrationMetadata(unittest.TestCase):
             # Verify the result is returned (either as dict or Metadata object)
             self.assertIsNotNone(result)
 
-            # Verify error messages were printed to stdout
-            output = captured_output.getvalue()
-            self.assertIn("Validation Errors Found:", output)
-
-        finally:
-            # Restore stdout
-            sys.stdout = sys.__stdout__
+            # Verify error messages were logged
+            mock_warning.assert_called()
+            warning_calls = [call[0][0] for call in mock_warning.call_args_list]
+            self.assertTrue(any("Validation Errors Found:" in call for call in warning_calls))
 
     def test_validate_and_create_metadata_with_raise_if_invalid_true(self):
         """Test validate_and_create_metadata with raise_if_invalid=True - should raise ValidationError"""
