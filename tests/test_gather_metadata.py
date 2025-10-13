@@ -439,8 +439,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get_file.assert_called_once_with(file_name="model.json")
 
     # Tests for validate_and_create_metadata method
-    def test_validate_and_create_metadata_success(self):
-        """Test validate_and_create_metadata when validation succeeds"""
+    def test_validate_and_create_metadata_success_with_raise_if_invalid_false(self):
+        """Test validate_and_create_metadata when validation succeeds with raise_if_invalid=False (default)"""
         core_metadata = {
             "data_description": {
                 "name": "test_dataset",
@@ -459,6 +459,92 @@ class TestGatherMetadataJob(unittest.TestCase):
             mock_instance = MagicMock()
             mock_metadata.return_value = mock_instance
             result = self.job.validate_and_create_metadata(core_metadata)
+            self.assertEqual(result, mock_instance)
+
+    def test_validate_and_create_metadata_success_with_raise_if_invalid_true(self):
+        """Test validate_and_create_metadata when validation succeeds with raise_if_invalid=True"""
+        # Create job with raise_if_invalid=True
+        strict_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+            metadata_service_url="http://test-service.com",
+            raise_if_invalid=True,
+        )
+        strict_job = GatherMetadataJob(settings=strict_settings)
+
+        core_metadata = {
+            "data_description": {
+                "name": "test_dataset",
+                "creation_time": "2023-01-01T12:00:00",
+                "institution": {"name": "Allen Institute for Neural Dynamics"},
+                "data_level": "processed",  # Use processed to avoid subject_id requirement
+                "modalities": ["Behavior videos"],
+                "project_name": "Test Project",
+                "funding_source": [{"funder": "Test Funder"}],
+                "investigators": [{"name": "Test Investigator"}],
+            }
+        }
+
+        # Mock Metadata to avoid actual validation
+        with patch("aind_metadata_mapper.gather_metadata.Metadata") as mock_metadata:
+            mock_instance = MagicMock()
+            mock_metadata.return_value = mock_instance
+            result = strict_job.validate_and_create_metadata(core_metadata)
+            self.assertEqual(result, mock_instance)
+
+    def test_validate_and_create_metadata_with_location_field(self):
+        """Test validate_and_create_metadata passes location field to Metadata constructor"""
+        # Create job with location specified
+        location_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+            metadata_service_url="http://test-service.com",
+            location="s3://my-bucket/my-data",
+        )
+        location_job = GatherMetadataJob(settings=location_settings)
+
+        core_metadata = {
+            "data_description": {
+                "name": "test_dataset",
+            }
+        }
+
+        # Mock Metadata constructor to verify location is passed
+        with patch("aind_metadata_mapper.gather_metadata.Metadata") as mock_metadata:
+            mock_instance = MagicMock()
+            mock_metadata.return_value = mock_instance
+
+            result = location_job.validate_and_create_metadata(core_metadata)
+
+            # Verify Metadata was called with the location parameter
+            mock_metadata.assert_called_once()
+            call_args = mock_metadata.call_args
+            self.assertEqual(call_args.kwargs["location"], "s3://my-bucket/my-data")
+            self.assertEqual(result, mock_instance)
+
+    def test_validate_and_create_metadata_without_location_field(self):
+        """Test validate_and_create_metadata uses empty string when location is None"""
+        core_metadata = {
+            "data_description": {
+                "name": "test_dataset",
+            }
+        }
+
+        # Mock Metadata constructor to verify location defaults to empty string
+        with patch("aind_metadata_mapper.gather_metadata.Metadata") as mock_metadata:
+            mock_instance = MagicMock()
+            mock_metadata.return_value = mock_instance
+
+            result = self.job.validate_and_create_metadata(core_metadata)
+
+            # Verify Metadata was called with empty string for location
+            mock_metadata.assert_called_once()
+            call_args = mock_metadata.call_args
+            self.assertEqual(call_args.kwargs["location"], "")
             self.assertEqual(result, mock_instance)
 
     # Tests for run_job method

@@ -28,9 +28,7 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
     )
     location: Optional[str] = Field(
         default=None,
-        description=(
-            "Location to be set in the metadata. If None, location will not be set."
-        ),
+        description=("Location to be set in the metadata. If None, location will not be set."),
     )
     # Metadata settings
     subject_id: str = Field(
