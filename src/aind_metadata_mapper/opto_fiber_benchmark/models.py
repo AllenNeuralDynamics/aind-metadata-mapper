@@ -44,6 +44,7 @@ class OptoJobSettings(BaseJobSettings):
 
     # Stimulus epoch laser configs
     wavelength: int = Field(..., title="Wavelength (nm)")
+    laser_name: str = Field(..., title="Name of laser model")
     power: float = Field(..., title="Excitation power")
 
 

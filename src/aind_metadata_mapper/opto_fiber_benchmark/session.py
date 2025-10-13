@@ -8,10 +8,12 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 import pandas as pd
+from aind_data_schema.components.devices import Software
 from aind_data_schema.components.stimulus import OptoStimulation
 from aind_data_schema.core.session import (
     DetectorConfig,
     FiberConnectionConfig,
+    LaserConfig,
     LightEmittingDiodeConfig,
     Session,
     StimulusEpoch,
@@ -160,7 +162,6 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
             animal_weight_prior=self.job_settings.fiber.animal_weight_prior,
         )
 
-        # TODO: add Software and laser config information
         stimulus_epoch = StimulusEpoch(
             stimulus_start_time=stim_epoch_information["stimulus_start_time"],
             stimulus_end_time=stim_epoch_information["stimulus_end_time"],
@@ -185,6 +186,23 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
                         self.job_settings.opto.pulse_train_interval
                     ),
                     baseline_duration=self.job_settings.opto.baseline_duration,
+                )
+            ],
+            light_source_config=[
+                LaserConfig(
+                    name=self.job_settings.opto.laser_name,
+                    wavelength=self.job_settings.opto.wavelength,
+                    excitation_power=self.job_settings.opto.power,
+                )
+            ],
+            software=[
+                Software(
+                    name="FIP_DAQ_Control_IndicatorBenchmarking",
+                    version="0.1.0",
+                    url=str(
+                        "https://github.com/AllenNeuralDynamics/"
+                        "FIP_DAQ_Control_IndicatorBenchmarking"
+                    ),
                 )
             ],
         )
@@ -235,12 +253,17 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
         extracted_data = self._extract()
         transformed_data = self._transfrom(extracted_data)
         transformed_data.write_standard_file(
-            output_directory=Path(self.job_settings.fiber.data_directory)
+            output_directory=Path(
+                self.job_settings.fiber.data_directory.parent
+            )
         )
 
         return JobResponse(
             status_code=200,
-            message=f"Wrote model to {self.job_settings.fiber.data_directory}",
+            message=str(
+                "Wrote model to "
+                f"{self.job_settings.fiber.data_directory.parent}"
+            ),
         )
 
 
