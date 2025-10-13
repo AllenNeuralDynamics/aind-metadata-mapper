@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings
 class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=True):
     """Settings required to fetch metadata from metadata service"""
 
+    # Job settings
     metadata_dir: str = Field(
         ...,
         description=(
@@ -18,6 +19,20 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
             "directory, an attempt will be made to create it and save it here."
         ),
     )
+    raise_if_invalid: bool = Field(
+        default=False,
+        description=(
+            "If True, GatherMetadataJob will raise an error if the fetched metadata is invalid. "
+            "If False, log a warning and continue."
+        ),
+    )
+    location: Optional[str] = Field(
+        default=None,
+        description=(
+            "Location to be set in the metadata. If None, location will not be set."
+        ),
+    )
+    # Metadata settings
     subject_id: str = Field(
         default=...,
         description=("Subject ID. Will be used to download metadata from a service."),

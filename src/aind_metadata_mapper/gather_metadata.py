@@ -299,6 +299,35 @@ class GatherMetadataJob:
         with open(output_file, "w") as f:
             json.dump(contents, f, indent=3, ensure_ascii=False, sort_keys=True)
 
+    def _construct_metadata(self, core_metadata: Dict[str, Any]) -> Metadata:
+        """
+        Construct Metadata object from core metadata dictionary
+
+        Parameters
+        ----------
+        core_metadata : Dict[str, Any]
+            Dictionary containing all core metadata
+
+        Returns
+        -------
+        Metadata
+            The constructed metadata object
+        """
+        name = core_metadata["data_description"]["name"]
+        metadata = Metadata(
+            subject=core_metadata.get("subject"),
+            data_description=core_metadata.get("data_description"),
+            procedures=core_metadata.get("procedures"),
+            acquisition=core_metadata.get("acquisition"),
+            instrument=core_metadata.get("instrument"),
+            processing=core_metadata.get("processing"),
+            quality_control=core_metadata.get("quality_control"),
+            model=core_metadata.get("model"),
+            name=name,
+            location=self.settings.location if self.settings.location else "",
+        )
+        return metadata
+
     def validate_and_create_metadata(self, core_metadata: Dict[str, Any]) -> Metadata:
         """
         Validate core metadata and create Metadata object
@@ -317,49 +346,41 @@ class GatherMetadataJob:
 
         name = core_metadata["data_description"]["name"]
 
-        # Try to create a valid Metadata object first
-        try:
-            metadata = Metadata(
-                subject=core_metadata.get("subject"),
-                data_description=core_metadata.get("data_description"),
-                procedures=core_metadata.get("procedures"),
-                acquisition=core_metadata.get("acquisition"),
-                instrument=core_metadata.get("instrument"),
-                processing=core_metadata.get("processing"),
-                quality_control=core_metadata.get("quality_control"),
-                model=core_metadata.get("model"),
-                name=name,
-                location="",  # Location will be set by the transfer service
-            )
-            logging.info("Metadata validation successful!")
-            return metadata
+        if self.settings.raise_if_invalid:
+            return self._construct_metadata(core_metadata)
+        else:
+            # Try to create a valid Metadata object first
+            try:
+                metadata = self._construct_metadata(core_metadata)
+                logging.info("Metadata validation successful!")
+                return metadata
 
-        except ValidationError as e:
-            logging.warning(f"Metadata validation failed: {e}")
-            logging.info("Creating metadata object with validation bypass")
+            except ValidationError as e:
+                logging.warning(f"Metadata validation failed: {e}")
+                logging.info("Creating metadata object with validation bypass")
 
-            # Display validation errors to user
-            print("Validation Errors Found:")
-            for error in e.errors():
-                print(f"  - {error['loc']}: {error['msg']}")
-            print()
+                # Display validation errors to user
+                print("Validation Errors Found:")
+                for error in e.errors():
+                    print(f"  - {error['loc']}: {error['msg']}")
+                print()
 
-            # Use create_metadata_json to construct metadata object
-            metadata = create_metadata_json(
-                core_jsons={
-                    "subject": core_metadata.get("subject"),
-                    "data_description": core_metadata.get("data_description"),
-                    "procedures": core_metadata.get("procedures"),
-                    "acquisition": core_metadata.get("acquisition"),
-                    "instrument": core_metadata.get("instrument"),
-                    "processing": core_metadata.get("processing"),
-                    "quality_control": core_metadata.get("quality_control"),
-                    "model": core_metadata.get("model"),
-                },
-                name=name,
-                location="",  # Location will be set by the transfer service
-            )
-            return metadata
+                # Use create_metadata_json to construct metadata object
+                metadata = create_metadata_json(
+                    core_jsons={
+                        "subject": core_metadata.get("subject"),
+                        "data_description": core_metadata.get("data_description"),
+                        "procedures": core_metadata.get("procedures"),
+                        "acquisition": core_metadata.get("acquisition"),
+                        "instrument": core_metadata.get("instrument"),
+                        "processing": core_metadata.get("processing"),
+                        "quality_control": core_metadata.get("quality_control"),
+                        "model": core_metadata.get("model"),
+                    },
+                    name=name,
+                    location=self.settings.location if self.settings.location else "",
+                )
+                return metadata
 
     def run_job(self) -> None:
         """Run job"""
