@@ -642,6 +642,211 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual(len(model_calls), 1)
         self.assertEqual(model_calls[0][0][1], {"model_name": "test_model"})
 
+    def test_merge_models_instruments(self):
+        """Test _merge_models with instrument objects"""
+        from aind_data_schema.core.instrument import Instrument
+        import json
+        
+        with open(TEST_DIR / "resources" / "v2_metadata" / "instrument.json") as f:
+            base_instrument = json.load(f)
+        
+        instrument1 = base_instrument.copy()
+        instrument2 = base_instrument.copy()
+        
+        result = self.job._merge_models(Instrument, [instrument1, instrument2])
+        
+        self.assertIsInstance(result, dict)
+        self.assertIn("instrument_id", result)
+
+    def test_merge_models_acquisition(self):
+        """Test _merge_models with acquisition objects"""
+        from aind_data_schema.core.acquisition import Acquisition
+        import json
+        
+        with open(TEST_DIR / "resources" / "v2_metadata" / "acquisition.json") as f:
+            base_acquisition = json.load(f)
+        
+        if "subject_details" in base_acquisition:
+            del base_acquisition["subject_details"]
+        
+        acquisition1 = base_acquisition.copy()
+        acquisition2 = base_acquisition.copy()
+        
+        result = self.job._merge_models(Acquisition, [acquisition1, acquisition2])
+        
+        self.assertIsInstance(result, dict)
+        self.assertIn("acquisition_start_time", result)
+
+    def test_get_instrument_multiple_files(self):
+        """Test get_instrument with multiple instrument files"""
+        import tempfile
+        import shutil
+        import json
+        
+        temp_dir = tempfile.mkdtemp()
+        test_settings = JobSettings(
+            metadata_dir=temp_dir,
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
+        test_job = GatherMetadataJob(settings=test_settings)
+        
+        try:
+            with open(TEST_DIR / "resources" / "v2_metadata" / "instrument.json") as f:
+                base_instrument = json.load(f)
+            
+            instrument1 = base_instrument.copy()
+            instrument2 = base_instrument.copy()
+            
+            with open(os.path.join(temp_dir, "instrument_123.json"), "w") as f:
+                json.dump(instrument1, f)
+                
+            with open(os.path.join(temp_dir, "instrument_456.json"), "w") as f:
+                json.dump(instrument2, f)
+            
+            result = test_job.get_instrument()
+            
+            self.assertIsNotNone(result)
+            self.assertIsInstance(result, dict)
+            self.assertIn("instrument_id", result)
+            
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_acquisition_multiple_files(self):
+        """Test get_acquisition with multiple acquisition files"""
+        import tempfile
+        import shutil
+        import json
+        
+        temp_dir = tempfile.mkdtemp()
+        test_settings = JobSettings(
+            metadata_dir=temp_dir,
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
+        test_job = GatherMetadataJob(settings=test_settings)
+        
+        try:
+            with open(TEST_DIR / "resources" / "v2_metadata" / "acquisition.json") as f:
+                base_acquisition = json.load(f)
+            
+            if "subject_details" in base_acquisition:
+                del base_acquisition["subject_details"]
+            
+            acquisition1 = base_acquisition.copy()
+            acquisition2 = base_acquisition.copy()
+            
+            with open(os.path.join(temp_dir, "acquisition_789.json"), "w") as f:
+                json.dump(acquisition1, f)
+                
+            with open(os.path.join(temp_dir, "acquisition_012.json"), "w") as f:
+                json.dump(acquisition2, f)
+            
+            result = test_job.get_acquisition()
+            
+            self.assertIsNotNone(result)
+            self.assertIsInstance(result, dict)
+            self.assertIn("acquisition_start_time", result)
+            
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_quality_control_multiple_files(self):
+        """Test get_quality_control with multiple quality control files"""
+        import tempfile
+        import shutil
+        import json
+        
+        temp_dir = tempfile.mkdtemp()
+        test_settings = JobSettings(
+            metadata_dir=temp_dir,
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
+        test_job = GatherMetadataJob(settings=test_settings)
+        
+        try:
+            with open(TEST_DIR / "resources" / "v2_metadata" / "quality_control.json") as f:
+                base_qc = json.load(f)
+            
+            qc1 = base_qc.copy()
+            qc2 = base_qc.copy()
+            
+            with open(os.path.join(temp_dir, "quality_control_345.json"), "w") as f:
+                json.dump(qc1, f)
+                
+            with open(os.path.join(temp_dir, "quality_control_678.json"), "w") as f:
+                json.dump(qc2, f)
+            
+            result = test_job.get_quality_control()
+            
+            self.assertIsNotNone(result)
+            self.assertIsInstance(result, dict)
+            self.assertIn("metrics", result)
+            
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_prefixed_files_no_matches(self):
+        """Test _get_prefixed_files_from_user_defined_directory with no matching files"""
+        import tempfile
+        import shutil
+        import json
+        
+        temp_dir = tempfile.mkdtemp()
+        test_settings = JobSettings(
+            metadata_dir=temp_dir,
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
+        test_job = GatherMetadataJob(settings=test_settings)
+        
+        try:
+            with open(os.path.join(temp_dir, "other_file.json"), "w") as f:
+                json.dump({"data": "test"}, f)
+            
+            result = test_job._get_prefixed_files_from_user_defined_directory("instrument")
+            
+            self.assertEqual(result, [])
+            
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_prefixed_files_mixed_extensions(self):
+        """Test _get_prefixed_files_from_user_defined_directory ignores non-json files"""
+        import tempfile
+        import shutil
+        import json
+        
+        temp_dir = tempfile.mkdtemp()
+        test_settings = JobSettings(
+            metadata_dir=temp_dir,
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
+        test_job = GatherMetadataJob(settings=test_settings)
+        
+        try:
+            with open(os.path.join(temp_dir, "instrument_123.json"), "w") as f:
+                json.dump({"instrument_id": "test"}, f)
+                
+            with open(os.path.join(temp_dir, "instrument_456.txt"), "w") as f:
+                f.write("not json")
+            
+            result = test_job._get_prefixed_files_from_user_defined_directory("instrument")
+            
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result[0]["instrument_id"], "test")
+            
+        finally:
+            shutil.rmtree(temp_dir)
+
 
 if __name__ == "__main__":
     unittest.main()
