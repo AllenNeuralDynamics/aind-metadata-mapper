@@ -88,7 +88,7 @@ class GatherMetadataJob:
         """
         if not os.path.exists(self.settings.metadata_dir):
             return []
-            
+
         file_paths = [
             os.path.join(self.settings.metadata_dir, f)
             for f in os.listdir(self.settings.metadata_dir)
@@ -268,7 +268,7 @@ class GatherMetadataJob:
             else:
                 logging.debug("No acquisition metadata file found.")
                 return None
-    
+
     def _merge_models(self, model_class, models: list[dict]) -> dict:
         """Merge multiple metadata dictionaries into one."""
         model_objs = [model_class.model_validate(model) for model in models]
@@ -276,7 +276,7 @@ class GatherMetadataJob:
         merged_model = model_objs[0]
         for model in model_objs[1:]:
             merged_model = merged_model + model
-        
+
         return merged_model.model_dump()
 
     def get_instrument(self) -> Optional[dict]:
