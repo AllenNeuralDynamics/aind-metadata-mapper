@@ -125,7 +125,9 @@ class Camstim:
         timestamps = sync.get_ophys_stimulus_timestamps(
             self.sync_data, self.pkl_path
         )
-        timestamps_delay = stim_utils.extract_frame_times_with_delay(self.sync_data)
+        timestamps_delay = stim_utils.extract_frame_times_with_delay(
+            self.sync_data
+        )
         # add delay to each timestamp
         timestamps = [ts + timestamps_delay for ts in timestamps]
         behavior_table = behavior_utils.from_stimulus_file(
@@ -328,14 +330,16 @@ class Camstim:
         'stim_name' field of the table changes.
 
         For each epoch, every unknown column (not start_time, stop_time,
-        stim_name, stim_type, or frame) are listed as parameters, and the set
-        of values for that column are listed as parameter values.
+        stim_name, stim_type, or frame) are listed as parameters,
+        and the set for that column are listed as parameter values.
         """
-        # --- Heuristic: if stim_name changes too often, treat as whole-session ---
-        stim_changes = (stim_table["stim_name"] != stim_table["stim_name"].shift()).sum()
+        # --- Heuristic: if image changes often, treat as one-session ---
+        stim_changes = (
+            stim_table["image_name"] != stim_table["image_name"].shift()
+        ).sum()
         change_ratio = stim_changes / len(stim_table)
 
-        # If > e.g. 50% of frames are stim changes, assume randomization
+        # If > e.g. 50% of frames are stim changes
         if change_ratio > 0.50:
             return self.extract_whole_session_epoch(stim_table)
 
@@ -345,11 +349,17 @@ class Camstim:
         epoch_start_idx = 0
 
         for current_idx, row in stim_table.iterrows():
-            if row["stim_name"] == "spontaneous" or row["start_time"] == current_epoch[1]:
+            if (
+                row["stim_name"] == "spontaneous"
+                or row["start_time"] == current_epoch[1]
+            ):
                 continue
 
             if row["stim_name"] != current_epoch[0]:
-                self._summarize_epoch_params(stim_table, current_epoch, epoch_start_idx, current_idx)
+                self._summarize_epoch_params(stim_table,
+                                             current_epoch,
+                                             epoch_start_idx,
+                                             current_idx)
                 epochs.append(current_epoch)
                 epoch_start_idx = current_idx
                 current_epoch = [
@@ -371,7 +381,10 @@ class Camstim:
                 current_epoch[4].add(row["stim_name"])
 
         # Append the final epoch
-        self._summarize_epoch_params(stim_table, current_epoch, epoch_start_idx, current_idx)
+        self._summarize_epoch_params(stim_table,
+                                     current_epoch,
+                                     epoch_start_idx,
+                                     current_idx)
         epochs.append(current_epoch)
 
         # Slice off the default starting epoch
