@@ -334,14 +334,14 @@ class Camstim:
         and the set for that column are listed as parameter values.
         """
         # --- Heuristic: if image changes often, treat as one-session ---
-        try: 
+        try:
             stim_changes = (
                 stim_table["image_name"] != stim_table["image_name"].shift()
             ).sum()
         except KeyError:
             stim_changes = (
                 stim_table["stim_name"] != stim_table["stim_name"].shift()
-            ).sum()           
+            ).sum()       
         change_ratio = stim_changes / len(stim_table)
 
         # If > e.g. 50% of frames are stim changes
