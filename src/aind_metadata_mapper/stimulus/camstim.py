@@ -341,7 +341,7 @@ class Camstim:
         except KeyError:
             stim_changes = (
                 stim_table["stim_name"] != stim_table["stim_name"].shift()
-            ).sum()       
+            ).sum()
         change_ratio = stim_changes / len(stim_table)
 
         # If > e.g. 50% of frames are stim changes
