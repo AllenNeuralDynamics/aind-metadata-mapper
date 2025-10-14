@@ -666,11 +666,11 @@ class TestGatherMetadataJob(unittest.TestCase):
         with open(TEST_DIR / "resources" / "v2_metadata" / "acquisition.json") as f:
             base_acquisition = json.load(f)
         
-        if "subject_details" in base_acquisition:
-            del base_acquisition["subject_details"]
-        
         acquisition1 = base_acquisition.copy()
         acquisition2 = base_acquisition.copy()
+        
+        if "subject_details" in acquisition2:
+            del acquisition2["subject_details"]
         
         result = self.job._merge_models(Acquisition, [acquisition1, acquisition2])
         
