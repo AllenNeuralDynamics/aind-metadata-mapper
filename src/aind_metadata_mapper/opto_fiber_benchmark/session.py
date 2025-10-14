@@ -101,7 +101,8 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
                 self.job_settings.opto.pulse_train_duration[0]
                 + self.job_settings.opto.pulse_train_interval
             )
-            * self.job_settings.opto.number_pulse_trains[0],
+            * self.job_settings.opto.number_pulse_trains[0]
+            * len(self.job_settings.opto.pulse_frequency),
             unit="s",
         )
         end_time = end_time.isoformat()
