@@ -72,6 +72,36 @@ class GatherMetadataJob:
             contents = json.load(f)
         return contents
 
+    def _get_prefixed_files_from_user_defined_directory(self, file_name_prefix: str) -> list[dict]:
+        """
+        Get all files with a given prefix from a user defined directory
+
+        Parameters
+        ----------
+        file_name_prefix : str
+            Prefix, e.g. "instrument"
+
+        Returns
+        -------
+        list[dict]
+            File contents as a list of dictionaries
+        """
+        if not os.path.exists(self.settings.metadata_dir):
+            return []
+
+        file_paths = [
+            os.path.join(self.settings.metadata_dir, f)
+            for f in os.listdir(self.settings.metadata_dir)
+            if f.startswith(file_name_prefix) and f.endswith(".json")
+        ]
+        file_names = [os.path.basename(f) for f in file_paths]
+        logging.info(f"Found {len(file_paths)} {file_name_prefix} files: {file_names}")
+        contents = []
+        for file_path in file_paths:
+            with open(file_path, "r") as f:
+                contents.append(json.load(f))
+        return contents
+
     def get_funding(self) -> tuple[list, list]:
         """Get funding and investigators metadata from the V2 endpoint
 
@@ -234,8 +264,23 @@ class GatherMetadataJob:
             logging.debug(f"Using existing {file_name}.")
             return self._get_file_from_user_defined_directory(file_name=file_name)
         else:
-            logging.debug("No acquisition metadata file found.")
-            return None
+            files = self._get_prefixed_files_from_user_defined_directory(file_name_prefix="acquisition")
+            if files:
+                return self._merge_models(Acquisition, files)
+            else:
+                logging.debug("No acquisition metadata file found.")
+                return None
+
+    def _merge_models(self, model_class, models: list[dict]) -> dict:
+        """Merge multiple metadata dictionaries into one."""
+        logging.info(f"Merging {len(models)} {model_class.__name__} models.")
+        model_objs = [model_class.model_validate(model) for model in models]
+
+        merged_model = model_objs[0]
+        for model in model_objs[1:]:
+            merged_model = merged_model + model
+
+        return merged_model.model_dump()
 
     def get_instrument(self) -> Optional[dict]:
         """Get instrument metadata"""
@@ -246,8 +291,12 @@ class GatherMetadataJob:
             logging.debug(f"Using existing {file_name}.")
             return self._get_file_from_user_defined_directory(file_name=file_name)
         else:
-            logging.debug("No instrument metadata file found.")
-            return None
+            files = self._get_prefixed_files_from_user_defined_directory(file_name_prefix="instrument")
+            if files:
+                return self._merge_models(Instrument, files)
+            else:
+                logging.debug("No instrument metadata file found.")
+                return None
 
     def get_processing(self) -> Optional[dict]:
         """Get processing metadata"""
@@ -270,8 +319,12 @@ class GatherMetadataJob:
             logging.debug(f"Using existing {file_name}.")
             return self._get_file_from_user_defined_directory(file_name=file_name)
         else:
-            logging.debug("No quality control metadata file found.")
-            return None
+            files = self._get_prefixed_files_from_user_defined_directory(file_name_prefix="quality_control")
+            if files:
+                return self._merge_models(QualityControl, files)
+            else:
+                logging.debug("No quality control metadata file found.")
+                return None
 
     def get_model(self) -> Optional[dict]:
         """Get model metadata"""
