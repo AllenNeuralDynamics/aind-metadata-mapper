@@ -94,6 +94,8 @@ class GatherMetadataJob:
             for f in os.listdir(self.settings.metadata_dir)
             if f.startswith(file_name_prefix) and f.endswith(".json")
         ]
+        file_names = [os.path.basename(f) for f in file_paths]
+        logging.info(f"Found {len(file_paths)} {file_name_prefix} files: {file_names}")
         contents = []
         for file_path in file_paths:
             with open(file_path, "r") as f:
@@ -271,6 +273,7 @@ class GatherMetadataJob:
 
     def _merge_models(self, model_class, models: list[dict]) -> dict:
         """Merge multiple metadata dictionaries into one."""
+        logging.info(f"Merging {len(models)} {model_class.__name__} models.")
         model_objs = [model_class.model_validate(model) for model in models]
 
         merged_model = model_objs[0]
