@@ -1,6 +1,8 @@
 """Tests for FIP mapper."""
 
+import json
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from aind_metadata_mapper.fip.mapper import FIPMapper
@@ -27,70 +29,9 @@ class TestFIPMapper(unittest.TestCase):
         )
         self.patcher_measurements.start()
         self.patcher_fibers.start()
-
-        self.example_intermediate_data = {
-            "job_settings_name": "FIP",
-            "experimenter_full_name": ["Foo Bar", "Test User"],
-            "session_start_time": "2025-07-18T12:32:35.275046-07:00",
-            "session_end_time": "2025-07-18T12:49:22.448358-07:00",
-            "subject_id": "12345",
-            "rig_id": "FIP_Rig_1",
-            "mouse_platform_name": "wheel",
-            "active_mouse_platform": False,
-            "data_streams": [],
-            "session_type": "FIP",
-            "ethics_review_id": "2115",
-            "notes": "Test session",
-            "anaesthesia": None,
-            "animal_weight_post": 25.5,
-            "animal_weight_prior": 25.3,
-            "protocol_id": [],
-            "data_directory": "/data/test",
-            "data_files": [],
-            "rig_config": {
-                "rig_name": "FIP_Rig_1",
-                "camera_green_iso": {
-                    "device_type": "FipCamera",
-                    "name": "FipCamera",
-                    "serial_number": "24521418",
-                    "gain": 0.0,
-                },
-                "camera_red": {
-                    "device_type": "FipCamera",
-                    "name": "FipCamera",
-                    "serial_number": "24521421",
-                    "gain": 1.5,
-                },
-                "light_source_uv": {
-                    "device_type": "LightSource",
-                    "name": "LightSource",
-                    "power": 1.0,
-                },
-                "light_source_blue": {
-                    "device_type": "LightSource",
-                    "name": "LightSource",
-                    "power": 0.8,
-                },
-                "cuttlefish_fip": {
-                    "device_type": "cuTTLefishFip",
-                    "name": "cuTTLefishFip",
-                    "who_am_i": 1407,
-                },
-                "roi_settings": {
-                    "camera_green_iso_roi": [
-                        {"center": {"x": 50.0, "y": 50.0}, "radius": 20.0},
-                        {"center": {"x": 150.0, "y": 150.0}, "radius": 20.0},
-                    ],
-                    "camera_red_roi": [{"center": {"x": 50.0, "y": 50.0}, "radius": 20.0}],
-                },
-            },
-            "session_config": {
-                "experiment": "AindPhysioFip",
-                "experimenter": ["Foo Bar", "Test User"],
-                "subject": "12345",
-            },
-            "output_directory": "/output/test",
-        }
+        # Load fixture of example intermediate data
+        with open("tests/fixtures/fip_intermediate.json", "r", encoding="utf-8") as f:
+            self.example_intermediate_data = json.load(f)
 
     def tearDown(self):
         """Clean up test fixtures."""
@@ -104,7 +45,7 @@ class TestFIPMapper(unittest.TestCase):
 
     def test_transform_basic(self):
         """Test basic transformation from intermediate to Acquisition."""
-        acquisition = self.mapper.transform(self.example_intermediate_data)
+        acquisition = self.mapper._transform(SimpleNamespace(**self.example_intermediate_data))
 
         self.assertEqual(acquisition.subject_id, "12345")
         self.assertEqual(acquisition.instrument_id, "FIP_Rig_1")
@@ -114,7 +55,7 @@ class TestFIPMapper(unittest.TestCase):
 
     def test_ethics_review_id_mapping(self):
         """Test ethics review ID is correctly mapped to ethics_review_id list."""
-        acquisition = self.mapper.transform(self.example_intermediate_data)
+        acquisition = self.mapper._transform(SimpleNamespace(**self.example_intermediate_data))
 
         self.assertIsNotNone(acquisition.ethics_review_id)
         self.assertEqual(len(acquisition.ethics_review_id), 1)
@@ -125,12 +66,12 @@ class TestFIPMapper(unittest.TestCase):
         data = self.example_intermediate_data.copy()
         data["ethics_review_id"] = None
 
-        acquisition = self.mapper.transform(data)
+        acquisition = self.mapper._transform(SimpleNamespace(**data))
         self.assertIsNone(acquisition.ethics_review_id)
 
     def test_subject_details(self):
         """Test subject details are correctly mapped."""
-        acquisition = self.mapper.transform(self.example_intermediate_data)
+        acquisition = self.mapper._transform(SimpleNamespace(**self.example_intermediate_data))
 
         self.assertIsNotNone(acquisition.subject_details)
         self.assertEqual(acquisition.subject_details.mouse_platform_name, "wheel")
@@ -139,7 +80,7 @@ class TestFIPMapper(unittest.TestCase):
 
     def test_data_stream_created(self):
         """Test data stream is created with correct modality."""
-        acquisition = self.mapper.transform(self.example_intermediate_data)
+        acquisition = self.mapper._transform(SimpleNamespace(**self.example_intermediate_data))
 
         self.assertEqual(len(acquisition.data_streams), 1)
         data_stream = acquisition.data_streams[0]
@@ -151,7 +92,7 @@ class TestFIPMapper(unittest.TestCase):
 
     def test_active_devices(self):
         """Test active devices list is populated."""
-        acquisition = self.mapper.transform(self.example_intermediate_data)
+        acquisition = self.mapper._transform(SimpleNamespace(**self.example_intermediate_data))
         data_stream = acquisition.data_streams[0]
 
         self.assertIn("FIP_Rig_1", data_stream.active_devices)
@@ -193,18 +134,18 @@ class TestFIPMapper(unittest.TestCase):
         data["session_start_time"] = "2025-07-18T13:00:00-07:00"
         data["session_end_time"] = "2025-07-18T12:00:00-07:00"
 
-        acquisition = self.mapper.transform(data)
+        acquisition = self.mapper._transform(SimpleNamespace(**data))
 
         self.assertLess(acquisition.acquisition_start_time, acquisition.acquisition_end_time)
 
     def test_notes_preserved(self):
         """Test notes field is preserved."""
-        acquisition = self.mapper.transform(self.example_intermediate_data)
+        acquisition = self.mapper._transform(SimpleNamespace(**self.example_intermediate_data))
         self.assertEqual(acquisition.notes, "Test session")
 
     def test_stimulus_epochs_empty(self):
         """Test stimulus_epochs is an empty list (FIP typically has no stimuli)."""
-        acquisition = self.mapper.transform(self.example_intermediate_data)
+        acquisition = self.mapper._transform(SimpleNamespace(**self.example_intermediate_data))
         self.assertEqual(len(acquisition.stimulus_epochs), 0)
 
 

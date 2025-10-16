@@ -57,9 +57,14 @@ from aind_data_schema.components.configs import (
 from aind_data_schema.core.acquisition import Acquisition, AcquisitionSubjectDetails, DataStream
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import MassUnit, PowerUnit, SizeUnit, TimeUnit
-from aind_metadata_extractor.models.fip import FIPDataModel
 
 from aind_metadata_mapper.utils import ensure_timezone, get_intended_measurements, get_procedures, write_acquisition
+
+# Optional import for extractor models - gracefully handle when not available
+try:
+    from aind_metadata_extractor.models.fip import FIPDataModel
+except ImportError:
+    FIPDataModel = None
 
 logger = logging.getLogger(__name__)
 
@@ -232,10 +237,15 @@ class FIPMapper:
         Acquisition
             Fully composed acquisition model.
         """
+        if FIPDataModel is None:
+            raise ImportError(
+                "aind_metadata_extractor is required but not installed. "
+                "Install with: pip install aind-metadata-mapper[extractor]"
+            )
         fip_metadata = FIPDataModel.model_validate(metadata)
         return self._transform(fip_metadata)
 
-    def _transform(self, metadata: FIPDataModel) -> Acquisition:
+    def _transform(self, metadata: "FIPDataModel") -> Acquisition:
         """Internal transform method.
 
         Parameters
@@ -531,12 +541,12 @@ class FIPMapper:
                     )
 
                 # Create patch cord if we have channels
-                if channels:
-                    patch_cord = PatchCordConfig(
-                        device_name=f"Patch Cord {fiber_idx}",
-                        channels=channels,
-                    )
-                    configurations.append(patch_cord)
+            if channels:
+                patch_cord = PatchCordConfig(
+                    device_name=f"Patch Cord {fiber_idx}",
+                    channels=channels,
+                )
+                configurations.append(patch_cord)
 
         return configurations
 

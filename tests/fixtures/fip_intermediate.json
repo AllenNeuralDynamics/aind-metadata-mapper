@@ -1,0 +1,65 @@
+{
+  "job_settings_name": "FIP",
+  "experimenter_full_name": ["Foo Bar", "Test User"],
+  "session_start_time": "2025-07-18T12:32:35.275046-07:00",
+  "session_end_time": "2025-07-18T12:49:22.448358-07:00",
+  "subject_id": "12345",
+  "rig_id": "FIP_Rig_1",
+  "mouse_platform_name": "wheel",
+  "active_mouse_platform": false,
+  "data_streams": [],
+  "session_type": "FIP",
+  "ethics_review_id": "2115",
+  "notes": "Test session",
+  "anaesthesia": null,
+  "animal_weight_post": 25.5,
+  "animal_weight_prior": 25.3,
+  "protocol_id": [],
+  "data_directory": "/data/test",
+  "data_files": [],
+  "rig_config": {
+    "rig_name": "FIP_Rig_1",
+    "camera_green_iso": {
+      "device_type": "FipCamera",
+      "name": "FipCamera",
+      "serial_number": "24521418",
+      "gain": 0.0
+    },
+    "camera_red": {
+      "device_type": "FipCamera",
+      "name": "FipCamera",
+      "serial_number": "24521421",
+      "gain": 1.5
+    },
+    "light_source_uv": {
+      "device_type": "LightSource",
+      "name": "LightSource",
+      "power": 1.0
+    },
+    "light_source_blue": {
+      "device_type": "LightSource",
+      "name": "LightSource",
+      "power": 0.8
+    },
+    "cuttlefish_fip": {
+      "device_type": "cuTTLefishFip",
+      "name": "cuTTLefishFip",
+      "who_am_i": 1407
+    },
+    "roi_settings": {
+      "camera_green_iso_roi": [
+        {"center": {"x": 50.0, "y": 50.0}, "radius": 20.0},
+        {"center": {"x": 150.0, "y": 150.0}, "radius": 20.0}
+      ],
+      "camera_red_roi": [
+        {"center": {"x": 50.0, "y": 50.0}, "radius": 20.0}
+      ]
+    }
+  },
+  "session_config": {
+    "experiment": "AindPhysioFip",
+    "experimenter": ["Foo Bar", "Test User"],
+    "subject": "12345"
+  },
+  "output_directory": "/output/test"
+}
