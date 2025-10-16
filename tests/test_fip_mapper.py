@@ -47,11 +47,11 @@ class TestFIPMapper(unittest.TestCase):
         """Test basic transformation from intermediate to Acquisition."""
         acquisition = self.mapper._transform(SimpleNamespace(**self.example_intermediate_data))
 
-        self.assertEqual(acquisition.subject_id, "12345")
-        self.assertEqual(acquisition.instrument_id, "FIP_Rig_1")
+        self.assertEqual(acquisition.subject_id, "test")
+        self.assertEqual(acquisition.instrument_id, "test_rig")
         self.assertEqual(acquisition.acquisition_type, "FIP")
         self.assertEqual(len(acquisition.experimenters), 2)
-        self.assertEqual(acquisition.experimenters[0], "Foo Bar")
+        self.assertEqual(acquisition.experimenters[0], "Foo")
 
     def test_ethics_review_id_mapping(self):
         """Test ethics review ID is correctly mapped to ethics_review_id list."""
@@ -95,7 +95,7 @@ class TestFIPMapper(unittest.TestCase):
         acquisition = self.mapper._transform(SimpleNamespace(**self.example_intermediate_data))
         data_stream = acquisition.data_streams[0]
 
-        self.assertIn("FIP_Rig_1", data_stream.active_devices)
+        self.assertIn("test_rig", data_stream.active_devices)
         self.assertIn("LED_UV", data_stream.active_devices)
         self.assertIn("LED_BLUE", data_stream.active_devices)
         self.assertIn("Camera_Green Iso", data_stream.active_devices)
@@ -141,7 +141,7 @@ class TestFIPMapper(unittest.TestCase):
     def test_notes_preserved(self):
         """Test notes field is preserved."""
         acquisition = self.mapper._transform(SimpleNamespace(**self.example_intermediate_data))
-        self.assertEqual(acquisition.notes, "Test session")
+        self.assertEqual(acquisition.notes, "test session")
 
     def test_stimulus_epochs_empty(self):
         """Test stimulus_epochs is an empty list (FIP typically has no stimuli)."""
