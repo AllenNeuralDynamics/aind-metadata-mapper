@@ -48,7 +48,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo
 
-import requests
 from aind_data_schema.components.configs import (
     Channel,
     DetectorConfig,
@@ -60,6 +59,8 @@ from aind_data_schema.core.acquisition import Acquisition, AcquisitionSubjectDet
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import MassUnit, PowerUnit, SizeUnit, TimeUnit
 from aind_metadata_extractor.models.fip import FIPDataModel
+
+from aind_metadata_mapper.utils import get_intended_measurements, get_procedures, write_acquisition
 
 # NOTE: Wavelength values are currently hardcoded as constants.
 # Ideally, these would be pulled from an instrument configuration file or some
@@ -105,11 +106,8 @@ class FIPMapper:
         """
         self.output_filename = output_filename
 
-    def get_intended_measurements(self, subject_id: str) -> Optional[Dict[str, Dict[str, Optional[str]]]]:
-        """Fetch intended measurements for a subject from the metadata service.
-
-        Queries http://aind-metadata-service/intended_measurements/{subject_id}
-        to get the measurement assignments for each fiber and color channel.
+    def _parse_intended_measurements(self, subject_id: str) -> Optional[Dict[str, Dict[str, Optional[str]]]]:
+        """Parse intended measurements for FIP from the metadata service.
 
         Parameters
         ----------
@@ -131,41 +129,28 @@ class FIPMapper:
             }
             Returns None if the request fails or subject has no measurements.
         """
-        try:
-            url = f"http://aind-metadata-service/intended_measurements/{subject_id}"
-            response = requests.get(url, timeout=5)
-
-            if response.status_code not in [200, 300]:
-                print(
-                    f"Warning: Could not fetch intended measurements for subject {subject_id} "
-                    f"(status {response.status_code})"
-                )
-                return None
-
-            data = response.json()
-
-            # Handle both single object and array responses
-            measurements_list = data.get("data", [])
-            if isinstance(measurements_list, dict):
-                measurements_list = [measurements_list]
-
-            # Convert to fiber-indexed dictionary
-            result = {}
-            for item in measurements_list:
-                fiber_name = item.get("fiber_name")
-                if fiber_name:
-                    result[fiber_name] = {
-                        "R": item.get("intended_measurement_R"),
-                        "G": item.get("intended_measurement_G"),
-                        "B": item.get("intended_measurement_B"),
-                        "Iso": item.get("intended_measurement_Iso"),
-                    }
-
-            return result if result else None
-
-        except Exception as e:
-            print(f"Warning: Error fetching intended measurements for subject {subject_id}: {e}")
+        data = get_intended_measurements(subject_id)
+        if not data:
             return None
+
+        # Handle both single object and array responses
+        measurements_list = data.get("data", [])
+        if isinstance(measurements_list, dict):
+            measurements_list = [measurements_list]
+
+        # Convert to fiber-indexed dictionary
+        result = {}
+        for item in measurements_list:
+            fiber_name = item.get("fiber_name")
+            if fiber_name:
+                result[fiber_name] = {
+                    "R": item.get("intended_measurement_R"),
+                    "G": item.get("intended_measurement_G"),
+                    "B": item.get("intended_measurement_B"),
+                    "Iso": item.get("intended_measurement_Iso"),
+                }
+
+        return result if result else None
 
     def _extract_fiber_index(self, fiber_name: str) -> Optional[int]:
         """Extract fiber index from fiber name.
@@ -187,14 +172,11 @@ class FIPMapper:
         except (IndexError, ValueError):
             return None
 
-    def get_implanted_fibers(self, subject_id: str) -> Optional[List[int]]:
-        """Fetch implanted fiber indices from procedures endpoint.
+    def _parse_implanted_fibers(self, subject_id: str) -> Optional[List[int]]:
+        """Parse implanted fiber indices from procedures data.
 
-        Queries internal metadata service procedures endpoint to determine which
-        fibers were actually implanted during surgery. This prevents creating
-        patch cord connections to non-existent implanted fibers.
-
-        Note: This endpoint can be slow (~30 seconds).
+        Determines which fibers were actually implanted during surgery.
+        This prevents creating patch cord connections to non-existent implanted fibers.
 
         Parameters
         ----------
@@ -207,30 +189,24 @@ class FIPMapper:
             List of implanted fiber indices (e.g., [0, 1, 2] for Fiber_0, Fiber_1, Fiber_2).
             Returns None if request fails or no fiber probes found.
         """
-        try:
-            url = f"http://aind-metadata-service-dev/api/v2/procedures/{subject_id}"
-            response = requests.get(url, timeout=60)
-            response.raise_for_status()
-
-            data = response.json()
-            implanted_indices = set()
-
-            for subject_proc in data.get("subject_procedures", []):
-                if subject_proc.get("object_type") == "Surgery":
-                    for proc in subject_proc.get("procedures", []):
-                        if proc.get("object_type") == "Probe implant":
-                            implanted_device = proc.get("implanted_device", {})
-                            if implanted_device.get("object_type") == "Fiber probe":
-                                fiber_name = implanted_device.get("name", "")
-                                fiber_idx = self._extract_fiber_index(fiber_name)
-                                if fiber_idx is not None:
-                                    implanted_indices.add(fiber_idx)
-
-            return sorted(list(implanted_indices)) if implanted_indices else None
-
-        except Exception as e:
-            print(f"Warning: Could not fetch implanted fibers from procedures: {e}")
+        data = get_procedures(subject_id)
+        if not data:
             return None
+
+        implanted_indices = set()
+
+        for subject_proc in data.get("subject_procedures", []):
+            if subject_proc.get("object_type") == "Surgery":
+                for proc in subject_proc.get("procedures", []):
+                    if proc.get("object_type") == "Probe implant":
+                        implanted_device = proc.get("implanted_device", {})
+                        if implanted_device.get("object_type") == "Fiber probe":
+                            fiber_name = implanted_device.get("name", "")
+                            fiber_idx = self._extract_fiber_index(fiber_name)
+                            if fiber_idx is not None:
+                                implanted_indices.add(fiber_idx)
+
+        return sorted(list(implanted_indices)) if implanted_indices else None
 
     def transform(self, metadata: dict) -> Acquisition:
         """Transforms intermediate metadata into a complete Acquisition model.
@@ -276,8 +252,8 @@ class FIPMapper:
         subject_details = self._build_subject_details(metadata)
 
         # Fetch intended measurements and implanted fibers from metadata service
-        intended_measurements = self.get_intended_measurements(subject_id)
-        implanted_fibers = self.get_implanted_fibers(subject_id)
+        intended_measurements = self._parse_intended_measurements(subject_id)
+        implanted_fibers = self._parse_implanted_fibers(subject_id)
 
         data_stream = DataStream(
             stream_start_time=session_start_time,
@@ -693,8 +669,7 @@ class FIPMapper:
             Path to the written acquisition file.
         """
         acquisition = self.transform(metadata)
-        output_path = self.write(acquisition, output_directory)
-        return output_path
+        return write_acquisition(acquisition, output_directory, self.output_filename)
 
     def write(self, model: Acquisition, output_directory: Optional[str] = None) -> Path:
         """Write the Acquisition model to a JSON file.
@@ -714,13 +689,4 @@ class FIPMapper:
         Path
             Path to the written file.
         """
-        if output_directory:
-            output_path = Path(output_directory) / self.output_filename
-        else:
-            output_path = Path(self.output_filename)
-
-        with open(output_path, "w") as f:
-            f.write(model.model_dump_json(indent=2))
-
-        print(f"Wrote acquisition metadata to {output_path}")
-        return output_path
+        return write_acquisition(model, output_directory, self.output_filename)

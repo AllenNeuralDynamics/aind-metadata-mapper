@@ -16,14 +16,14 @@ class TestFIPMapper(unittest.TestCase):
         # Mock external API calls to metadata service
         self.patcher_measurements = patch.object(
             FIPMapper,
-            "get_intended_measurements",
+            "_parse_intended_measurements",
             return_value={
                 "Fiber_0": {"R": "jRCaMP1b", "G": "dLight", "B": None, "Iso": "dLight"},
                 "Fiber_1": {"R": "jRCaMP1b", "G": "dLight", "B": None, "Iso": "dLight"},
             },
         )
         self.patcher_fibers = patch.object(
-            FIPMapper, "get_implanted_fibers", return_value=[0, 1]  # Two implanted fibers
+            FIPMapper, "_parse_implanted_fibers", return_value=[0, 1]  # Two implanted fibers
         )
         self.patcher_measurements.start()
         self.patcher_fibers.start()
