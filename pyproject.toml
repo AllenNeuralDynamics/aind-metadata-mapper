@@ -28,7 +28,8 @@ dev = [
     "coverage",
     "flake8",
     "interrogate",
-    "isort"
+    "isort",
+    "pre-commit"
 ]
 
 doc = [
