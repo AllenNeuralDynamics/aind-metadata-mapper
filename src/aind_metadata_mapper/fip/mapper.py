@@ -167,6 +167,26 @@ class FIPMapper:
             print(f"Warning: Error fetching intended measurements for subject {subject_id}: {e}")
             return None
 
+    def _extract_fiber_index(self, fiber_name: str) -> Optional[int]:
+        """Extract fiber index from fiber name.
+
+        Parameters
+        ----------
+        fiber_name : str
+            Fiber name (e.g., "Fiber_0").
+
+        Returns
+        -------
+        Optional[int]
+            Fiber index if parseable, None otherwise.
+        """
+        if not fiber_name.startswith("Fiber_"):
+            return None
+        try:
+            return int(fiber_name.split("_")[1])
+        except (IndexError, ValueError):
+            return None
+
     def get_implanted_fibers(self, subject_id: str) -> Optional[List[int]]:
         """Fetch implanted fiber indices from procedures endpoint.
 
@@ -189,40 +209,26 @@ class FIPMapper:
         """
         try:
             url = f"http://aind-metadata-service-dev/api/v2/procedures/{subject_id}"
-            response = requests.get(url, timeout=60)  # Longer timeout for slow endpoint
+            response = requests.get(url, timeout=60)
             response.raise_for_status()
 
             data = response.json()
             implanted_indices = set()
 
-            # Look through subject_procedures for fiber probe implants
             for subject_proc in data.get("subject_procedures", []):
-                if subject_proc.get("object_type") != "Surgery":
-                    continue
+                if subject_proc.get("object_type") == "Surgery":
+                    for proc in subject_proc.get("procedures", []):
+                        if proc.get("object_type") == "Probe implant":
+                            implanted_device = proc.get("implanted_device", {})
+                            if implanted_device.get("object_type") == "Fiber probe":
+                                fiber_name = implanted_device.get("name", "")
+                                fiber_idx = self._extract_fiber_index(fiber_name)
+                                if fiber_idx is not None:
+                                    implanted_indices.add(fiber_idx)
 
-                for proc in subject_proc.get("procedures", []):
-                    if proc.get("object_type") != "Probe implant":
-                        continue
-
-                    # Check if this is a fiber probe implant
-                    implanted_device = proc.get("implanted_device", {})
-                    if implanted_device.get("object_type") == "Fiber probe":
-                        # Extract fiber index from name (e.g., "Fiber_0" -> 0)
-                        fiber_name = implanted_device.get("name", "")
-                        if fiber_name.startswith("Fiber_"):
-                            try:
-                                fiber_idx = int(fiber_name.split("_")[1])
-                                implanted_indices.add(fiber_idx)
-                            except (IndexError, ValueError):
-                                # Skip if we can't parse the fiber index
-                                continue
-
-            if implanted_indices:
-                return sorted(list(implanted_indices))
-            return None
+            return sorted(list(implanted_indices)) if implanted_indices else None
 
         except Exception as e:
-            # Log but don't fail - we'll fall back to ROI-based inference
             print(f"Warning: Could not fetch implanted fibers from procedures: {e}")
             return None
 
@@ -297,6 +303,27 @@ class FIPMapper:
 
         return acquisition
 
+    def _get_fiber_indices_from_roi(self, roi_settings: Dict) -> List[int]:
+        """Get fiber indices from ROI settings.
+
+        Parameters
+        ----------
+        roi_settings : Dict
+            ROI settings from rig config.
+
+        Returns
+        -------
+        List[int]
+            List of fiber indices based on ROI count.
+        """
+        max_fiber_count = 0
+        for roi_key in roi_settings.keys():
+            if "_roi" in roi_key and "_background" not in roi_key:
+                roi_data = roi_settings[roi_key]
+                if isinstance(roi_data, list):
+                    max_fiber_count = max(max_fiber_count, len(roi_data))
+        return list(range(max_fiber_count))
+
     def _build_subject_details(self, metadata: FIPDataModel) -> Optional[AcquisitionSubjectDetails]:
         """Build subject details from metadata.
 
@@ -319,6 +346,92 @@ class FIPMapper:
             animal_weight_post=metadata.animal_weight_post,
             weight_unit=MassUnit.G,
             anaesthesia=metadata.anaesthesia,
+        )
+
+    def _build_led_configs(self, rig_config: Dict) -> tuple:
+        """Build LED configurations from rig config.
+
+        Parameters
+        ----------
+        rig_config : Dict
+            Rig configuration dictionary.
+
+        Returns
+        -------
+        tuple
+            (led_configs, led_configs_by_wavelength) where led_configs is a list
+            and led_configs_by_wavelength is a dict mapping wavelength to config.
+        """
+        led_configs = []
+        led_configs_by_wavelength = {}
+        light_source_names = [name for name in rig_config.keys() if name.startswith("light_source_")]
+
+        for light_source_name in light_source_names:
+            light_source = rig_config[light_source_name]
+            led_name = light_source_name.replace("light_source_", "").upper()
+            wavelength = self._get_led_wavelength(led_name)
+
+            device_name = f"LED_{led_name}"
+            if wavelength:
+                device_name = f"LED_{led_name}_{wavelength}nm"
+
+            led_config = LightEmittingDiodeConfig(
+                device_name=device_name,
+                power=light_source.get("power", 1.0),
+                power_unit=PowerUnit.PERCENT,
+            )
+            led_configs.append(led_config)
+
+            if wavelength:
+                led_configs_by_wavelength[wavelength] = led_config
+
+        return led_configs, led_configs_by_wavelength
+
+    def _create_channel(
+        self,
+        fiber_idx: int,
+        channel_type: str,
+        led_config: Optional[LightEmittingDiodeConfig],
+        intended_measurement: Optional[str],
+        camera_name: str,
+        emission_wavelength: int,
+    ) -> Channel:
+        """Create a single channel configuration.
+
+        Parameters
+        ----------
+        fiber_idx : int
+            Fiber index.
+        channel_type : str
+            Channel type (Green, Isosbestic, Red).
+        led_config : Optional[LightEmittingDiodeConfig]
+            LED configuration for this channel.
+        intended_measurement : Optional[str]
+            Intended measurement for this channel.
+        camera_name : str
+            Camera device name.
+        emission_wavelength : int
+            Emission wavelength in nm.
+
+        Returns
+        -------
+        Channel
+            Channel configuration.
+        """
+        return Channel(
+            channel_name=f"Fiber_{fiber_idx}_{channel_type}",
+            intended_measurement=intended_measurement,
+            detector=DetectorConfig(
+                device_name=camera_name,
+                exposure_time=PLACEHOLDER_CAMERA_EXPOSURE_TIME,
+                exposure_time_unit=TimeUnit.MS,
+                trigger_type=TriggerType.INTERNAL,
+            ),
+            light_sources=[led_config] if led_config else [],
+            excitation_filters=[],
+            emission_filters=[],
+            emission_wavelength=emission_wavelength,
+            emission_wavelength_unit=SizeUnit.NM,
         )
 
     def _build_configurations(
@@ -349,31 +462,9 @@ class FIPMapper:
         configurations = []
         rig_config = metadata.rig_config
 
-        # Build LED configs and store them for later reference
-        led_configs_by_wavelength = {}  # Map wavelength to LED config
-        light_source_names = [name for name in rig_config.keys() if name.startswith("light_source_")]
-
-        for light_source_name in light_source_names:
-            light_source = rig_config[light_source_name]
-            led_name = light_source_name.replace("light_source_", "").upper()
-            wavelength = self._get_led_wavelength(led_name)
-
-            # Include wavelength in device name for clarity
-            # LightEmittingDiodeConfig doesn't have excitation_wavelength fields yet
-            device_name = f"LED_{led_name}"
-            if wavelength:
-                device_name = f"LED_{led_name}_{wavelength}nm"
-
-            led_config = LightEmittingDiodeConfig(
-                device_name=device_name,
-                power=light_source.get("power", 1.0),
-                power_unit=PowerUnit.PERCENT,
-            )
-            configurations.append(led_config)
-
-            # Store for reference in channels
-            if wavelength:
-                led_configs_by_wavelength[wavelength] = led_config
+        # Build LED configs
+        led_configs, led_configs_by_wavelength = self._build_led_configs(rig_config)
+        configurations.extend(led_configs)
 
         # Note: Camera configurations are created inline within Channel objects below
         # We don't create standalone DetectorConfig objects here because we don't
@@ -400,18 +491,9 @@ class FIPMapper:
             )
 
             # Determine which fibers to create patch cords for
-            # Priority: implanted_fibers (from procedures) > ROI counts (fallback)
-            if implanted_fibers is not None:
-                fiber_indices = implanted_fibers
-            else:
-                # Fallback: infer from ROI counts
-                max_fiber_count = 0
-                for roi_key in roi_settings.keys():
-                    if "_roi" in roi_key and "_background" not in roi_key:
-                        roi_data = roi_settings[roi_key]
-                        if isinstance(roi_data, list):
-                            max_fiber_count = max(max_fiber_count, len(roi_data))
-                fiber_indices = list(range(max_fiber_count))
+            fiber_indices = (
+                implanted_fibers if implanted_fibers is not None else self._get_fiber_indices_from_roi(roi_settings)
+            )
 
             # Create patch cord for each implanted fiber
             for fiber_idx in fiber_indices:
@@ -419,74 +501,50 @@ class FIPMapper:
                 fiber_name = f"Fiber_{fiber_idx}"
                 fiber_measurements = intended_measurements.get(fiber_name) if intended_measurements else None
 
-                # Create Green channel: Blue LED (470nm) → Green emission (520nm)
+                # Create Green channel
                 if has_green_camera:
                     green_measurement = fiber_measurements.get("G") if fiber_measurements else None
-                    blue_led = led_configs_by_wavelength.get(EXCITATION_BLUE)
                     channels.append(
-                        Channel(
-                            channel_name=f"Fiber_{fiber_idx}_Green",
-                            intended_measurement=green_measurement,
-                            detector=DetectorConfig(
-                                device_name="Camera_Green Iso",
-                                exposure_time=PLACEHOLDER_CAMERA_EXPOSURE_TIME,
-                                exposure_time_unit=TimeUnit.MS,
-                                trigger_type=TriggerType.INTERNAL,
-                            ),
-                            light_sources=[blue_led] if blue_led else [],
-                            excitation_filters=[],  # TODO: Requires filter specs from instrument
-                            emission_filters=[],  # TODO: Requires filter specs from instrument
-                            emission_wavelength=EMISSION_GREEN,
-                            emission_wavelength_unit=SizeUnit.NM,
+                        self._create_channel(
+                            fiber_idx,
+                            "Green",
+                            led_configs_by_wavelength.get(EXCITATION_BLUE),
+                            green_measurement,
+                            "Camera_Green Iso",
+                            EMISSION_GREEN,
                         )
                     )
 
-                # Create Isosbestic channel: UV LED (415nm) → Green emission (520nm)
+                # Create Isosbestic channel
                 if has_green_camera:
                     iso_measurement = fiber_measurements.get("Iso") if fiber_measurements else None
-                    uv_led = led_configs_by_wavelength.get(EXCITATION_UV)
                     channels.append(
-                        Channel(
-                            channel_name=f"Fiber_{fiber_idx}_Isosbestic",
-                            intended_measurement=iso_measurement,
-                            detector=DetectorConfig(
-                                device_name="Camera_Green Iso",
-                                exposure_time=PLACEHOLDER_CAMERA_EXPOSURE_TIME,
-                                exposure_time_unit=TimeUnit.MS,
-                                trigger_type=TriggerType.INTERNAL,
-                            ),
-                            light_sources=[uv_led] if uv_led else [],
-                            excitation_filters=[],  # TODO: Requires filter specs from instrument
-                            emission_filters=[],  # TODO: Requires filter specs from instrument
-                            emission_wavelength=EMISSION_GREEN,
-                            emission_wavelength_unit=SizeUnit.NM,
+                        self._create_channel(
+                            fiber_idx,
+                            "Isosbestic",
+                            led_configs_by_wavelength.get(EXCITATION_UV),
+                            iso_measurement,
+                            "Camera_Green Iso",
+                            EMISSION_GREEN,
                         )
                     )
 
-                # Create Red channel: Yellow LED (565nm) → Red emission (590nm)
+                # Create Red channel
                 if has_red_camera:
                     red_measurement = fiber_measurements.get("R") if fiber_measurements else None
-                    yellow_led = led_configs_by_wavelength.get(EXCITATION_YELLOW)
                     channels.append(
-                        Channel(
-                            channel_name=f"Fiber_{fiber_idx}_Red",
-                            intended_measurement=red_measurement,
-                            detector=DetectorConfig(
-                                device_name="Camera_Red",
-                                exposure_time=PLACEHOLDER_CAMERA_EXPOSURE_TIME,
-                                exposure_time_unit=TimeUnit.MS,
-                                trigger_type=TriggerType.INTERNAL,
-                            ),
-                            light_sources=[yellow_led] if yellow_led else [],
-                            excitation_filters=[],  # TODO: Requires filter specs from instrument
-                            emission_filters=[],  # TODO: Requires filter specs from instrument
-                            emission_wavelength=EMISSION_RED,
-                            emission_wavelength_unit=SizeUnit.NM,
+                        self._create_channel(
+                            fiber_idx,
+                            "Red",
+                            led_configs_by_wavelength.get(EXCITATION_YELLOW),
+                            red_measurement,
+                            "Camera_Red",
+                            EMISSION_RED,
                         )
                     )
 
-                # Patch Cord N connects to Fiber N (implanted fiber)
-                if channels:  # Only create patch cord if we have channels
+                # Create patch cord if we have channels
+                if channels:
                     patch_cord = PatchCordConfig(
                         device_name=f"Patch Cord {fiber_idx}",
                         channels=channels,
@@ -567,26 +625,12 @@ class FIPMapper:
             detector_name = camera_name.replace("camera_", "").replace("_", " ").title()
             devices.append(f"Camera_{detector_name}")
 
-        # Add patch cords and implanted fibers (zero-indexed)
-        # Patch Cord N connects to Fiber N
-        # Priority: implanted_fibers (from procedures) > ROI counts (fallback)
-        if implanted_fibers is not None:
-            fiber_indices = implanted_fibers
-        else:
-            # Fallback: infer from ROI counts
-            roi_settings = rig_config.get("roi_settings", {})
-            fiber_indices = []
-            if roi_settings:
-                # Find max ROI index across all cameras
-                max_roi_idx = -1
-                for roi_key in roi_settings.keys():
-                    if "_roi" in roi_key and "_background" not in roi_key:
-                        roi_data = roi_settings[roi_key]
-                        if isinstance(roi_data, list):
-                            max_roi_idx = max(max_roi_idx, len(roi_data) - 1)
-                fiber_indices = list(range(max_roi_idx + 1))
+        # Add patch cords and implanted fibers
+        roi_settings = rig_config.get("roi_settings", {})
+        fiber_indices = (
+            implanted_fibers if implanted_fibers is not None else self._get_fiber_indices_from_roi(roi_settings)
+        )
 
-        # Add patch cords and fibers for each implanted fiber
         for fiber_idx in fiber_indices:
             devices.append(f"Patch Cord {fiber_idx}")
             devices.append(f"Fiber {fiber_idx}")
