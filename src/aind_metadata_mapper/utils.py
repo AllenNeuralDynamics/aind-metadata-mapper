@@ -1,5 +1,6 @@
 """Utility functions for AIND metadata mappers."""
 
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -36,6 +37,31 @@ def write_acquisition(
 
     print(f"Wrote acquisition metadata to {output_path}")
     return output_path
+
+
+def ensure_timezone(dt):
+    """Ensure datetime has timezone info using system local timezone.
+
+    Parameters
+    ----------
+    dt : datetime, str, or None
+        Datetime to process. Can be a datetime object, ISO format string, or None.
+
+    Returns
+    -------
+    datetime
+        Datetime with timezone info. If None is provided, returns current time
+        in local timezone.
+    """
+    if dt is None:
+        return datetime.now().astimezone()
+    if isinstance(dt, str):
+        dt = datetime.fromisoformat(dt)
+    if dt.tzinfo is None:
+        # Use system's local timezone
+        local_tz = datetime.now().astimezone().tzinfo
+        dt = dt.replace(tzinfo=local_tz)
+    return dt
 
 
 def get_procedures(subject_id: str) -> Optional[dict]:

@@ -43,10 +43,8 @@ TODO - Enhancements for full schema compliance:
    - Temporal multiplexing timing (16.67ms period, LED pulse widths)
 """
 
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from zoneinfo import ZoneInfo
 
 from aind_data_schema.components.configs import (
     Channel,
@@ -60,7 +58,7 @@ from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import MassUnit, PowerUnit, SizeUnit, TimeUnit
 from aind_metadata_extractor.models.fip import FIPDataModel
 
-from aind_metadata_mapper.utils import get_intended_measurements, get_procedures, write_acquisition
+from aind_metadata_mapper.utils import ensure_timezone, get_intended_measurements, get_procedures, write_acquisition
 
 # NOTE: Wavelength values are currently hardcoded as constants.
 # Ideally, these would be pulled from an instrument configuration file or some
@@ -620,6 +618,9 @@ class FIPMapper:
     def _process_session_times(self, session_start_time, session_end_time):
         """Process and validate session times.
 
+        Ensures both times have timezone info (using system local timezone if needed)
+        and swaps them if they're in the wrong order.
+
         Parameters
         ----------
         session_start_time : datetime or str
@@ -630,19 +631,8 @@ class FIPMapper:
         Returns
         -------
         tuple[datetime, datetime]
-            Processed start and end times.
+            Processed start and end times with timezone info.
         """
-
-        def ensure_timezone(dt):
-            """Ensure datetime has timezone info."""
-            if dt is None:
-                return datetime.now(ZoneInfo("America/Los_Angeles"))
-            if isinstance(dt, str):
-                dt = datetime.fromisoformat(dt)
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=ZoneInfo("America/Los_Angeles"))
-            return dt
-
         session_start_time = ensure_timezone(session_start_time)
         session_end_time = ensure_timezone(session_end_time)
 
