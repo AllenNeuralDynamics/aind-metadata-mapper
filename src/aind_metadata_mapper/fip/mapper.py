@@ -57,7 +57,6 @@ from aind_data_schema.components.configs import (
     TriggerType,
     PatchCordConfig,
     Channel,
-    DeviceConfig,
 )
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import MassUnit, PowerUnit, SizeUnit, TimeUnit
