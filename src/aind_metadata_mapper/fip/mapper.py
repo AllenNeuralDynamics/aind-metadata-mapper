@@ -56,8 +56,10 @@ Expert review and enhancement with rig/instrument metadata is recommended.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo
+
+import requests
 
 from aind_data_schema.core.acquisition import Acquisition, AcquisitionSubjectDetails, DataStream
 from aind_data_schema.components.configs import (
@@ -97,6 +99,65 @@ class FIPMapper:
             Output filename, by default "acquisition.json"
         """
         self.output_filename = output_filename
+
+    def get_intended_measurements(self, subject_id: str) -> Optional[Dict[str, Dict[str, Optional[str]]]]:
+        """Fetch intended measurements for a subject from the metadata service.
+        
+        Queries http://aind-metadata-service/intended_measurements/{subject_id}
+        to get the measurement assignments for each fiber and color channel.
+        
+        Parameters
+        ----------
+        subject_id : str
+            The subject ID to query.
+            
+        Returns
+        -------
+        Optional[Dict[str, Dict[str, Optional[str]]]]
+            Dictionary mapping fiber names to channel measurements, e.g.:
+            {
+                "Fiber_0": {
+                    "R": "dopamine",      # Red channel
+                    "G": "calcium",       # Green channel  
+                    "B": None,            # Blue channel (typically unused)
+                    "Iso": "control"      # Isosbestic channel
+                },
+                "Fiber_1": {...}
+            }
+            Returns None if the request fails or subject has no measurements.
+        """
+        try:
+            url = f"http://aind-metadata-service/intended_measurements/{subject_id}"
+            response = requests.get(url, timeout=5)
+            
+            if response.status_code not in [200, 300]:
+                print(f"Warning: Could not fetch intended measurements for subject {subject_id} (status {response.status_code})")
+                return None
+            
+            data = response.json()
+            
+            # Handle both single object and array responses
+            measurements_list = data.get('data', [])
+            if isinstance(measurements_list, dict):
+                measurements_list = [measurements_list]
+            
+            # Convert to fiber-indexed dictionary
+            result = {}
+            for item in measurements_list:
+                fiber_name = item.get('fiber_name')
+                if fiber_name:
+                    result[fiber_name] = {
+                        'R': item.get('intended_measurement_R'),
+                        'G': item.get('intended_measurement_G'),
+                        'B': item.get('intended_measurement_B'),
+                        'Iso': item.get('intended_measurement_Iso'),
+                    }
+            
+            return result if result else None
+            
+        except Exception as e:
+            print(f"Warning: Error fetching intended measurements for subject {subject_id}: {e}")
+            return None
 
     def transform(self, metadata: dict) -> Acquisition:
         """Transforms intermediate metadata into a complete Acquisition model.
