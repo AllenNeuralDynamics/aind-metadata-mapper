@@ -63,6 +63,10 @@ from aind_data_schema_models.units import MassUnit, PowerUnit, SizeUnit, TimeUni
 from aind_metadata_extractor.models.fip import FIPDataModel
 
 
+# NOTE: Wavelength values are currently hardcoded as constants.
+# Ideally, these would be pulled from an instrument configuration file or some
+# other source of truth. We should update this if we can identify a better source.
+
 # FIP system LED excitation wavelengths (nm)
 EXCITATION_UV = 415      # UV LED → green emission (isosbestic control)
 EXCITATION_BLUE = 470    # Blue LED → green emission (GFP signal)
