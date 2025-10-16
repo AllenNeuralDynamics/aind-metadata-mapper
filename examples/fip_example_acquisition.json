@@ -100,7 +100,14 @@
                 "compression": null
               },
               "additional_device_names": null,
-              "light_sources": [],
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_BLUE_470nm",
+                  "power": 1.0,
+                  "power_unit": "percent"
+                }
+              ],
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],
@@ -120,7 +127,14 @@
                 "compression": null
               },
               "additional_device_names": null,
-              "light_sources": [],
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_UV_415nm",
+                  "power": 1.0,
+                  "power_unit": "percent"
+                }
+              ],
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],
@@ -140,7 +154,14 @@
                 "compression": null
               },
               "additional_device_names": null,
-              "light_sources": [],
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_LIME_565nm",
+                  "power": 1.0,
+                  "power_unit": "percent"
+                }
+              ],
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],
@@ -166,7 +187,14 @@
                 "compression": null
               },
               "additional_device_names": null,
-              "light_sources": [],
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_BLUE_470nm",
+                  "power": 1.0,
+                  "power_unit": "percent"
+                }
+              ],
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],
@@ -186,7 +214,14 @@
                 "compression": null
               },
               "additional_device_names": null,
-              "light_sources": [],
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_UV_415nm",
+                  "power": 1.0,
+                  "power_unit": "percent"
+                }
+              ],
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],
@@ -206,7 +241,14 @@
                 "compression": null
               },
               "additional_device_names": null,
-              "light_sources": [],
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_LIME_565nm",
+                  "power": 1.0,
+                  "power_unit": "percent"
+                }
+              ],
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],
@@ -232,7 +274,14 @@
                 "compression": null
               },
               "additional_device_names": null,
-              "light_sources": [],
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_BLUE_470nm",
+                  "power": 1.0,
+                  "power_unit": "percent"
+                }
+              ],
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],
@@ -252,7 +301,14 @@
                 "compression": null
               },
               "additional_device_names": null,
-              "light_sources": [],
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_UV_415nm",
+                  "power": 1.0,
+                  "power_unit": "percent"
+                }
+              ],
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],
@@ -272,7 +328,14 @@
                 "compression": null
               },
               "additional_device_names": null,
-              "light_sources": [],
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_LIME_565nm",
+                  "power": 1.0,
+                  "power_unit": "percent"
+                }
+              ],
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],
@@ -298,7 +361,14 @@
                 "compression": null
               },
               "additional_device_names": null,
-              "light_sources": [],
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_BLUE_470nm",
+                  "power": 1.0,
+                  "power_unit": "percent"
+                }
+              ],
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],
@@ -318,7 +388,14 @@
                 "compression": null
               },
               "additional_device_names": null,
-              "light_sources": [],
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_UV_415nm",
+                  "power": 1.0,
+                  "power_unit": "percent"
+                }
+              ],
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],
@@ -338,7 +415,14 @@
                 "compression": null
               },
               "additional_device_names": null,
-              "light_sources": [],
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_LIME_565nm",
+                  "power": 1.0,
+                  "power_unit": "percent"
+                }
+              ],
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],

@@ -15,6 +15,7 @@ CURRENT IMPLEMENTATION:
 - Green and isosbestic channels share same detector (green CMOS) but have different excitation
 - Fetches intended_measurement from metadata service endpoint
 - LED wavelengths included in device names (LED_UV_415nm, LED_BLUE_470nm, LED_LIME_565nm)
+- LED references added to each channel's light_sources field
 - Emission wavelengths: 520nm green/iso, 590nm red
 - ROI index N → Patch Cord N → Fiber N (zero-indexed correspondence)
 - Implanted fiber identifiers included in active_devices (Fiber 0, Fiber 1, etc.)
@@ -22,22 +23,18 @@ CURRENT IMPLEMENTATION:
 TODO - Enhancements for full schema compliance:
 ================================================
 
-1. LIGHT SOURCE REFERENCES:
-   - Need to add LED device references to each channel's light_sources field
-   - Green channel → LED_BLUE_470nm, Isosbestic → LED_UV_415nm, Red → LED_LIME_565nm
-
-2. FILTER SPECIFICATIONS (requires instrument endpoint):
+1. FILTER SPECIFICATIONS (requires instrument endpoint):
    - Excitation filters: Need specs for 415nm, 470nm, 565nm paths
    - Emission filters: Need dichroic and bandpass filter specifications
 
-3. CONNECTION GRAPH (requires instrument metadata endpoint):
+2. CONNECTION GRAPH (requires instrument metadata endpoint):
    - Full signal path: LED → Fiber Coupler → Patch Cord → Implanted Fiber → Patch Cord → Dichroic → Filter → Camera
    - Model temporal multiplexing (LED cycling, camera synchronization)
    - Bidirectional fiber connections
    - Port/channel mappings between devices
    - Add to DataStream.connections field
 
-4. DETAILED DEVICE METADATA:
+3. DETAILED DEVICE METADATA:
    - LED power calibration at patch cord end
    - Actual camera exposure times (currently placeholder 10ms)
    - Camera serial numbers, gain settings, ROI coordinates
@@ -63,6 +60,16 @@ from aind_data_schema.components.configs import (
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import MassUnit, PowerUnit, SizeUnit, TimeUnit
 from aind_metadata_extractor.models.fip import FIPDataModel
+
+
+# FIP system LED excitation wavelengths (nm)
+EXCITATION_UV = 415      # UV LED → green emission (isosbestic control)
+EXCITATION_BLUE = 470    # Blue LED → green emission (GFP signal)
+EXCITATION_YELLOW = 565  # Yellow/Lime LED → red emission (RFP signal)
+
+# FIP system emission wavelengths (nm)
+EMISSION_GREEN = 520  # Green emission: center of 490-540nm bandpass, ~510nm GFP peak
+EMISSION_RED = 590    # Red emission: ~590nm RFP peak
 
 
 class FIPMapper:
@@ -266,6 +273,8 @@ class FIPMapper:
         configurations = []
         rig_config = metadata.rig_config
 
+        # Build LED configs and store them for later reference
+        led_configs_by_wavelength = {}  # Map wavelength to LED config
         light_source_names = [
             name for name in rig_config.keys()
             if name.startswith('light_source_')
@@ -288,6 +297,10 @@ class FIPMapper:
                 power_unit=PowerUnit.PERCENT,
             )
             configurations.append(led_config)
+            
+            # Store for reference in channels
+            if wavelength:
+                led_configs_by_wavelength[wavelength] = led_config
 
         camera_names = [
             name for name in rig_config.keys()
@@ -334,9 +347,10 @@ class FIPMapper:
                 fiber_name = f"Fiber_{fiber_idx}"
                 fiber_measurements = intended_measurements.get(fiber_name) if intended_measurements else None
                 
-                # Create Green channel (470nm excitation, green camera)
+                # Create Green channel: Blue LED (470nm) → Green emission (520nm)
                 if has_green_camera:
                     green_measurement = fiber_measurements.get('G') if fiber_measurements else None
+                    blue_led = led_configs_by_wavelength.get(EXCITATION_BLUE)
                     channels.append(Channel(
                         channel_name=f"Fiber_{fiber_idx}_Green",
                         intended_measurement=green_measurement,
@@ -346,16 +360,17 @@ class FIPMapper:
                             exposure_time_unit=TimeUnit.MS,
                             trigger_type=TriggerType.INTERNAL,
                         ),
-                        light_sources=[],  # TODO: Add LED_BLUE_470nm reference
+                        light_sources=[blue_led] if blue_led else [],
                         excitation_filters=[],  # TODO: Requires filter specs from instrument
                         emission_filters=[],  # TODO: Requires filter specs from instrument
-                        emission_wavelength=520,
+                        emission_wavelength=EMISSION_GREEN,
                         emission_wavelength_unit=SizeUnit.NM,
                     ))
                 
-                # Create Isosbestic channel (415nm excitation, green camera)
+                # Create Isosbestic channel: UV LED (415nm) → Green emission (520nm)
                 if has_green_camera:
                     iso_measurement = fiber_measurements.get('Iso') if fiber_measurements else None
+                    uv_led = led_configs_by_wavelength.get(EXCITATION_UV)
                     channels.append(Channel(
                         channel_name=f"Fiber_{fiber_idx}_Isosbestic",
                         intended_measurement=iso_measurement,
@@ -365,16 +380,17 @@ class FIPMapper:
                             exposure_time_unit=TimeUnit.MS,
                             trigger_type=TriggerType.INTERNAL,
                         ),
-                        light_sources=[],  # TODO: Add LED_UV_415nm reference
+                        light_sources=[uv_led] if uv_led else [],
                         excitation_filters=[],  # TODO: Requires filter specs from instrument
                         emission_filters=[],  # TODO: Requires filter specs from instrument
-                        emission_wavelength=520,
+                        emission_wavelength=EMISSION_GREEN,
                         emission_wavelength_unit=SizeUnit.NM,
                     ))
                 
-                # Create Red channel (565nm excitation, red camera)
+                # Create Red channel: Yellow LED (565nm) → Red emission (590nm)
                 if has_red_camera:
                     red_measurement = fiber_measurements.get('R') if fiber_measurements else None
+                    yellow_led = led_configs_by_wavelength.get(EXCITATION_YELLOW)
                     channels.append(Channel(
                         channel_name=f"Fiber_{fiber_idx}_Red",
                         intended_measurement=red_measurement,
@@ -384,10 +400,10 @@ class FIPMapper:
                             exposure_time_unit=TimeUnit.MS,
                             trigger_type=TriggerType.INTERNAL,
                         ),
-                        light_sources=[],  # TODO: Add LED_LIME_565nm reference
+                        light_sources=[yellow_led] if yellow_led else [],
                         excitation_filters=[],  # TODO: Requires filter specs from instrument
                         emission_filters=[],  # TODO: Requires filter specs from instrument
-                        emission_wavelength=590,
+                        emission_wavelength=EMISSION_RED,
                         emission_wavelength_unit=SizeUnit.NM,
                     ))
                 
@@ -402,12 +418,12 @@ class FIPMapper:
         return configurations
     
     def _get_led_wavelength(self, led_name: str) -> Optional[int]:
-        """Get excitation wavelength for an LED based on its name.
+        """Get LED excitation wavelength based on LED name.
         
-        Based on standard FIP system configuration:
-        - UV/415: 415nm excitation → isosbestic channel
-        - Blue/470: 470nm excitation → green channel
-        - Yellow/Lime/565: 565nm excitation → red channel
+        FIP system uses 3 LEDs for excitation, each producing different emission:
+        - UV LED (415nm excitation) → green emission (isosbestic control)
+        - Blue LED (470nm excitation) → green emission (GFP signal)
+        - Yellow/Lime LED (565nm excitation) → red emission (RFP signal)
         
         Parameters
         ----------
@@ -417,18 +433,18 @@ class FIPMapper:
         Returns
         -------
         Optional[int]
-            Excitation wavelength in nm, or None if unknown.
+            LED excitation wavelength in nm, or None if unknown.
         """
         led_lower = led_name.lower()
         wavelength_map = {
-            'uv': 415,
-            '415': 415,
-            'blue': 470,
-            '470': 470,
-            'yellow': 565,
-            'lime': 565,
-            '565': 565,
-            '560': 565,
+            'uv': EXCITATION_UV,
+            '415': EXCITATION_UV,
+            'blue': EXCITATION_BLUE,
+            '470': EXCITATION_BLUE,
+            'yellow': EXCITATION_YELLOW,
+            'lime': EXCITATION_YELLOW,
+            '565': EXCITATION_YELLOW,
+            '560': EXCITATION_YELLOW,
         }
         for key, wavelength in wavelength_map.items():
             if key in led_lower:
@@ -436,14 +452,14 @@ class FIPMapper:
         return None
 
     def _infer_emission_wavelength(self, camera_name: str) -> Optional[int]:
-        """Infer emission wavelength from camera name.
+        """Infer emission wavelength detected by a camera.
         
-        Based on FIP system architecture:
-        - Green camera: 510nm peak (GFP) and 490-540nm (isosbestic, use 520nm center)
-        - Red camera: 590nm peak (RFP)
-        
-        Note: Green camera captures both green and isosbestic channels with
-        different excitation wavelengths but similar emission wavelengths.
+        FIP system emission wavelengths:
+        - Green camera: 520nm (detects green emission from both UV and Blue LEDs)
+          * UV LED (415nm) excites → green emission (~520nm) [isosbestic control]
+          * Blue LED (470nm) excites → green emission (~520nm) [GFP signal]
+        - Red camera: 590nm (detects red emission from Yellow LED)
+          * Yellow LED (565nm) excites → red emission (~590nm) [RFP signal]
         
         Parameters
         ----------
@@ -453,13 +469,13 @@ class FIPMapper:
         Returns
         -------
         Optional[int]
-            Estimated emission wavelength in nm, or None if unknown.
+            Emission wavelength detected by camera (nm), or None if unknown.
         """
         camera_lower = camera_name.lower()
         if 'green' in camera_lower or 'iso' in camera_lower:
-            return 520  # Center of 490-540nm isosbestic bandpass / ~510nm GFP peak
+            return EMISSION_GREEN
         elif 'red' in camera_lower:
-            return 590  # Red emission peak
+            return EMISSION_RED
         return None
 
     def _get_active_devices(self, metadata: FIPDataModel) -> List[str]:
