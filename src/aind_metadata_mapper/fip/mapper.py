@@ -516,33 +516,6 @@ class FIPMapper:
                 return wavelength
         return None
 
-    def _infer_emission_wavelength(self, camera_name: str) -> Optional[int]:
-        """Infer emission wavelength detected by a camera.
-        
-        FIP system emission wavelengths:
-        - Green camera: 520nm (detects green emission from both UV and Blue LEDs)
-          * UV LED (415nm) excites → green emission (~520nm) [isosbestic control]
-          * Blue LED (470nm) excites → green emission (~520nm) [GFP signal]
-        - Red camera: 590nm (detects red emission from Yellow LED)
-          * Yellow LED (565nm) excites → red emission (~590nm) [RFP signal]
-        
-        Parameters
-        ----------
-        camera_name : str
-            Camera name from rig config.
-        
-        Returns
-        -------
-        Optional[int]
-            Emission wavelength detected by camera (nm), or None if unknown.
-        """
-        camera_lower = camera_name.lower()
-        if 'green' in camera_lower or 'iso' in camera_lower:
-            return EMISSION_GREEN
-        elif 'red' in camera_lower:
-            return EMISSION_RED
-        return None
-
     def _get_active_devices(self, metadata: FIPDataModel, implanted_fibers: Optional[List[int]] = None) -> List[str]:
         """Get list of active device names.
         
