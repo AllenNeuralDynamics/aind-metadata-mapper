@@ -12,24 +12,22 @@ class TestFIPMapper(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         self.mapper = FIPMapper()
-        
+
         # Mock external API calls to metadata service
         self.patcher_measurements = patch.object(
-            FIPMapper, 
-            'get_intended_measurements',
+            FIPMapper,
+            "get_intended_measurements",
             return_value={
-                'Fiber_0': {'R': 'jRCaMP1b', 'G': 'dLight', 'B': None, 'Iso': 'dLight'},
-                'Fiber_1': {'R': 'jRCaMP1b', 'G': 'dLight', 'B': None, 'Iso': 'dLight'},
-            }
+                "Fiber_0": {"R": "jRCaMP1b", "G": "dLight", "B": None, "Iso": "dLight"},
+                "Fiber_1": {"R": "jRCaMP1b", "G": "dLight", "B": None, "Iso": "dLight"},
+            },
         )
         self.patcher_fibers = patch.object(
-            FIPMapper,
-            'get_implanted_fibers',
-            return_value=[0, 1]  # Two implanted fibers
+            FIPMapper, "get_implanted_fibers", return_value=[0, 1]  # Two implanted fibers
         )
         self.patcher_measurements.start()
         self.patcher_fibers.start()
-        
+
         self.example_intermediate_data = {
             "job_settings_name": "FIP",
             "experimenter_full_name": ["Foo Bar", "Test User"],
@@ -81,11 +79,9 @@ class TestFIPMapper(unittest.TestCase):
                 "roi_settings": {
                     "camera_green_iso_roi": [
                         {"center": {"x": 50.0, "y": 50.0}, "radius": 20.0},
-                        {"center": {"x": 150.0, "y": 150.0}, "radius": 20.0}
+                        {"center": {"x": 150.0, "y": 150.0}, "radius": 20.0},
                     ],
-                    "camera_red_roi": [
-                        {"center": {"x": 50.0, "y": 50.0}, "radius": 20.0}
-                    ]
+                    "camera_red_roi": [{"center": {"x": 50.0, "y": 50.0}, "radius": 20.0}],
                 },
             },
             "session_config": {
@@ -93,9 +89,9 @@ class TestFIPMapper(unittest.TestCase):
                 "experimenter": ["Foo Bar", "Test User"],
                 "subject": "12345",
             },
-            "output_directory": "/output/test"
+            "output_directory": "/output/test",
         }
-    
+
     def tearDown(self):
         """Clean up test fixtures."""
         self.patcher_measurements.stop()
@@ -109,7 +105,7 @@ class TestFIPMapper(unittest.TestCase):
     def test_transform_basic(self):
         """Test basic transformation from intermediate to Acquisition."""
         acquisition = self.mapper.transform(self.example_intermediate_data)
-        
+
         self.assertEqual(acquisition.subject_id, "12345")
         self.assertEqual(acquisition.instrument_id, "FIP_Rig_1")
         self.assertEqual(acquisition.acquisition_type, "FIP")
@@ -119,7 +115,7 @@ class TestFIPMapper(unittest.TestCase):
     def test_ethics_review_id_mapping(self):
         """Test ethics review ID is correctly mapped to ethics_review_id list."""
         acquisition = self.mapper.transform(self.example_intermediate_data)
-        
+
         self.assertIsNotNone(acquisition.ethics_review_id)
         self.assertEqual(len(acquisition.ethics_review_id), 1)
         self.assertEqual(acquisition.ethics_review_id[0], "2115")
@@ -128,14 +124,14 @@ class TestFIPMapper(unittest.TestCase):
         """Test ethics_review_id is None when ethics_review_id is None."""
         data = self.example_intermediate_data.copy()
         data["ethics_review_id"] = None
-        
+
         acquisition = self.mapper.transform(data)
         self.assertIsNone(acquisition.ethics_review_id)
 
     def test_subject_details(self):
         """Test subject details are correctly mapped."""
         acquisition = self.mapper.transform(self.example_intermediate_data)
-        
+
         self.assertIsNotNone(acquisition.subject_details)
         self.assertEqual(acquisition.subject_details.mouse_platform_name, "wheel")
         self.assertAlmostEqual(float(acquisition.subject_details.animal_weight_prior), 25.3)
@@ -144,19 +140,20 @@ class TestFIPMapper(unittest.TestCase):
     def test_data_stream_created(self):
         """Test data stream is created with correct modality."""
         acquisition = self.mapper.transform(self.example_intermediate_data)
-        
+
         self.assertEqual(len(acquisition.data_streams), 1)
         data_stream = acquisition.data_streams[0]
-        
+
         self.assertEqual(len(data_stream.modalities), 1)
         from aind_data_schema_models.modalities import Modality
+
         self.assertEqual(data_stream.modalities[0], Modality.FIB)
 
     def test_active_devices(self):
         """Test active devices list is populated."""
         acquisition = self.mapper.transform(self.example_intermediate_data)
         data_stream = acquisition.data_streams[0]
-        
+
         self.assertIn("FIP_Rig_1", data_stream.active_devices)
         self.assertIn("LED_UV", data_stream.active_devices)
         self.assertIn("LED_BLUE", data_stream.active_devices)
@@ -168,13 +165,13 @@ class TestFIPMapper(unittest.TestCase):
         """Test device configurations are created."""
         acquisition = self.mapper.transform(self.example_intermediate_data)
         data_stream = acquisition.data_streams[0]
-        
+
         self.assertGreater(len(data_stream.configurations), 0)
-        
+
         config_types = [type(c).__name__ for c in data_stream.configurations]
         self.assertIn("LightEmittingDiodeConfig", config_types)
         self.assertIn("PatchCordConfig", config_types)
-        
+
         # Verify DetectorConfig exists within Channel objects
         patch_cords = [c for c in data_stream.configurations if type(c).__name__ == "PatchCordConfig"]
         self.assertGreater(len(patch_cords), 0)
@@ -184,27 +181,21 @@ class TestFIPMapper(unittest.TestCase):
     def test_timezone_handling(self):
         """Test session times are properly timezone-aware."""
         acquisition = self.mapper.transform(self.example_intermediate_data)
-        
+
         self.assertIsNotNone(acquisition.acquisition_start_time.tzinfo)
         self.assertIsNotNone(acquisition.acquisition_end_time.tzinfo)
-        
-        self.assertLess(
-            acquisition.acquisition_start_time,
-            acquisition.acquisition_end_time
-        )
+
+        self.assertLess(acquisition.acquisition_start_time, acquisition.acquisition_end_time)
 
     def test_time_swap_if_inverted(self):
         """Test that start/end times are swapped if provided in wrong order."""
         data = self.example_intermediate_data.copy()
         data["session_start_time"] = "2025-07-18T13:00:00-07:00"
         data["session_end_time"] = "2025-07-18T12:00:00-07:00"
-        
+
         acquisition = self.mapper.transform(data)
-        
-        self.assertLess(
-            acquisition.acquisition_start_time,
-            acquisition.acquisition_end_time
-        )
+
+        self.assertLess(acquisition.acquisition_start_time, acquisition.acquisition_end_time)
 
     def test_notes_preserved(self):
         """Test notes field is preserved."""
@@ -219,4 +210,3 @@ class TestFIPMapper(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

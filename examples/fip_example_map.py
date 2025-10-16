@@ -13,10 +13,11 @@ To run this example:
 """
 
 from pathlib import Path
+
 from aind_metadata_extractor.fip.extractor import FiberPhotometryExtractor
 from aind_metadata_extractor.fip.job_settings import JobSettings
-from aind_metadata_mapper.fip.mapper import FIPMapper
 
+from aind_metadata_mapper.fip.mapper import FIPMapper
 
 DATA_PATH = Path("/allen/aind/scratch/bruno.cruz/fip_tests/781896_2025-07-18T192910Z/fib/fip_2025-07-18T192959Z")
 EXAMPLES_DIR = Path(__file__).parent
@@ -50,4 +51,3 @@ print("\n✨ Complete! FIP metadata successfully mapped to Acquisition schema.")
 # Alternative: Use run_job() for a one-step transform + write
 # mapper = FIPMapper(output_filename="fip_example_acquisition.json")
 # output_file = mapper.run_job(intermediate_model, output_directory=str(EXAMPLES_DIR))
-
