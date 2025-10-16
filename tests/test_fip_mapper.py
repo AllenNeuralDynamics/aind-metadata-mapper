@@ -104,7 +104,7 @@ class TestFIPMapper(unittest.TestCase):
 
     def test_configurations_built(self):
         """Test device configurations are created."""
-        acquisition = self.mapper.transform(self.example_intermediate_data)
+        acquisition = self.mapper._transform(SimpleNamespace(**self.example_intermediate_data))
         data_stream = acquisition.data_streams[0]
 
         self.assertGreater(len(data_stream.configurations), 0)
@@ -121,7 +121,7 @@ class TestFIPMapper(unittest.TestCase):
 
     def test_timezone_handling(self):
         """Test session times are properly timezone-aware."""
-        acquisition = self.mapper.transform(self.example_intermediate_data)
+        acquisition = self.mapper._transform(SimpleNamespace(**self.example_intermediate_data))
 
         self.assertIsNotNone(acquisition.acquisition_start_time.tzinfo)
         self.assertIsNotNone(acquisition.acquisition_end_time.tzinfo)
