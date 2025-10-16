@@ -43,6 +43,7 @@ TODO - Enhancements for full schema compliance:
    - Temporal multiplexing timing (16.67ms period, LED pulse widths)
 """
 
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -59,6 +60,8 @@ from aind_data_schema_models.units import MassUnit, PowerUnit, SizeUnit, TimeUni
 from aind_metadata_extractor.models.fip import FIPDataModel
 
 from aind_metadata_mapper.utils import ensure_timezone, get_intended_measurements, get_procedures, write_acquisition
+
+logger = logging.getLogger(__name__)
 
 # NOTE: Wavelength values are currently hardcoded as constants.
 # Ideally, these would be pulled from an instrument configuration file or some
@@ -129,6 +132,10 @@ class FIPMapper:
         """
         data = get_intended_measurements(subject_id)
         if not data:
+            logger.warning(
+                f"No intended_measurements information found for subject_id={subject_id}. "
+                "These fields will be None in the resulting metadata file."
+            )
             return None
 
         # Handle both single object and array responses
@@ -148,7 +155,13 @@ class FIPMapper:
                     "Iso": item.get("intended_measurement_Iso"),
                 }
 
-        return result if result else None
+        if not result:
+            logger.warning(
+                f"No intended_measurements information found for subject_id={subject_id}. "
+                "These fields will be None in the resulting metadata file."
+            )
+            return None
+        return result
 
     def _extract_fiber_index(self, fiber_name: str) -> Optional[int]:
         """Extract fiber index from fiber name.
