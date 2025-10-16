@@ -41,7 +41,7 @@ class TestFIPMapper(unittest.TestCase):
             "active_mouse_platform": False,
             "data_streams": [],
             "session_type": "FIP",
-            "iacuc_protocol": "2115",
+            "ethics_review_id": "2115",
             "notes": "Test session",
             "anaesthesia": None,
             "animal_weight_post": 25.5,
@@ -116,21 +116,21 @@ class TestFIPMapper(unittest.TestCase):
         self.assertEqual(len(acquisition.experimenters), 2)
         self.assertEqual(acquisition.experimenters[0], "Foo Bar")
 
-    def test_protocol_id_mapping(self):
-        """Test IACUC protocol is correctly mapped to protocol_id list."""
+    def test_ethics_review_id_mapping(self):
+        """Test ethics review ID is correctly mapped to ethics_review_id list."""
         acquisition = self.mapper.transform(self.example_intermediate_data)
         
-        self.assertIsNotNone(acquisition.protocol_id)
-        self.assertEqual(len(acquisition.protocol_id), 1)
-        self.assertEqual(acquisition.protocol_id[0], "2115")
+        self.assertIsNotNone(acquisition.ethics_review_id)
+        self.assertEqual(len(acquisition.ethics_review_id), 1)
+        self.assertEqual(acquisition.ethics_review_id[0], "2115")
 
-    def test_protocol_id_none(self):
-        """Test protocol_id is None when iacuc_protocol is None."""
+    def test_ethics_review_id_none(self):
+        """Test ethics_review_id is None when ethics_review_id is None."""
         data = self.example_intermediate_data.copy()
-        data["iacuc_protocol"] = None
+        data["ethics_review_id"] = None
         
         acquisition = self.mapper.transform(data)
-        self.assertIsNone(acquisition.protocol_id)
+        self.assertIsNone(acquisition.ethics_review_id)
 
     def test_subject_details(self):
         """Test subject details are correctly mapped."""

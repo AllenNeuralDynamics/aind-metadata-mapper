@@ -254,9 +254,9 @@ class FIPMapper:
         subject_id = metadata.subject_id
         instrument_id = metadata.rig_id
         
-        protocol_id = None
-        if metadata.iacuc_protocol:
-            protocol_id = [metadata.iacuc_protocol]
+        ethics_review_id = None
+        if metadata.ethics_review_id:
+            ethics_review_id = [metadata.ethics_review_id]
 
         session_start_time, session_end_time = self._process_session_times(
             metadata.session_start_time,
@@ -282,7 +282,7 @@ class FIPMapper:
             acquisition_start_time=session_start_time,
             acquisition_end_time=session_end_time,
             experimenters=metadata.experimenter_full_name,
-            protocol_id=protocol_id,
+            ethics_review_id=ethics_review_id,
             instrument_id=instrument_id,
             acquisition_type=metadata.session_type,
             notes=metadata.notes,
@@ -459,12 +459,12 @@ class FIPMapper:
                     channels.append(Channel(
                         channel_name=f"Fiber_{fiber_idx}_Red",
                         intended_measurement=red_measurement,
-                                detector=DetectorConfig(
+                        detector=DetectorConfig(
                             device_name="Camera_Red",
                             exposure_time=PLACEHOLDER_CAMERA_EXPOSURE_TIME,
-                                    exposure_time_unit=TimeUnit.MS,
-                                    trigger_type=TriggerType.INTERNAL,
-                                ),
+                            exposure_time_unit=TimeUnit.MS,
+                            trigger_type=TriggerType.INTERNAL,
+                        ),
                         light_sources=[yellow_led] if yellow_led else [],
                         excitation_filters=[],  # TODO: Requires filter specs from instrument
                         emission_filters=[],  # TODO: Requires filter specs from instrument
