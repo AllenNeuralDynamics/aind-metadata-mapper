@@ -2,56 +2,47 @@
 
 This mapper transforms intermediate FIP metadata into schema-compliant Acquisition objects.
 
-TODO - Enhancements needed for full schema compliance:
-======================================================
-
 FIBER PHOTOMETRY SYSTEM ARCHITECTURE:
+======================================
 Each implanted fiber has 3 temporal-multiplexed channels (60Hz cycling):
   1. Green Channel: 470nm (blue LED) excitation → ~510nm emission → Green CMOS
   2. Isosbestic Channel: 415nm (UV LED) excitation → 490-540nm emission → Green CMOS (same camera!)
   3. Red Channel: 565nm (yellow LED) excitation → ~590nm emission → Red CMOS
 
-1. CHANNEL STRUCTURE (partially implemented):
-   Current: Creating 1-2 channels per fiber (one per camera detecting that fiber)
-   Needed: Create 3 channels per fiber (green, isosbestic, red)
-   - Green CMOS captures TWO channels: green (470nm excitation) + isosbestic (415nm excitation)
-   - Red CMOS captures ONE channel: red (565nm excitation)
-   - intended_measurement: Need ROI-to-measurement mapping ("dopamine", "calcium", "isosbestic_control")
-   - light_sources: Need to map correct LED to each channel (requires LED-to-ROI mapping from rig config)
+CURRENT IMPLEMENTATION:
+=======================
+- Creates 1-2 channels per fiber (one per camera detecting that fiber)
+- Fetches intended_measurement from metadata service endpoint
+- LED wavelengths included in device names (LED_UV_415nm, LED_BLUE_470nm, LED_LIME_565nm)
+- Emission wavelengths inferred from camera type (520nm green/iso, 590nm red)
+- ROI index N → Patch Cord N → Fiber N (zero-indexed correspondence)
+- Implanted fiber identifiers included in active_devices (Fiber 0, Fiber 1, etc.)
 
-2. WAVELENGTH & FILTER DATA (requires instrument endpoint):
-   - Excitation filters: Need specifications for 415nm, 470nm, 565nm paths
-   - Emission filters: Need dichroic and bandpass filter specs
-   - emission_wavelength: Currently using placeholders (525nm, 600nm)
-   - Accurate wavelengths: Green ~510nm peak, Isosbestic 490-540nm bandpass, Red ~590nm peak
+TODO - Enhancements for full schema compliance:
+================================================
+
+1. FULL 3-CHANNEL STRUCTURE:
+   Current: Creating 1-2 channels per fiber (one per camera)
+   Needed: Create 3 channels per fiber (green, isosbestic, red)
+   - Green CMOS should have TWO separate channel objects (green + isosbestic)
+   - Requires LED-to-ROI mapping to assign correct light sources to each channel
+
+2. FILTER SPECIFICATIONS (requires instrument endpoint):
+   - Excitation filters: Need specs for 415nm, 470nm, 565nm paths
+   - Emission filters: Need dichroic and bandpass filter specifications
 
 3. CONNECTION GRAPH (requires instrument metadata endpoint):
    - Full signal path: LED → Fiber Coupler → Patch Cord → Implanted Fiber → Patch Cord → Dichroic → Filter → Camera
-   - Need to model temporal multiplexing (LEDs cycle, cameras synchronize)
-   - Bidirectional fiber connections (send excitation, receive emission)
+   - Model temporal multiplexing (LED cycling, camera synchronization)
+   - Bidirectional fiber connections
    - Port/channel mappings between devices
+   - Add to DataStream.connections field
 
-4. DEVICE DETAILS:
+4. DETAILED DEVICE METADATA:
    - LED power calibration at patch cord end
    - Actual camera exposure times (currently placeholder 10ms)
    - Camera serial numbers, gain settings, ROI coordinates
-   - Temporal multiplexing timing parameters (16.67ms period, LED pulse widths)
-
-5. FIBER IMPLANT INFO:
-   - Implanted fiber identifiers now included (Fiber 0, Fiber 1, etc.)
-   - ROI index N → Patch Cord N → Fiber N (zero-indexed correspondence)
-   - Connection graph needs to be added to DataStream.connections
-
-CURRENT MAPPING:
-================
-- ROI index in camera matches Patch Cord index matches Fiber implant index
-- Example: camera_green_iso_roi[0] → Patch Cord 0 → Fiber 0
-- Channel names: "Fiber_N_<camera>" where N is the ROI/patch cord/fiber index
-- Each patch cord currently has 1-2 channels; should have 3 (green + isosbestic + red)
-
-Current implementation provides a minimal valid schema that satisfies basic requirements.
-Full 3-channel-per-fiber implementation requires LED-to-ROI mapping from rig config.
-Expert review and enhancement with rig/instrument metadata is recommended.
+   - Temporal multiplexing timing (16.67ms period, LED pulse widths)
 """
 
 from datetime import datetime
@@ -201,13 +192,16 @@ class FIPMapper:
         )
 
         subject_details = self._build_subject_details(metadata)
+        
+        # Fetch intended measurements from metadata service
+        intended_measurements = self.get_intended_measurements(subject_id)
 
         data_stream = DataStream(
             stream_start_time=session_start_time,
             stream_end_time=session_end_time,
             modalities=[Modality.FIB],
             active_devices=self._get_active_devices(metadata),
-            configurations=self._build_configurations(metadata),
+            configurations=self._build_configurations(metadata, intended_measurements),
         )
 
         acquisition = Acquisition(
@@ -250,13 +244,20 @@ class FIPMapper:
             anaesthesia=metadata.anaesthesia,
         )
 
-    def _build_configurations(self, metadata: FIPDataModel) -> List[Any]:
+    def _build_configurations(
+        self, 
+        metadata: FIPDataModel,
+        intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]] = None
+    ) -> List[Any]:
         """Build device configurations from rig config.
 
         Parameters
         ----------
         metadata : FIPDataModel
             Validated intermediate metadata.
+        intended_measurements : Optional[Dict[str, Dict[str, Optional[str]]]], optional
+            Intended measurements from metadata service, mapping fiber names to
+            channel measurements (R, G, B, Iso), by default None.
 
         Returns
         -------
@@ -355,12 +356,17 @@ class FIPMapper:
                     camera_name = roi_info['camera_name']
                     emission_wl = self._infer_emission_wavelength(camera_name)
                     
+                    # Get intended measurement for this fiber/channel
+                    intended_measurement = self._get_channel_measurement(
+                        roi_idx, camera_name, intended_measurements
+                    )
+                    
                     # Channel name reflects camera and fiber index
                     # Green camera captures 2 channels (green + isosbestic) but we only
                     # create one channel object here due to missing LED-to-ROI mapping
                     channel = Channel(
                         channel_name=f"Fiber_{roi_idx}_{camera_name.replace('camera_', '')}",
-                        intended_measurement=None,  # TODO: Requires ROI-to-measurement mapping
+                        intended_measurement=intended_measurement,
                         detector=DetectorConfig(
                             device_name=f"Camera_{camera_name.replace('camera_', '').replace('_', ' ').title()}",
                             exposure_time=10.0,  # TODO: Extract from camera metadata
@@ -443,6 +449,54 @@ class FIPMapper:
             return 520  # Center of 490-540nm isosbestic bandpass / ~510nm GFP peak
         elif 'red' in camera_lower:
             return 590  # Red emission peak
+        return None
+
+    def _get_channel_measurement(
+        self, 
+        roi_idx: int, 
+        camera_name: str,
+        intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]]
+    ) -> Optional[str]:
+        """Get intended measurement for a specific channel.
+        
+        Maps ROI index and camera name to the appropriate intended measurement
+        from the metadata service.
+        
+        Parameters
+        ----------
+        roi_idx : int
+            ROI/fiber index (0-indexed).
+        camera_name : str
+            Camera name from rig config (e.g., "camera_green_iso", "camera_red").
+        intended_measurements : Optional[Dict[str, Dict[str, Optional[str]]]]
+            Intended measurements from metadata service.
+            
+        Returns
+        -------
+        Optional[str]
+            Intended measurement string (e.g., "calcium", "dopamine", "control"),
+            or None if not available.
+        """
+        if not intended_measurements:
+            return None
+        
+        fiber_name = f"Fiber_{roi_idx}"
+        fiber_measurements = intended_measurements.get(fiber_name)
+        
+        if not fiber_measurements:
+            return None
+        
+        # Map camera name to channel type
+        # Note: Currently creating 1 channel per camera, but green camera
+        # actually captures both green (470nm) and isosbestic (415nm) channels
+        camera_lower = camera_name.lower()
+        if 'red' in camera_lower:
+            return fiber_measurements.get('R')
+        elif 'green' in camera_lower or 'iso' in camera_lower:
+            # For now, return green measurement for green camera
+            # TODO: Create separate channels for green vs isosbestic
+            return fiber_measurements.get('G')
+        
         return None
 
     def _get_active_devices(self, metadata: FIPDataModel) -> List[str]:
