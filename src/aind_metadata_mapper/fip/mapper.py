@@ -14,6 +14,8 @@ CURRENT IMPLEMENTATION:
 - Creates 3 channels per fiber (green, isosbestic, red)
 - Green and isosbestic channels share same detector (green CMOS) but have different excitation
 - Fetches intended_measurement from metadata service endpoint
+- Fetches implanted fiber indices from procedures endpoint (validates which fibers exist)
+- Only creates patch cord configurations for actually implanted fibers
 - LED wavelengths included in device names (LED_UV_415nm, LED_BLUE_470nm, LED_LIME_565nm)
 - LED references added to each channel's light_sources field
 - Emission wavelengths: 520nm green/iso, 590nm red
@@ -155,6 +157,63 @@ class FIPMapper:
         except Exception as e:
             print(f"Warning: Error fetching intended measurements for subject {subject_id}: {e}")
             return None
+    
+    def get_implanted_fibers(self, subject_id: str) -> Optional[List[int]]:
+        """Fetch implanted fiber indices from procedures endpoint.
+        
+        Queries internal metadata service procedures endpoint to determine which
+        fibers were actually implanted during surgery. This prevents creating
+        patch cord connections to non-existent implanted fibers.
+        
+        Note: This endpoint can be slow (~30 seconds).
+        
+        Parameters
+        ----------
+        subject_id : str
+            Subject ID to query.
+        
+        Returns
+        -------
+        Optional[List[int]]
+            List of implanted fiber indices (e.g., [0, 1] for Fiber_0 and Fiber_1).
+            Returns None if request fails or no brain injections found.
+        """
+        try:
+            url = f"http://aind-metadata-service-dev/api/v2/procedures/{subject_id}"
+            response = requests.get(url, timeout=60)  # Longer timeout for slow endpoint
+            response.raise_for_status()
+            
+            data = response.json()
+            implanted_indices = set()
+            
+            # Look through subject_procedures for brain injections
+            for subject_proc in data.get('subject_procedures', []):
+                if subject_proc.get('object_type') != 'Surgery':
+                    continue
+                    
+                for proc in subject_proc.get('procedures', []):
+                    if proc.get('object_type') != 'Brain injection':
+                        continue
+                    
+                    # relative_position indicates which hemisphere: ["Right"], ["Left"], etc.
+                    relative_pos = proc.get('relative_position', [])
+                    if relative_pos:
+                        # Map positions to fiber indices
+                        # Convention: Right=0, Left=1 (can be refined based on actual mapping)
+                        for pos in relative_pos:
+                            if pos.lower() == 'right':
+                                implanted_indices.add(0)
+                            elif pos.lower() == 'left':
+                                implanted_indices.add(1)
+            
+            if implanted_indices:
+                return sorted(list(implanted_indices))
+            return None
+            
+        except Exception as e:
+            # Log but don't fail - we'll fall back to ROI-based inference
+            print(f"Warning: Could not fetch implanted fibers from procedures: {e}")
+            return None
 
     def transform(self, metadata: dict) -> Acquisition:
         """Transforms intermediate metadata into a complete Acquisition model.
@@ -199,15 +258,16 @@ class FIPMapper:
 
         subject_details = self._build_subject_details(metadata)
         
-        # Fetch intended measurements from metadata service
+        # Fetch intended measurements and implanted fibers from metadata service
         intended_measurements = self.get_intended_measurements(subject_id)
+        implanted_fibers = self.get_implanted_fibers(subject_id)
 
         data_stream = DataStream(
             stream_start_time=session_start_time,
             stream_end_time=session_end_time,
             modalities=[Modality.FIB],
-            active_devices=self._get_active_devices(metadata),
-            configurations=self._build_configurations(metadata, intended_measurements),
+            active_devices=self._get_active_devices(metadata, implanted_fibers),
+            configurations=self._build_configurations(metadata, intended_measurements, implanted_fibers),
         )
 
         acquisition = Acquisition(
@@ -253,7 +313,8 @@ class FIPMapper:
     def _build_configurations(
         self, 
         metadata: FIPDataModel,
-        intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]] = None
+        intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]] = None,
+        implanted_fibers: Optional[List[int]] = None
     ) -> List[Any]:
         """Build device configurations from rig config.
 
@@ -264,11 +325,15 @@ class FIPMapper:
         intended_measurements : Optional[Dict[str, Dict[str, Optional[str]]]], optional
             Intended measurements from metadata service, mapping fiber names to
             channel measurements (R, G, B, Iso), by default None.
+        implanted_fibers : Optional[List[int]], optional
+            List of implanted fiber indices from procedures endpoint. Only creates
+            patch cord configurations for implanted fibers. Falls back to ROI-based
+            inference if None, by default None.
 
         Returns
         -------
         List[Any]
-            List of device configurations (LEDs and detectors).
+            List of device configurations (LEDs, detectors, and patch cords).
         """
         configurations = []
         rig_config = metadata.rig_config
@@ -333,16 +398,22 @@ class FIPMapper:
             has_green_camera = any('green' in key or 'iso' in key for key in roi_settings.keys() if '_roi' in key and '_background' not in key)
             has_red_camera = any('red' in key for key in roi_settings.keys() if '_roi' in key and '_background' not in key)
             
-            # Determine max number of fibers from ROI counts
-            max_fiber_count = 0
-            for roi_key in roi_settings.keys():
-                if '_roi' in roi_key and '_background' not in roi_key:
-                    roi_data = roi_settings[roi_key]
-                    if isinstance(roi_data, list):
-                        max_fiber_count = max(max_fiber_count, len(roi_data))
+            # Determine which fibers to create patch cords for
+            # Priority: implanted_fibers (from procedures) > ROI counts (fallback)
+            if implanted_fibers is not None:
+                fiber_indices = implanted_fibers
+            else:
+                # Fallback: infer from ROI counts
+                max_fiber_count = 0
+                for roi_key in roi_settings.keys():
+                    if '_roi' in roi_key and '_background' not in roi_key:
+                        roi_data = roi_settings[roi_key]
+                        if isinstance(roi_data, list):
+                            max_fiber_count = max(max_fiber_count, len(roi_data))
+                fiber_indices = list(range(max_fiber_count))
             
-            # Create patch cord for each fiber
-            for fiber_idx in range(max_fiber_count):
+            # Create patch cord for each implanted fiber
+            for fiber_idx in fiber_indices:
                 channels = []
                 fiber_name = f"Fiber_{fiber_idx}"
                 fiber_measurements = intended_measurements.get(fiber_name) if intended_measurements else None
@@ -394,12 +465,12 @@ class FIPMapper:
                     channels.append(Channel(
                         channel_name=f"Fiber_{fiber_idx}_Red",
                         intended_measurement=red_measurement,
-                        detector=DetectorConfig(
+                                detector=DetectorConfig(
                             device_name="Camera_Red",
                             exposure_time=10.0,  # TODO: Extract from camera metadata
-                            exposure_time_unit=TimeUnit.MS,
-                            trigger_type=TriggerType.INTERNAL,
-                        ),
+                                    exposure_time_unit=TimeUnit.MS,
+                                    trigger_type=TriggerType.INTERNAL,
+                                ),
                         light_sources=[yellow_led] if yellow_led else [],
                         excitation_filters=[],  # TODO: Requires filter specs from instrument
                         emission_filters=[],  # TODO: Requires filter specs from instrument
@@ -416,7 +487,7 @@ class FIPMapper:
                     configurations.append(patch_cord)
 
         return configurations
-    
+
     def _get_led_wavelength(self, led_name: str) -> Optional[int]:
         """Get LED excitation wavelength based on LED name.
         
@@ -478,16 +549,19 @@ class FIPMapper:
             return EMISSION_RED
         return None
 
-    def _get_active_devices(self, metadata: FIPDataModel) -> List[str]:
+    def _get_active_devices(self, metadata: FIPDataModel, implanted_fibers: Optional[List[int]] = None) -> List[str]:
         """Get list of active device names.
         
-        Includes implanted fibers based on ROI count.
+        Includes implanted fibers and patch cords based on procedures data or ROI count.
         Each ROI index corresponds to: Patch Cord N → Fiber N (implant).
 
         Parameters
         ----------
         metadata : FIPDataModel
             Validated intermediate metadata.
+        implanted_fibers : Optional[List[int]], optional
+            List of implanted fiber indices from procedures endpoint. Falls back to
+            ROI-based inference if None, by default None.
 
         Returns
         -------
@@ -521,20 +595,27 @@ class FIPMapper:
 
         # Add patch cords and implanted fibers (zero-indexed)
         # Patch Cord N connects to Fiber N
-        roi_settings = rig_config.get('roi_settings', {})
-        if roi_settings:
-            # Find max ROI index across all cameras
-            max_roi_idx = -1
-            for roi_key in roi_settings.keys():
-                if '_roi' in roi_key and '_background' not in roi_key:
-                    roi_data = roi_settings[roi_key]
-                    if isinstance(roi_data, list):
-                        max_roi_idx = max(max_roi_idx, len(roi_data) - 1)
-            
-            # Add patch cords and fibers for each ROI index
-            for roi_idx in range(max_roi_idx + 1):
-                devices.append(f"Patch Cord {roi_idx}")
-                devices.append(f"Fiber {roi_idx}")
+        # Priority: implanted_fibers (from procedures) > ROI counts (fallback)
+        if implanted_fibers is not None:
+            fiber_indices = implanted_fibers
+        else:
+            # Fallback: infer from ROI counts
+            roi_settings = rig_config.get('roi_settings', {})
+            fiber_indices = []
+            if roi_settings:
+                # Find max ROI index across all cameras
+                max_roi_idx = -1
+                for roi_key in roi_settings.keys():
+                    if '_roi' in roi_key and '_background' not in roi_key:
+                        roi_data = roi_settings[roi_key]
+                        if isinstance(roi_data, list):
+                            max_roi_idx = max(max_roi_idx, len(roi_data) - 1)
+                fiber_indices = list(range(max_roi_idx + 1))
+        
+        # Add patch cords and fibers for each implanted fiber
+        for fiber_idx in fiber_indices:
+            devices.append(f"Patch Cord {fiber_idx}")
+            devices.append(f"Fiber {fiber_idx}")
 
         # Add controller
         if 'cuttlefish_fip' in rig_config:

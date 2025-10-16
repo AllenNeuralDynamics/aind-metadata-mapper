@@ -1,6 +1,7 @@
 """Tests for FIP mapper."""
 
 import unittest
+from unittest.mock import patch
 
 from aind_metadata_mapper.fip.mapper import FIPMapper
 
@@ -11,6 +12,23 @@ class TestFIPMapper(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         self.mapper = FIPMapper()
+        
+        # Mock external API calls to metadata service
+        self.patcher_measurements = patch.object(
+            FIPMapper, 
+            'get_intended_measurements',
+            return_value={
+                'Fiber_0': {'R': 'jRCaMP1b', 'G': 'dLight', 'B': None, 'Iso': 'dLight'},
+                'Fiber_1': {'R': 'jRCaMP1b', 'G': 'dLight', 'B': None, 'Iso': 'dLight'},
+            }
+        )
+        self.patcher_fibers = patch.object(
+            FIPMapper,
+            'get_implanted_fibers',
+            return_value=[0, 1]  # Two implanted fibers
+        )
+        self.patcher_measurements.start()
+        self.patcher_fibers.start()
         
         self.example_intermediate_data = {
             "job_settings_name": "FIP",
@@ -77,6 +95,11 @@ class TestFIPMapper(unittest.TestCase):
             },
             "output_directory": "/output/test"
         }
+    
+    def tearDown(self):
+        """Clean up test fixtures."""
+        self.patcher_measurements.stop()
+        self.patcher_fibers.stop()
 
     def test_mapper_initialization(self):
         """Test mapper can be instantiated."""
