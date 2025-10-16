@@ -35,15 +35,19 @@ print("  ✓ Extracted metadata from FIP data files")
 
 
 print("\nStep 2: Transforming to schema-compliant Acquisition...")
-mapper = FIPMapper()
+mapper = FIPMapper(output_filename="fip_example_acquisition.json")
 acquisition = mapper.transform(intermediate_model)
 print("  ✓ Created Acquisition object")
 
 
-print("\nStep 3: Saving acquisition.json...")
-output_file = EXAMPLES_DIR / "acquisition.json"
-mapper.write(model=acquisition, filename="acquisition.json", output_directory=str(EXAMPLES_DIR))
+print("\nStep 3: Saving fip_example_acquisition.json...")
+output_file = mapper.write(model=acquisition, output_directory=str(EXAMPLES_DIR))
 print(f"  ✓ Saved to {output_file}")
 
 print("\n✨ Complete! FIP metadata successfully mapped to Acquisition schema.")
+
+
+# Alternative: Use run_job() for a one-step transform + write
+# mapper = FIPMapper(output_filename="fip_example_acquisition.json")
+# output_file = mapper.run_job(intermediate_model, output_directory=str(EXAMPLES_DIR))
 

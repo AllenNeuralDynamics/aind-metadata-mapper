@@ -37,12 +37,19 @@ extractor = FiberPhotometryExtractor(job_settings=job_settings)
 intermediate_model = extractor.extract()
 
 # Step 2: Map to Acquisition schema
-mapper = FIPMapper()
-acquisition = mapper.transform(intermediate_model)
+mapper = FIPMapper()  # defaults to "acquisition.json"
+# Or customize output filename:
+# mapper = FIPMapper(output_filename="fip_example_acquisition.json")
 
-# Step 3: Save
-mapper.write(acquisition, filename="acquisition.json", output_directory="/output/path")
+# Option A: Transform and write in one step (recommended)
+output_path = mapper.run_job(intermediate_model, output_directory="/output/path")
+
+# Option B: Transform and write separately (for more control)
+acquisition = mapper.transform(intermediate_model)
+output_path = mapper.write(acquisition, output_directory="/output/path")
 ```
+
+**Note:** The output filename defaults to `acquisition.json` following AIND mapper conventions, but can be customized during initialization.
 
 ## What Gets Mapped
 

@@ -5,36 +5,52 @@ This mapper transforms intermediate FIP metadata into schema-compliant Acquisiti
 TODO - Enhancements needed for full schema compliance:
 ======================================================
 
-1. CHANNEL METADATA (requires rig/instrument endpoint):
-   - intended_measurement: Need to map ROIs to measurements ("dopamine", "calcium", "control", etc.)
-   - light_sources: Need to link specific LEDs to specific channels/ROIs
-   - excitation_filters: Requires filter specifications from rig config
-   - emission_filters: Requires filter specifications from rig config
-   - emission_wavelength: Can be inferred from LED wavelengths but needs validation
+FIBER PHOTOMETRY SYSTEM ARCHITECTURE:
+Each implanted fiber has 3 temporal-multiplexed channels (60Hz cycling):
+  1. Green Channel: 470nm (blue LED) excitation → ~510nm emission → Green CMOS
+  2. Isosbestic Channel: 415nm (UV LED) excitation → 490-540nm emission → Green CMOS (same camera!)
+  3. Red Channel: 565nm (yellow LED) excitation → ~590nm emission → Red CMOS
 
-2. CONNECTION GRAPH (requires instrument metadata endpoint):
-   - Need full signal flow: LED → Patch Cord → Implanted Fiber → Patch Cord → Detector
-   - Requires implanted fiber identifiers (not just camera ROIs)
-   - Need to model bidirectional connections (send_and_receive=True)
-   - Port mappings between devices
+1. CHANNEL STRUCTURE (partially implemented):
+   Current: Creating 1-2 channels per fiber (one per camera detecting that fiber)
+   Needed: Create 3 channels per fiber (green, isosbestic, red)
+   - Green CMOS captures TWO channels: green (470nm excitation) + isosbestic (415nm excitation)
+   - Red CMOS captures ONE channel: red (565nm excitation)
+   - intended_measurement: Need ROI-to-measurement mapping ("dopamine", "calcium", "isosbestic_control")
+   - light_sources: Need to map correct LED to each channel (requires LED-to-ROI mapping from rig config)
 
-3. DEVICE DETAILS:
-   - Power measurements at specific points (e.g., "patch cord end")
-   - Actual exposure times from camera metadata (currently placeholder 10ms)
-   - Serial numbers and calibration data for all devices
+2. WAVELENGTH & FILTER DATA (requires instrument endpoint):
+   - Excitation filters: Need specifications for 415nm, 470nm, 565nm paths
+   - Emission filters: Need dichroic and bandpass filter specs
+   - emission_wavelength: Currently using placeholders (525nm, 600nm)
+   - Accurate wavelengths: Green ~510nm peak, Isosbestic 490-540nm bandpass, Red ~590nm peak
 
-4. FIBER IMPLANT INFO:
-   - Implanted fiber identifiers are now included (Fiber 0, Fiber 1, etc.)
-   - ROI index N → Patch Cord N → Fiber N (implanted fiber)
-   - Connection graph still needs to be added to DataStream.connections
+3. CONNECTION GRAPH (requires instrument metadata endpoint):
+   - Full signal path: LED → Fiber Coupler → Patch Cord → Implanted Fiber → Patch Cord → Dichroic → Filter → Camera
+   - Need to model temporal multiplexing (LEDs cycle, cameras synchronize)
+   - Bidirectional fiber connections (send excitation, receive emission)
+   - Port/channel mappings between devices
+
+4. DEVICE DETAILS:
+   - LED power calibration at patch cord end
+   - Actual camera exposure times (currently placeholder 10ms)
+   - Camera serial numbers, gain settings, ROI coordinates
+   - Temporal multiplexing timing parameters (16.67ms period, LED pulse widths)
+
+5. FIBER IMPLANT INFO:
+   - Implanted fiber identifiers now included (Fiber 0, Fiber 1, etc.)
+   - ROI index N → Patch Cord N → Fiber N (zero-indexed correspondence)
+   - Connection graph needs to be added to DataStream.connections
 
 CURRENT MAPPING:
 ================
 - ROI index in camera matches Patch Cord index matches Fiber implant index
 - Example: camera_green_iso_roi[0] → Patch Cord 0 → Fiber 0
 - Channel names: "Fiber_N_<camera>" where N is the ROI/patch cord/fiber index
+- Each patch cord currently has 1-2 channels; should have 3 (green + isosbestic + red)
 
 Current implementation provides a minimal valid schema that satisfies basic requirements.
+Full 3-channel-per-fiber implementation requires LED-to-ROI mapping from rig config.
 Expert review and enhancement with rig/instrument metadata is recommended.
 """
 
@@ -58,7 +74,29 @@ from aind_metadata_extractor.models.fip import FIPDataModel
 
 
 class FIPMapper:
-    """FIP Mapper - transforms intermediate FIP data into Acquisition metadata."""
+    """FIP Mapper - transforms intermediate FIP data into Acquisition metadata.
+    
+    This mapper follows the standard pattern for AIND metadata mappers:
+    - Takes intermediate metadata from extractor
+    - Transforms to schema-compliant Acquisition
+    - Outputs to standard filename: acquisition.json (configurable)
+    
+    Parameters
+    ----------
+    output_filename : str, optional
+        Output filename for the acquisition metadata.
+        Defaults to "acquisition.json".
+    """
+    
+    def __init__(self, output_filename: str = "acquisition.json"):
+        """Initialize the FIP mapper.
+        
+        Parameters
+        ----------
+        output_filename : str, optional
+            Output filename, by default "acquisition.json"
+        """
+        self.output_filename = output_filename
 
     def transform(self, metadata: dict) -> Acquisition:
         """Transforms intermediate metadata into a complete Acquisition model.
@@ -175,9 +213,16 @@ class FIPMapper:
         for light_source_name in light_source_names:
             light_source = rig_config[light_source_name]
             led_name = light_source_name.replace('light_source_', '').upper()
+            wavelength = self._get_led_wavelength(led_name)
+            
+            # Include wavelength in device name for clarity
+            # LightEmittingDiodeConfig doesn't have excitation_wavelength fields yet
+            device_name = f"LED_{led_name}"
+            if wavelength:
+                device_name = f"LED_{led_name}_{wavelength}nm"
             
             led_config = LightEmittingDiodeConfig(
-                device_name=f"LED_{led_name}",
+                device_name=device_name,
                 power=light_source.get("power", 1.0),
                 power_unit=PowerUnit.PERCENT,
             )
@@ -203,6 +248,12 @@ class FIPMapper:
         # Build patch cord configurations
         # Each ROI index corresponds to: Patch Cord N → Fiber N (implant)
         # ROI 0 → Patch Cord 0 → Fiber 0, etc.
+        # 
+        # IMPORTANT: Each fiber should have 3 channels (green, isosbestic, red) due to
+        # temporal multiplexing, but we currently create 1-2 channels based on which
+        # cameras have ROIs defined. Full 3-channel implementation requires:
+        # - LED-to-ROI mapping to assign correct light sources
+        # - ROI-to-measurement mapping for intended_measurement field
         roi_settings = rig_config.get('roi_settings', {})
         if roi_settings:
             # Collect all ROIs across cameras and create patch cords
@@ -234,11 +285,18 @@ class FIPMapper:
             for roi_idx in sorted(roi_by_index.keys()):
                 channels = []
                 
+                # Currently creating one channel per camera that sees this fiber
+                # TODO: Should create 3 channels per fiber:
+                #   1. Green: 470nm excitation, ~520nm emission, green camera
+                #   2. Isosbestic: 415nm excitation, ~520nm emission, green camera
+                #   3. Red: 565nm excitation, ~590nm emission, red camera
                 for roi_info in roi_by_index[roi_idx]:
                     camera_name = roi_info['camera_name']
                     emission_wl = self._infer_emission_wavelength(camera_name)
                     
                     # Channel name reflects camera and fiber index
+                    # Green camera captures 2 channels (green + isosbestic) but we only
+                    # create one channel object here due to missing LED-to-ROI mapping
                     channel = Channel(
                         channel_name=f"Fiber_{roi_idx}_{camera_name.replace('camera_', '')}",
                         intended_measurement=None,  # TODO: Requires ROI-to-measurement mapping
@@ -265,11 +323,49 @@ class FIPMapper:
 
         return configurations
     
+    def _get_led_wavelength(self, led_name: str) -> Optional[int]:
+        """Get excitation wavelength for an LED based on its name.
+        
+        Based on standard FIP system configuration:
+        - UV/415: 415nm excitation → isosbestic channel
+        - Blue/470: 470nm excitation → green channel
+        - Yellow/Lime/565: 565nm excitation → red channel
+        
+        Parameters
+        ----------
+        led_name : str
+            LED name (e.g., "UV", "BLUE", "YELLOW", "LIME").
+        
+        Returns
+        -------
+        Optional[int]
+            Excitation wavelength in nm, or None if unknown.
+        """
+        led_lower = led_name.lower()
+        wavelength_map = {
+            'uv': 415,
+            '415': 415,
+            'blue': 470,
+            '470': 470,
+            'yellow': 565,
+            'lime': 565,
+            '565': 565,
+            '560': 565,
+        }
+        for key, wavelength in wavelength_map.items():
+            if key in led_lower:
+                return wavelength
+        return None
+
     def _infer_emission_wavelength(self, camera_name: str) -> Optional[int]:
         """Infer emission wavelength from camera name.
         
-        This is a rough estimate based on common FIP setups.
-        TODO: Replace with actual wavelength data from rig config.
+        Based on FIP system architecture:
+        - Green camera: 510nm peak (GFP) and 490-540nm (isosbestic, use 520nm center)
+        - Red camera: 590nm peak (RFP)
+        
+        Note: Green camera captures both green and isosbestic channels with
+        different excitation wavelengths but similar emission wavelengths.
         
         Parameters
         ----------
@@ -282,10 +378,10 @@ class FIPMapper:
             Estimated emission wavelength in nm, or None if unknown.
         """
         camera_lower = camera_name.lower()
-        if 'green' in camera_lower:
-            return 510  # Typical green emission
+        if 'green' in camera_lower or 'iso' in camera_lower:
+            return 520  # Center of 490-540nm isosbestic bandpass / ~510nm GFP peak
         elif 'red' in camera_lower:
-            return 590  # Typical red emission
+            return 590  # Red emission peak
         return None
 
     def _get_active_devices(self, metadata: FIPDataModel) -> List[str]:
@@ -385,25 +481,53 @@ class FIPMapper:
 
         return session_start_time, session_end_time
 
-    def write(self, model: Acquisition, filename: str = "acquisition.json", output_directory: Optional[str] = None):
+    def run_job(self, metadata: dict, output_directory: Optional[str] = None) -> Path:
+        """Run the complete mapping job: transform and write.
+        
+        This is the main entry point following the standard AIND mapper pattern.
+
+        Parameters
+        ----------
+        metadata : dict
+            Intermediate metadata from extractor.
+        output_directory : Optional[str], optional
+            Output directory path, by default None (current directory).
+
+        Returns
+        -------
+        Path
+            Path to the written acquisition file.
+        """
+        acquisition = self.transform(metadata)
+        output_path = self.write(acquisition, output_directory)
+        return output_path
+
+    def write(self, model: Acquisition, output_directory: Optional[str] = None) -> Path:
         """Write the Acquisition model to a JSON file.
+        
+        The output filename is determined by the mapper's output_filename attribute
+        (set during initialization, defaults to acquisition.json).
 
         Parameters
         ----------
         model : Acquisition
             The acquisition model to write.
-        filename : str, optional
-            Output filename, by default "acquisition.json".
         output_directory : Optional[str], optional
             Output directory path, by default None (current directory).
+
+        Returns
+        -------
+        Path
+            Path to the written file.
         """
         if output_directory:
-            output_path = Path(output_directory) / filename
+            output_path = Path(output_directory) / self.output_filename
         else:
-            output_path = Path(filename)
+            output_path = Path(self.output_filename)
         
         with open(output_path, 'w') as f:
             f.write(model.model_dump_json(indent=2))
         
         print(f"Wrote acquisition metadata to {output_path}")
+        return output_path
 

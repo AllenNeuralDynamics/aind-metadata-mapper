@@ -51,19 +51,19 @@
       "configurations": [
         {
           "object_type": "Light emitting diode config",
-          "device_name": "LED_UV",
+          "device_name": "LED_UV_415nm",
           "power": 1.0,
           "power_unit": "percent"
         },
         {
           "object_type": "Light emitting diode config",
-          "device_name": "LED_BLUE",
+          "device_name": "LED_BLUE_470nm",
           "power": 1.0,
           "power_unit": "percent"
         },
         {
           "object_type": "Light emitting diode config",
-          "device_name": "LED_LIME",
+          "device_name": "LED_LIME_565nm",
           "power": 1.0,
           "power_unit": "percent"
         },
@@ -104,7 +104,7 @@
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],
-              "emission_wavelength": 510,
+              "emission_wavelength": 520,
               "emission_wavelength_unit": "nanometer"
             },
             {
@@ -150,7 +150,7 @@
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],
-              "emission_wavelength": 510,
+              "emission_wavelength": 520,
               "emission_wavelength_unit": "nanometer"
             },
             {
@@ -196,7 +196,7 @@
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],
-              "emission_wavelength": 510,
+              "emission_wavelength": 520,
               "emission_wavelength_unit": "nanometer"
             },
             {
@@ -242,7 +242,7 @@
               "variable_power": false,
               "excitation_filters": [],
               "emission_filters": [],
-              "emission_wavelength": 510,
+              "emission_wavelength": 520,
               "emission_wavelength_unit": "nanometer"
             },
             {
