@@ -1,11 +1,15 @@
 """Utility functions for AIND metadata mappers."""
 
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 import requests
 from aind_data_schema.core.acquisition import Acquisition
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def write_acquisition(
@@ -35,7 +39,7 @@ def write_acquisition(
     with open(output_path, "w") as f:
         f.write(model.model_dump_json(indent=2))
 
-    print(f"Wrote acquisition metadata to {output_path}")
+    logger.info(f"Wrote acquisition metadata to {output_path}")
     return output_path
 
 
@@ -86,7 +90,7 @@ def get_procedures(subject_id: str) -> Optional[dict]:
         response.raise_for_status()
         return response.json()
     except Exception as e:
-        print(f"Warning: Could not fetch procedures for subject {subject_id}: {e}")
+        logger.warning(f"Could not fetch procedures for subject {subject_id}: {e}")
         return None
 
 
@@ -111,14 +115,13 @@ def get_intended_measurements(subject_id: str) -> Optional[dict]:
         response = requests.get(url, timeout=5)
 
         if response.status_code not in [200, 300]:
-            print(
-                f"Warning: Could not fetch intended measurements for subject {subject_id} "
-                f"(status {response.status_code})"
+            logger.warning(
+                f"Could not fetch intended measurements for subject {subject_id} " f"(status {response.status_code})"
             )
             return None
 
         return response.json()
 
     except Exception as e:
-        print(f"Warning: Error fetching intended measurements for subject {subject_id}: {e}")
+        logger.warning(f"Error fetching intended measurements for subject {subject_id}: {e}")
         return None
