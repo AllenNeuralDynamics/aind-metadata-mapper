@@ -68,22 +68,6 @@
           "power_unit": "percent"
         },
         {
-          "object_type": "Detector config",
-          "device_name": "Camera_Green Iso",
-          "exposure_time": 10.0,
-          "exposure_time_unit": "millisecond",
-          "trigger_type": "Internal",
-          "compression": null
-        },
-        {
-          "object_type": "Detector config",
-          "device_name": "Camera_Red",
-          "exposure_time": 10.0,
-          "exposure_time_unit": "millisecond",
-          "trigger_type": "Internal",
-          "compression": null
-        },
-        {
           "object_type": "Patch cord config",
           "device_name": "Patch Cord 0",
           "channels": [
@@ -94,7 +78,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": 10.0,
+                "exposure_time": -1.0,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -121,7 +105,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": 10.0,
+                "exposure_time": -1.0,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -148,7 +132,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Red",
-                "exposure_time": 10.0,
+                "exposure_time": -1.0,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -181,7 +165,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": 10.0,
+                "exposure_time": -1.0,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -208,7 +192,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": 10.0,
+                "exposure_time": -1.0,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -235,7 +219,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Red",
-                "exposure_time": 10.0,
+                "exposure_time": -1.0,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -268,7 +252,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": 10.0,
+                "exposure_time": -1.0,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -295,7 +279,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": 10.0,
+                "exposure_time": -1.0,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -322,7 +306,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Red",
-                "exposure_time": 10.0,
+                "exposure_time": -1.0,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -355,7 +339,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": 10.0,
+                "exposure_time": -1.0,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -382,7 +366,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": 10.0,
+                "exposure_time": -1.0,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -409,7 +393,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Red",
-                "exposure_time": 10.0,
+                "exposure_time": -1.0,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null

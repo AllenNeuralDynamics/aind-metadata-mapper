@@ -180,8 +180,8 @@ class FIPMapper:
         Returns
         -------
         Optional[List[int]]
-            List of implanted fiber indices (e.g., [0, 1] for Fiber_0 and Fiber_1).
-            Returns None if request fails or no brain injections found.
+            List of implanted fiber indices (e.g., [0, 1, 2] for Fiber_0, Fiber_1, Fiber_2).
+            Returns None if request fails or no fiber probes found.
         """
         try:
             url = f"http://aind-metadata-service-dev/api/v2/procedures/{subject_id}"
@@ -191,25 +191,27 @@ class FIPMapper:
             data = response.json()
             implanted_indices = set()
             
-            # Look through subject_procedures for brain injections
+            # Look through subject_procedures for fiber probe implants
             for subject_proc in data.get('subject_procedures', []):
                 if subject_proc.get('object_type') != 'Surgery':
                     continue
                     
                 for proc in subject_proc.get('procedures', []):
-                    if proc.get('object_type') != 'Brain injection':
+                    if proc.get('object_type') != 'Probe implant':
                         continue
                     
-                    # relative_position indicates which hemisphere: ["Right"], ["Left"], etc.
-                    relative_pos = proc.get('relative_position', [])
-                    if relative_pos:
-                        # Map positions to fiber indices
-                        # Convention: Right=0, Left=1 (can be refined based on actual mapping)
-                        for pos in relative_pos:
-                            if pos.lower() == 'right':
-                                implanted_indices.add(0)
-                            elif pos.lower() == 'left':
-                                implanted_indices.add(1)
+                    # Check if this is a fiber probe implant
+                    implanted_device = proc.get('implanted_device', {})
+                    if implanted_device.get('object_type') == 'Fiber probe':
+                        # Extract fiber index from name (e.g., "Fiber_0" -> 0)
+                        fiber_name = implanted_device.get('name', '')
+                        if fiber_name.startswith('Fiber_'):
+                            try:
+                                fiber_idx = int(fiber_name.split('_')[1])
+                                implanted_indices.add(fiber_idx)
+                            except (IndexError, ValueError):
+                                # Skip if we can't parse the fiber index
+                                continue
             
             if implanted_indices:
                 return sorted(list(implanted_indices))
@@ -457,12 +459,12 @@ class FIPMapper:
                     channels.append(Channel(
                         channel_name=f"Fiber_{fiber_idx}_Red",
                         intended_measurement=red_measurement,
-                        detector=DetectorConfig(
+                                detector=DetectorConfig(
                             device_name="Camera_Red",
                             exposure_time=PLACEHOLDER_CAMERA_EXPOSURE_TIME,
-                            exposure_time_unit=TimeUnit.MS,
-                            trigger_type=TriggerType.INTERNAL,
-                        ),
+                                    exposure_time_unit=TimeUnit.MS,
+                                    trigger_type=TriggerType.INTERNAL,
+                                ),
                         light_sources=[yellow_led] if yellow_led else [],
                         excitation_filters=[],  # TODO: Requires filter specs from instrument
                         emission_filters=[],  # TODO: Requires filter specs from instrument
