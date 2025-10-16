@@ -17,6 +17,8 @@ from aind_metadata_mapper import utils
 
 
 class TestUtils(unittest.TestCase):
+    """Test cases for utility functions in aind_metadata_mapper.utils."""
+
     def test_ensure_timezone_none(self):
         """Test that ensure_timezone handles None input by returning current time with timezone.
 
