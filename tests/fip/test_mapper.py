@@ -1,4 +1,18 @@
-"""Tests for FIP mapper."""
+"""Tests for FIP mapper.
+
+Strategy:
+- Use MagicMock to stand in for dependencies we don't want to execute (e.g., extractor models, IO).
+- Use patch.object() to replace specific methods (e.g., _parse_intended_measurements) so we can control
+  inputs and assert calls without making network requests.
+- Use SimpleNamespace to shape fixture payloads into attribute access the mapper expects, avoiding
+  a hard dependency on the extractor's Pydantic model.
+- Separate concerns:
+  - TestFIPMapper covers core transformation with API calls mocked at setUp so tests focus on
+    mapping logic and schema shape.
+  - TestFIPMapperEdgeCases exercises error paths and alternative branches by patching the
+    module-level HTTP helpers directly (no class-level mocks).
+- Result: fast, deterministic tests with full coverage, fallbacks, and ImportError/optional-dependency behavior.
+"""
 
 import json
 import unittest

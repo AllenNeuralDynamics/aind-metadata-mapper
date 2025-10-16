@@ -1,3 +1,13 @@
+"""Tests for utility functions.
+
+Strategy:
+- Mock HTTP via @patch on requests.get and drive behavior using MagicMock responses:
+  - status_code, json(), and raise_for_status() are set to simulate success, non-200, and exceptions.
+- File IO is exercised in isolation using tempfile.TemporaryDirectory(); where cwd matters, tests temporarily chdir.
+- Focus on error handling and return contracts (None vs. dict), not on external service availability.
+- Keep tests fast by avoiding real network or filesystem side effects outside temp dirs.
+"""
+
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
