@@ -1,0 +1,285 @@
+{
+  "object_type": "Acquisition",
+  "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/acquisition.py",
+  "schema_version": "2.0.36",
+  "subject_id": "test",
+  "specimen_id": null,
+  "acquisition_start_time": "2025-07-18T12:32:35.275046-07:00",
+  "acquisition_end_time": "2025-07-18T12:49:22.448358-07:00",
+  "experimenters": [
+    "Foo",
+    "Bar"
+  ],
+  "protocol_id": null,
+  "ethics_review_id": null,
+  "instrument_id": "test_rig",
+  "acquisition_type": "FIP",
+  "notes": null,
+  "coordinate_system": null,
+  "calibrations": [],
+  "maintenance": [],
+  "data_streams": [
+    {
+      "object_type": "Data stream",
+      "stream_start_time": "2025-07-18T12:32:35.275046-07:00",
+      "stream_end_time": "2025-07-18T12:49:22.448358-07:00",
+      "modalities": [
+        {
+          "name": "Fiber photometry",
+          "abbreviation": "fib"
+        }
+      ],
+      "code": null,
+      "notes": null,
+      "active_devices": [
+        "test_rig",
+        "LED_UV",
+        "LED_BLUE",
+        "LED_LIME",
+        "Camera_Green Iso",
+        "Camera_Red",
+        "Patch Cord 0",
+        "Fiber 0",
+        "Patch Cord 1",
+        "Fiber 1",
+        "Patch Cord 2",
+        "Fiber 2",
+        "Patch Cord 3",
+        "Fiber 3",
+        "cuTTLefishFip"
+      ],
+      "configurations": [
+        {
+          "object_type": "Light emitting diode config",
+          "device_name": "LED_UV",
+          "power": 1.0,
+          "power_unit": "percent"
+        },
+        {
+          "object_type": "Light emitting diode config",
+          "device_name": "LED_BLUE",
+          "power": 1.0,
+          "power_unit": "percent"
+        },
+        {
+          "object_type": "Light emitting diode config",
+          "device_name": "LED_LIME",
+          "power": 1.0,
+          "power_unit": "percent"
+        },
+        {
+          "object_type": "Detector config",
+          "device_name": "Camera_Green Iso",
+          "exposure_time": 10.0,
+          "exposure_time_unit": "millisecond",
+          "trigger_type": "Internal",
+          "compression": null
+        },
+        {
+          "object_type": "Detector config",
+          "device_name": "Camera_Red",
+          "exposure_time": 10.0,
+          "exposure_time_unit": "millisecond",
+          "trigger_type": "Internal",
+          "compression": null
+        },
+        {
+          "object_type": "Patch cord config",
+          "device_name": "Patch Cord 0",
+          "channels": [
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_0_green_iso",
+              "intended_measurement": null,
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "Camera_Green Iso",
+                "exposure_time": 10.0,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 510,
+              "emission_wavelength_unit": "nanometer"
+            },
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_0_red",
+              "intended_measurement": null,
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "Camera_Red",
+                "exposure_time": 10.0,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 590,
+              "emission_wavelength_unit": "nanometer"
+            }
+          ]
+        },
+        {
+          "object_type": "Patch cord config",
+          "device_name": "Patch Cord 1",
+          "channels": [
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_1_green_iso",
+              "intended_measurement": null,
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "Camera_Green Iso",
+                "exposure_time": 10.0,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 510,
+              "emission_wavelength_unit": "nanometer"
+            },
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_1_red",
+              "intended_measurement": null,
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "Camera_Red",
+                "exposure_time": 10.0,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 590,
+              "emission_wavelength_unit": "nanometer"
+            }
+          ]
+        },
+        {
+          "object_type": "Patch cord config",
+          "device_name": "Patch Cord 2",
+          "channels": [
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_2_green_iso",
+              "intended_measurement": null,
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "Camera_Green Iso",
+                "exposure_time": 10.0,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 510,
+              "emission_wavelength_unit": "nanometer"
+            },
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_2_red",
+              "intended_measurement": null,
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "Camera_Red",
+                "exposure_time": 10.0,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 590,
+              "emission_wavelength_unit": "nanometer"
+            }
+          ]
+        },
+        {
+          "object_type": "Patch cord config",
+          "device_name": "Patch Cord 3",
+          "channels": [
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_3_green_iso",
+              "intended_measurement": null,
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "Camera_Green Iso",
+                "exposure_time": 10.0,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 510,
+              "emission_wavelength_unit": "nanometer"
+            },
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_3_red",
+              "intended_measurement": null,
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "Camera_Red",
+                "exposure_time": 10.0,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 590,
+              "emission_wavelength_unit": "nanometer"
+            }
+          ]
+        }
+      ],
+      "connections": []
+    }
+  ],
+  "stimulus_epochs": [],
+  "subject_details": {
+    "object_type": "Acquisition subject details",
+    "animal_weight_prior": null,
+    "animal_weight_post": null,
+    "weight_unit": "gram",
+    "anaesthesia": null,
+    "mouse_platform_name": "wheel",
+    "reward_consumed_total": null,
+    "reward_consumed_unit": null
+  }
+}
