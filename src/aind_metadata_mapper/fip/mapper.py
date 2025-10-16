@@ -60,11 +60,19 @@ from aind_data_schema_models.units import MassUnit, PowerUnit, SizeUnit, TimeUni
 
 from aind_metadata_mapper.utils import ensure_timezone, get_intended_measurements, get_procedures, write_acquisition
 
+
+def _import_fip_data_model():
+    """Import FIPDataModel from extractor, returning None if not available."""
+    try:
+        from aind_metadata_extractor.models.fip import FIPDataModel
+
+        return FIPDataModel
+    except ImportError:
+        return None
+
+
 # Optional import for extractor models - gracefully handle when not available
-try:
-    from aind_metadata_extractor.models.fip import FIPDataModel
-except ImportError:
-    FIPDataModel = None
+FIPDataModel = _import_fip_data_model()
 
 logger = logging.getLogger(__name__)
 
