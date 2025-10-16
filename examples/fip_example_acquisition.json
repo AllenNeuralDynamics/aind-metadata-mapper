@@ -89,7 +89,7 @@
           "channels": [
             {
               "object_type": "Channel",
-              "channel_name": "Fiber_0_green_iso",
+              "channel_name": "Fiber_0_Green",
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
@@ -109,7 +109,27 @@
             },
             {
               "object_type": "Channel",
-              "channel_name": "Fiber_0_red",
+              "channel_name": "Fiber_0_Isosbestic",
+              "intended_measurement": null,
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "Camera_Green Iso",
+                "exposure_time": 10.0,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 520,
+              "emission_wavelength_unit": "nanometer"
+            },
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_0_Red",
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
@@ -135,7 +155,7 @@
           "channels": [
             {
               "object_type": "Channel",
-              "channel_name": "Fiber_1_green_iso",
+              "channel_name": "Fiber_1_Green",
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
@@ -155,7 +175,27 @@
             },
             {
               "object_type": "Channel",
-              "channel_name": "Fiber_1_red",
+              "channel_name": "Fiber_1_Isosbestic",
+              "intended_measurement": null,
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "Camera_Green Iso",
+                "exposure_time": 10.0,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 520,
+              "emission_wavelength_unit": "nanometer"
+            },
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_1_Red",
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
@@ -181,7 +221,7 @@
           "channels": [
             {
               "object_type": "Channel",
-              "channel_name": "Fiber_2_green_iso",
+              "channel_name": "Fiber_2_Green",
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
@@ -201,7 +241,27 @@
             },
             {
               "object_type": "Channel",
-              "channel_name": "Fiber_2_red",
+              "channel_name": "Fiber_2_Isosbestic",
+              "intended_measurement": null,
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "Camera_Green Iso",
+                "exposure_time": 10.0,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 520,
+              "emission_wavelength_unit": "nanometer"
+            },
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_2_Red",
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
@@ -227,7 +287,7 @@
           "channels": [
             {
               "object_type": "Channel",
-              "channel_name": "Fiber_3_green_iso",
+              "channel_name": "Fiber_3_Green",
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
@@ -247,7 +307,27 @@
             },
             {
               "object_type": "Channel",
-              "channel_name": "Fiber_3_red",
+              "channel_name": "Fiber_3_Isosbestic",
+              "intended_measurement": null,
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "Camera_Green Iso",
+                "exposure_time": 10.0,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 520,
+              "emission_wavelength_unit": "nanometer"
+            },
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_3_Red",
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",

@@ -11,21 +11,20 @@ Each implanted fiber has 3 temporal-multiplexed channels (60Hz cycling):
 
 CURRENT IMPLEMENTATION:
 =======================
-- Creates 1-2 channels per fiber (one per camera detecting that fiber)
+- Creates 3 channels per fiber (green, isosbestic, red)
+- Green and isosbestic channels share same detector (green CMOS) but have different excitation
 - Fetches intended_measurement from metadata service endpoint
 - LED wavelengths included in device names (LED_UV_415nm, LED_BLUE_470nm, LED_LIME_565nm)
-- Emission wavelengths inferred from camera type (520nm green/iso, 590nm red)
+- Emission wavelengths: 520nm green/iso, 590nm red
 - ROI index N → Patch Cord N → Fiber N (zero-indexed correspondence)
 - Implanted fiber identifiers included in active_devices (Fiber 0, Fiber 1, etc.)
 
 TODO - Enhancements for full schema compliance:
 ================================================
 
-1. FULL 3-CHANNEL STRUCTURE:
-   Current: Creating 1-2 channels per fiber (one per camera)
-   Needed: Create 3 channels per fiber (green, isosbestic, red)
-   - Green CMOS should have TWO separate channel objects (green + isosbestic)
-   - Requires LED-to-ROI mapping to assign correct light sources to each channel
+1. LIGHT SOURCE REFERENCES:
+   - Need to add LED device references to each channel's light_sources field
+   - Green channel → LED_BLUE_470nm, Isosbestic → LED_UV_415nm, Red → LED_LIME_565nm
 
 2. FILTER SPECIFICATIONS (requires instrument endpoint):
    - Excitation filters: Need specs for 415nm, 470nm, 565nm paths
@@ -311,82 +310,94 @@ class FIPMapper:
         # Each ROI index corresponds to: Patch Cord N → Fiber N (implant)
         # ROI 0 → Patch Cord 0 → Fiber 0, etc.
         # 
-        # IMPORTANT: Each fiber should have 3 channels (green, isosbestic, red) due to
-        # temporal multiplexing, but we currently create 1-2 channels based on which
-        # cameras have ROIs defined. Full 3-channel implementation requires:
-        # - LED-to-ROI mapping to assign correct light sources
-        # - ROI-to-measurement mapping for intended_measurement field
+        # Each fiber has 3 channels due to temporal multiplexing:
+        #   1. Green: 470nm excitation, ~520nm emission, green camera
+        #   2. Isosbestic: 415nm excitation, ~520nm emission, green camera (same detector!)
+        #   3. Red: 565nm excitation, ~590nm emission, red camera
         roi_settings = rig_config.get('roi_settings', {})
         if roi_settings:
-            # Collect all ROIs across cameras and create patch cords
-            roi_list = []
+            # Find which cameras have ROIs defined
+            has_green_camera = any('green' in key or 'iso' in key for key in roi_settings.keys() if '_roi' in key and '_background' not in key)
+            has_red_camera = any('red' in key for key in roi_settings.keys() if '_roi' in key and '_background' not in key)
             
+            # Determine max number of fibers from ROI counts
+            max_fiber_count = 0
             for roi_key in roi_settings.keys():
                 if '_roi' in roi_key and '_background' not in roi_key:
                     roi_data = roi_settings[roi_key]
-                    camera_name = roi_key.replace('_roi', '')
-                    
                     if isinstance(roi_data, list):
-                        for idx, roi in enumerate(roi_data):
-                            roi_list.append({
-                                'roi_idx': idx,
-                                'camera_name': camera_name,
-                                'roi': roi
-                            })
+                        max_fiber_count = max(max_fiber_count, len(roi_data))
             
-            # Create one patch cord per ROI index
-            # Group by ROI index to handle multiple cameras
-            roi_by_index = {}
-            for roi_info in roi_list:
-                roi_idx = roi_info['roi_idx']
-                if roi_idx not in roi_by_index:
-                    roi_by_index[roi_idx] = []
-                roi_by_index[roi_idx].append(roi_info)
-            
-            # Create patch cord for each ROI index
-            for roi_idx in sorted(roi_by_index.keys()):
+            # Create patch cord for each fiber
+            for fiber_idx in range(max_fiber_count):
                 channels = []
+                fiber_name = f"Fiber_{fiber_idx}"
+                fiber_measurements = intended_measurements.get(fiber_name) if intended_measurements else None
                 
-                # Currently creating one channel per camera that sees this fiber
-                # TODO: Should create 3 channels per fiber:
-                #   1. Green: 470nm excitation, ~520nm emission, green camera
-                #   2. Isosbestic: 415nm excitation, ~520nm emission, green camera
-                #   3. Red: 565nm excitation, ~590nm emission, red camera
-                for roi_info in roi_by_index[roi_idx]:
-                    camera_name = roi_info['camera_name']
-                    emission_wl = self._infer_emission_wavelength(camera_name)
-                    
-                    # Get intended measurement for this fiber/channel
-                    intended_measurement = self._get_channel_measurement(
-                        roi_idx, camera_name, intended_measurements
-                    )
-                    
-                    # Channel name reflects camera and fiber index
-                    # Green camera captures 2 channels (green + isosbestic) but we only
-                    # create one channel object here due to missing LED-to-ROI mapping
-                    channel = Channel(
-                        channel_name=f"Fiber_{roi_idx}_{camera_name.replace('camera_', '')}",
-                        intended_measurement=intended_measurement,
+                # Create Green channel (470nm excitation, green camera)
+                if has_green_camera:
+                    green_measurement = fiber_measurements.get('G') if fiber_measurements else None
+                    channels.append(Channel(
+                        channel_name=f"Fiber_{fiber_idx}_Green",
+                        intended_measurement=green_measurement,
                         detector=DetectorConfig(
-                            device_name=f"Camera_{camera_name.replace('camera_', '').replace('_', ' ').title()}",
+                            device_name="Camera_Green Iso",
                             exposure_time=10.0,  # TODO: Extract from camera metadata
                             exposure_time_unit=TimeUnit.MS,
                             trigger_type=TriggerType.INTERNAL,
                         ),
-                        light_sources=[],  # TODO: Need LED-to-ROI mapping from rig config
+                        light_sources=[],  # TODO: Add LED_BLUE_470nm reference
                         excitation_filters=[],  # TODO: Requires filter specs from instrument
                         emission_filters=[],  # TODO: Requires filter specs from instrument
-                        emission_wavelength=emission_wl,
-                        emission_wavelength_unit=SizeUnit.NM if emission_wl else None,
-                    )
-                    channels.append(channel)
+                        emission_wavelength=520,
+                        emission_wavelength_unit=SizeUnit.NM,
+                    ))
+                
+                # Create Isosbestic channel (415nm excitation, green camera)
+                if has_green_camera:
+                    iso_measurement = fiber_measurements.get('Iso') if fiber_measurements else None
+                    channels.append(Channel(
+                        channel_name=f"Fiber_{fiber_idx}_Isosbestic",
+                        intended_measurement=iso_measurement,
+                        detector=DetectorConfig(
+                            device_name="Camera_Green Iso",
+                            exposure_time=10.0,  # TODO: Extract from camera metadata
+                            exposure_time_unit=TimeUnit.MS,
+                            trigger_type=TriggerType.INTERNAL,
+                        ),
+                        light_sources=[],  # TODO: Add LED_UV_415nm reference
+                        excitation_filters=[],  # TODO: Requires filter specs from instrument
+                        emission_filters=[],  # TODO: Requires filter specs from instrument
+                        emission_wavelength=520,
+                        emission_wavelength_unit=SizeUnit.NM,
+                    ))
+                
+                # Create Red channel (565nm excitation, red camera)
+                if has_red_camera:
+                    red_measurement = fiber_measurements.get('R') if fiber_measurements else None
+                    channels.append(Channel(
+                        channel_name=f"Fiber_{fiber_idx}_Red",
+                        intended_measurement=red_measurement,
+                        detector=DetectorConfig(
+                            device_name="Camera_Red",
+                            exposure_time=10.0,  # TODO: Extract from camera metadata
+                            exposure_time_unit=TimeUnit.MS,
+                            trigger_type=TriggerType.INTERNAL,
+                        ),
+                        light_sources=[],  # TODO: Add LED_LIME_565nm reference
+                        excitation_filters=[],  # TODO: Requires filter specs from instrument
+                        emission_filters=[],  # TODO: Requires filter specs from instrument
+                        emission_wavelength=590,
+                        emission_wavelength_unit=SizeUnit.NM,
+                    ))
                 
                 # Patch Cord N connects to Fiber N (implanted fiber)
-                patch_cord = PatchCordConfig(
-                    device_name=f"Patch Cord {roi_idx}",
-                    channels=channels,
-                )
-                configurations.append(patch_cord)
+                if channels:  # Only create patch cord if we have channels
+                    patch_cord = PatchCordConfig(
+                        device_name=f"Patch Cord {fiber_idx}",
+                        channels=channels,
+                    )
+                    configurations.append(patch_cord)
 
         return configurations
     
@@ -449,54 +460,6 @@ class FIPMapper:
             return 520  # Center of 490-540nm isosbestic bandpass / ~510nm GFP peak
         elif 'red' in camera_lower:
             return 590  # Red emission peak
-        return None
-
-    def _get_channel_measurement(
-        self, 
-        roi_idx: int, 
-        camera_name: str,
-        intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]]
-    ) -> Optional[str]:
-        """Get intended measurement for a specific channel.
-        
-        Maps ROI index and camera name to the appropriate intended measurement
-        from the metadata service.
-        
-        Parameters
-        ----------
-        roi_idx : int
-            ROI/fiber index (0-indexed).
-        camera_name : str
-            Camera name from rig config (e.g., "camera_green_iso", "camera_red").
-        intended_measurements : Optional[Dict[str, Dict[str, Optional[str]]]]
-            Intended measurements from metadata service.
-            
-        Returns
-        -------
-        Optional[str]
-            Intended measurement string (e.g., "calcium", "dopamine", "control"),
-            or None if not available.
-        """
-        if not intended_measurements:
-            return None
-        
-        fiber_name = f"Fiber_{roi_idx}"
-        fiber_measurements = intended_measurements.get(fiber_name)
-        
-        if not fiber_measurements:
-            return None
-        
-        # Map camera name to channel type
-        # Note: Currently creating 1 channel per camera, but green camera
-        # actually captures both green (470nm) and isosbestic (415nm) channels
-        camera_lower = camera_name.lower()
-        if 'red' in camera_lower:
-            return fiber_measurements.get('R')
-        elif 'green' in camera_lower or 'iso' in camera_lower:
-            # For now, return green measurement for green camera
-            # TODO: Create separate channels for green vs isosbestic
-            return fiber_measurements.get('G')
-        
         return None
 
     def _get_active_devices(self, metadata: FIPDataModel) -> List[str]:
