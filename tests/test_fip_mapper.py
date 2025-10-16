@@ -173,7 +173,13 @@ class TestFIPMapper(unittest.TestCase):
         
         config_types = [type(c).__name__ for c in data_stream.configurations]
         self.assertIn("LightEmittingDiodeConfig", config_types)
-        self.assertIn("DetectorConfig", config_types)
+        self.assertIn("PatchCordConfig", config_types)
+        
+        # Verify DetectorConfig exists within Channel objects
+        patch_cords = [c for c in data_stream.configurations if type(c).__name__ == "PatchCordConfig"]
+        self.assertGreater(len(patch_cords), 0)
+        self.assertGreater(len(patch_cords[0].channels), 0)
+        self.assertIsNotNone(patch_cords[0].channels[0].detector)
 
     def test_timezone_handling(self):
         """Test session times are properly timezone-aware."""

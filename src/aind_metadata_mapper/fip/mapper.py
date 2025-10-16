@@ -36,9 +36,9 @@ TODO - Enhancements for full schema compliance:
    - Port/channel mappings between devices
    - Add to DataStream.connections field
 
-3. DETAILED DEVICE METADATA:
+3. DETAILED DEVICE METADATA (requires camera/instrument metadata):
    - LED power calibration at patch cord end
-   - Actual camera exposure times (currently placeholder 10ms)
+   - Camera exposure times (currently using PLACEHOLDER_CAMERA_EXPOSURE_TIME = -1)
    - Camera serial numbers, gain settings, ROI coordinates
    - Temporal multiplexing timing (16.67ms period, LED pulse widths)
 """
@@ -72,6 +72,11 @@ EXCITATION_YELLOW = 565  # Yellow/Lime LED → red emission (RFP signal)
 # FIP system emission wavelengths (nm)
 EMISSION_GREEN = 520  # Green emission: center of 490-540nm bandpass, ~510nm GFP peak
 EMISSION_RED = 590    # Red emission: ~590nm RFP peak
+
+# Placeholder for camera exposure time (milliseconds)
+# TODO: Replace with actual exposure time from camera metadata when available
+# Using -1 as an obviously invalid value to indicate missing data
+PLACEHOLDER_CAMERA_EXPOSURE_TIME = -1
 
 
 class FIPMapper:
@@ -362,27 +367,14 @@ class FIPMapper:
                 power_unit=PowerUnit.PERCENT,
             )
             configurations.append(led_config)
-            
+
             # Store for reference in channels
             if wavelength:
                 led_configs_by_wavelength[wavelength] = led_config
 
-        camera_names = [
-            name for name in rig_config.keys()
-            if name.startswith('camera_')
-        ]
-        
-        for camera_name in camera_names:
-            camera = rig_config[camera_name]
-            detector_name = camera_name.replace('camera_', '').replace('_', ' ').title()
-            
-            detector_config = DetectorConfig(
-                device_name=f"Camera_{detector_name}",
-                exposure_time=10.0,
-                exposure_time_unit=TimeUnit.MS,
-                trigger_type=TriggerType.INTERNAL,
-            )
-            configurations.append(detector_config)
+        # Note: Camera configurations are created inline within Channel objects below
+        # We don't create standalone DetectorConfig objects here because we don't
+        # have accurate exposure times or other camera settings from the rig_config
 
         # Build patch cord configurations
         # Each ROI index corresponds to: Patch Cord N → Fiber N (implant)
@@ -427,7 +419,7 @@ class FIPMapper:
                         intended_measurement=green_measurement,
                         detector=DetectorConfig(
                             device_name="Camera_Green Iso",
-                            exposure_time=10.0,  # TODO: Extract from camera metadata
+                            exposure_time=PLACEHOLDER_CAMERA_EXPOSURE_TIME,
                             exposure_time_unit=TimeUnit.MS,
                             trigger_type=TriggerType.INTERNAL,
                         ),
@@ -447,7 +439,7 @@ class FIPMapper:
                         intended_measurement=iso_measurement,
                         detector=DetectorConfig(
                             device_name="Camera_Green Iso",
-                            exposure_time=10.0,  # TODO: Extract from camera metadata
+                            exposure_time=PLACEHOLDER_CAMERA_EXPOSURE_TIME,
                             exposure_time_unit=TimeUnit.MS,
                             trigger_type=TriggerType.INTERNAL,
                         ),
@@ -465,12 +457,12 @@ class FIPMapper:
                     channels.append(Channel(
                         channel_name=f"Fiber_{fiber_idx}_Red",
                         intended_measurement=red_measurement,
-                                detector=DetectorConfig(
+                        detector=DetectorConfig(
                             device_name="Camera_Red",
-                            exposure_time=10.0,  # TODO: Extract from camera metadata
-                                    exposure_time_unit=TimeUnit.MS,
-                                    trigger_type=TriggerType.INTERNAL,
-                                ),
+                            exposure_time=PLACEHOLDER_CAMERA_EXPOSURE_TIME,
+                            exposure_time_unit=TimeUnit.MS,
+                            trigger_type=TriggerType.INTERNAL,
+                        ),
                         light_sources=[yellow_led] if yellow_led else [],
                         excitation_filters=[],  # TODO: Requires filter specs from instrument
                         emission_filters=[],  # TODO: Requires filter specs from instrument
