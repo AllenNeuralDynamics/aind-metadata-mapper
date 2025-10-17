@@ -175,7 +175,9 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
                     pulse_shape=self.job_settings.opto.pulse_shape,
                     pulse_frequency=self.job_settings.opto.pulse_frequency,
                     number_pulse_trains=(
-                        self.job_settings.opto.number_pulse_trains
+                        self.job_settings.opto.number_pulse_trains[0]
+                        * len(self.job_settings.opto.pulse_frequency)
+                        * len(self.job_settings.opto.pulse_train_duration)
                     ),
                     pulse_width=self.job_settings.opto.pulse_width,
                     pulse_train_duration=(
@@ -207,6 +209,7 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
                     ),
                 )
             ],
+            trials_total=self.job_settings.opto.number_pulse_trains[0],
         )
 
         return OptoFiberBenchmarkModel(
@@ -229,6 +232,16 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
             fiber_connections=[
                 FiberConnectionConfig(**fc)
                 for fc in model.fiber_data.fiber_configs
+            ],
+            software=[
+                Software(
+                    name="FIP_DAQ_Control_IndicatorBenchmarking",
+                    version="0.1.0",
+                    url=str(
+                        "https://github.com/AllenNeuralDynamics/"
+                        "FIP_DAQ_Control_IndicatorBenchmarking"
+                    ),
+                )
             ],
         )
 
