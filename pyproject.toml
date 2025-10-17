@@ -18,6 +18,7 @@ dynamic = ["version"]
 
 dependencies = [
     "requests",
+    "pyyaml",
     "aind-data-schema>=2.0.5",
     "pydantic-settings>=2.8.0"
 ]

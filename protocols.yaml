@@ -1,0 +1,14 @@
+# Protocol references for AIND metadata mappers
+# Each modality can have one or more protocol URLs
+# Format: modality -> list of protocol URLs
+
+fip:
+  - "https://www.protocols.io/view/modified-frame-projected-independent-fiber-photome-kxygx3e6wg8j/v1"
+
+# Future modalities can be added here:
+# smartspim:
+#   - "https://www.protocols.io/view/smartspim-protocol-url/v1"
+#
+# behavior:
+#   - "https://www.protocols.io/view/behavior-protocol-1/v1"
+#   - "https://www.protocols.io/view/behavior-protocol-2/v1"

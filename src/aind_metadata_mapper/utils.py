@@ -125,3 +125,49 @@ def get_intended_measurements(subject_id: str) -> Optional[dict]:
     except Exception as e:
         logger.warning(f"Error fetching intended measurements for subject {subject_id}: {e}")
         return None
+
+
+def load_protocols():
+    """Load protocol URLs from protocols.yaml file.
+
+    Returns
+    -------
+    dict
+        Dictionary mapping modality names to lists of protocol URLs.
+    """
+    try:
+        from pathlib import Path
+
+        import yaml
+
+        project_root = Path(__file__).parent.parent.parent
+        protocols_file = project_root / "protocols.yaml"
+
+        if not protocols_file.exists():
+            logger.warning(f"Protocols file not found at {protocols_file}")
+            return {}
+
+        with open(protocols_file, "r") as f:
+            protocols = yaml.safe_load(f)
+
+        return protocols or {}
+    except Exception as e:
+        logger.warning(f"Error loading protocols: {e}")
+        return {}
+
+
+def get_protocols_for_modality(modality):
+    """Get protocol URLs for a specific modality.
+
+    Parameters
+    ----------
+    modality : str
+        The modality name (e.g., 'fip', 'smartspim').
+
+    Returns
+    -------
+    list
+        List of protocol URLs for the modality.
+    """
+    protocols = load_protocols()
+    return protocols.get(modality, [])

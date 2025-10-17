@@ -58,7 +58,13 @@ from aind_data_schema.core.acquisition import Acquisition, AcquisitionSubjectDet
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import MassUnit, PowerUnit, SizeUnit, TimeUnit
 
-from aind_metadata_mapper.utils import ensure_timezone, get_intended_measurements, get_procedures, write_acquisition
+from aind_metadata_mapper.utils import (
+    ensure_timezone,
+    get_intended_measurements,
+    get_procedures,
+    get_protocols_for_modality,
+    write_acquisition,
+)
 
 
 def _import_fip_data_model():
@@ -284,6 +290,9 @@ class FIPMapper:
         intended_measurements = self._parse_intended_measurements(subject_id)
         implanted_fibers = self._parse_implanted_fibers(subject_id)
 
+        # Get protocol URLs for FIP modality
+        protocols = get_protocols_for_modality("fip")
+        protocol_id = protocols if protocols else None
         data_stream = DataStream(
             stream_start_time=session_start_time,
             stream_end_time=session_end_time,
@@ -304,6 +313,7 @@ class FIPMapper:
             data_streams=[data_stream],
             stimulus_epochs=[],
             subject_details=subject_details,
+            protocol_id=protocol_id,
         )
 
         return acquisition
