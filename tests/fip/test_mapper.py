@@ -541,6 +541,23 @@ class TestFIPMapperEdgeCases(unittest.TestCase):
             result = mapper._parse_implanted_fibers("123")
             self.assertIsNone(result)
 
+    def test_camera_exposure_missing_delta_warning(self):
+        """Test camera exposure extraction warning when delta_1 is missing."""
+        mapper = FIPMapper()
+
+        with patch("aind_metadata_mapper.fip.mapper.get_intended_measurements", return_value=None):
+            with patch("aind_metadata_mapper.fip.mapper.get_procedures", return_value=None):
+                # Load fixture and remove delta_1
+                with open("tests/fixtures/fip_intermediate.json", "r") as f:
+                    data = json.load(f)
+
+                for key in data["rig_config"]:
+                    if key.startswith("light_source_") and "task" in data["rig_config"][key]:
+                        data["rig_config"][key]["task"].pop("delta_1", None)
+
+                acquisition = mapper._transform(SimpleNamespace(**data))
+                self.assertIsNotNone(acquisition)
+
 
 if __name__ == "__main__":
     unittest.main()

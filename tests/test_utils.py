@@ -209,6 +209,46 @@ class TestUtils(unittest.TestCase):
             self.assertTrue(result.exists())
             self.assertEqual(result.parent, Path(tmpdir))
 
+    def test_load_protocols_file_not_found(self):
+        """Test load_protocols returns empty dict when protocols.yaml is missing."""
+        import shutil
+        from pathlib import Path as RealPath
+
+        protocols_path = RealPath(__file__).parent.parent / "protocols.yaml"
+        backup_path = RealPath(__file__).parent.parent / "protocols.yaml.test_backup"
+
+        if protocols_path.exists():
+            shutil.move(str(protocols_path), str(backup_path))
+
+        try:
+            result = utils.load_protocols()
+            self.assertEqual(result, {})
+        finally:
+            if backup_path.exists():
+                shutil.move(str(backup_path), str(protocols_path))
+
+    def test_load_protocols_yaml_error(self):
+        """Test load_protocols returns empty dict when YAML is invalid."""
+        import shutil
+        from pathlib import Path as RealPath
+
+        protocols_path = RealPath(__file__).parent.parent / "protocols.yaml"
+        backup_path = RealPath(__file__).parent.parent / "protocols.yaml.test_backup"
+
+        if protocols_path.exists():
+            shutil.move(str(protocols_path), str(backup_path))
+
+        try:
+            with open(protocols_path, "w") as f:
+                f.write("invalid: yaml: [unclosed")
+
+            result = utils.load_protocols()
+            self.assertEqual(result, {})
+        finally:
+            protocols_path.unlink(missing_ok=True)
+            if backup_path.exists():
+                shutil.move(str(backup_path), str(protocols_path))
+
 
 if __name__ == "__main__":
     unittest.main()
