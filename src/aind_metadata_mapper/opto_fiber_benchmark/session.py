@@ -174,11 +174,11 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
                     stimulus_name=self.job_settings.opto.stimulus_name,
                     pulse_shape=self.job_settings.opto.pulse_shape,
                     pulse_frequency=self.job_settings.opto.pulse_frequency,
-                    number_pulse_trains=(
+                    number_pulse_trains=[
                         self.job_settings.opto.number_pulse_trains[0]
                         * len(self.job_settings.opto.pulse_frequency)
                         * len(self.job_settings.opto.pulse_train_duration)
-                    ),
+                    ],
                     pulse_width=self.job_settings.opto.pulse_width,
                     pulse_train_duration=(
                         self.job_settings.opto.pulse_train_duration
