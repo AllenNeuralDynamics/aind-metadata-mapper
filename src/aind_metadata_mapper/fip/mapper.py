@@ -95,10 +95,11 @@ EXCITATION_YELLOW = 565  # Yellow/Lime LED → red emission (RFP signal)
 EMISSION_GREEN = 520  # Green emission: center of 490-540nm bandpass, ~510nm GFP peak
 EMISSION_RED = 590  # Red emission: ~590nm RFP peak
 
-# Placeholder for camera exposure time (milliseconds)
-# TODO: Replace with actual exposure time from camera metadata when available
-# Using -1 as an obviously invalid value to indicate missing data
-PLACEHOLDER_CAMERA_EXPOSURE_TIME = -1
+# Camera exposure time units and defaults
+# The FIP system stores exposure time in the light_source task.delta_1 field (in microseconds)
+# This value represents the camera integration time during each LED pulse
+CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND = 1000
+DEFAULT_CAMERA_EXPOSURE_TIME_US = -1  # Fallback when delta_1 is not available
 
 
 class FIPMapper:
@@ -363,6 +364,49 @@ class FIPMapper:
             anaesthesia=metadata.anaesthesia,
         )
 
+    def _extract_camera_exposure_time(self, rig_config: Dict) -> float:
+        """Extract camera exposure time from rig configuration.
+
+        The FIP system stores camera exposure time in the light_source task data
+        as 'delta_1' (in microseconds). This represents the camera integration time
+        during each LED pulse cycle. All light sources should have the same delta_1
+        value since the cameras are synchronized to the LED timing.
+
+        Parameters
+        ----------
+        rig_config : Dict
+            Rig configuration dictionary containing light source definitions.
+
+        Returns
+        -------
+        float
+            Camera exposure time in microseconds. Returns DEFAULT_CAMERA_EXPOSURE_TIME_US
+            if delta_1 cannot be found in any light source configuration.
+
+        Notes
+        -----
+        The delta values in the light source task represent LED timing:
+        - delta_1: Camera exposure time (microseconds) - what we extract here
+        - delta_2: Delay between LED pulse and camera trigger (microseconds)
+        - delta_3: LED pulse width (microseconds)
+        - delta_4: Additional timing parameter (microseconds)
+        """
+        # Find any light source with task data
+        for key, value in rig_config.items():
+            if key.startswith("light_source_") and isinstance(value, dict):
+                task = value.get("task", {})
+                if isinstance(task, dict) and "delta_1" in task:
+                    delta_1 = task["delta_1"]
+                    if isinstance(delta_1, (int, float)) and delta_1 > 0:
+                        logger.info(f"Extracted camera exposure time: {delta_1} μs from {key}")
+                        return float(delta_1)
+
+        logger.warning(
+            "Could not find delta_1 (camera exposure time) in any light_source configuration. "
+            f"Using default value: {DEFAULT_CAMERA_EXPOSURE_TIME_US} μs"
+        )
+        return float(DEFAULT_CAMERA_EXPOSURE_TIME_US)
+
     def _build_led_configs(self, rig_config: Dict) -> tuple:
         """Build LED configurations from rig config.
 
@@ -410,6 +454,7 @@ class FIPMapper:
         intended_measurement: Optional[str],
         camera_name: str,
         emission_wavelength: int,
+        exposure_time_ms: float,
     ) -> Channel:
         """Create a single channel configuration.
 
@@ -427,6 +472,8 @@ class FIPMapper:
             Camera device name.
         emission_wavelength : int
             Emission wavelength in nm.
+        exposure_time_ms : float
+            Camera exposure time in milliseconds.
 
         Returns
         -------
@@ -438,7 +485,7 @@ class FIPMapper:
             intended_measurement=intended_measurement,
             detector=DetectorConfig(
                 device_name=camera_name,
-                exposure_time=PLACEHOLDER_CAMERA_EXPOSURE_TIME,
+                exposure_time=exposure_time_ms,
                 exposure_time_unit=TimeUnit.MS,
                 trigger_type=TriggerType.INTERNAL,
             ),
@@ -477,13 +524,14 @@ class FIPMapper:
         configurations = []
         rig_config = metadata.rig_config
 
+        # Extract camera exposure time from light source delta_1 field
+        exposure_time_us = self._extract_camera_exposure_time(rig_config)
+        # Convert microseconds to milliseconds for DetectorConfig
+        exposure_time_ms = exposure_time_us / CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND
+
         # Build LED configs
         led_configs, led_configs_by_wavelength = self._build_led_configs(rig_config)
         configurations.extend(led_configs)
-
-        # Note: Camera configurations are created inline within Channel objects below
-        # We don't create standalone DetectorConfig objects here because we don't
-        # have accurate exposure times or other camera settings from the rig_config
 
         # Build patch cord configurations
         # Each ROI index corresponds to: Patch Cord N → Fiber N (implant)
@@ -527,6 +575,7 @@ class FIPMapper:
                             green_measurement,
                             "Camera_Green Iso",
                             EMISSION_GREEN,
+                            exposure_time_ms,
                         )
                     )
 
@@ -541,6 +590,7 @@ class FIPMapper:
                             iso_measurement,
                             "Camera_Green Iso",
                             EMISSION_GREEN,
+                            exposure_time_ms,
                         )
                     )
 
@@ -555,6 +605,7 @@ class FIPMapper:
                             red_measurement,
                             "Camera_Red",
                             EMISSION_RED,
+                            exposure_time_ms,
                         )
                     )
 
