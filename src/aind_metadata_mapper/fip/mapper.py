@@ -176,10 +176,7 @@ class FIPMapper:
                 }
 
         if not result:
-            logger.warning(
-                f"No intended_measurements information found for subject_id={subject_id}. "
-                "These fields will be None in the resulting metadata file."
-            )
+            logger.warning(f"No valid fiber measurements found for subject_id={subject_id}.")
             return None
         return result
 
