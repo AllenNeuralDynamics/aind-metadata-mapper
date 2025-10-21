@@ -15,6 +15,7 @@ Strategy:
 """
 
 import json
+import sys  # noqa: F401
 import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -316,8 +317,9 @@ class TestFIPMapper(unittest.TestCase):
         """
         from aind_metadata_mapper.fip.mapper import _import_fip_data_model
 
-        # Mock the import to simulate extractor being available
-        with patch("aind_metadata_extractor.models.fip.FIPDataModel", MagicMock()) as mock_model:
+        # Mock the import at the module level to avoid ImportError in CI
+        mock_model = MagicMock()
+        with patch.dict("sys.modules", {"aind_metadata_extractor.models.fip": MagicMock(FIPDataModel=mock_model)}):
             result = _import_fip_data_model()
             # Should return the mocked class
             self.assertIsNotNone(result)
