@@ -32,9 +32,6 @@ dev = [
     "isort",
     "pre-commit"
 ]
-extractor = [
-    "aind-metadata-extractor"
-]
 
 doc = [
     "Sphinx<6.0",
