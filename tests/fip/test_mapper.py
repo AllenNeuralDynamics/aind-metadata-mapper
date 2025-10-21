@@ -317,10 +317,11 @@ class TestFIPMapper(unittest.TestCase):
         from aind_metadata_mapper.fip.mapper import _import_fip_data_model
 
         # Mock the import to simulate extractor being available
-        with patch("aind_metadata_mapper.fip.mapper.FIPDataModel", MagicMock()):
+        with patch("aind_metadata_extractor.models.fip.FIPDataModel", MagicMock()) as mock_model:
             result = _import_fip_data_model()
             # Should return the mocked class
             self.assertIsNotNone(result)
+            self.assertEqual(result, mock_model)
 
     def test_import_fip_data_model_import_error(self):
         """Test that _import_fip_data_model handles ImportError gracefully when extractor is missing.
