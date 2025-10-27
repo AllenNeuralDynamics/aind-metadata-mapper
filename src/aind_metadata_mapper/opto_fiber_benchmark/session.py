@@ -101,8 +101,7 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
         for duration in self.job_settings.opto.pulse_train_duration:
             time = time + pd.to_timedelta(
                 (duration + self.job_settings.opto.pulse_train_interval)
-                * self.job_settings.opto.number_pulse_trains[0]
-                * len(self.job_settings.opto.pulse_frequency),
+                * self.job_settings.opto.number_pulse_trains[0],
                 unit="s",
             )
 
@@ -176,8 +175,6 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
                     pulse_frequency=self.job_settings.opto.pulse_frequency,
                     number_pulse_trains=[
                         self.job_settings.opto.number_pulse_trains[0]
-                        * len(self.job_settings.opto.pulse_frequency)
-                        * len(self.job_settings.opto.pulse_train_duration)
                     ],
                     pulse_width=self.job_settings.opto.pulse_width,
                     pulse_train_duration=(
@@ -209,7 +206,7 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
                     ),
                 )
             ],
-            trials_total=self.job_settings.opto.number_pulse_trains[0],
+            trials_total=self.job_settings.opto.trials_total,
         )
 
         return OptoFiberBenchmarkModel(

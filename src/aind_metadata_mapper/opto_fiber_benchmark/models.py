@@ -46,6 +46,7 @@ class OptoJobSettings(BaseJobSettings):
     wavelength: int = Field(..., title="Wavelength (nm)")
     laser_name: str = Field(..., title="Name of laser model")
     power: float = Field(..., title="Excitation power")
+    trials_total: int = Field(..., title="Number of trials")
 
 
 class JobSettings(BaseJobSettings):
