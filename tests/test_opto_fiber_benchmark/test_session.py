@@ -85,7 +85,8 @@ class TestOptoFiberBenchmark(unittest.TestCase):
                         "baseline_duration": 5.0,
                         "wavelength": 470,
                         "power": 10.0,
-                        "laser_name": "Laser Stimulation"
+                        "laser_name": "Laser Stimulation",
+                        "trials_total": 40
                     },
                 }
             )
