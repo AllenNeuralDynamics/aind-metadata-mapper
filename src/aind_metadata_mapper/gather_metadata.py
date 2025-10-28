@@ -21,6 +21,8 @@ from aind_data_schema_models.organizations import Organization
 from pydantic import ValidationError
 
 from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.base import MapperJobSettings
+from aind_metadata_mapper.mapper_registry import registry
 
 
 class GatherMetadataJob:
@@ -255,6 +257,36 @@ class GatherMetadataJob:
             contents = self._get_file_from_user_defined_directory(file_name=file_name)
         return contents
 
+    def _run_mappers_for_acquisition(self):
+        """
+        Run mappers for any files in metadata_dir matching a registry key.
+        For each file named <mapper>.json, run the corresponding mapper and output acquisition_<mapper>.json.
+        """
+        metadata_dir = self.settings.metadata_dir
+        # Get all files in metadata_dir
+        try:
+            os.listdir(metadata_dir)
+        except Exception as e:
+            logging.warning(f"Could not list files in {metadata_dir}: {e}")
+            return
+        # For each registry key, check if <key>.json exists
+        for mapper_name in registry.keys():
+            input_filename = f"{mapper_name}.json"
+            input_path = os.path.join(metadata_dir, input_filename)
+            output_filename = f"acquisition_{mapper_name}.json"
+            output_path = os.path.join(metadata_dir, output_filename)
+            # Only run if input exists and output does not already exist
+            if os.path.isfile(input_path) and not os.path.isfile(output_path):
+                mapper_cls = registry[mapper_name]
+                # Create job settings for the mapper
+                job_settings = MapperJobSettings(input_filepath=input_path, output_filepath=output_path)
+                try:
+                    mapper = mapper_cls()
+                    mapper.run_job(job_settings)
+                    logging.info(f"Ran mapper '{mapper_name}' for {input_filename} -> {output_filename}")
+                except Exception as e:
+                    logging.error(f"Error running mapper '{mapper_name}': {e}")
+
     def get_acquisition(self) -> Optional[dict]:
         """Get acquisition metadata"""
         logging.info("Gathering acquisition metadata.")
@@ -264,6 +296,9 @@ class GatherMetadataJob:
             logging.debug(f"Using existing {file_name}.")
             return self._get_file_from_user_defined_directory(file_name=file_name)
         else:
+            # Run mappers for any matching files
+            self._run_mappers_for_acquisition()
+            # then gather all acquisition files with prefixes
             files = self._get_prefixed_files_from_user_defined_directory(file_name_prefix="acquisition")
             if files:
                 return self._merge_models(Acquisition, files)
