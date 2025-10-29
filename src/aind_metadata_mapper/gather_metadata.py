@@ -151,7 +151,7 @@ class GatherMetadataJob:
 
         return parsed_funding_info, investigators_list
 
-    def build_data_description(self) -> dict:
+    def build_data_description(self, acquisition_start_time: Optional[str]) -> dict:
         """Build data description metadata"""
         logging.info("Gathering data description metadata.")
         file_name = DataDescription.default_filename()
@@ -161,15 +161,13 @@ class GatherMetadataJob:
             logging.debug(f"Using existing {file_name}.")
             return self._get_file_from_user_defined_directory(file_name=file_name)
 
-        # Get acquisition data to extract start time
-        acquisition_data = self.get_acquisition()
-        creation_time = datetime.now()
-
-        if acquisition_data and "acquisition_start_time" in acquisition_data:
-            start_time_str = acquisition_data["acquisition_start_time"]
-            iso_time_str = start_time_str.replace("Z", "+00:00")
-            creation_time = datetime.fromisoformat(iso_time_str)
+        if acquisition_start_time:
+            acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
+            creation_time = datetime.fromisoformat(acquisition_start_time)
             logging.info(f"Using acquisition start time: {creation_time}")
+        else:
+            creation_time = datetime.now()
+            logging.info(f"No start time available, using creation time: {creation_time}")
 
         # Get funding information
         funding_source, investigators = self.get_funding()
@@ -475,9 +473,16 @@ class GatherMetadataJob:
 
         # Gather all core metadata
         core_metadata = {}
+        
+        # Get acquisition first so that we can use the acquisition_start_time
+        # for the data_description
+        acquisition = self.get_acquisition()
+        if acquisition:
+            core_metadata["acquisition"] = acquisition
+            self._write_json_file(Acquisition.default_filename(), acquisition)
 
         # Always create data description (required)
-        data_description = self.build_data_description()
+        data_description = self.build_data_description(acquisition.get("acquisition_start_time") if acquisition else None)
         if data_description:
             core_metadata["data_description"] = data_description
             self._write_json_file(DataDescription.default_filename(), data_description)
@@ -492,11 +497,6 @@ class GatherMetadataJob:
         if procedures:
             core_metadata["procedures"] = procedures
             self._write_json_file(Procedures.default_filename(), procedures)
-
-        acquisition = self.get_acquisition()
-        if acquisition:
-            core_metadata["acquisition"] = acquisition
-            self._write_json_file(Acquisition.default_filename(), acquisition)
 
         instrument = self.get_instrument()
         if instrument:

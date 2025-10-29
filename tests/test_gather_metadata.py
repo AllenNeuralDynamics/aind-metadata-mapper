@@ -12,6 +12,7 @@ from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
+from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
@@ -190,7 +191,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_file_exists.return_value = True
         mock_get_file.return_value = {"existing": "data"}
 
-        result = self.job.build_data_description()
+        result = self.job.build_data_description(acquisition_start_time=None)
 
         self.assertEqual(result, {"existing": "data"})
         mock_file_exists.assert_called_once_with(file_name="data_description.json")
@@ -209,7 +210,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         mock_datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)
 
-        result = self.job.build_data_description()
+        result = self.job.build_data_description(acquisition_start_time=None)
 
         self.assertIn("creation_time", result)
         self.assertEqual(result["project_name"], "Test Project")
@@ -644,8 +645,9 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     def test_merge_models_instruments(self):
         """Test _merge_models with instrument objects"""
-        from aind_data_schema.core.instrument import Instrument
         import json
+
+        from aind_data_schema.core.instrument import Instrument
 
         with open(TEST_DIR / "resources" / "v2_metadata" / "instrument.json") as f:
             base_instrument = json.load(f)
@@ -660,8 +662,9 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     def test_merge_models_acquisition(self):
         """Test _merge_models with acquisition objects"""
-        from aind_data_schema.core.acquisition import Acquisition
         import json
+
+        from aind_data_schema.core.acquisition import Acquisition
 
         with open(TEST_DIR / "resources" / "v2_metadata" / "acquisition.json") as f:
             base_acquisition = json.load(f)
@@ -679,9 +682,9 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     def test_get_instrument_multiple_files(self):
         """Test get_instrument with multiple instrument files"""
-        import tempfile
-        import shutil
         import json
+        import shutil
+        import tempfile
 
         temp_dir = tempfile.mkdtemp()
         test_settings = JobSettings(
@@ -716,9 +719,9 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     def test_get_acquisition_multiple_files(self):
         """Test get_acquisition with multiple acquisition files"""
-        import tempfile
-        import shutil
         import json
+        import shutil
+        import tempfile
 
         temp_dir = tempfile.mkdtemp()
         test_settings = JobSettings(
@@ -756,9 +759,9 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     def test_get_quality_control_multiple_files(self):
         """Test get_quality_control with multiple quality control files"""
-        import tempfile
-        import shutil
         import json
+        import shutil
+        import tempfile
 
         temp_dir = tempfile.mkdtemp()
         test_settings = JobSettings(
@@ -793,9 +796,9 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     def test_get_prefixed_files_no_matches(self):
         """Test _get_prefixed_files_from_user_defined_directory with no matching files"""
-        import tempfile
-        import shutil
         import json
+        import shutil
+        import tempfile
 
         temp_dir = tempfile.mkdtemp()
         test_settings = JobSettings(
@@ -819,9 +822,9 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     def test_get_prefixed_files_mixed_extensions(self):
         """Test _get_prefixed_files_from_user_defined_directory ignores non-json files"""
-        import tempfile
-        import shutil
         import json
+        import shutil
+        import tempfile
 
         temp_dir = tempfile.mkdtemp()
         test_settings = JobSettings(
