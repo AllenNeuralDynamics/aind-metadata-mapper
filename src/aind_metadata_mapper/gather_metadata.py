@@ -261,12 +261,6 @@ class GatherMetadataJob:
         For each file named <mapper>.json, run the corresponding mapper and output acquisition_<mapper>.json.
         """
         metadata_dir = self.settings.metadata_dir
-        # Get all files in metadata_dir
-        try:
-            os.listdir(metadata_dir)
-        except Exception as e:
-            logging.warning(f"Could not list files in {metadata_dir}: {e}")
-            return
         # For each registry key, check if <key>.json exists
         for mapper_name in registry.keys():
             input_filename = f"{mapper_name}.json"

@@ -41,15 +41,15 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.temp_dir.cleanup()
 
     @mock.patch.object(TestMapperJob, "run_job", autospec=True)
-    @mock.patch("os.listdir", return_value=None)
+    @mock.patch("os.listdir")
     @mock.patch("os.path.exists", return_value=True)
-    @mock.patch("os.path.isfile", return_value=True)
     @mock.patch("aind_metadata_mapper.gather_metadata.logging")
     def test_run_mappers_for_acquisition_registry_key(
-        self, mock_logging, mock_isfile, mock_exists, mock_listdir, mock_run_job
+        self, mock_logging, mock_exists, mock_listdir, mock_run_job
     ):
         # Patch os.listdir to return our test file
         mock_listdir.return_value = [self.input_filename]
+
         # Provide all required JobSettings fields
         settings = JobSettings(
             metadata_dir=self.metadata_dir,
@@ -65,7 +65,6 @@ class TestGatherMetadataJob(unittest.TestCase):
         # The job_settings argument should have correct input/output paths
         self.assertEqual(str(args[1].input_filepath), str(self.input_path))
         self.assertTrue(str(args[1].output_filepath).endswith(f"acquisition_{self.mapper_name}.json"))
-
 
 
 if __name__ == "__main__":
