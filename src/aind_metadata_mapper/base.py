@@ -21,7 +21,7 @@ class MapperJob:
 
         To be automatable by the GatherMetadataJob your subclass
         must implement this method. Do not add additional fields to the job_settings.
-        
+
         Your code should read the input_filename and write to output_filename,
         within the metadata_directory.
         """

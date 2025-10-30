@@ -1,4 +1,5 @@
 """Tests for base.py JobSettings and MapperJob"""
+
 import unittest
 from pathlib import Path
 
@@ -7,6 +8,7 @@ from aind_metadata_mapper.base import MapperJob, MapperJobSettings
 
 class DummyMapper(MapperJob):
     """A dummy mapper for testing purposes"""
+
     def run_job(self, job_settings: MapperJobSettings) -> None:
         # Dummy implementation for testing
         assert isinstance(job_settings.input_filepath, Path)

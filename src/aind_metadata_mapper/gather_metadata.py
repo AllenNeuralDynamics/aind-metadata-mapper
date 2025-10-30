@@ -469,7 +469,7 @@ class GatherMetadataJob:
 
         # Gather all core metadata
         core_metadata = {}
-        
+
         # Get acquisition first so that we can use the acquisition_start_time
         # for the data_description
         acquisition = self.get_acquisition()
@@ -478,7 +478,9 @@ class GatherMetadataJob:
             self._write_json_file(Acquisition.default_filename(), acquisition)
 
         # Always create data description (required)
-        data_description = self.build_data_description(acquisition.get("acquisition_start_time") if acquisition else None)
+        data_description = self.build_data_description(
+            acquisition.get("acquisition_start_time") if acquisition else None
+        )
         if data_description:
             core_metadata["data_description"] = data_description
             self._write_json_file(DataDescription.default_filename(), data_description)

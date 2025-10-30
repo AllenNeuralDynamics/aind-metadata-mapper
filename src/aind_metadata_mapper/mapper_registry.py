@@ -3,7 +3,6 @@
 Each JobClass must inherit from MapperJob in base.py and accept a JobSettings subclass
 """
 
-
 registry = {
     # "mapper_name": JobClass,
     # e.g. "fip": FipMapperJob,

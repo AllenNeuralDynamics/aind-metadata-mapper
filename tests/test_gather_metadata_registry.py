@@ -44,9 +44,7 @@ class TestGatherMetadataJob(unittest.TestCase):
     @mock.patch("os.listdir")
     @mock.patch("os.path.exists", return_value=True)
     @mock.patch("aind_metadata_mapper.gather_metadata.logging")
-    def test_run_mappers_for_acquisition_registry_key(
-        self, mock_logging, mock_exists, mock_listdir, mock_run_job
-    ):
+    def test_run_mappers_for_acquisition_registry_key(self, mock_logging, mock_exists, mock_listdir, mock_run_job):
         # Patch os.listdir to return our test file
         mock_listdir.return_value = [self.input_filename]
 
@@ -55,7 +53,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir=self.metadata_dir,
             subject_id="test_subject",
             project_name="Test Project",
-            modalities=[Modality.ECEPHYS]
+            modalities=[Modality.ECEPHYS],
         )
         job = GatherMetadataJob(settings=settings)
         job._run_mappers_for_acquisition()
@@ -69,9 +67,7 @@ class TestGatherMetadataJob(unittest.TestCase):
     @mock.patch("os.listdir")
     @mock.patch("os.path.exists", return_value=True)
     @mock.patch("aind_metadata_mapper.gather_metadata.logging")
-    def test_run_mappers_for_acquisition_registry_key_raises(
-        self, mock_logging, mock_exists, mock_listdir
-    ):
+    def test_run_mappers_for_acquisition_registry_key_raises(self, mock_logging, mock_exists, mock_listdir):
         # Patch os.listdir to return our test file
         mock_listdir.return_value = [self.input_filename]
 
