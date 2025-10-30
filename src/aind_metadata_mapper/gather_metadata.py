@@ -278,6 +278,8 @@ class GatherMetadataJob:
                     logging.info(f"Ran mapper '{mapper_name}' for {input_filename} -> {output_filename}")
                 except Exception as e:
                     logging.error(f"Error running mapper '{mapper_name}': {e}")
+                    if self.settings.raise_if_mapper_errors:
+                        raise e
 
     def get_acquisition(self) -> Optional[dict]:
         """Get acquisition metadata"""

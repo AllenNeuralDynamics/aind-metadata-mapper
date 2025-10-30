@@ -66,6 +66,26 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual(str(args[1].input_filepath), str(self.input_path))
         self.assertTrue(str(args[1].output_filepath).endswith(f"acquisition_{self.mapper_name}.json"))
 
+    @mock.patch("os.listdir")
+    @mock.patch("os.path.exists", return_value=True)
+    @mock.patch("aind_metadata_mapper.gather_metadata.logging")
+    def test_run_mappers_for_acquisition_registry_key_raises(
+        self, mock_logging, mock_exists, mock_listdir
+    ):
+        # Patch os.listdir to return our test file
+        mock_listdir.return_value = [self.input_filename]
+
+        settings = JobSettings(
+            metadata_dir=self.metadata_dir,
+            subject_id="test_subject",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+            raise_if_mapper_errors=True,
+        )
+        job = GatherMetadataJob(settings=settings)
+        with self.assertRaises(NotImplementedError):
+            job._run_mappers_for_acquisition()
+
 
 if __name__ == "__main__":
     registry["test_mapper_job"] = TestMapperJob
