@@ -12,7 +12,6 @@ from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
