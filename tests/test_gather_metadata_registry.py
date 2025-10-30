@@ -1,3 +1,4 @@
+""""Unit tests for gather_metadata_registry.py."""
 import json
 import os
 import tempfile
@@ -23,8 +24,10 @@ class TestMapperJob(MapperJob):
 
 
 class TestGatherMetadataJob(unittest.TestCase):
+    """Unit tests for GatherMetadataJob with registry."""
 
     def setUp(self):
+        """Set up test environment."""
         # Create a temporary directory for metadata files
         self.temp_dir = tempfile.TemporaryDirectory()
         self.metadata_dir = self.temp_dir.name
@@ -38,6 +41,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         registry[self.mapper_name] = TestMapperJob
 
     def tearDown(self):
+        """Clean up test environment."""
         self.temp_dir.cleanup()
 
     @mock.patch.object(TestMapperJob, "run_job", autospec=True)
@@ -45,6 +49,7 @@ class TestGatherMetadataJob(unittest.TestCase):
     @mock.patch("os.path.exists", return_value=True)
     @mock.patch("aind_metadata_mapper.gather_metadata.logging")
     def test_run_mappers_for_acquisition_registry_key(self, mock_logging, mock_exists, mock_listdir, mock_run_job):
+        """Test _run_mappers_for_acquisition with a registry key."""
         # Patch os.listdir to return our test file
         mock_listdir.return_value = [self.input_filename]
 
@@ -68,6 +73,7 @@ class TestGatherMetadataJob(unittest.TestCase):
     @mock.patch("os.path.exists", return_value=True)
     @mock.patch("aind_metadata_mapper.gather_metadata.logging")
     def test_run_mappers_for_acquisition_registry_key_raises(self, mock_logging, mock_exists, mock_listdir):
+        """Test _run_mappers_for_acquisition raises NotImplementedError for test mapper."""
         # Patch os.listdir to return our test file
         mock_listdir.return_value = [self.input_filename]
 
@@ -81,6 +87,11 @@ class TestGatherMetadataJob(unittest.TestCase):
         job = GatherMetadataJob(settings=settings)
         with self.assertRaises(NotImplementedError):
             job._run_mappers_for_acquisition()
+
+        settings.raise_if_mapper_errors = False
+        job = GatherMetadataJob(settings=settings)
+        # This should not raise now
+        job._run_mappers_for_acquisition()
 
 
 if __name__ == "__main__":

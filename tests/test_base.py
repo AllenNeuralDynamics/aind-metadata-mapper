@@ -10,7 +10,7 @@ class DummyMapper(MapperJob):
     """A dummy mapper for testing purposes"""
 
     def run_job(self, job_settings: MapperJobSettings) -> None:
-        # Dummy implementation for testing
+        """Run the dummy mapping job."""
         assert isinstance(job_settings.input_filepath, Path)
         assert isinstance(job_settings.output_filepath, Path)
         self.was_run = True
