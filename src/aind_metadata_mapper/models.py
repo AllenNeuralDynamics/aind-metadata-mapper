@@ -19,6 +19,10 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
             "directory, an attempt will be made to create it and save it here."
         ),
     )
+    location: Optional[str] = Field(
+        default=None,
+        description=("Location to be set in the metadata. If None, location will not be set."),
+    )
     raise_if_invalid: bool = Field(
         default=False,
         description=(
@@ -26,10 +30,14 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
             "If False, log a warning and continue."
         ),
     )
-    location: Optional[str] = Field(
-        default=None,
-        description=("Location to be set in the metadata. If None, location will not be set."),
+    raise_if_mapper_errors: bool = Field(
+        default=True,
+        description=(
+            "If True, GatherMetadataJob will raise an error if any automated mappers fail. "
+            "If False, log a warning and continue."
+        ),
     )
+
     # Metadata settings
     subject_id: str = Field(
         default=...,

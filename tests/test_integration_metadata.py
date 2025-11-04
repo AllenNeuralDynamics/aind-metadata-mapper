@@ -362,7 +362,9 @@ class TestIntegrationMetadata(unittest.TestCase):
             mock_response.json.return_value = funding_data
             mock_get.return_value = mock_response
 
-            result = self.job.build_data_description()
+            # Pass acquisition_start_time from acquisition_data
+            acquisition_start_time = acquisition_data.get("acquisition_start_time")
+            result = self.job.build_data_description(acquisition_start_time=acquisition_start_time)
 
         # Verify the result has the expected structure
         self.assertIn("name", result)

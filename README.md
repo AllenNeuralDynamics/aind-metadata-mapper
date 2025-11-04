@@ -43,4 +43,6 @@ job.run_job()
 
 ### Using the individual mappers
 
-[todo]
+Each MapperJob class should inherit from the base MapperJob in `base.py`. The only parameter should be the JobSettings from `base.py`. You cannot add additional parameters to your job or it will not be possible for it to be run automatically on the data-transfer-service.
+
+#### [todo]

@@ -21,6 +21,8 @@ from aind_data_schema_models.organizations import Organization
 from pydantic import ValidationError
 
 from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.base import MapperJobSettings
+from aind_metadata_mapper.mapper_registry import registry
 
 
 class GatherMetadataJob:
@@ -149,7 +151,7 @@ class GatherMetadataJob:
 
         return parsed_funding_info, investigators_list
 
-    def build_data_description(self) -> dict:
+    def build_data_description(self, acquisition_start_time: Optional[str]) -> dict:
         """Build data description metadata"""
         logging.info("Gathering data description metadata.")
         file_name = DataDescription.default_filename()
@@ -159,15 +161,13 @@ class GatherMetadataJob:
             logging.debug(f"Using existing {file_name}.")
             return self._get_file_from_user_defined_directory(file_name=file_name)
 
-        # Get acquisition data to extract start time
-        acquisition_data = self.get_acquisition()
-        creation_time = datetime.now()
-
-        if acquisition_data and "acquisition_start_time" in acquisition_data:
-            start_time_str = acquisition_data["acquisition_start_time"]
-            iso_time_str = start_time_str.replace("Z", "+00:00")
-            creation_time = datetime.fromisoformat(iso_time_str)
+        if acquisition_start_time:
+            acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
+            creation_time = datetime.fromisoformat(acquisition_start_time)
             logging.info(f"Using acquisition start time: {creation_time}")
+        else:
+            creation_time = datetime.now()
+            logging.info(f"No start time available, using creation time: {creation_time}")
 
         # Get funding information
         funding_source, investigators = self.get_funding()
@@ -255,6 +255,32 @@ class GatherMetadataJob:
             contents = self._get_file_from_user_defined_directory(file_name=file_name)
         return contents
 
+    def _run_mappers_for_acquisition(self):
+        """
+        Run mappers for any files in metadata_dir matching a registry key.
+        For each file named <mapper>.json, run the corresponding mapper and output acquisition_<mapper>.json.
+        """
+        metadata_dir = self.settings.metadata_dir
+        # For each registry key, check if <key>.json exists
+        for mapper_name in registry.keys():
+            input_filename = f"{mapper_name}.json"
+            input_path = os.path.join(metadata_dir, input_filename)
+            output_filename = f"acquisition_{mapper_name}.json"
+            output_path = os.path.join(metadata_dir, output_filename)
+            # Only run if input exists and output does not already exist
+            if os.path.isfile(input_path) and not os.path.isfile(output_path):
+                mapper_cls = registry[mapper_name]
+                # Create job settings for the mapper
+                job_settings = MapperJobSettings(input_filepath=input_path, output_filepath=output_path)
+                try:
+                    mapper = mapper_cls()
+                    mapper.run_job(job_settings)
+                    logging.info(f"Ran mapper '{mapper_name}' for {input_filename} -> {output_filename}")
+                except Exception as e:
+                    logging.error(f"Error running mapper '{mapper_name}': {e}")
+                    if self.settings.raise_if_mapper_errors:
+                        raise e
+
     def get_acquisition(self) -> Optional[dict]:
         """Get acquisition metadata"""
         logging.info("Gathering acquisition metadata.")
@@ -264,6 +290,9 @@ class GatherMetadataJob:
             logging.debug(f"Using existing {file_name}.")
             return self._get_file_from_user_defined_directory(file_name=file_name)
         else:
+            # Run mappers for any matching files
+            self._run_mappers_for_acquisition()
+            # then gather all acquisition files with prefixes
             files = self._get_prefixed_files_from_user_defined_directory(file_name_prefix="acquisition")
             if files:
                 return self._merge_models(Acquisition, files)
@@ -441,8 +470,17 @@ class GatherMetadataJob:
         # Gather all core metadata
         core_metadata = {}
 
+        # Get acquisition first so that we can use the acquisition_start_time
+        # for the data_description
+        acquisition = self.get_acquisition()
+        if acquisition:
+            core_metadata["acquisition"] = acquisition
+            self._write_json_file(Acquisition.default_filename(), acquisition)
+
         # Always create data description (required)
-        data_description = self.build_data_description()
+        data_description = self.build_data_description(
+            acquisition.get("acquisition_start_time") if acquisition else None
+        )
         if data_description:
             core_metadata["data_description"] = data_description
             self._write_json_file(DataDescription.default_filename(), data_description)
@@ -457,11 +495,6 @@ class GatherMetadataJob:
         if procedures:
             core_metadata["procedures"] = procedures
             self._write_json_file(Procedures.default_filename(), procedures)
-
-        acquisition = self.get_acquisition()
-        if acquisition:
-            core_metadata["acquisition"] = acquisition
-            self._write_json_file(Acquisition.default_filename(), acquisition)
 
         instrument = self.get_instrument()
         if instrument:
