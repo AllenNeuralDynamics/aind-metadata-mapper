@@ -43,7 +43,6 @@ from aind_metadata_mapper.fip.constants import (
     CHANNEL_TYPE_RED,
     CONTROLLER_NAME,
     DEFAULT_ACQUISITION_TYPE,
-    DEFAULT_CAMERA_EXPOSURE_TIME_US,
     DEFAULT_LED_POWER,
     DEFAULT_OUTPUT_FILENAME,
     EMISSION_GREEN,
@@ -411,8 +410,12 @@ class FIPMapper:
         Returns
         -------
         float
-            Camera exposure time in microseconds. Returns DEFAULT_CAMERA_EXPOSURE_TIME_US
-            if delta_1 cannot be found in any light source configuration.
+            Camera exposure time in microseconds.
+
+        Raises
+        ------
+        ValueError
+            If delta_1 cannot be found in any light source configuration.
 
         Notes
         -----
@@ -434,11 +437,10 @@ class FIPMapper:
                         )
                         return float(delta_1)
 
-        logger.warning(
+        raise ValueError(
             "Could not find delta_1 (camera exposure time) in any light_source configuration. "
-            f"Using default value: {DEFAULT_CAMERA_EXPOSURE_TIME_US} μs"
+            "This field is required by the FIP schema."
         )
-        return float(DEFAULT_CAMERA_EXPOSURE_TIME_US)
 
     def _get_camera_names_from_roi(self, roi_settings: Dict) -> Dict[str, str]:
         """Get camera device identifiers from ROI settings.

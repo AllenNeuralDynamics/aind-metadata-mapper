@@ -22,7 +22,6 @@ EMISSION_RED = 590  # Red emission: ~590nm RFP peak
 # Camera Exposure Time
 # ==============================================================================
 CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND = 1000
-DEFAULT_CAMERA_EXPOSURE_TIME_US = -1  # Fallback when delta_1 is not available
 
 # ==============================================================================
 # Device Names

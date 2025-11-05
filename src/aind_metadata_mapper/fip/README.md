@@ -1,92 +1,89 @@
 # FIP (Fiber Photometry) Mapper
 
-This module transforms intermediate FIP metadata (extracted from raw data files) into schema-compliant `Acquisition` metadata.
+Transforms FIP metadata extracted from acquisition systems into AIND Data Schema 2.0 Acquisition format.
 
 ## Overview
 
-The FIP mapper follows a two-step pipeline:
-1. **Extract** - Use `aind-metadata-extractor` to extract metadata from raw FIP data files
-2. **Map** - Use this mapper to transform the intermediate model into an `Acquisition` object
+The mapper validates input JSON against the FIP schema (defined in aind-metadata-extractor) and creates an Acquisition object with the proper structure for fiber photometry experiments. It generates three channels per fiber (Green, Isosbestic, Red) reflecting the temporal multiplexing used in FIP rigs.
+
+Device names and hardware configuration come directly from the rig metadata. The mapper queries the metadata service for intended measurements and implanted fiber information when available, otherwise infers fiber count from ROI settings.
 
 ## Installation
 
 ```bash
-pip install aind-metadata-mapper aind-metadata-extractor
+pip install aind-metadata-mapper
 ```
 
-For development (editable installs):
+For development with the FIP schema:
 ```bash
-pip install -e /path/to/aind-metadata-extractor
-pip install -e /path/to/aind-metadata-mapper
+cd /path/to/aind-metadata-extractor
+git checkout feat-add-fip-json-schema-model
+pip install -e .
+
+cd /path/to/aind-metadata-mapper
+git checkout add-fip-mapper
+pip install -e .
 ```
 
 ## Usage
 
 ```python
-from aind_metadata_extractor.fip.extractor import FiberPhotometryExtractor
-from aind_metadata_extractor.fip.job_settings import JobSettings
+import json
 from aind_metadata_mapper.fip.mapper import FIPMapper
 
-# Step 1: Extract intermediate metadata
-job_settings = JobSettings(
-    data_directory="/path/to/fip/data",
-    mouse_platform_name="wheel",
-    local_timezone="America/Los_Angeles",
-)
-extractor = FiberPhotometryExtractor(job_settings=job_settings)
-intermediate_model = extractor.extract()
+# Load extracted metadata (must conform to fip.json schema)
+with open("fip_metadata.json") as f:
+    metadata = json.load(f)
 
-# Step 2: Map to Acquisition schema
-mapper = FIPMapper()  # defaults to "acquisition.json"
-# Or customize output filename:
-# mapper = FIPMapper(output_filename="fip_example_acquisition.json")
+# Create mapper and transform
+mapper = FIPMapper()
+acquisition = mapper.transform(metadata)
 
-# Option A: Transform and write in one step (recommended)
-output_path = mapper.run_job(intermediate_model, output_directory="/output/path")
-
-# Option B: Transform and write separately (for more control)
-acquisition = mapper.transform(intermediate_model)
+# Write output
 output_path = mapper.write(acquisition, output_directory="/output/path")
 ```
 
-**Note:** The output filename defaults to `acquisition.json` following AIND mapper conventions, but can be customized during initialization.
+The mapper expects input JSON with this structure:
+- `session` - experiment metadata (subject, experimenters, notes, etc.)
+- `rig` - hardware configuration (cameras, LEDs, ROI settings, etc.)
+- `data_stream_metadata` - timing information
 
 ## What Gets Mapped
 
-### From Intermediate Model → Acquisition
+### Core Fields
+- `session.subject` → `subject_id`
+- `session.experiment` → `acquisition_type`
+- `session.experimenter` → `experimenters`
+- `session.notes` → `notes`
+- `rig.rig_name` → `instrument_id`
+- `data_stream_metadata[0].start_time` → `acquisition_start_time`
+- `data_stream_metadata[0].end_time` → `acquisition_end_time`
 
-- `subject_id` → `subject_id`
-- `session_start_time` → `acquisition_start_time`
-- `session_end_time` → `acquisition_end_time`
-- `experimenter_full_name` → `experimenters`
-- `rig_id` → `instrument_id`
-- `session_type` → `acquisition_type`
-- `iacuc_protocol` → `protocol_id[0]`
-- `notes` → `notes`
+### Hardware Devices
+- `rig.light_source_*` → LED configurations with wavelengths (415nm, 470nm, 565nm)
+- `rig.camera_green_iso` → Green/Isosbestic detector
+- `rig.camera_red` → Red detector
+- `rig.cuttlefish_fip` → Controller device
+- `rig.roi_settings` → Determines fiber count and creates patch cord configurations
 
-### Subject Details (nested)
+### Channels
+Each fiber gets three channels:
+- Green (470nm excitation, 520nm emission)
+- Isosbestic (415nm excitation, 520nm emission)
+- Red (565nm excitation, 590nm emission)
 
-- `mouse_platform_name` → `subject_details.mouse_platform_name`
-- `animal_weight_prior` → `subject_details.animal_weight_prior`
-- `animal_weight_post` → `subject_details.animal_weight_post`
-- `anaesthesia` → `subject_details.anaesthesia`
-
-### Hardware → DataStream
-
-From `rig_config`:
-- Light sources (`light_source_*`) → `LightEmittingDiodeConfig` objects
-- Cameras (`camera_*`) → `DetectorConfig` objects
-- Controller (`cuttlefish_fip`) → Added to `active_devices`
-- ROI settings (`roi_settings`) → `PatchCordConfig` with `Channel` objects for each ROI
-
-**Note:** The FIB modality (fiber photometry abbreviation) requires either `PatchCordConfig` or `FiberAssemblyConfig` to be present in configurations to represent the fiber optic connections.
+Camera exposure times are extracted from `light_source_*.task.delta_1` (in microseconds).
 
 ## Example
 
-See `examples/fip_example_map.py` for a complete working example.
+See `examples/example_fip_mapper.py` for a working example.
+
+## Validation
+
+Input JSON is validated against the FIP schema (`fip.json` in aind-metadata-extractor). The mapper will raise a `ValueError` if validation fails.
 
 ## Requirements
 
-- `aind-data-schema>=2.0.5`
-- `aind-metadata-extractor` (with FIP support)
-
+- `aind-data-schema>=2.0.0`
+- `aind-metadata-extractor` (with FIP schema support)
+- `jsonschema`
