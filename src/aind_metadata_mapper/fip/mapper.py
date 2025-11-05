@@ -43,10 +43,13 @@ TODO - Enhancements for full schema compliance:
    - Temporal multiplexing timing (16.67ms period, LED pulse widths)
 """
 
+import json
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import aind_metadata_extractor
+import jsonschema
 from aind_data_schema.components.configs import (
     Channel,
     DetectorConfig,
@@ -54,9 +57,18 @@ from aind_data_schema.components.configs import (
     PatchCordConfig,
     TriggerType,
 )
-from aind_data_schema.core.acquisition import Acquisition, AcquisitionSubjectDetails, DataStream
+from aind_data_schema.core.acquisition import (
+    Acquisition,
+    AcquisitionSubjectDetails,
+    DataStream,
+)
 from aind_data_schema_models.modalities import Modality
-from aind_data_schema_models.units import MassUnit, PowerUnit, SizeUnit, TimeUnit
+from aind_data_schema_models.units import (
+    MassUnit,
+    PowerUnit,
+    SizeUnit,
+    TimeUnit,
+)
 
 from aind_metadata_mapper.utils import (
     ensure_timezone,
@@ -66,21 +78,58 @@ from aind_metadata_mapper.utils import (
     write_acquisition,
 )
 
-
-def _import_fip_data_model():
-    """Import FIPDataModel from extractor, returning None if not available."""
-    try:
-        from aind_metadata_extractor.models.fip import FIPDataModel
-
-        return FIPDataModel
-    except ImportError:
-        return None
-
-
-# Optional import for extractor models - gracefully handle when not available
-FIPDataModel = _import_fip_data_model()
-
 logger = logging.getLogger(__name__)
+
+
+def _load_fip_schema() -> dict:
+    """Load the FIP JSON schema from the extractor package.
+
+    Returns
+    -------
+    dict
+        The loaded JSON schema.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the fip.json schema file cannot be found.
+    """
+    schema_path = (
+        Path(aind_metadata_extractor.__file__).parent / "models" / "fip.json"
+    )
+
+    if not schema_path.exists():
+        raise FileNotFoundError(
+            f"FIP JSON schema not found at {schema_path}. "
+            "Ensure you have the correct version of aind-metadata-extractor installed."
+        )
+
+    with open(schema_path, "r") as f:
+        return json.load(f)
+
+
+def _validate_fip_metadata(metadata: dict) -> None:
+    """Validate FIP metadata against the JSON schema.
+
+    Parameters
+    ----------
+    metadata : dict
+        The metadata to validate.
+
+    Raises
+    ------
+    ValueError
+        If validation fails with details about what went wrong.
+    """
+    schema = _load_fip_schema()
+
+    try:
+        jsonschema.validate(instance=metadata, schema=schema)
+    except jsonschema.ValidationError as e:
+        raise ValueError(
+            f"FIP metadata validation failed: {e.message}\nPath: {e.path}"
+        ) from e
+
 
 # NOTE: Wavelength values are currently hardcoded as constants.
 # Ideally, these would be pulled from an instrument configuration file or some
@@ -92,7 +141,9 @@ EXCITATION_BLUE = 470  # Blue LED → green emission (GFP signal)
 EXCITATION_YELLOW = 565  # Yellow/Lime LED → red emission (RFP signal)
 
 # FIP system emission wavelengths (nm)
-EMISSION_GREEN = 520  # Green emission: center of 490-540nm bandpass, ~510nm GFP peak
+EMISSION_GREEN = (
+    520  # Green emission: center of 490-540nm bandpass, ~510nm GFP peak
+)
 EMISSION_RED = 590  # Red emission: ~590nm RFP peak
 
 # Camera exposure time units and defaults
@@ -127,7 +178,9 @@ class FIPMapper:
         """
         self.output_filename = output_filename
 
-    def _parse_intended_measurements(self, subject_id: str) -> Optional[Dict[str, Dict[str, Optional[str]]]]:
+    def _parse_intended_measurements(
+        self, subject_id: str
+    ) -> Optional[Dict[str, Dict[str, Optional[str]]]]:
         """Parse intended measurements for FIP from the metadata service.
 
         Parameters
@@ -176,7 +229,9 @@ class FIPMapper:
                 }
 
         if not result:
-            logger.warning(f"No valid fiber measurements found for subject_id={subject_id}.")
+            logger.warning(
+                f"No valid fiber measurements found for subject_id={subject_id}."
+            )
             return None
         return result
 
@@ -228,7 +283,10 @@ class FIPMapper:
                 for proc in subject_proc.get("procedures", []):
                     if proc.get("object_type") == "Probe implant":
                         implanted_device = proc.get("implanted_device", {})
-                        if implanted_device.get("object_type") == "Fiber probe":
+                        if (
+                            implanted_device.get("object_type")
+                            == "Fiber probe"
+                        ):
                             fiber_name = implanted_device.get("name", "")
                             fiber_idx = self._extract_fiber_index(fiber_name)
                             if fiber_idx is not None:
@@ -243,43 +301,47 @@ class FIPMapper:
         ----------
         metadata : dict
             Metadata extracted from FIP files via the extractor.
+            Must conform to the ProtoAcquisitionDataSchema JSON schema.
 
         Returns
         -------
         Acquisition
             Fully composed acquisition model.
-        """
-        if FIPDataModel is None:
-            raise ImportError(
-                "aind_metadata_extractor is required but not installed. "
-                "Install with: pip install aind-metadata-mapper[extractor]"
-            )
-        fip_metadata = FIPDataModel.model_validate(metadata)
-        return self._transform(fip_metadata)
 
-    def _transform(self, metadata: "FIPDataModel") -> Acquisition:
+        Raises
+        ------
+        ValueError
+            If metadata validation fails.
+        """
+        # Validate against JSON schema
+        _validate_fip_metadata(metadata)
+        return self._transform(metadata)
+
+    def _transform(self, metadata: dict) -> Acquisition:
         """Internal transform method.
 
         Parameters
         ----------
-        metadata : FIPDataModel
-            Validated intermediate metadata model.
+        metadata : dict
+            Validated intermediate metadata dictionary.
 
         Returns
         -------
         Acquisition
             Complete acquisition metadata.
         """
-        subject_id = metadata.subject_id
-        instrument_id = metadata.rig_id
+        # Extract fields from nested structure
+        session = metadata["session"]
+        rig = metadata["rig"]
+        data_streams = metadata["data_stream_metadata"]
 
-        ethics_review_id = None
-        if metadata.ethics_review_id:
-            ethics_review_id = [metadata.ethics_review_id]
+        subject_id = session["subject"]
+        instrument_id = rig["rig_name"]
 
+        # Get timing from first data stream
         session_start_time, session_end_time = self._process_session_times(
-            metadata.session_start_time,
-            metadata.session_end_time,
+            data_streams[0]["start_time"],
+            data_streams[0]["end_time"],
         )
 
         subject_details = self._build_subject_details(metadata)
@@ -295,19 +357,21 @@ class FIPMapper:
             stream_start_time=session_start_time,
             stream_end_time=session_end_time,
             modalities=[Modality.FIB],
-            active_devices=self._get_active_devices(metadata, implanted_fibers),
-            configurations=self._build_configurations(metadata, intended_measurements, implanted_fibers),
+            active_devices=self._get_active_devices(rig, implanted_fibers),
+            configurations=self._build_configurations(
+                rig, intended_measurements, implanted_fibers
+            ),
         )
 
         acquisition = Acquisition(
             subject_id=subject_id,
             acquisition_start_time=session_start_time,
             acquisition_end_time=session_end_time,
-            experimenters=metadata.experimenter_full_name,
-            ethics_review_id=ethics_review_id,
+            experimenters=session.get("experimenter", []),
+            ethics_review_id=None,  # Not in current schema
             instrument_id=instrument_id,
-            acquisition_type=metadata.session_type,
-            notes=metadata.notes,
+            acquisition_type=session.get("experiment", "FIP"),
+            notes=session.get("notes"),
             data_streams=[data_stream],
             stimulus_epochs=[],
             subject_details=subject_details,
@@ -337,29 +401,25 @@ class FIPMapper:
                     max_fiber_count = max(max_fiber_count, len(roi_data))
         return list(range(max_fiber_count))
 
-    def _build_subject_details(self, metadata: FIPDataModel) -> Optional[AcquisitionSubjectDetails]:
+    def _build_subject_details(
+        self, metadata: dict
+    ) -> Optional[AcquisitionSubjectDetails]:
         """Build subject details from metadata.
 
         Parameters
         ----------
-        metadata : FIPDataModel
+        metadata : dict
             Validated intermediate metadata.
 
         Returns
         -------
         Optional[AcquisitionSubjectDetails]
             Subject details if any relevant fields are present.
+            Returns None since these fields are not in the current schema.
         """
-        if not metadata.mouse_platform_name:
-            return None
-
-        return AcquisitionSubjectDetails(
-            mouse_platform_name=metadata.mouse_platform_name,
-            animal_weight_prior=metadata.animal_weight_prior,
-            animal_weight_post=metadata.animal_weight_post,
-            weight_unit=MassUnit.G,
-            anaesthesia=metadata.anaesthesia,
-        )
+        # These fields are not present in the current ProtoAcquisitionDataSchema
+        # Returning None for now
+        return None
 
     def _extract_camera_exposure_time(self, rig_config: Dict) -> float:
         """Extract camera exposure time from rig configuration.
@@ -395,7 +455,9 @@ class FIPMapper:
                 if isinstance(task, dict) and "delta_1" in task:
                     delta_1 = task["delta_1"]
                     if isinstance(delta_1, (int, float)) and delta_1 > 0:
-                        logger.info(f"Extracted camera exposure time: {delta_1} μs from {key}")
+                        logger.info(
+                            f"Extracted camera exposure time: {delta_1} μs from {key}"
+                        )
                         return float(delta_1)
 
         logger.warning(
@@ -420,7 +482,11 @@ class FIPMapper:
         """
         led_configs = []
         led_configs_by_wavelength = {}
-        light_source_names = [name for name in rig_config.keys() if name.startswith("light_source_")]
+        light_source_names = [
+            name
+            for name in rig_config.keys()
+            if name.startswith("light_source_")
+        ]
 
         for light_source_name in light_source_names:
             light_source = rig_config[light_source_name]
@@ -495,16 +561,18 @@ class FIPMapper:
 
     def _build_configurations(
         self,
-        metadata: FIPDataModel,
-        intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]] = None,
+        rig_config: Dict[str, Any],
+        intended_measurements: Optional[
+            Dict[str, Dict[str, Optional[str]]]
+        ] = None,
         implanted_fibers: Optional[List[int]] = None,
     ) -> List[Any]:
         """Build device configurations from rig config.
 
         Parameters
         ----------
-        metadata : FIPDataModel
-            Validated intermediate metadata.
+        rig_config : Dict[str, Any]
+            Rig configuration dictionary from metadata.
         intended_measurements : Optional[Dict[str, Dict[str, Optional[str]]]], optional
             Intended measurements from metadata service, mapping fiber names to
             channel measurements (R, G, B, Iso), by default None.
@@ -519,15 +587,19 @@ class FIPMapper:
             List of device configurations (LEDs, detectors, and patch cords).
         """
         configurations = []
-        rig_config = metadata.rig_config
 
         # Extract camera exposure time from light source delta_1 field
         exposure_time_us = self._extract_camera_exposure_time(rig_config)
         # Convert microseconds to milliseconds for DetectorConfig
-        exposure_time_ms = exposure_time_us / CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND
+        exposure_time_ms = (
+            exposure_time_us
+            / CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND
+        )
 
         # Build LED configs
-        led_configs, led_configs_by_wavelength = self._build_led_configs(rig_config)
+        led_configs, led_configs_by_wavelength = self._build_led_configs(
+            rig_config
+        )
         configurations.extend(led_configs)
 
         # Build patch cord configurations
@@ -547,23 +619,35 @@ class FIPMapper:
                 if "_roi" in key and "_background" not in key
             )
             has_red_camera = any(
-                "red" in key for key in roi_settings.keys() if "_roi" in key and "_background" not in key
+                "red" in key
+                for key in roi_settings.keys()
+                if "_roi" in key and "_background" not in key
             )
 
             # Determine which fibers to create patch cords for
             fiber_indices = (
-                implanted_fibers if implanted_fibers is not None else self._get_fiber_indices_from_roi(roi_settings)
+                implanted_fibers
+                if implanted_fibers is not None
+                else self._get_fiber_indices_from_roi(roi_settings)
             )
 
             # Create patch cord for each implanted fiber
             for fiber_idx in fiber_indices:
                 channels = []
                 fiber_name = f"Fiber_{fiber_idx}"
-                fiber_measurements = intended_measurements.get(fiber_name) if intended_measurements else None
+                fiber_measurements = (
+                    intended_measurements.get(fiber_name)
+                    if intended_measurements
+                    else None
+                )
 
                 # Create Green channel
                 if has_green_camera:
-                    green_measurement = fiber_measurements.get("G") if fiber_measurements else None
+                    green_measurement = (
+                        fiber_measurements.get("G")
+                        if fiber_measurements
+                        else None
+                    )
                     channels.append(
                         self._create_channel(
                             fiber_idx,
@@ -578,7 +662,11 @@ class FIPMapper:
 
                 # Create Isosbestic channel
                 if has_green_camera:
-                    iso_measurement = fiber_measurements.get("Iso") if fiber_measurements else None
+                    iso_measurement = (
+                        fiber_measurements.get("Iso")
+                        if fiber_measurements
+                        else None
+                    )
                     channels.append(
                         self._create_channel(
                             fiber_idx,
@@ -593,7 +681,11 @@ class FIPMapper:
 
                 # Create Red channel
                 if has_red_camera:
-                    red_measurement = fiber_measurements.get("R") if fiber_measurements else None
+                    red_measurement = (
+                        fiber_measurements.get("R")
+                        if fiber_measurements
+                        else None
+                    )
                     channels.append(
                         self._create_channel(
                             fiber_idx,
@@ -607,12 +699,12 @@ class FIPMapper:
                     )
 
                 # Create patch cord if we have channels
-            if channels:
-                patch_cord = PatchCordConfig(
-                    device_name=f"Patch Cord {fiber_idx}",
-                    channels=channels,
-                )
-                configurations.append(patch_cord)
+                if channels:
+                    patch_cord = PatchCordConfig(
+                        device_name=f"Patch Cord {fiber_idx}",
+                        channels=channels,
+                    )
+                    configurations.append(patch_cord)
 
         return configurations
 
@@ -650,7 +742,11 @@ class FIPMapper:
                 return wavelength
         return None
 
-    def _get_active_devices(self, metadata: FIPDataModel, implanted_fibers: Optional[List[int]] = None) -> List[str]:
+    def _get_active_devices(
+        self,
+        rig_config: Dict[str, Any],
+        implanted_fibers: Optional[List[int]] = None,
+    ) -> List[str]:
         """Get list of active device names.
 
         Includes implanted fibers and patch cords based on procedures data or ROI count.
@@ -658,8 +754,8 @@ class FIPMapper:
 
         Parameters
         ----------
-        metadata : FIPDataModel
-            Validated intermediate metadata.
+        rig_config : Dict[str, Any]
+            Rig configuration dictionary from metadata.
         implanted_fibers : Optional[List[int]], optional
             List of implanted fiber indices from procedures endpoint. Falls back to
             ROI-based inference if None, by default None.
@@ -671,27 +767,36 @@ class FIPMapper:
         """
         devices = []
 
-        if metadata.rig_id:
-            devices.append(metadata.rig_id)
-
-        rig_config = metadata.rig_config
+        # Add rig name
+        if "rig_name" in rig_config:
+            devices.append(rig_config["rig_name"])
 
         # Add LEDs
-        light_source_names = [name for name in rig_config.keys() if name.startswith("light_source_")]
+        light_source_names = [
+            name
+            for name in rig_config.keys()
+            if name.startswith("light_source_")
+        ]
         for light_source_name in light_source_names:
             led_name = light_source_name.replace("light_source_", "").upper()
             devices.append(f"LED_{led_name}")
 
         # Add cameras
-        camera_names = [name for name in rig_config.keys() if name.startswith("camera_")]
+        camera_names = [
+            name for name in rig_config.keys() if name.startswith("camera_")
+        ]
         for camera_name in camera_names:
-            detector_name = camera_name.replace("camera_", "").replace("_", " ").title()
+            detector_name = (
+                camera_name.replace("camera_", "").replace("_", " ").title()
+            )
             devices.append(f"Camera_{detector_name}")
 
         # Add patch cords and implanted fibers
         roi_settings = rig_config.get("roi_settings", {})
         fiber_indices = (
-            implanted_fibers if implanted_fibers is not None else self._get_fiber_indices_from_roi(roi_settings)
+            implanted_fibers
+            if implanted_fibers is not None
+            else self._get_fiber_indices_from_roi(roi_settings)
         )
 
         for fiber_idx in fiber_indices:
@@ -726,11 +831,16 @@ class FIPMapper:
         session_end_time = ensure_timezone(session_end_time)
 
         if session_start_time > session_end_time:
-            session_start_time, session_end_time = session_end_time, session_start_time
+            session_start_time, session_end_time = (
+                session_end_time,
+                session_start_time,
+            )
 
         return session_start_time, session_end_time
 
-    def run_job(self, metadata: dict, output_directory: Optional[str] = None) -> Path:
+    def run_job(
+        self, metadata: dict, output_directory: Optional[str] = None
+    ) -> Path:
         """Run the complete mapping job: transform and write.
 
         This is the main entry point following the standard AIND mapper pattern.
@@ -748,9 +858,13 @@ class FIPMapper:
             Path to the written acquisition file.
         """
         acquisition = self.transform(metadata)
-        return write_acquisition(acquisition, output_directory, self.output_filename)
+        return write_acquisition(
+            acquisition, output_directory, self.output_filename
+        )
 
-    def write(self, model: Acquisition, output_directory: Optional[str] = None) -> Path:
+    def write(
+        self, model: Acquisition, output_directory: Optional[str] = None
+    ) -> Path:
         """Write the Acquisition model to a JSON file.
 
         The output filename is determined by the mapper's output_filename attribute
