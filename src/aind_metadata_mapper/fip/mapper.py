@@ -1,46 +1,12 @@
-"""FIP mapper module.
+"""FIP (Fiber Photometry) mapper module.
 
-This mapper transforms intermediate FIP metadata into schema-compliant Acquisition objects.
+Maps ProtoAcquisitionDataSchema JSON (from acquisition repo) to AIND Data Schema 2.0 Acquisition format.
 
-FIBER PHOTOMETRY SYSTEM ARCHITECTURE:
-======================================
-Each implanted fiber has 3 temporal-multiplexed channels (60Hz cycling):
-  1. Green Channel: 470nm (blue LED) excitation → ~510nm emission → Green CMOS
-  2. Isosbestic Channel: 415nm (UV LED) excitation → 490-540nm emission → Green CMOS (same camera!)
-  3. Red Channel: 565nm (yellow LED) excitation → ~590nm emission → Red CMOS
-
-CURRENT IMPLEMENTATION:
-=======================
-- Creates 3 channels per fiber (green, isosbestic, red)
-- Green and isosbestic channels share same detector (green CMOS) but have different excitation
-- Fetches intended_measurement from metadata service endpoint
-- Fetches implanted fiber indices from procedures endpoint (validates which fibers exist)
-- Only creates patch cord configurations for actually implanted fibers
-- LED wavelengths included in device names (LED_UV_415nm, LED_BLUE_470nm, LED_LIME_565nm)
-- LED references added to each channel's light_sources field
-- Emission wavelengths: 520nm green/iso, 590nm red
-- ROI index N → Patch Cord N → Fiber N (zero-indexed correspondence)
-- Implanted fiber identifiers included in active_devices (Fiber 0, Fiber 1, etc.)
-
-TODO - Enhancements for full schema compliance:
-================================================
-
-1. FILTER SPECIFICATIONS (requires instrument endpoint):
-   - Excitation filters: Need specs for 415nm, 470nm, 565nm paths
-   - Emission filters: Need dichroic and bandpass filter specifications
-
-2. CONNECTION GRAPH (requires instrument metadata endpoint):
-   - Full signal path: LED → Fiber Coupler → Patch Cord → Implanted Fiber → Patch Cord → Dichroic → Filter → Camera
-   - Model temporal multiplexing (LED cycling, camera synchronization)
-   - Bidirectional fiber connections
-   - Port/channel mappings between devices
-   - Add to DataStream.connections field
-
-3. DETAILED DEVICE METADATA (requires camera/instrument metadata):
-   - LED power calibration at patch cord end
-   - Camera exposure times (currently using PLACEHOLDER_CAMERA_EXPOSURE_TIME = -1)
-   - Camera serial numbers, gain settings, ROI coordinates
-   - Temporal multiplexing timing (16.67ms period, LED pulse widths)
+The mapper:
+- Validates input JSON against schema from aind-metadata-extractor
+- Extracts timing, rig config, and session metadata from nested JSON structure
+- Creates 3 channels per fiber: Green (470nm), Isosbestic (415nm), Red (565nm)
+- Fetches intended measurements and implanted fiber info from metadata service (optional)
 """
 
 import json
@@ -64,7 +30,6 @@ from aind_data_schema.core.acquisition import (
 )
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import (
-    MassUnit,
     PowerUnit,
     SizeUnit,
     TimeUnit,

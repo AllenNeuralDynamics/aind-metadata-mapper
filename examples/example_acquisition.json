@@ -1,28 +1,30 @@
 {
   "object_type": "Acquisition",
   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/acquisition.py",
-  "schema_version": "2.0.36",
+  "schema_version": "2.1.0",
   "subject_id": "test",
   "specimen_id": null,
-  "acquisition_start_time": "2025-07-18T12:32:35.275046-07:00",
-  "acquisition_end_time": "2025-07-18T12:49:22.448358-07:00",
+  "acquisition_start_time": "2025-01-01T12:00:00Z",
+  "acquisition_end_time": "2025-01-01T13:00:00Z",
   "experimenters": [
     "Foo",
     "Bar"
   ],
-  "protocol_id": null,
+  "protocol_id": [
+    "https://www.protocols.io/view/modified-frame-projected-independent-fiber-photome-kxygx3e6wg8j/v1"
+  ],
   "ethics_review_id": null,
   "instrument_id": "test_rig",
-  "acquisition_type": "FIP",
-  "notes": null,
+  "acquisition_type": "AindPhysioFip",
+  "notes": "test session",
   "coordinate_system": null,
   "calibrations": [],
   "maintenance": [],
   "data_streams": [
     {
       "object_type": "Data stream",
-      "stream_start_time": "2025-07-18T12:32:35.275046-07:00",
-      "stream_end_time": "2025-07-18T12:49:22.448358-07:00",
+      "stream_start_time": "2025-01-01T12:00:00Z",
+      "stream_end_time": "2025-01-01T13:00:00Z",
       "modalities": [
         {
           "name": "Fiber photometry",
@@ -52,20 +54,23 @@
         {
           "object_type": "Light emitting diode config",
           "device_name": "LED_UV_415nm",
-          "power": 1.0,
-          "power_unit": "percent"
+          "power": 0.1,
+          "power_unit": "percent",
+          "power_measured_at": null
         },
         {
           "object_type": "Light emitting diode config",
           "device_name": "LED_BLUE_470nm",
-          "power": 1.0,
-          "power_unit": "percent"
+          "power": 10.0,
+          "power_unit": "percent",
+          "power_measured_at": null
         },
         {
           "object_type": "Light emitting diode config",
           "device_name": "LED_LIME_565nm",
-          "power": 1.0,
-          "power_unit": "percent"
+          "power": 20.0,
+          "power_unit": "percent",
+          "power_measured_at": null
         },
         {
           "object_type": "Patch cord config",
@@ -78,7 +83,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": -1.0,
+                "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -88,8 +93,9 @@
                 {
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_BLUE_470nm",
-                  "power": 1.0,
-                  "power_unit": "percent"
+                  "power": 10.0,
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -105,7 +111,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": -1.0,
+                "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -115,8 +121,9 @@
                 {
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_UV_415nm",
-                  "power": 1.0,
-                  "power_unit": "percent"
+                  "power": 0.1,
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -132,7 +139,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Red",
-                "exposure_time": -1.0,
+                "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -142,8 +149,9 @@
                 {
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_LIME_565nm",
-                  "power": 1.0,
-                  "power_unit": "percent"
+                  "power": 20.0,
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -165,7 +173,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": -1.0,
+                "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -175,8 +183,9 @@
                 {
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_BLUE_470nm",
-                  "power": 1.0,
-                  "power_unit": "percent"
+                  "power": 10.0,
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -192,7 +201,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": -1.0,
+                "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -202,8 +211,9 @@
                 {
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_UV_415nm",
-                  "power": 1.0,
-                  "power_unit": "percent"
+                  "power": 0.1,
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -219,7 +229,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Red",
-                "exposure_time": -1.0,
+                "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -229,8 +239,9 @@
                 {
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_LIME_565nm",
-                  "power": 1.0,
-                  "power_unit": "percent"
+                  "power": 20.0,
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -252,7 +263,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": -1.0,
+                "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -262,8 +273,9 @@
                 {
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_BLUE_470nm",
-                  "power": 1.0,
-                  "power_unit": "percent"
+                  "power": 10.0,
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -279,7 +291,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": -1.0,
+                "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -289,8 +301,9 @@
                 {
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_UV_415nm",
-                  "power": 1.0,
-                  "power_unit": "percent"
+                  "power": 0.1,
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -306,7 +319,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Red",
-                "exposure_time": -1.0,
+                "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -316,8 +329,9 @@
                 {
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_LIME_565nm",
-                  "power": 1.0,
-                  "power_unit": "percent"
+                  "power": 20.0,
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -339,7 +353,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": -1.0,
+                "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -349,8 +363,9 @@
                 {
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_BLUE_470nm",
-                  "power": 1.0,
-                  "power_unit": "percent"
+                  "power": 10.0,
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -366,7 +381,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Green Iso",
-                "exposure_time": -1.0,
+                "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -376,8 +391,9 @@
                 {
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_UV_415nm",
-                  "power": 1.0,
-                  "power_unit": "percent"
+                  "power": 0.1,
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -393,7 +409,7 @@
               "detector": {
                 "object_type": "Detector config",
                 "device_name": "Camera_Red",
-                "exposure_time": -1.0,
+                "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
                 "compression": null
@@ -403,8 +419,9 @@
                 {
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_LIME_565nm",
-                  "power": 1.0,
-                  "power_unit": "percent"
+                  "power": 20.0,
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -420,14 +437,5 @@
     }
   ],
   "stimulus_epochs": [],
-  "subject_details": {
-    "object_type": "Acquisition subject details",
-    "animal_weight_prior": null,
-    "animal_weight_post": null,
-    "weight_unit": "gram",
-    "anaesthesia": null,
-    "mouse_platform_name": "wheel",
-    "reward_consumed_total": null,
-    "reward_consumed_unit": null
-  }
+  "subject_details": null
 }

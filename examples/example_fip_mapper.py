@@ -6,10 +6,11 @@ This script demonstrates the complete workflow:
 3. Map to AIND Data Schema 2.0 Acquisition format
 
 Usage:
-    python scripts/example_fip_mapper.py /path/to/ProtoAcquisitionDataSchema.json
+    python examples/example_fip_mapper.py /path/to/ProtoAcquisitionDataSchema.json [output_filename]
 
 Example:
-    python scripts/example_fip_mapper.py /Users/doug.ollerenshaw/code/Aind.Physiology.Fip/examples/ProtoAcquisitionDataSchema.json
+    python examples/example_fip_mapper.py /Users/doug.ollerenshaw/code/Aind.Physiology.Fip/examples/ProtoAcquisitionDataSchema.json
+    python examples/example_fip_mapper.py /path/to/input.json example_acquisition.json
 """
 
 import argparse
@@ -26,7 +27,13 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Example usage:
-  python scripts/example_fip_mapper.py /path/to/ProtoAcquisitionDataSchema.json
+  python examples/example_fip_mapper.py /path/to/ProtoAcquisitionDataSchema.json [output_filename]
+  
+  # Use default output filename (acquisition.json)
+  python examples/example_fip_mapper.py /path/to/input.json
+  
+  # Specify custom output filename
+  python examples/example_fip_mapper.py /path/to/input.json example_acquisition.json
 
 Need an example input file?
   See: https://github.com/AllenNeuralDynamics/Aind.Physiology.Fip/blob/main/examples/ProtoAcquisitionDataSchema.json
@@ -37,9 +44,17 @@ Need an example input file?
         type=Path,
         help="Path to ProtoAcquisitionDataSchema JSON file",
     )
+    parser.add_argument(
+        "output_filename",
+        type=str,
+        nargs="?",
+        default="acquisition.json",
+        help="Output filename (default: acquisition.json)",
+    )
 
     args = parser.parse_args()
     example_path = args.input_json
+    output_filename = args.output_filename
 
     # Validate that the file exists
     if not example_path.exists():
@@ -62,8 +77,8 @@ Need an example input file?
     print(f"   ✓ Loaded JSON with keys: {list(metadata.keys())}")
 
     # Create mapper
-    print("\n2. Creating FIP mapper...")
-    mapper = FIPMapper()
+    print(f"\n2. Creating FIP mapper (output: {output_filename})...")
+    mapper = FIPMapper(output_filename=output_filename)
     print("   ✓ Mapper initialized")
 
     # Validate and transform
@@ -88,8 +103,9 @@ Need an example input file?
             print(f"   - Active devices: {len(stream.active_devices)}")
             print(f"   - Configurations: {len(stream.configurations)}")
 
-        # Optionally write output
-        output_file = mapper.write(acquisition, output_directory=".")
+        # Write output to examples folder
+        examples_dir = Path(__file__).parent
+        output_file = mapper.write(acquisition, output_directory=str(examples_dir))
         print(f"\n5. Wrote output to: {output_file.absolute()}")
 
     except ValueError as e:
