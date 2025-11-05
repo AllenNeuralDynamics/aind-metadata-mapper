@@ -82,7 +82,7 @@
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "Camera_Green Iso",
+                "device_name": "FipCamera",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -110,7 +110,7 @@
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "Camera_Green Iso",
+                "device_name": "FipCamera",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -138,7 +138,7 @@
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "Camera_Red",
+                "device_name": "FipCamera",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -172,7 +172,7 @@
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "Camera_Green Iso",
+                "device_name": "FipCamera",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -200,7 +200,7 @@
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "Camera_Green Iso",
+                "device_name": "FipCamera",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -228,7 +228,7 @@
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "Camera_Red",
+                "device_name": "FipCamera",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -262,7 +262,7 @@
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "Camera_Green Iso",
+                "device_name": "FipCamera",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -290,7 +290,7 @@
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "Camera_Green Iso",
+                "device_name": "FipCamera",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -318,7 +318,7 @@
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "Camera_Red",
+                "device_name": "FipCamera",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -352,7 +352,7 @@
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "Camera_Green Iso",
+                "device_name": "FipCamera",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -380,7 +380,7 @@
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "Camera_Green Iso",
+                "device_name": "FipCamera",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -408,7 +408,7 @@
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "Camera_Red",
+                "device_name": "FipCamera",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
