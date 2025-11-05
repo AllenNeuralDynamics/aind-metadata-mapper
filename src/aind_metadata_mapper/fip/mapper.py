@@ -440,26 +440,23 @@ class FIPMapper:
         )
         return float(DEFAULT_CAMERA_EXPOSURE_TIME_US)
 
-    def _get_camera_names_from_roi(
-        self, roi_settings: Dict, rig_config: Dict
-    ) -> Dict[str, str]:
-        """Get camera device names from rig configuration.
+    def _get_camera_names_from_roi(self, roi_settings: Dict) -> Dict[str, str]:
+        """Get camera device identifiers from ROI settings.
 
-        Uses ROI settings to identify which cameras are present, then looks up
-        their actual device names from the rig configuration.
+        Extracts camera config keys from ROI settings to use as device identifiers.
+        The keys themselves (e.g., "camera_green_iso", "camera_red") serve as the
+        device names.
 
         Parameters
         ----------
         roi_settings : Dict
             ROI settings from rig configuration.
-        rig_config : Dict
-            Full rig configuration containing camera definitions.
 
         Returns
         -------
         Dict[str, str]
-            Dictionary mapping camera type to device name from rig config.
-            E.g., {"green": "FipCamera_Green", "red": "FipCamera_Red"}
+            Dictionary mapping camera type to camera config key.
+            E.g., {"green": "camera_green_iso", "red": "camera_red"}
         """
         camera_names = {}
 
@@ -482,11 +479,8 @@ class FIPMapper:
                 else:
                     continue
 
-                # Get the device name directly from the rig config
-                if camera_key in rig_config:
-                    camera_obj = rig_config[camera_key]
-                    if isinstance(camera_obj, dict) and "name" in camera_obj:
-                        camera_names[camera_type] = camera_obj["name"]
+                # Use the camera config key itself as the device identifier
+                camera_names[camera_type] = camera_key
 
         return camera_names
 
@@ -638,10 +632,8 @@ class FIPMapper:
         #   3. Red: 565nm excitation, ~590nm emission, red camera
         roi_settings = rig_config.get("roi_settings", {})
         if roi_settings:
-            # Get camera names from rig config
-            camera_names = self._get_camera_names_from_roi(
-                roi_settings, rig_config
-            )
+            # Get camera identifiers from ROI settings
+            camera_names = self._get_camera_names_from_roi(roi_settings)
             green_camera_name = camera_names.get("green")
             red_camera_name = camera_names.get("red")
 
