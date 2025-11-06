@@ -23,17 +23,9 @@ from aind_data_schema.components.configs import (
     PatchCordConfig,
     TriggerType,
 )
-from aind_data_schema.core.acquisition import (
-    Acquisition,
-    AcquisitionSubjectDetails,
-    DataStream,
-)
+from aind_data_schema.core.acquisition import Acquisition, AcquisitionSubjectDetails, DataStream
 from aind_data_schema_models.modalities import Modality
-from aind_data_schema_models.units import (
-    PowerUnit,
-    SizeUnit,
-    TimeUnit,
-)
+from aind_data_schema_models.units import PowerUnit, SizeUnit, TimeUnit
 
 from aind_metadata_mapper.fip.constants import (
     CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND,
@@ -85,9 +77,7 @@ def _load_fip_schema() -> dict:
     FileNotFoundError
         If the fip.json schema file cannot be found.
     """
-    schema_path = (
-        Path(aind_metadata_extractor.__file__).parent / "models" / "fip.json"
-    )
+    schema_path = Path(aind_metadata_extractor.__file__).parent / "models" / "fip.json"
 
     if not schema_path.exists():
         raise FileNotFoundError(
@@ -117,9 +107,7 @@ def _validate_fip_metadata(metadata: dict) -> None:
     try:
         jsonschema.validate(instance=metadata, schema=schema)
     except jsonschema.ValidationError as e:
-        raise ValueError(
-            f"FIP metadata validation failed: {e.message}\nPath: {e.path}"
-        ) from e
+        raise ValueError(f"FIP metadata validation failed: {e.message}\nPath: {e.path}") from e
 
 
 class FIPMapper:
@@ -147,9 +135,7 @@ class FIPMapper:
         """
         self.output_filename = output_filename
 
-    def _parse_intended_measurements(
-        self, subject_id: str
-    ) -> Optional[Dict[str, Dict[str, Optional[str]]]]:
+    def _parse_intended_measurements(self, subject_id: str) -> Optional[Dict[str, Dict[str, Optional[str]]]]:
         """Parse intended measurements for FIP from the metadata service.
 
         Parameters
@@ -197,9 +183,7 @@ class FIPMapper:
                 }
 
         if not result:
-            logger.warning(
-                f"No valid fiber measurements found for subject_id={subject_id}."
-            )
+            logger.warning(f"No valid fiber measurements found for subject_id={subject_id}.")
             return None
         return result
 
@@ -251,10 +235,7 @@ class FIPMapper:
                 for proc in subject_proc.get("procedures", []):
                     if proc.get("object_type") == "Probe implant":
                         implanted_device = proc.get("implanted_device", {})
-                        if (
-                            implanted_device.get("object_type")
-                            == "Fiber probe"
-                        ):
+                        if implanted_device.get("object_type") == "Fiber probe":
                             fiber_name = implanted_device.get("name", "")
                             fiber_idx = self._extract_fiber_index(fiber_name)
                             if fiber_idx is not None:
@@ -326,10 +307,12 @@ class FIPMapper:
             stream_end_time=session_end_time,
             modalities=[Modality.FIB],
             active_devices=self._get_active_devices(rig, implanted_fibers),
-            configurations=self._build_configurations(
-                rig, intended_measurements, implanted_fibers
-            ),
+            configurations=self._build_configurations(rig, intended_measurements, implanted_fibers),
         )
+
+        # Handle None values explicitly - .get() only uses default if key missing
+        experiment = session.get("experiment")
+        acquisition_type = experiment if experiment else DEFAULT_ACQUISITION_TYPE
 
         acquisition = Acquisition(
             subject_id=subject_id,
@@ -338,9 +321,7 @@ class FIPMapper:
             experimenters=session.get("experimenter", []),
             ethics_review_id=None,  # Not in current schema
             instrument_id=instrument_id,
-            acquisition_type=session.get(
-                "experiment", DEFAULT_ACQUISITION_TYPE
-            ),
+            acquisition_type=acquisition_type,
             notes=session.get("notes"),
             data_streams=[data_stream],
             stimulus_epochs=[],
@@ -365,18 +346,13 @@ class FIPMapper:
         """
         max_fiber_count = 0
         for roi_key in roi_settings.keys():
-            if (
-                ROI_KEYWORD_ROI in roi_key
-                and ROI_KEYWORD_BACKGROUND not in roi_key
-            ):
+            if ROI_KEYWORD_ROI in roi_key and ROI_KEYWORD_BACKGROUND not in roi_key:
                 roi_data = roi_settings[roi_key]
                 if isinstance(roi_data, list):
                     max_fiber_count = max(max_fiber_count, len(roi_data))
         return list(range(max_fiber_count))
 
-    def _build_subject_details(
-        self, metadata: dict
-    ) -> Optional[AcquisitionSubjectDetails]:
+    def _build_subject_details(self, metadata: dict) -> Optional[AcquisitionSubjectDetails]:
         """Build subject details from metadata.
 
         Parameters
@@ -432,9 +408,7 @@ class FIPMapper:
                 if isinstance(task, dict) and "delta_1" in task:
                     delta_1 = task["delta_1"]
                     if isinstance(delta_1, (int, float)) and delta_1 > 0:
-                        logger.info(
-                            f"Extracted camera exposure time: {delta_1} μs from {key}"
-                        )
+                        logger.info(f"Extracted camera exposure time: {delta_1} μs from {key}")
                         return float(delta_1)
 
         raise ValueError(
@@ -463,18 +437,12 @@ class FIPMapper:
         camera_names = {}
 
         for roi_key in roi_settings.keys():
-            if (
-                ROI_KEYWORD_ROI in roi_key
-                and ROI_KEYWORD_BACKGROUND not in roi_key
-            ):
+            if ROI_KEYWORD_ROI in roi_key and ROI_KEYWORD_BACKGROUND not in roi_key:
                 # Extract camera key from roi_key (e.g., "camera_green_iso_roi" -> "camera_green_iso")
                 camera_key = roi_key.replace(ROI_KEYWORD_ROI, "")
 
                 # Determine camera type
-                if (
-                    ROI_KEYWORD_GREEN in camera_key
-                    or ROI_KEYWORD_ISO in camera_key
-                ):
+                if ROI_KEYWORD_GREEN in camera_key or ROI_KEYWORD_ISO in camera_key:
                     camera_type = "green"
                 elif ROI_KEYWORD_RED in camera_key:
                     camera_type = "red"
@@ -502,17 +470,11 @@ class FIPMapper:
         """
         led_configs = []
         led_configs_by_wavelength = {}
-        light_source_names = [
-            name
-            for name in rig_config.keys()
-            if name.startswith(LIGHT_SOURCE_PREFIX)
-        ]
+        light_source_names = [name for name in rig_config.keys() if name.startswith(LIGHT_SOURCE_PREFIX)]
 
         for light_source_name in light_source_names:
             light_source = rig_config[light_source_name]
-            led_name = light_source_name.replace(
-                LIGHT_SOURCE_PREFIX, ""
-            ).upper()
+            led_name = light_source_name.replace(LIGHT_SOURCE_PREFIX, "").upper()
             wavelength = self._get_led_wavelength(led_name)
 
             device_name = f"{LED_PREFIX}{led_name}"
@@ -584,9 +546,7 @@ class FIPMapper:
     def _build_configurations(
         self,
         rig_config: Dict[str, Any],
-        intended_measurements: Optional[
-            Dict[str, Dict[str, Optional[str]]]
-        ] = None,
+        intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]] = None,
         implanted_fibers: Optional[List[int]] = None,
     ) -> List[Any]:
         """Build device configurations from rig config.
@@ -613,15 +573,10 @@ class FIPMapper:
         # Extract camera exposure time from light source delta_1 field
         exposure_time_us = self._extract_camera_exposure_time(rig_config)
         # Convert microseconds to milliseconds for DetectorConfig
-        exposure_time_ms = (
-            exposure_time_us
-            / CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND
-        )
+        exposure_time_ms = exposure_time_us / CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND
 
         # Build LED configs
-        led_configs, led_configs_by_wavelength = self._build_led_configs(
-            rig_config
-        )
+        led_configs, led_configs_by_wavelength = self._build_led_configs(rig_config)
         configurations.extend(led_configs)
 
         # Build patch cord configurations
@@ -641,28 +596,18 @@ class FIPMapper:
 
             # Determine which fibers to create patch cords for
             fiber_indices = (
-                implanted_fibers
-                if implanted_fibers is not None
-                else self._get_fiber_indices_from_roi(roi_settings)
+                implanted_fibers if implanted_fibers is not None else self._get_fiber_indices_from_roi(roi_settings)
             )
 
             # Create patch cord for each implanted fiber
             for fiber_idx in fiber_indices:
                 channels = []
                 fiber_name = f"{FIBER_PREFIX}_{fiber_idx}"
-                fiber_measurements = (
-                    intended_measurements.get(fiber_name)
-                    if intended_measurements
-                    else None
-                )
+                fiber_measurements = intended_measurements.get(fiber_name) if intended_measurements else None
 
                 # Create Green channel
                 if green_camera_name:
-                    green_measurement = (
-                        fiber_measurements.get("G")
-                        if fiber_measurements
-                        else None
-                    )
+                    green_measurement = fiber_measurements.get("G") if fiber_measurements else None
                     channels.append(
                         self._create_channel(
                             fiber_idx,
@@ -677,11 +622,7 @@ class FIPMapper:
 
                 # Create Isosbestic channel
                 if green_camera_name:
-                    iso_measurement = (
-                        fiber_measurements.get("Iso")
-                        if fiber_measurements
-                        else None
-                    )
+                    iso_measurement = fiber_measurements.get("Iso") if fiber_measurements else None
                     channels.append(
                         self._create_channel(
                             fiber_idx,
@@ -696,11 +637,7 @@ class FIPMapper:
 
                 # Create Red channel
                 if red_camera_name:
-                    red_measurement = (
-                        fiber_measurements.get("R")
-                        if fiber_measurements
-                        else None
-                    )
+                    red_measurement = fiber_measurements.get("R") if fiber_measurements else None
                     channels.append(
                         self._create_channel(
                             fiber_idx,
@@ -777,37 +714,21 @@ class FIPMapper:
             devices.append(rig_config["rig_name"])
 
         # Add LEDs
-        light_source_names = [
-            name
-            for name in rig_config.keys()
-            if name.startswith(LIGHT_SOURCE_PREFIX)
-        ]
+        light_source_names = [name for name in rig_config.keys() if name.startswith(LIGHT_SOURCE_PREFIX)]
         for light_source_name in light_source_names:
-            led_name = light_source_name.replace(
-                LIGHT_SOURCE_PREFIX, ""
-            ).upper()
+            led_name = light_source_name.replace(LIGHT_SOURCE_PREFIX, "").upper()
             devices.append(f"{LED_PREFIX}{led_name}")
 
         # Add cameras
-        camera_names = [
-            name
-            for name in rig_config.keys()
-            if name.startswith(CAMERA_PREFIX)
-        ]
+        camera_names = [name for name in rig_config.keys() if name.startswith(CAMERA_PREFIX)]
         for camera_name in camera_names:
-            detector_name = (
-                camera_name.replace(CAMERA_PREFIX, "")
-                .replace("_", " ")
-                .title()
-            )
+            detector_name = camera_name.replace(CAMERA_PREFIX, "").replace("_", " ").title()
             devices.append(f"Camera_{detector_name}")
 
         # Add patch cords and implanted fibers
         roi_settings = rig_config.get("roi_settings", {})
         fiber_indices = (
-            implanted_fibers
-            if implanted_fibers is not None
-            else self._get_fiber_indices_from_roi(roi_settings)
+            implanted_fibers if implanted_fibers is not None else self._get_fiber_indices_from_roi(roi_settings)
         )
 
         for fiber_idx in fiber_indices:
@@ -849,9 +770,7 @@ class FIPMapper:
 
         return session_start_time, session_end_time
 
-    def run_job(
-        self, metadata: dict, output_directory: Optional[str] = None
-    ) -> Path:
+    def run_job(self, metadata: dict, output_directory: Optional[str] = None) -> Path:
         """Run the complete mapping job: transform and write.
 
         This is the main entry point following the standard AIND mapper pattern.
@@ -869,13 +788,9 @@ class FIPMapper:
             Path to the written acquisition file.
         """
         acquisition = self.transform(metadata)
-        return write_acquisition(
-            acquisition, output_directory, self.output_filename
-        )
+        return write_acquisition(acquisition, output_directory, self.output_filename)
 
-    def write(
-        self, model: Acquisition, output_directory: Optional[str] = None
-    ) -> Path:
+    def write(self, model: Acquisition, output_directory: Optional[str] = None) -> Path:
         """Write the Acquisition model to a JSON file.
 
         The output filename is determined by the mapper's output_filename attribute
