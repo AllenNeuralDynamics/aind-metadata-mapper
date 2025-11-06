@@ -20,10 +20,12 @@ TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
 class TestGatherMetadataJob(unittest.TestCase):
     """Tests methods in GatherMetadataJob class"""
 
-    def setUp(self):
+    @patch("os.makedirs")
+    def setUp(self, mock_makedirs):
         """Set up test fixtures"""
         self.test_settings = JobSettings(
-            metadata_dir="/test/metadata",
+            input_metadata_path="/test/metadata",
+            output_metadata_path="/test/output",
             subject_id="123456",
             project_name="Test Project",
             modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
@@ -61,10 +63,17 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     # Tests for get_funding method
     @patch("requests.get")
-    def test_get_funding_no_project_name(self, mock_get):
+    @patch("os.makedirs")
+    def test_get_funding_no_project_name(self, mock_makedirs, mock_get):
         """Test get_funding when no project name is provided"""
         job_no_project = GatherMetadataJob(
-            JobSettings(metadata_dir="/test", subject_id="test_subject", project_name="", modalities=[Modality.ECEPHYS])
+            JobSettings(
+                input_metadata_path="/test",
+                output_metadata_path="/test/output",
+                subject_id="test_subject",
+                project_name="",
+                modalities=[Modality.ECEPHYS],
+            )
         )
         funding, investigators = job_no_project.get_funding()
 
@@ -173,7 +182,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.job._write_json_file("output.json", test_data)
 
-        mock_file.assert_called_once_with("/test/metadata/output.json", "w")
+        mock_file.assert_called_once_with("/test/output/output.json", "w")
         mock_json_dump.assert_called_once_with(
             test_data,
             mock_file().__enter__(),
@@ -217,10 +226,17 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     # Tests for get_subject method
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    def test_get_subject_no_subject_id(self, mock_file_exists):
+    @patch("os.makedirs")
+    def test_get_subject_no_subject_id(self, mock_makedirs, mock_file_exists):
         """Test get_subject when no subject_id is provided"""
         job_no_subject = GatherMetadataJob(
-            JobSettings(metadata_dir="/test", subject_id="", project_name="Test Project", modalities=[Modality.ECEPHYS])
+            JobSettings(
+                input_metadata_path="/test",
+                output_metadata_path="/test/output",
+                subject_id="",
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            )
         )
 
         result = job_no_subject.get_subject()
@@ -299,10 +315,17 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     # Tests for get_procedures method
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    def test_get_procedures_no_subject_id(self, mock_file_exists):
+    @patch("os.makedirs")
+    def test_get_procedures_no_subject_id(self, mock_makedirs, mock_file_exists):
         """Test get_procedures when no subject_id is provided"""
         job_no_subject = GatherMetadataJob(
-            JobSettings(metadata_dir="/test", subject_id="", project_name="Test Project", modalities=[Modality.ECEPHYS])
+            JobSettings(
+                input_metadata_path="/test",
+                output_metadata_path="/test/output",
+                subject_id="",
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            )
         )
 
         result = job_no_subject.get_procedures()
@@ -464,15 +487,17 @@ class TestGatherMetadataJob(unittest.TestCase):
     def test_validate_and_create_metadata_success_with_raise_if_invalid_true(self):
         """Test validate_and_create_metadata when validation succeeds with raise_if_invalid=True"""
         # Create job with raise_if_invalid=True
-        strict_settings = JobSettings(
-            metadata_dir="/test/metadata",
-            subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
-            metadata_service_url="http://test-service.com",
-            raise_if_invalid=True,
-        )
-        strict_job = GatherMetadataJob(settings=strict_settings)
+        with patch("os.makedirs"):
+            strict_settings = JobSettings(
+                input_metadata_path="/test/metadata",
+                output_metadata_path="/test/output",
+                subject_id="123456",
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+                metadata_service_url="http://test-service.com",
+                raise_if_invalid=True,
+            )
+            strict_job = GatherMetadataJob(settings=strict_settings)
 
         core_metadata = {
             "data_description": {
@@ -497,15 +522,17 @@ class TestGatherMetadataJob(unittest.TestCase):
     def test_validate_and_create_metadata_with_location_field(self):
         """Test validate_and_create_metadata passes location field to Metadata constructor"""
         # Create job with location specified
-        location_settings = JobSettings(
-            metadata_dir="/test/metadata",
-            subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
-            metadata_service_url="http://test-service.com",
-            location="s3://my-bucket/my-data",
-        )
-        location_job = GatherMetadataJob(settings=location_settings)
+        with patch("os.makedirs"):
+            location_settings = JobSettings(
+                input_metadata_path="/test/metadata",
+                output_metadata_path="/test/output",
+                subject_id="123456",
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+                metadata_service_url="http://test-service.com",
+                location="s3://my-bucket/my-data",
+            )
+            location_job = GatherMetadataJob(settings=location_settings)
 
         core_metadata = {
             "data_description": {
@@ -686,8 +713,10 @@ class TestGatherMetadataJob(unittest.TestCase):
         import tempfile
 
         temp_dir = tempfile.mkdtemp()
+        output_dir = tempfile.mkdtemp()
         test_settings = JobSettings(
-            metadata_dir=temp_dir,
+            input_metadata_path=temp_dir,
+            output_metadata_path=output_dir,
             subject_id="123456",
             project_name="Test Project",
             modalities=[Modality.ECEPHYS],
@@ -723,8 +752,10 @@ class TestGatherMetadataJob(unittest.TestCase):
         import tempfile
 
         temp_dir = tempfile.mkdtemp()
+        output_dir = tempfile.mkdtemp()
         test_settings = JobSettings(
-            metadata_dir=temp_dir,
+            input_metadata_path=temp_dir,
+            output_metadata_path=output_dir,
             subject_id="123456",
             project_name="Test Project",
             modalities=[Modality.ECEPHYS],
@@ -741,10 +772,11 @@ class TestGatherMetadataJob(unittest.TestCase):
             acquisition1 = base_acquisition.copy()
             acquisition2 = base_acquisition.copy()
 
-            with open(os.path.join(temp_dir, "acquisition_789.json"), "w") as f:
+            # Place acquisition files in output directory since that's where they're read from
+            with open(os.path.join(output_dir, "acquisition_789.json"), "w") as f:
                 json.dump(acquisition1, f)
 
-            with open(os.path.join(temp_dir, "acquisition_012.json"), "w") as f:
+            with open(os.path.join(output_dir, "acquisition_012.json"), "w") as f:
                 json.dump(acquisition2, f)
 
             result = test_job.get_acquisition()
@@ -763,8 +795,10 @@ class TestGatherMetadataJob(unittest.TestCase):
         import tempfile
 
         temp_dir = tempfile.mkdtemp()
+        output_dir = tempfile.mkdtemp()
         test_settings = JobSettings(
-            metadata_dir=temp_dir,
+            input_metadata_path=temp_dir,
+            output_metadata_path=output_dir,
             subject_id="123456",
             project_name="Test Project",
             modalities=[Modality.ECEPHYS],
@@ -800,8 +834,10 @@ class TestGatherMetadataJob(unittest.TestCase):
         import tempfile
 
         temp_dir = tempfile.mkdtemp()
+        output_dir = tempfile.mkdtemp()
         test_settings = JobSettings(
-            metadata_dir=temp_dir,
+            input_metadata_path=temp_dir,
+            output_metadata_path=output_dir,
             subject_id="123456",
             project_name="Test Project",
             modalities=[Modality.ECEPHYS],
@@ -826,8 +862,10 @@ class TestGatherMetadataJob(unittest.TestCase):
         import tempfile
 
         temp_dir = tempfile.mkdtemp()
+        output_dir = tempfile.mkdtemp()
         test_settings = JobSettings(
-            metadata_dir=temp_dir,
+            input_metadata_path=temp_dir,
+            output_metadata_path=output_dir,
             subject_id="123456",
             project_name="Test Project",
             modalities=[Modality.ECEPHYS],

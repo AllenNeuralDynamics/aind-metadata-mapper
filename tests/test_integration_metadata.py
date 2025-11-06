@@ -28,10 +28,12 @@ V2_METADATA_DIR = TEST_DIR / "resources" / "v2_metadata"
 class TestIntegrationMetadata(unittest.TestCase):
     """Integration tests using real metadata resource files"""
 
-    def setUp(self):
+    @patch("os.makedirs")
+    def setUp(self, mock_makedirs):
         """Set up test fixtures"""
         self.test_settings = JobSettings(
-            metadata_dir="/test/metadata",
+            input_metadata_path="/test/metadata",
+            output_metadata_path="/test/output",
             subject_id="804670",
             project_name="Visual Behavior",
             modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
@@ -430,15 +432,17 @@ class TestIntegrationMetadata(unittest.TestCase):
     def test_validate_and_create_metadata_with_raise_if_invalid_true(self):
         """Test validate_and_create_metadata with raise_if_invalid=True - should raise ValidationError"""
         # Create job settings with raise_if_invalid=True
-        strict_settings = JobSettings(
-            metadata_dir="/test/metadata",
-            subject_id="804670",
-            project_name="Visual Behavior",
-            modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
-            metadata_service_url="http://test-service.com",
-            raise_if_invalid=True,
-        )
-        strict_job = GatherMetadataJob(settings=strict_settings)
+        with patch("os.makedirs"):
+            strict_settings = JobSettings(
+                input_metadata_path="/test/metadata",
+                output_metadata_path="/test/output",
+                subject_id="804670",
+                project_name="Visual Behavior",
+                modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+                metadata_service_url="http://test-service.com",
+                raise_if_invalid=True,
+            )
+            strict_job = GatherMetadataJob(settings=strict_settings)
 
         # Create core metadata with invalid data that will cause ValidationError
         core_metadata = {
@@ -473,15 +477,17 @@ class TestIntegrationMetadata(unittest.TestCase):
     def test_validate_and_create_metadata_success_with_location(self):
         """Test validate_and_create_metadata with location field using valid real metadata resources"""
         # Create job settings with location specified
-        location_settings = JobSettings(
-            metadata_dir="/test/metadata",
-            subject_id="804670",
-            project_name="Visual Behavior",
-            modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
-            metadata_service_url="http://test-service.com",
-            location="s3://my-bucket/my-data",
-        )
-        location_job = GatherMetadataJob(settings=location_settings)
+        with patch("os.makedirs"):
+            location_settings = JobSettings(
+                input_metadata_path="/test/metadata",
+                output_metadata_path="/test/output",
+                subject_id="804670",
+                project_name="Visual Behavior",
+                modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+                metadata_service_url="http://test-service.com",
+                location="s3://my-bucket/my-data",
+            )
+            location_job = GatherMetadataJob(settings=location_settings)
 
         # Load real metadata files (these should be valid)
         data_description = self._load_resource_file(V2_METADATA_DIR, "data_description.json")
@@ -538,16 +544,18 @@ class TestIntegrationMetadata(unittest.TestCase):
     def test_validate_and_create_metadata_failure_fallback_with_location(self):
         """Test validate_and_create_metadata fallback with location field using real metadata with invalid field"""
         # Create job settings with location specified
-        location_settings = JobSettings(
-            metadata_dir="/test/metadata",
-            subject_id="804670",
-            project_name="Visual Behavior",
-            modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
-            metadata_service_url="http://test-service.com",
-            location="s3://my-bucket/my-data",
-            raise_if_invalid=False,  # Explicit for clarity
-        )
-        location_job = GatherMetadataJob(settings=location_settings)
+        with patch("os.makedirs"):
+            location_settings = JobSettings(
+                input_metadata_path="/test/metadata",
+                output_metadata_path="/test/output",
+                subject_id="804670",
+                project_name="Visual Behavior",
+                modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+                metadata_service_url="http://test-service.com",
+                location="s3://my-bucket/my-data",
+                raise_if_invalid=False,  # Explicit for clarity
+            )
+            location_job = GatherMetadataJob(settings=location_settings)
 
         # Load ALL real metadata files
         data_description = self._load_resource_file(V2_METADATA_DIR, "data_description.json")

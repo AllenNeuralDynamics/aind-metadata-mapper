@@ -55,7 +55,8 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         # Provide all required JobSettings fields
         settings = JobSettings(
-            metadata_dir=self.metadata_dir,
+            input_metadata_path=self.metadata_dir,
+            output_metadata_path=self.metadata_dir,
             subject_id="test_subject",
             project_name="Test Project",
             modalities=[Modality.ECEPHYS],
@@ -78,7 +79,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_listdir.return_value = [self.input_filename]
 
         settings = JobSettings(
-            metadata_dir=self.metadata_dir,
+            input_metadata_path=self.metadata_dir,
+            output_metadata_path=self.metadata_dir,
             subject_id="test_subject",
             project_name="Test Project",
             modalities=[Modality.ECEPHYS],

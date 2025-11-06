@@ -4,6 +4,7 @@ import json
 import logging
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 import requests
@@ -36,6 +37,8 @@ class GatherMetadataJob:
         settings : JobSettings
         """
         self.settings = settings
+        # Create output directory if it doesn't exist
+        os.makedirs(self.settings.output_metadata_path, exist_ok=True)
 
     def _does_file_exist_in_user_defined_dir(self, file_name: str) -> bool:
         """
@@ -50,7 +53,7 @@ class GatherMetadataJob:
         True if self.settings.metadata_dir is not None and file is in that dir
 
         """
-        file_path_to_check = os.path.join(self.settings.metadata_dir, file_name)
+        file_path_to_check = os.path.join(self.settings.input_metadata_path, file_name)
         if os.path.isfile(file_path_to_check):
             return True
         else:
@@ -69,7 +72,7 @@ class GatherMetadataJob:
         File contents as a dictionary
 
         """
-        file_path = os.path.join(self.settings.metadata_dir, file_name)
+        file_path = os.path.join(self.settings.input_metadata_path, file_name)
         with open(file_path, "r") as f:
             contents = json.load(f)
         return contents
@@ -88,12 +91,30 @@ class GatherMetadataJob:
         list[dict]
             File contents as a list of dictionaries
         """
-        if not os.path.exists(self.settings.metadata_dir):
+        return self._get_prefixed_files_from_directory(self.settings.input_metadata_path, file_name_prefix)
+
+    def _get_prefixed_files_from_directory(self, directory: str, file_name_prefix: str) -> list[dict]:
+        """
+        Get all files with a given prefix from a specified directory
+
+        Parameters
+        ----------
+        directory : str
+            Directory to search in
+        file_name_prefix : str
+            Prefix, e.g. "instrument"
+
+        Returns
+        -------
+        list[dict]
+            File contents as a list of dictionaries
+        """
+        if not os.path.exists(directory):
             return []
 
         file_paths = [
-            os.path.join(self.settings.metadata_dir, f)
-            for f in os.listdir(self.settings.metadata_dir)
+            os.path.join(directory, f)
+            for f in os.listdir(directory)
             if f.startswith(file_name_prefix) and f.endswith(".json")
         ]
         file_names = [os.path.basename(f) for f in file_paths]
@@ -171,13 +192,16 @@ class GatherMetadataJob:
 
         # Get funding information
         funding_source, investigators = self.get_funding()
+        
+        # Get modalities
+        modalities = self.settings.modalities
 
         # Create new data description
         new_data_description = DataDescription(
             creation_time=creation_time,
             institution=Organization.AIND,
             project_name=self.settings.project_name,
-            modalities=self.settings.modalities,
+            modalities=modalities,
             funding_source=funding_source,
             investigators=investigators,
             data_level=DataLevel.RAW,
@@ -260,18 +284,22 @@ class GatherMetadataJob:
         Run mappers for any files in metadata_dir matching a registry key.
         For each file named <mapper>.json, run the corresponding mapper and output acquisition_<mapper>.json.
         """
-        metadata_dir = self.settings.metadata_dir
+        input_dir = self.settings.input_metadata_path
+        output_dir = self.settings.output_metadata_path
         # For each registry key, check if <key>.json exists
         for mapper_name in registry.keys():
             input_filename = f"{mapper_name}.json"
-            input_path = os.path.join(metadata_dir, input_filename)
+            input_path = os.path.join(input_dir, input_filename)
             output_filename = f"acquisition_{mapper_name}.json"
-            output_path = os.path.join(metadata_dir, output_filename)
+            output_path = os.path.join(output_dir, output_filename)
             # Only run if input exists and output does not already exist
             if os.path.isfile(input_path) and not os.path.isfile(output_path):
                 mapper_cls = registry[mapper_name]
                 # Create job settings for the mapper
-                job_settings = MapperJobSettings(input_filepath=input_path, output_filepath=output_path)
+                job_settings = MapperJobSettings(
+                    input_filepath=Path(input_path),
+                    output_filepath=Path(output_path)
+                )
                 try:
                     mapper = mapper_cls()
                     mapper.run_job(job_settings)
@@ -292,8 +320,11 @@ class GatherMetadataJob:
         else:
             # Run mappers for any matching files
             self._run_mappers_for_acquisition()
-            # then gather all acquisition files with prefixes
-            files = self._get_prefixed_files_from_user_defined_directory(file_name_prefix="acquisition")
+            # then gather all acquisition files with prefixes from output directory
+            files = self._get_prefixed_files_from_directory(
+                directory=self.settings.output_metadata_path,
+                file_name_prefix="acquisition"
+            )
             if files:
                 return self._merge_models(Acquisition, files)
             else:
@@ -369,7 +400,7 @@ class GatherMetadataJob:
 
     def _write_json_file(self, filename: str, contents: dict) -> None:
         """
-        Write a json file
+        Write a json file to the output directory
         Parameters
         ----------
         filename : str
@@ -377,7 +408,7 @@ class GatherMetadataJob:
         contents : dict
           Contents to write to the json file
         """
-        output_file = os.path.join(self.settings.metadata_dir, filename)
+        output_file = os.path.join(self.settings.output_metadata_path, filename)
         with open(output_file, "w") as f:
             json.dump(contents, f, indent=3, ensure_ascii=False, sort_keys=True)
 
@@ -522,6 +553,8 @@ class GatherMetadataJob:
 
 
 if __name__ == "__main__":
-    main_job_settings = JobSettings(metadata_dir="./metadata")
+    # JobSettings has cli_parse_args=True, so it automatically parses command line arguments
+    # and handles converting CLI args to the appropriate types
+    main_job_settings = JobSettings()
     job = GatherMetadataJob(settings=main_job_settings)
     job.run_job()
