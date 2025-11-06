@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 import requests
+import yaml
 from aind_data_schema.core.acquisition import Acquisition
 
 logging.basicConfig(level=logging.INFO)
@@ -136,10 +137,6 @@ def load_protocols():
         Dictionary mapping modality names to lists of protocol URLs.
     """
     try:
-        from pathlib import Path
-
-        import yaml
-
         project_root = Path(__file__).parent.parent.parent
         protocols_file = project_root / "protocols.yaml"
 
