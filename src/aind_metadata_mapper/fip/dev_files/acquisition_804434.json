@@ -1,0 +1,273 @@
+{
+  "object_type": "Acquisition",
+  "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/acquisition.py",
+  "schema_version": "2.1.0",
+  "subject_id": "804434",
+  "specimen_id": null,
+  "acquisition_start_time": "2025-11-05T01:40:24.283379Z",
+  "acquisition_end_time": "2025-11-05T01:50:37.757056Z",
+  "experimenters": [
+    "jason.lee"
+  ],
+  "protocol_id": [
+    "https://www.protocols.io/view/modified-frame-projected-independent-fiber-photome-kxygx3e6wg8j/v1"
+  ],
+  "ethics_review_id": null,
+  "instrument_id": "13A",
+  "acquisition_type": "FIP",
+  "notes": "",
+  "coordinate_system": null,
+  "calibrations": [],
+  "maintenance": [],
+  "data_streams": [
+    {
+      "object_type": "Data stream",
+      "stream_start_time": "2025-11-05T01:40:24.283379Z",
+      "stream_end_time": "2025-11-05T01:50:37.757056Z",
+      "modalities": [
+        {
+          "name": "Fiber photometry",
+          "abbreviation": "fib"
+        }
+      ],
+      "code": null,
+      "notes": null,
+      "active_devices": [
+        "13A",
+        "LED_UV",
+        "LED_BLUE",
+        "LED_LIME",
+        "Camera_Green Iso",
+        "Camera_Red",
+        "Patch Cord 0",
+        "Fiber 0",
+        "Patch Cord 1",
+        "Fiber 1",
+        "cuTTLefishFip"
+      ],
+      "configurations": [
+        {
+          "object_type": "Light emitting diode config",
+          "device_name": "LED_UV_415nm",
+          "power": 20.0,
+          "power_unit": "milliwatt",
+          "power_measured_at": "patch cable end"
+        },
+        {
+          "object_type": "Light emitting diode config",
+          "device_name": "LED_BLUE_470nm",
+          "power": 20.0,
+          "power_unit": "milliwatt",
+          "power_measured_at": "patch cable end"
+        },
+        {
+          "object_type": "Light emitting diode config",
+          "device_name": "LED_LIME_565nm",
+          "power": 20.0,
+          "power_unit": "milliwatt",
+          "power_measured_at": "patch cable end"
+        },
+        {
+          "object_type": "Patch cord config",
+          "device_name": "Patch Cord 0",
+          "channels": [
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_0_Green",
+              "intended_measurement": "calcium",
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "camera_green_iso",
+                "exposure_time": 15.65,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_BLUE_470nm",
+                  "power": 20.0,
+                  "power_unit": "milliwatt",
+                  "power_measured_at": "patch cable end"
+                }
+              ],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 520,
+              "emission_wavelength_unit": "nanometer"
+            },
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_0_Isosbestic",
+              "intended_measurement": null,
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "camera_green_iso",
+                "exposure_time": 15.65,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_UV_415nm",
+                  "power": 20.0,
+                  "power_unit": "milliwatt",
+                  "power_measured_at": "patch cable end"
+                }
+              ],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 520,
+              "emission_wavelength_unit": "nanometer"
+            },
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_0_Red",
+              "intended_measurement": "serotonin",
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "camera_red",
+                "exposure_time": 15.65,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_LIME_565nm",
+                  "power": 20.0,
+                  "power_unit": "milliwatt",
+                  "power_measured_at": "patch cable end"
+                }
+              ],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 590,
+              "emission_wavelength_unit": "nanometer"
+            }
+          ]
+        },
+        {
+          "object_type": "Patch cord config",
+          "device_name": "Patch Cord 1",
+          "channels": [
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_1_Green",
+              "intended_measurement": "calcium",
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "camera_green_iso",
+                "exposure_time": 15.65,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_BLUE_470nm",
+                  "power": 20.0,
+                  "power_unit": "milliwatt",
+                  "power_measured_at": "patch cable end"
+                }
+              ],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 520,
+              "emission_wavelength_unit": "nanometer"
+            },
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_1_Isosbestic",
+              "intended_measurement": null,
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "camera_green_iso",
+                "exposure_time": 15.65,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_UV_415nm",
+                  "power": 20.0,
+                  "power_unit": "milliwatt",
+                  "power_measured_at": "patch cable end"
+                }
+              ],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 520,
+              "emission_wavelength_unit": "nanometer"
+            },
+            {
+              "object_type": "Channel",
+              "channel_name": "Fiber_1_Red",
+              "intended_measurement": "serotonin",
+              "detector": {
+                "object_type": "Detector config",
+                "device_name": "camera_red",
+                "exposure_time": 15.65,
+                "exposure_time_unit": "millisecond",
+                "trigger_type": "Internal",
+                "compression": null
+              },
+              "additional_device_names": null,
+              "light_sources": [
+                {
+                  "object_type": "Light emitting diode config",
+                  "device_name": "LED_LIME_565nm",
+                  "power": 20.0,
+                  "power_unit": "milliwatt",
+                  "power_measured_at": "patch cable end"
+                }
+              ],
+              "variable_power": false,
+              "excitation_filters": [],
+              "emission_filters": [],
+              "emission_wavelength": 590,
+              "emission_wavelength_unit": "nanometer"
+            }
+          ]
+        }
+      ],
+      "connections": [
+        {
+          "object_type": "Connection",
+          "source_device": "Patch Cord 0",
+          "source_port": null,
+          "target_device": "Fiber 0",
+          "target_port": null,
+          "send_and_receive": false
+        },
+        {
+          "object_type": "Connection",
+          "source_device": "Patch Cord 1",
+          "source_port": null,
+          "target_device": "Fiber 1",
+          "target_port": null,
+          "send_and_receive": false
+        }
+      ]
+    }
+  ],
+  "stimulus_epochs": [],
+  "subject_details": null
+}
