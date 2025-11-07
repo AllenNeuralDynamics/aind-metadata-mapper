@@ -27,7 +27,6 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
     """Class to manage transforming mesoscope platform json and metadata into
     a Session model."""
 
-    
     _STRUCTURE_LOOKUP_DICT = {
         385: "VISp",
         394: "VISam",
@@ -231,7 +230,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
                 power_ratio = float(power_ratio)
             for plane in group["imaging_planes"]:
                 if isinstance(plane["targeted_structure_id"], int):
-                    structure_id = plane["targeted_structure_id"]       
+                    structure_id = plane["targeted_structure_id"]
                     targeted_structure = self._STRUCTURE_LOOKUP_DICT.get(
                         structure_id, "Unknown"
                     )
