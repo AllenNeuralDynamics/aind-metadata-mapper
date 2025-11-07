@@ -27,6 +27,17 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
     """Class to manage transforming mesoscope platform json and metadata into
     a Session model."""
 
+    
+    _STRUCTURE_LOOKUP_DICT = {
+        385: "VISp",
+        394: "VISam",
+        402: "VISal",
+        409: "VISl",
+        417: "VISrl",
+        533: "VISpm",
+        312782574: "VISli",
+    }
+
     # TODO: Deprecate this constructor. Use GenericEtl constructor instead
     def __init__(self, job_settings: Union[JobSettings, str]):
         """
@@ -219,8 +230,13 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
             if power_ratio:
                 power_ratio = float(power_ratio)
             for plane in group["imaging_planes"]:
-                print("Plane targeted structure id:")
-                print(plane["targeted_structure_id"])
+                if isinstance(plane["targeted_structure_id"], int):
+                    structure_id = plane["targeted_structure_id"]       
+                    targeted_structure = self._STRUCTURE_LOOKUP_DICT.get(
+                        structure_id, "Unknown"
+                    )
+                else:
+                    targeted_structure = plane["targeted_structure_id"]
                 fov = FieldOfView(
                     coupled_fov_index=int(
                         group["local_z_stack_tif"].split(".")[0][-1]
@@ -232,7 +248,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
                     magnification=self.job_settings.magnification,
                     fov_scale_factor=0.78,
                     imaging_depth=plane["targeted_depth"],
-                    targeted_structure=str(plane["targeted_structure_id"]),
+                    targeted_structure=targeted_structure,
                     scanimage_roi_index=plane["scanimage_roi_index"],
                     fov_width=meta[0]["SI.hRoiManager.pixelsPerLine"],
                     fov_height=meta[0]["SI.hRoiManager.linesPerFrame"],
