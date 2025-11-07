@@ -75,6 +75,9 @@ def get_procedures(subject_id: str) -> Optional[dict]:
     Queries http://aind-metadata-service-dev/api/v2/procedures/{subject_id}
     to get all procedures performed on a subject.
 
+    Note: The endpoint may return 400 status code but still contain valid JSON data.
+    This function handles that case by checking for valid JSON before treating it as an error.
+
     Parameters
     ----------
     subject_id : str
@@ -88,10 +91,39 @@ def get_procedures(subject_id: str) -> Optional[dict]:
     try:
         url = f"http://aind-metadata-service-dev/api/v2/procedures/{subject_id}"
         response = requests.get(url, timeout=60)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
+
+        # Handle 400 status codes that may still contain valid JSON data
+        if response.status_code == 400:
+            try:
+                data = response.json()
+                # Check if response contains valid procedures data structure
+                if isinstance(data, dict) and "subject_procedures" in data:
+                    logger.warning(
+                        f"Procedures endpoint returned 400 for subject {subject_id}, "
+                        "but response contains valid data. Proceeding with data."
+                    )
+                    return data
+            except (ValueError, KeyError):
+                # Not valid JSON or missing expected structure
+                pass
+            # If we get here, 400 response didn't contain valid data
+            logger.warning(
+                f"Procedures endpoint returned 400 for subject {subject_id} " "with invalid or missing data."
+            )
+            return None
+
+        # For 200 status code, return the JSON data
+        if response.status_code == 200:
+            return response.json()
+
+        # For other status codes, log warning and return None
+        logger.warning(f"Could not fetch procedures for subject {subject_id} " f"(status {response.status_code})")
+        return None
+    except requests.exceptions.RequestException as e:
         logger.warning(f"Could not fetch procedures for subject {subject_id}: {e}")
+        return None
+    except Exception as e:
+        logger.warning(f"Unexpected error fetching procedures for subject {subject_id}: {e}")
         return None
 
 

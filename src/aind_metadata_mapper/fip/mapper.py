@@ -23,6 +23,7 @@ from aind_data_schema.components.configs import (
     PatchCordConfig,
     TriggerType,
 )
+from aind_data_schema.components.connections import Connection
 from aind_data_schema.core.acquisition import Acquisition, AcquisitionSubjectDetails, DataStream
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import PowerUnit, SizeUnit, TimeUnit
@@ -207,7 +208,7 @@ class FIPMapper:
         except (IndexError, ValueError):
             return None
 
-    def _parse_implanted_fibers(self, subject_id: str) -> Optional[List[int]]:
+    def _parse_implanted_fibers(self, subject_id: str) -> List[int]:
         """Parse implanted fiber indices from procedures data.
 
         Determines which fibers were actually implanted during surgery.
@@ -220,13 +221,22 @@ class FIPMapper:
 
         Returns
         -------
-        Optional[List[int]]
+        List[int]
             List of implanted fiber indices (e.g., [0, 1, 2] for Fiber_0, Fiber_1, Fiber_2).
-            Returns None if request fails or no fiber probes found.
+
+        Raises
+        ------
+        RuntimeError
+            If procedures data cannot be retrieved from the metadata service, or if
+            no implanted fibers are found in the procedures data.
         """
         data = get_procedures(subject_id)
         if not data:
-            return None
+            raise RuntimeError(
+                f"Failed to retrieve procedures data for subject {subject_id}. "
+                "Cannot determine which fibers were implanted. "
+                "Please ensure the procedures endpoint is accessible and the subject has procedures recorded."
+            )
 
         implanted_indices = set()
 
@@ -241,7 +251,13 @@ class FIPMapper:
                             if fiber_idx is not None:
                                 implanted_indices.add(fiber_idx)
 
-        return sorted(list(implanted_indices)) if implanted_indices else None
+        if not implanted_indices:
+            raise RuntimeError(
+                f"No implanted fibers found in procedures data for subject {subject_id}. "
+                "Please ensure the subject has fiber probe implant procedures recorded."
+            )
+
+        return sorted(list(implanted_indices))
 
     def transform(self, metadata: dict) -> Acquisition:
         """Transforms intermediate metadata into a complete Acquisition model.
@@ -307,7 +323,8 @@ class FIPMapper:
             stream_end_time=session_end_time,
             modalities=[Modality.FIB],
             active_devices=self._get_active_devices(rig, implanted_fibers),
-            configurations=self._build_configurations(rig, intended_measurements, implanted_fibers),
+            configurations=self._build_configurations(rig, implanted_fibers, intended_measurements),
+            connections=self._build_connections(implanted_fibers),
         )
 
         # Handle None values explicitly - .get() only uses default if key missing
@@ -546,8 +563,8 @@ class FIPMapper:
     def _build_configurations(
         self,
         rig_config: Dict[str, Any],
+        implanted_fibers: List[int],
         intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]] = None,
-        implanted_fibers: Optional[List[int]] = None,
     ) -> List[Any]:
         """Build device configurations from rig config.
 
@@ -558,15 +575,19 @@ class FIPMapper:
         intended_measurements : Optional[Dict[str, Dict[str, Optional[str]]]], optional
             Intended measurements from metadata service, mapping fiber names to
             channel measurements (R, G, B, Iso), by default None.
-        implanted_fibers : Optional[List[int]], optional
+        implanted_fibers : List[int]
             List of implanted fiber indices from procedures endpoint. Only creates
-            patch cord configurations for implanted fibers. Falls back to ROI-based
-            inference if None, by default None.
+            patch cord configurations for these implanted fibers. Required.
 
         Returns
         -------
         List[Any]
             List of device configurations (LEDs, detectors, and patch cords).
+
+        Raises
+        ------
+        RuntimeError
+            If implanted_fibers is None or empty.
         """
         configurations = []
 
@@ -594,10 +615,13 @@ class FIPMapper:
             green_camera_name = camera_names.get("green")
             red_camera_name = camera_names.get("red")
 
-            # Determine which fibers to create patch cords for
-            fiber_indices = (
-                implanted_fibers if implanted_fibers is not None else self._get_fiber_indices_from_roi(roi_settings)
-            )
+            # Use only implanted fibers - no fallback to ROI inference
+            if implanted_fibers is None:
+                raise RuntimeError(
+                    "Cannot build configurations: implanted fibers data is required. "
+                    "The mapper must successfully retrieve procedures data to determine which fibers were implanted."
+                )
+            fiber_indices = implanted_fibers
 
             # Create patch cord for each implanted fiber
             for fiber_idx in fiber_indices:
@@ -687,25 +711,29 @@ class FIPMapper:
     def _get_active_devices(
         self,
         rig_config: Dict[str, Any],
-        implanted_fibers: Optional[List[int]] = None,
+        implanted_fibers: List[int],
     ) -> List[str]:
         """Get list of active device names.
 
-        Includes implanted fibers and patch cords based on procedures data or ROI count.
-        Each ROI index corresponds to: Patch Cord N → Fiber N (implant).
+        Includes implanted fibers and patch cords based on procedures data.
+        Each fiber index corresponds to: Patch Cord N → Fiber N (implant).
 
         Parameters
         ----------
         rig_config : Dict[str, Any]
             Rig configuration dictionary from metadata.
-        implanted_fibers : Optional[List[int]], optional
-            List of implanted fiber indices from procedures endpoint. Falls back to
-            ROI-based inference if None, by default None.
+        implanted_fibers : List[int]
+            List of implanted fiber indices from procedures endpoint. Required.
 
         Returns
         -------
         List[str]
             List of active device names.
+
+        Raises
+        ------
+        RuntimeError
+            If implanted_fibers is None or empty.
         """
         devices = []
 
@@ -726,10 +754,12 @@ class FIPMapper:
             devices.append(f"Camera_{detector_name}")
 
         # Add patch cords and implanted fibers
-        roi_settings = rig_config.get("roi_settings", {})
-        fiber_indices = (
-            implanted_fibers if implanted_fibers is not None else self._get_fiber_indices_from_roi(roi_settings)
-        )
+        if implanted_fibers is None:
+            raise RuntimeError(
+                "Cannot determine active devices: implanted fibers data is required. "
+                "The mapper must successfully retrieve procedures data to determine which fibers were implanted."
+            )
+        fiber_indices = implanted_fibers
 
         for fiber_idx in fiber_indices:
             devices.append(f"{PATCH_CORD_PREFIX} {fiber_idx}")
@@ -740,6 +770,35 @@ class FIPMapper:
             devices.append(CONTROLLER_NAME)
 
         return devices
+
+    def _build_connections(self, implanted_fibers: List[int]) -> List[Connection]:
+        """Build connections between patch cords and implanted fibers.
+
+        Creates Connection objects representing the physical connections
+        between patch cords and fibers during the acquisition session.
+
+        Parameters
+        ----------
+        implanted_fibers : List[int]
+            List of implanted fiber indices from procedures endpoint.
+
+        Returns
+        -------
+        List[Connection]
+            List of Connection objects for each patch cord → fiber pair.
+        """
+        connections = []
+        for fiber_idx in implanted_fibers:
+            patch_cord_name = f"{PATCH_CORD_PREFIX} {fiber_idx}"
+            fiber_name = f"{FIBER_PREFIX} {fiber_idx}"
+            connections.append(
+                Connection(
+                    source_device=patch_cord_name,
+                    target_device=fiber_name,
+                    send_and_receive=False,
+                )
+            )
+        return connections
 
     def _process_session_times(self, session_start_time, session_end_time):
         """Process and validate session times.
