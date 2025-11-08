@@ -15,6 +15,8 @@ from aind_data_schema.components.measurements import Calibration
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import PowerUnit
 
+from aind_metadata_mapper.instrument_store import save_instrument
+
 
 def prompt_for_string(prompt: str, default: Optional[str] = None) -> str:
     """Prompt user for a string value.
@@ -253,7 +255,7 @@ calibration = Calibration(
 instrument = r.Instrument(
     location="428",
     instrument_id="FIP1",
-    modification_date=date(2023, 10, 3),
+    modification_date=date.today(),
     modalities=[Modality.FIB],
     coordinate_system=CoordinateSystemLibrary.BREGMA_ARI,
     components=[
@@ -288,3 +290,11 @@ if __name__ == "__main__":
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(instrument.model_dump_json(indent=2))
     print(f"Instrument JSON written to: {output_path.absolute()}")
+
+    # Save to instrument store
+    # Override rig_id for testing (set to None to use instrument.instrument_id)
+    rig_id_override: Optional[str] = "test"
+    rig_id = rig_id_override if rig_id_override is not None else instrument.instrument_id
+
+    stored_path = save_instrument(path=str(output_path), rig_id=rig_id)
+    print(f"Instrument saved to store: {stored_path}")
