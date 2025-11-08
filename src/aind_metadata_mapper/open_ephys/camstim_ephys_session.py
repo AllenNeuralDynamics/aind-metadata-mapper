@@ -389,17 +389,17 @@ class CamstimEphysSessionEtl(
             # difference between ISI expected from pkl and ISI observed in sync
             pre_isi_discrepancy = this_sync_isi - pkl_isis[p]
 
-            print(s_end, sync_end_times[s_end], s_start, sync_start_times[s_start], this_sync_isi, p, pkl_isis[p], pre_isi_discrepancy)
+            # print(s_end, sync_end_times[s_end], s_start, sync_start_times[s_start], this_sync_isi, p, pkl_isis[p], pre_isi_discrepancy)
 
             # after a sync time has been skipped, the next pkl ISI may also be erroneous, skip it to be safe
             if approx_pkl_time - sync_start_times[s_start] < -mismatch_threshold:
-                print(f"skipping pkl time at p {p}")
+                # print(f"skipping pkl time at p {p}")
                 p += 1
                 continue
 
             # if the ISI is significantly different from expected, this is an erroneous sync time, skip it
             if pre_isi_discrepancy < -mismatch_threshold or pre_isi_discrepancy > mismatch_threshold:
-                print(f"skipping sync start time at s_start {s_start}")
+                # print(f"skipping sync start time at s_start {s_start}")
                 s_start += 1
                 s_end += 1
                 continue
