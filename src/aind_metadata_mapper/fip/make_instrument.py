@@ -191,12 +191,46 @@ def create_instrument(instrument_id: str) -> r.Instrument:
 
     bonsai_software = Software(name="Bonsai", version="2.5")
 
-    patch_cord = d.FiberPatchCord(
-        name="Bundle Branching Fiber-optic Patch Cord",
+    patch_cord_note = (
+        "All four patch cords are actually a single device at the camera end "
+        "with four separate connections to connect to up to four implanted fibers. "
+        "Unused patch cables are not physically connected to an implanted fiber during an experiment."
+    )
+
+    patch_cord_0 = d.FiberPatchCord(
+        name="Patch Cord 0",
         manufacturer=d.Organization.DORIC,
         model="BBP(4)_200/220/900-0.37_Custom_FCM-4xMF1.25",
         core_diameter=200,
         numerical_aperture=0.37,
+        notes=patch_cord_note,
+    )
+
+    patch_cord_1 = d.FiberPatchCord(
+        name="Patch Cord 1",
+        manufacturer=d.Organization.DORIC,
+        model="BBP(4)_200/220/900-0.37_Custom_FCM-4xMF1.25",
+        core_diameter=200,
+        numerical_aperture=0.37,
+        notes=patch_cord_note,
+    )
+
+    patch_cord_2 = d.FiberPatchCord(
+        name="Patch Cord 2",
+        manufacturer=d.Organization.DORIC,
+        model="BBP(4)_200/220/900-0.37_Custom_FCM-4xMF1.25",
+        core_diameter=200,
+        numerical_aperture=0.37,
+        notes=patch_cord_note,
+    )
+
+    patch_cord_3 = d.FiberPatchCord(
+        name="Patch Cord 3",
+        manufacturer=d.Organization.DORIC,
+        model="BBP(4)_200/220/900-0.37_Custom_FCM-4xMF1.25",
+        core_diameter=200,
+        numerical_aperture=0.37,
+        notes=patch_cord_note,
     )
 
     light_source_1 = d.LightEmittingDiode(
@@ -392,7 +426,10 @@ def create_instrument(instrument_id: str) -> r.Instrument:
         coordinate_system=CoordinateSystemLibrary.BREGMA_ARI,
         components=[
             computer,
-            patch_cord,
+            patch_cord_0,
+            patch_cord_1,
+            patch_cord_2,
+            patch_cord_3,
             light_source_1,
             light_source_2,
             light_source_3,
