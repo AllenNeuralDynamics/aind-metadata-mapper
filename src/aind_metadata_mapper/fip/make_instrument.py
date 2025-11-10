@@ -423,7 +423,8 @@ def create_instrument(rig_id: str) -> tuple[r.Instrument, str]:
     return instrument
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Main function to create an instrument interactively."""
     # Get list of existing instrument IDs for help message
     existing_ids = list_instrument_ids()
     if existing_ids:
@@ -463,3 +464,7 @@ if __name__ == "__main__":
 
     # Clean up temporary file
     Path(temp_path).unlink()
+
+
+if __name__ == "__main__":
+    main()
