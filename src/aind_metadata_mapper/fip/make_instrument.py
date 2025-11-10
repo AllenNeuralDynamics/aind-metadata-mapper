@@ -108,73 +108,82 @@ def prompt_for_string(
             print(help_message)
 
 
-def extract_serial_number_by_name(instrument_data: dict, component_name: str) -> Optional[str]:
-    """Extract serial number from a component in instrument data by name.
+def extract_value(
+    instrument_data: dict,
+    source: str,
+    field: Optional[str] = None,
+    component_class: Optional[str] = None,
+) -> Optional[str]:
+    """Extract a value from instrument data.
+
+    Can extract:
+    - Top-level fields (e.g., source="location", field=None, component_class=None)
+    - Component fields by component name (e.g., source="Green CMOS", field="serial_number")
+    - Component fields by class name (e.g., source="Computer", field="name", component_class="Computer")
 
     Parameters
     ----------
     instrument_data : dict
         Instrument data loaded from JSON.
-    component_name : str
-        Name of the component to find.
+    source : str
+        For top-level fields: the field name (e.g., "location").
+        For components: the component name or class name to find.
+    field : Optional[str]
+        Field name to extract. Required for component extraction, None for top-level fields.
+    component_class : Optional[str]
+        If provided, searches for component by class name instead of component name.
 
     Returns
     -------
     Optional[str]
-        Serial number if found, None otherwise.
+        Extracted value if found, None otherwise.
     """
     if instrument_data is None:
         return None
 
-    components = instrument_data.get("components", [])
-    for component in components:
-        if component.get("name") == component_name:
-            return component.get("serial_number")
-    return None
+    # Handle top-level fields
+    if component_class is None and field is None:
+        return instrument_data.get(source)
 
-
-def extract_computer_name(instrument_data: dict) -> Optional[str]:
-    """Extract computer name from instrument data.
-
-    Parameters
-    ----------
-    instrument_data : dict
-        Instrument data loaded from JSON.
-
-    Returns
-    -------
-    Optional[str]
-        Computer name if found, None otherwise.
-    """
-    if instrument_data is None:
-        return None
+    # Handle component extraction (field is required)
+    if field is None:
+        raise ValueError("field parameter is required when extracting from components")
 
     components = instrument_data.get("components", [])
     for component in components:
-        if component.get("__class_name") == "Computer":
-            return component.get("name")
+        # Match by class name if provided
+        if component_class:
+            if component.get("__class_name") == component_class:
+                return component.get(field)
+        # Match by component name
+        elif component.get("name") == source:
+            return component.get(field)
+
     return None
 
 
-def create_instrument(rig_id: str) -> tuple[r.Instrument, str]:
+def create_instrument(instrument_id: str) -> r.Instrument:
     """Create an FIP instrument interactively.
 
     Parameters
     ----------
-    rig_id : str
-        Rig identifier for loading previous instrument defaults.
+    instrument_id : str
+        Instrument identifier for loading previous instrument defaults.
 
     Returns
     -------
-    tuple[r.Instrument, str]
-        Tuple of (instrument, computer_name) for use in connections.
+    r.Instrument
+        Created instrument object.
     """
-    # Try to load previous instrument for this rig
-    previous_instrument = get_instrument(rig_id)
+    # Try to load previous instrument for this ID
+    previous_instrument = get_instrument(instrument_id)
+
+    # Prompt for location with previous value as default
+    location = prompt_for_string("Location", extract_value(previous_instrument, "location"))
 
     # Prompt for computer name with system default or previous value
     system_hostname = socket.gethostname()
-    previous_computer_name = extract_computer_name(previous_instrument)
+    previous_computer_name = extract_value(previous_instrument, "Computer", field="name", component_class="Computer")
     computer_name_default = previous_computer_name or system_hostname
     computer_name = prompt_for_string("Computer name", computer_name_default)
 
@@ -212,9 +221,9 @@ def create_instrument(rig_id: str) -> tuple[r.Instrument, str]:
     )
 
     # Extract serial number defaults from previous instrument
-    detector_1_serial_default = extract_serial_number_by_name(previous_instrument, "Green CMOS")
-    detector_2_serial_default = extract_serial_number_by_name(previous_instrument, "Red CMOS")
-    objective_serial_default = extract_serial_number_by_name(previous_instrument, "Objective")
+    detector_1_serial_default = extract_value(previous_instrument, "Green CMOS", field="serial_number")
+    detector_2_serial_default = extract_value(previous_instrument, "Red CMOS", field="serial_number")
+    objective_serial_default = extract_value(previous_instrument, "Objective", field="serial_number")
 
     # Prompt for serial numbers (required if no default)
     detector_1_serial = prompt_for_string(
@@ -389,8 +398,8 @@ def create_instrument(rig_id: str) -> tuple[r.Instrument, str]:
     photemetry_clock = d.Device(name="Photometry Clock")
 
     instrument = r.Instrument(
-        location="428",
-        instrument_id="FIP1",
+        location=location if location else None,
+        instrument_id=instrument_id,
         modification_date=date.today(),
         modalities=[Modality.FIB],
         coordinate_system=CoordinateSystemLibrary.BREGMA_ARI,
