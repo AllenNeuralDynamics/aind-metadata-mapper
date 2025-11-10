@@ -16,10 +16,10 @@ class InstrumentStore:
         Parameters
         ----------
         base_path : Optional[str]
-            Base directory path for the store. Defaults to ~/instrument_store.
+            Base directory path for the store. Defaults to /allen/aind/scratch/instrument_store.
         """
         if base_path is None:
-            base_path = str(Path.home() / "instrument_store")
+            base_path = "/allen/aind/scratch/instrument_store"
         self.base_path = Path(base_path)
         self.base_path.mkdir(parents=True, exist_ok=True)
 
@@ -133,6 +133,21 @@ class InstrumentStore:
         archived = [p for p in rig_dir.glob("instrument_*.json") if p.name != "instrument.json"]
         return sorted(archived)
 
+    def list_instrument_ids(self) -> list[str]:
+        """List all instrument IDs in the store.
+
+        Returns
+        -------
+        list[str]
+            List of instrument IDs (folder names), sorted alphabetically.
+        """
+        if not self.base_path.exists():
+            return []
+
+        # Get all directories in base_path (these are the instrument IDs)
+        instrument_ids = [d.name for d in self.base_path.iterdir() if d.is_dir() and (d / "instrument.json").exists()]
+        return sorted(instrument_ids)
+
     def _get_archive_path(self, rig_dir: Path, current_path: Path) -> Path:
         """Generate archive path for existing instrument.json.
 
@@ -223,7 +238,7 @@ def initialize_store(base_path: Optional[str] = None) -> InstrumentStore:
     Parameters
     ----------
     base_path : Optional[str]
-        Base directory path for the store. Defaults to ~/instrument_store.
+        Base directory path for the store. Defaults to /allen/aind/scratch/instrument_store.
 
     Returns
     -------
@@ -246,7 +261,7 @@ def save_instrument(path: str, rig_id: str, base_path: Optional[str] = None) -> 
         Rig identifier.
     base_path : Optional[str]
         Base directory path for the store. Only used if store not initialized.
-        Defaults to ~/instrument_store.
+        Defaults to /allen/aind/scratch/instrument_store.
 
     Returns
     -------
@@ -268,7 +283,7 @@ def get_instrument(rig_id: str, base_path: Optional[str] = None) -> Optional[dic
         Rig identifier.
     base_path : Optional[str]
         Base directory path for the store. Only used if store not initialized.
-        Defaults to ~/instrument_store.
+        Defaults to /allen/aind/scratch/instrument_store.
 
     Returns
     -------
@@ -279,3 +294,23 @@ def get_instrument(rig_id: str, base_path: Optional[str] = None) -> Optional[dic
     if _default_store is None:
         _default_store = InstrumentStore(base_path)
     return _default_store.get_instrument(rig_id)
+
+
+def list_instrument_ids(base_path: Optional[str] = None) -> list[str]:
+    """List all instrument IDs in the store (convenience function).
+
+    Parameters
+    ----------
+    base_path : Optional[str]
+        Base directory path for the store. Only used if store not initialized.
+        Defaults to /allen/aind/scratch/instrument_store.
+
+    Returns
+    -------
+    list[str]
+        List of instrument IDs, sorted alphabetically.
+    """
+    global _default_store
+    if _default_store is None:
+        _default_store = InstrumentStore(base_path)
+    return _default_store.list_instrument_ids()

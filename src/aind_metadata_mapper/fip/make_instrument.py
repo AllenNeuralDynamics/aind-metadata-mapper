@@ -17,20 +17,21 @@ Usage:
         python -m aind_metadata_mapper.fip.make_instrument
 
     The script will:
-        1. Prompt for a Rig ID (defaults to "test")
-        2. Load previous instrument data for that rig if available
+        1. Prompt for an Instrument ID (required, no default)
+        2. Load previous instrument data for that ID if available
         3. Prompt for computer name (defaults to system hostname or previous value)
         4. Prompt for serial numbers (defaults to previous values if available)
-        5. Save the instrument to ~/instrument_store/{rig_id}/
+        5. Save the instrument to /allen/aind/scratch/instrument_store/{instrument_id}/
 
 Output:
-    - ~/instrument_store/{rig_id}/instrument.json: Current instrument saved to instrument store
-    - ~/instrument_store/{rig_id}/instrument_YYYYMMDD.json: Previous versions archived by date
+    - /allen/aind/scratch/instrument_store/{instrument_id}/instrument.json: Current instrument saved to instrument store
+    - /allen/aind/scratch/instrument_store/{instrument_id}/instrument_YYYYMMDD.json: Previous versions archived by date
 """
 
 import socket
+import sys
 import tempfile
-from datetime import date, datetime, timezone
+from datetime import date
 from pathlib import Path
 from typing import Optional
 
@@ -40,14 +41,38 @@ from aind_data_schema.components.connections import Connection
 from aind_data_schema.components.coordinates import CoordinateSystemLibrary
 from aind_data_schema.components.devices import Computer
 from aind_data_schema.components.identifiers import Software
-from aind_data_schema.components.measurements import Calibration
 from aind_data_schema_models.modalities import Modality
-from aind_data_schema_models.units import PowerUnit
 
-from aind_metadata_mapper.instrument_store import get_instrument, save_instrument
+from aind_metadata_mapper.instrument_store import get_instrument, list_instrument_ids, save_instrument
 
 
-def prompt_for_string(prompt: str, default: Optional[str] = None, required: bool = False) -> str:
+def prompt_yes_no(prompt: str, default: bool = True) -> bool:
+    """Prompt user for yes/no response.
+
+    Parameters
+    ----------
+    prompt : str
+        The prompt message.
+    default : bool
+        Default value if user presses Enter. Defaults to True (yes).
+
+    Returns
+    -------
+    bool
+        True for yes, False for no.
+    """
+    default_str = "Y/n" if default else "y/N"
+    full_prompt = f"{prompt} [{default_str}]: "
+    response = input(full_prompt).strip().lower()
+
+    if not response:
+        return default
+    return response in ("y", "yes")
+
+
+def prompt_for_string(
+    prompt: str, default: Optional[str] = None, required: bool = False, help_message: Optional[str] = None
+) -> str:
     """Prompt user for a string value.
 
     Parameters
@@ -58,6 +83,8 @@ def prompt_for_string(prompt: str, default: Optional[str] = None, required: bool
         Optional default value to display.
     required : bool
         If True and no default provided, require non-empty input.
+    help_message : Optional[str]
+        Optional help message to display when required field is empty.
 
     Returns
     -------
@@ -77,6 +104,8 @@ def prompt_for_string(prompt: str, default: Optional[str] = None, required: bool
         if not required:
             return ""
         print("This field is required. Please enter a value.")
+        if help_message:
+            print(help_message)
 
 
 def extract_serial_number_by_name(instrument_data: dict, component_name: str) -> Optional[str]:
@@ -359,17 +388,6 @@ def create_instrument(rig_id: str) -> tuple[r.Instrument, str]:
 
     photemetry_clock = d.Device(name="Photometry Clock")
 
-    calibration = Calibration(
-        calibration_date=datetime(2023, 10, 2, 3, 15, 22, tzinfo=timezone.utc),
-        device_name="470nm LED",
-        description="LED calibration",
-        input=[1, 2, 3],
-        input_unit=PowerUnit.PERCENT,
-        output=[5, 10, 13],
-        output_unit=PowerUnit.MW,
-        measured_at="patch cord end",
-    )
-
     instrument = r.Instrument(
         location="428",
         instrument_id="FIP1",
@@ -398,27 +416,49 @@ def create_instrument(rig_id: str) -> tuple[r.Instrument, str]:
             daq,
             photemetry_clock,
         ],
-        calibrations=[calibration],
+        calibrations=[],
         connections=connections,
     )
 
-    return instrument, computer_name
+    return instrument
 
 
 if __name__ == "__main__":
-    # Prompt for rig_id first
-    rig_id = prompt_for_string("Rig ID", "test")
+    # Get list of existing instrument IDs for help message
+    existing_ids = list_instrument_ids()
+    if existing_ids:
+        help_message = "Below is a list of existing instrument IDs:\n" + "\n".join(f"  - {id}" for id in existing_ids)
+    else:
+        help_message = "No existing instrument IDs found in store."
+
+    # Prompt for instrument_id (required, no default)
+    instrument_id = prompt_for_string("Instrument ID", required=True, help_message=help_message)
+
+    # Check if instrument exists, and if not, confirm creation of new ID
+    previous_instrument = get_instrument(instrument_id)
+    if previous_instrument is None:
+        print("This is a new instrument ID.")
+        if existing_ids:
+            print("Here is a list of existing instrument IDs:")
+            for id in existing_ids:
+                print(f"  - {id}")
+        else:
+            print("No existing instrument IDs found in store.")
+        print()
+        if not prompt_yes_no(f"Are you sure you want to create a new ID with name '{instrument_id}'?", default=True):
+            print("Cancelled. Please run the script again with the correct instrument ID.")
+            sys.exit(0)
 
     # Create instrument interactively
-    instrument, _ = create_instrument(rig_id)
+    instrument = create_instrument(instrument_id)
 
     # Write to temporary file, then save to instrument store
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as f:
         f.write(instrument.model_dump_json(indent=2))
         temp_path = f.name
 
-    # Save to instrument store using the rig_id we prompted for
-    stored_path = save_instrument(path=temp_path, rig_id=rig_id)
+    # Save to instrument store using the instrument_id we prompted for
+    stored_path = save_instrument(path=temp_path, rig_id=instrument_id)
     print(f"Instrument saved to store: {stored_path}")
 
     # Clean up temporary file
