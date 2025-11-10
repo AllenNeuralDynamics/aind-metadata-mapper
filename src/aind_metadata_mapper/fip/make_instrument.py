@@ -241,7 +241,7 @@ def create_instrument(instrument_id: str) -> r.Instrument:
         serial_number=detector_1_serial,
         manufacturer=d.Organization.FLIR,
         model="BFS-U3-20S40M",
-        detector_type="Camera",
+        detector_type="CMOS",
         data_interface="USB",
         cooling="Air",
         immersion="air",
@@ -263,7 +263,7 @@ def create_instrument(instrument_id: str) -> r.Instrument:
         serial_number=detector_2_serial,
         manufacturer=d.Organization.FLIR,
         model="BFS-U3-20S40M",
-        detector_type="Camera",
+        detector_type="CMOS",
         data_interface="USB",
         cooling="Air",
         immersion="air",
@@ -369,28 +369,15 @@ def create_instrument(instrument_id: str) -> r.Instrument:
         name="Image focusing lens",
     )
 
-    daq = d.HarpDevice(
-        name="Harp Behavior",
-        harp_device_type=d.HarpDeviceType.BEHAVIOR,
-        core_version="2.1",
-        is_clock_generator=False,
-        channels=[
-            d.DAQChannel(channel_name="DO0", channel_type="Digital Output"),
-            d.DAQChannel(channel_name="DO1", channel_type="Digital Output"),
-            d.DAQChannel(channel_name="DI0", channel_type="Digital Input"),
-            d.DAQChannel(channel_name="DI1", channel_type="Digital Input"),
-            d.DAQChannel(channel_name="DI3", channel_type="Digital Input"),
-        ],
-    )
+    cuttlefish = d.Device(name="cuTTLefishFip")
 
     connections = [
         Connection(
             source_device="Photometry Clock",
-            target_device="Harp Behavior",
-            target_port="DI3",
+            target_device="cuTTLefishFip",
         ),
         Connection(
-            source_device="Harp Behavior",
+            source_device="cuTTLefishFip",
             target_device=computer_name,
         ),
     ]
@@ -422,7 +409,7 @@ def create_instrument(instrument_id: str) -> r.Instrument:
             filter_8,
             filter_9,
             lens,
-            daq,
+            cuttlefish,
             photemetry_clock,
         ],
         calibrations=[],
