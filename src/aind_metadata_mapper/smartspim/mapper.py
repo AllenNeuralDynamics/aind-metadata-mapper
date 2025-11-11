@@ -103,13 +103,17 @@ class SmartspimMapper(MapperJob):
         )
 
         software_version = metadata.file_metadata.session_config.get("Version")
-        code_list = [
-            Code(
-                name="SmartSPIM Acquisition Software",
-                version=software_version,
-                url="https://github.com/AllenNeuralDynamics/smartspim-acquisition",
-            )
-        ] if software_version else None
+        code_list = (
+            [
+                Code(
+                    name="SmartSPIM Acquisition Software",
+                    version=software_version,
+                    url="https://github.com/AllenNeuralDynamics/smartspim-acquisition",
+                )
+            ]
+            if software_version
+            else None
+        )
 
         data_stream = DataStream(
             stream_start_time=session_start_time,
