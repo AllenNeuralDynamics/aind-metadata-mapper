@@ -1,5 +1,7 @@
 """Smartspim mapper 
 """
+import json
+from pathlib import Path
 from aind_data_schema.core.acquisition import Acquisition, DataStream
 from aind_data_schema.components.configs import (
     ImagingConfig,
@@ -31,10 +33,28 @@ from aind_data_schema_models.devices import ImmersionMedium
 from aind_data_schema_models.coordinates import AxisName, Direction, Origin
 from aind_metadata_extractor.models.smartspim import SmartspimModel
 from typing import List, Dict, Any, Optional, cast
+from aind_metadata_mapper.base import MapperJob, MapperJobSettings
 
 
-class SmartspimMapper:
+class SmartspimMapper(MapperJob):
     """Smartspim Mapper"""
+
+    def run_job(self, job_settings: MapperJobSettings):
+        """Load the metadata input file and transform to Acquisition model."""
+
+        with open(job_settings.input_filepath, "r") as f:
+            raw_metadata = json.load(f)
+
+        smartspim_metadata = SmartspimModel.model_validate(raw_metadata)
+        acquisition = self._transform(smartspim_metadata)
+
+        # Pull apart the target directory and suffix from output filepath
+        output_path = str(job_settings.output_filepath)
+        directory = output_path.rsplit("/", 1)[0] + "/"
+        filename = output_path.rsplit("/", 1)[1]
+        suffix = "_" + filename.split("_", 1)[1].rsplit(".", 1)[0]
+
+        acquisition.write_standard_file(output_directory=Path(directory), suffix=suffix)
 
     def transform(self, metadata: dict) -> Acquisition:
         """Transforms raw metadata into a complete model."""
@@ -191,6 +211,7 @@ class SmartspimMapper:
                                 wavelength_unit=SizeUnit.NM,
                                 power=float(power_left),
                                 power_unit=power_unit,
+                                power_measured_at="left",
                             )
                         )
 
@@ -204,6 +225,7 @@ class SmartspimMapper:
                                 wavelength_unit=SizeUnit.NM,
                                 power=float(power_right),
                                 power_unit=power_unit,
+                                power_measured_at="right",
                             )
                         )
 
