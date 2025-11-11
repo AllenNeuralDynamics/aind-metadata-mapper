@@ -192,7 +192,7 @@ class GatherMetadataJob:
 
         # Get funding information
         funding_source, investigators = self.get_funding()
-        
+
         # Get modalities
         modalities = self.settings.modalities
 
@@ -235,8 +235,8 @@ class GatherMetadataJob:
             )
             try:
                 response = requests.get(f"{self.settings.metadata_service_url}" f"/api/v2/subject/{subject_id}")
-                if response.status_code == 200:
-                    contents = response.json().get("data", response.json())
+                if response.status_code == 200 or response.status_code == 400:
+                    contents = response.json()
                 else:
                     logging.error(f"Subject {subject_id} not found in service (status: {response.status_code})")
                     contents = None
@@ -266,8 +266,8 @@ class GatherMetadataJob:
             )
             try:
                 response = requests.get(f"{self.settings.metadata_service_url}" f"/api/v2/procedures/{subject_id}")
-                if response.status_code == 200:
-                    contents = response.json().get("data", response.json())
+                if response.status_code == 200 or response.status_code == 400:
+                    contents = response.json()
                 else:
                     logging.error(f"Procedures for {subject_id} not found in service (status: {response.status_code})")
                     contents = None
@@ -296,10 +296,7 @@ class GatherMetadataJob:
             if os.path.isfile(input_path) and not os.path.isfile(output_path):
                 mapper_cls = registry[mapper_name]
                 # Create job settings for the mapper
-                job_settings = MapperJobSettings(
-                    input_filepath=Path(input_path),
-                    output_filepath=Path(output_path)
-                )
+                job_settings = MapperJobSettings(input_filepath=Path(input_path), output_filepath=Path(output_path))
                 try:
                     mapper = mapper_cls()
                     mapper.run_job(job_settings)
@@ -322,8 +319,7 @@ class GatherMetadataJob:
             self._run_mappers_for_acquisition()
             # then gather all acquisition files with prefixes from output directory
             files = self._get_prefixed_files_from_directory(
-                directory=self.settings.output_metadata_path,
-                file_name_prefix="acquisition"
+                directory=self.settings.output_metadata_path, file_name_prefix="acquisition"
             )
             if files:
                 return self._merge_models(Acquisition, files)

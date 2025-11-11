@@ -96,4 +96,3 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
         if self.output_metadata_path is None:
             self.output_metadata_path = self.input_metadata_path
         return self
-
