@@ -1,4 +1,5 @@
 """"Unit tests for gather_metadata_registry.py."""
+
 import json
 import os
 import tempfile
