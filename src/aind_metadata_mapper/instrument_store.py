@@ -216,28 +216,6 @@ class InstrumentStore:
             return None
 
 
-# Module-level convenience functions
-_default_store: Optional[InstrumentStore] = None
-
-
-def initialize_store(base_path: Optional[str] = None) -> InstrumentStore:
-    """Initialize the default instrument store.
-
-    Parameters
-    ----------
-    base_path : Optional[str]
-        Base directory path for the store. Defaults to DEFAULT_INSTRUMENT_STORE_PATH.
-
-    Returns
-    -------
-    InstrumentStore
-        Initialized store instance.
-    """
-    global _default_store
-    _default_store = InstrumentStore(base_path)
-    return _default_store
-
-
 def save_instrument(path: str, rig_id: str, base_path: Optional[str] = None) -> Path:
     """Save instrument.json to store (convenience function).
 
@@ -256,10 +234,8 @@ def save_instrument(path: str, rig_id: str, base_path: Optional[str] = None) -> 
     Path
         Path to the saved instrument.json file in the store.
     """
-    global _default_store
-    if _default_store is None:
-        _default_store = InstrumentStore(base_path)
-    return _default_store.save_instrument(path, rig_id)
+    store = InstrumentStore(base_path)
+    return store.save_instrument(path, rig_id)
 
 
 def get_instrument(rig_id: str, base_path: Optional[str] = None) -> Optional[dict]:
@@ -278,10 +254,8 @@ def get_instrument(rig_id: str, base_path: Optional[str] = None) -> Optional[dic
     Optional[dict]
         Instrument data as dict, or None if not found.
     """
-    global _default_store
-    if _default_store is None:
-        _default_store = InstrumentStore(base_path)
-    return _default_store.get_instrument(rig_id)
+    store = InstrumentStore(base_path)
+    return store.get_instrument(rig_id)
 
 
 def list_instrument_ids(base_path: Optional[str] = None) -> list[str]:
@@ -298,7 +272,5 @@ def list_instrument_ids(base_path: Optional[str] = None) -> list[str]:
     list[str]
         List of instrument IDs, sorted alphabetically.
     """
-    global _default_store
-    if _default_store is None:
-        _default_store = InstrumentStore(base_path)
-    return _default_store.list_instrument_ids()
+    store = InstrumentStore(base_path)
+    return store.list_instrument_ids()

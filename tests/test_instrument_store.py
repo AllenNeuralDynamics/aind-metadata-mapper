@@ -9,13 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 import aind_metadata_mapper.instrument_store as instrument_store_module
-from aind_metadata_mapper.instrument_store import (
-    InstrumentStore,
-    get_instrument,
-    initialize_store,
-    list_instrument_ids,
-    save_instrument,
-)
+from aind_metadata_mapper.instrument_store import InstrumentStore, get_instrument, list_instrument_ids, save_instrument
 
 
 class TestInstrumentStore(unittest.TestCase):
@@ -302,9 +296,6 @@ class TestInstrumentStore(unittest.TestCase):
 
     def test_save_instrument_convenience_function(self):
         """Test save_instrument convenience function in a temporary path."""
-        # Reset the global store to ensure we use the provided base_path
-        instrument_store_module._default_store = None
-
         instrument_file = self.tmp_path / "test_instrument.json"
         instrument_data = {"instrument_id": "test_rig", "modification_date": "2025-01-15"}
         with open(instrument_file, "w", encoding="utf-8") as f:
@@ -315,9 +306,6 @@ class TestInstrumentStore(unittest.TestCase):
 
     def test_get_instrument_convenience_function(self):
         """Test get_instrument convenience function in a temporary path."""
-        # Reset the global store to ensure we use the provided base_path
-        instrument_store_module._default_store = None
-
         rig_dir = self.tmp_path / "test_rig"
         rig_dir.mkdir()
         instrument_file = rig_dir / "instrument.json"
@@ -331,9 +319,6 @@ class TestInstrumentStore(unittest.TestCase):
 
     def test_list_instrument_ids_convenience_function(self):
         """Test list_instrument_ids convenience function in a temporary path."""
-        # Reset the global store to ensure we use the provided base_path
-        instrument_store_module._default_store = None
-
         for rig_id in ["rig1", "rig2"]:
             rig_dir = self.tmp_path / rig_id
             rig_dir.mkdir()
@@ -343,13 +328,6 @@ class TestInstrumentStore(unittest.TestCase):
         self.assertEqual(len(ids), 2)
         self.assertIn("rig1", ids)
         self.assertIn("rig2", ids)
-
-    def test_initialize_store(self):
-        """Test initialize_store function in a temporary path."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            store = initialize_store(base_path=tmpdir)
-            self.assertIsInstance(store, InstrumentStore)
-            self.assertEqual(store.base_path, Path(tmpdir))
 
     def test_get_archive_path_invalid_json(self):
         """Test archive path generation with invalid JSON falls back to mtime in a temporary path."""
@@ -397,53 +375,6 @@ class TestInstrumentStore(unittest.TestCase):
         result = store._parse_modification_date("2025-01-15T14:30:00.123456")
         self.assertIsNotNone(result)
         self.assertEqual(result.microsecond, 123456)
-
-    def test_save_instrument_convenience_function_initializes_store(self):
-        """Test that save_instrument convenience function initializes store when None in a temporary path."""
-        # Reset the global store
-        instrument_store_module._default_store = None
-
-        instrument_file = self.tmp_path / "test_instrument.json"
-        instrument_data = {"instrument_id": "test_rig", "modification_date": "2025-01-15"}
-        with open(instrument_file, "w", encoding="utf-8") as f:
-            json.dump(instrument_data, f)
-
-        saved_path = save_instrument(str(instrument_file), "test_rig", base_path=str(self.tmp_path))
-        self.assertTrue(saved_path.exists())
-        # Verify store was initialized
-        self.assertIsNotNone(instrument_store_module._default_store)
-
-    def test_get_instrument_convenience_function_initializes_store(self):
-        """Test that get_instrument convenience function initializes store when None in a temporary path."""
-        # Reset the global store
-        instrument_store_module._default_store = None
-
-        rig_dir = self.tmp_path / "test_rig"
-        rig_dir.mkdir()
-        instrument_file = rig_dir / "instrument.json"
-        instrument_data = {"instrument_id": "test_rig", "modification_date": "2025-01-15"}
-        with open(instrument_file, "w", encoding="utf-8") as f:
-            json.dump(instrument_data, f)
-
-        result = get_instrument("test_rig", base_path=str(self.tmp_path))
-        self.assertIsNotNone(result)
-        # Verify store was initialized
-        self.assertIsNotNone(instrument_store_module._default_store)
-
-    def test_list_instrument_ids_convenience_function_initializes_store(self):
-        """Test that list_instrument_ids convenience function initializes store when None in a temporary path."""
-        # Reset the global store
-        instrument_store_module._default_store = None
-
-        for rig_id in ["rig1"]:
-            rig_dir = self.tmp_path / rig_id
-            rig_dir.mkdir()
-            (rig_dir / "instrument.json").touch()
-
-        ids = list_instrument_ids(base_path=str(self.tmp_path))
-        self.assertEqual(len(ids), 1)
-        # Verify store was initialized
-        self.assertIsNotNone(instrument_store_module._default_store)
 
 
 if __name__ == "__main__":
