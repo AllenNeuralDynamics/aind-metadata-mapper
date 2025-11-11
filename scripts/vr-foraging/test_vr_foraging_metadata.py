@@ -1,7 +1,6 @@
 """Integration test for VR Foraging metadata collection."""
 
 import logging
-import shutil
 import tempfile
 from pathlib import Path
 
