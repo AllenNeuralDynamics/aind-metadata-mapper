@@ -1,5 +1,5 @@
-"""Smartspim mapper 
-"""
+"""Smartspim mapper"""
+
 import json
 from pathlib import Path
 from aind_data_schema.core.acquisition import Acquisition, DataStream
