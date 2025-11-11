@@ -514,16 +514,17 @@ def main(
     )
 
     # Write to temporary file, then save to instrument store
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as f:
-        f.write(instrument.model_dump_json(indent=2))
-        temp_path = f.name
+    temp_dir = tempfile.mkdtemp()
+    instrument.write_standard_file(Path(temp_dir))
+    temp_path = Path(temp_dir) / instrument.default_filename()
 
     # Save to instrument store using the instrument_id we prompted for
-    stored_path = save_instrument(path=temp_path, rig_id=instrument_id, base_path=base_path)
+    stored_path = save_instrument(path=str(temp_path), rig_id=instrument_id, base_path=base_path)
     print(f"Instrument saved to store: {stored_path}")
 
-    # Clean up temporary file
-    Path(temp_path).unlink()
+    # Clean up temporary file and directory
+    temp_path.unlink()
+    Path(temp_dir).rmdir()
 
 
 if __name__ == "__main__":

@@ -66,9 +66,7 @@ class TestCreateInstrument(unittest.TestCase):
         previous_instrument = create_instrument("test_rig", values=previous_values)
         rig_dir = self.tmp_path / "test_rig"
         rig_dir.mkdir()
-        previous_file = rig_dir / "instrument.json"
-        with open(previous_file, "w", encoding="utf-8") as f:
-            f.write(previous_instrument.model_dump_json(indent=2))
+        previous_instrument.write_standard_file(rig_dir)
 
         values = {
             "location": "429",  # Override location
