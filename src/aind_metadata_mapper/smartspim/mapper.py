@@ -171,6 +171,7 @@ class SmartspimMapper(MapperJob):
         if not imaging_channels:
             raise ValueError("imaging_channels is required")
         wavelength_config = metadata.file_metadata.wavelength_config
+        laser_powers = self._extract_laser_powers_from_tiles(metadata)
 
         for channel_name in imaging_channels:
             # Extract wavelength information
@@ -193,33 +194,56 @@ class SmartspimMapper(MapperJob):
                     else:
                         power_unit = PowerUnit.PERCENT
 
-                    # Left side
-                    power_left = channel_config.get("power_left")
-                    if power_left:
-                        light_sources.append(
-                            LaserConfig(
-                                device_name=f"Ex_{wavelength}",
-                                wavelength=wavelength,
-                                wavelength_unit=SizeUnit.NM,
-                                power=float(power_left),
-                                power_unit=power_unit,
-                                power_measured_at="left",
+                    # Use actual tile-based laser powers
+                    if wavelength in laser_powers:
+                        tile_powers = laser_powers[wavelength]
+                        
+                        if "left" in tile_powers:
+                            light_sources.append(
+                                LaserConfig(
+                                    device_name=f"Ex_{wavelength}",
+                                    wavelength=wavelength,
+                                    wavelength_unit=SizeUnit.NM,
+                                    power=tile_powers["left"],
+                                    power_unit=power_unit,
+                                )
                             )
-                        )
 
-                    # Right side
-                    power_right = channel_config.get("power_right")
-                    if power_right:
-                        light_sources.append(
-                            LaserConfig(
-                                device_name=f"Ex_{wavelength}",
-                                wavelength=wavelength,
-                                wavelength_unit=SizeUnit.NM,
-                                power=float(power_right),
-                                power_unit=power_unit,
-                                power_measured_at="right",
+                        if "right" in tile_powers:
+                            light_sources.append(
+                                LaserConfig(
+                                    device_name=f"Ex_{wavelength}",
+                                    wavelength=wavelength,
+                                    wavelength_unit=SizeUnit.NM,
+                                    power=tile_powers["right"],
+                                    power_unit=power_unit,
+                                )
                             )
-                        )
+                    else:
+                        # Fallback to wavelength config if not in tiles
+                        power_left = channel_config.get("power_left")
+                        if power_left:
+                            light_sources.append(
+                                LaserConfig(
+                                    device_name=f"Ex_{wavelength}",
+                                    wavelength=wavelength,
+                                    wavelength_unit=SizeUnit.NM,
+                                    power=float(power_left),
+                                    power_unit=power_unit,
+                                )
+                            )
+
+                        power_right = channel_config.get("power_right")
+                        if power_right:
+                            light_sources.append(
+                                LaserConfig(
+                                    device_name=f"Ex_{wavelength}",
+                                    wavelength=wavelength,
+                                    wavelength_unit=SizeUnit.NM,
+                                    power=float(power_right),
+                                    power_unit=power_unit,
+                                )
+                            )
 
             # Extract exposure time from tile configuration
             exposure_time = self._extract_exposure_time_from_tiles(channel_name, metadata)
@@ -376,14 +400,17 @@ class SmartspimMapper(MapperJob):
             return f"Ex_{wavelength}_Em_{emission_wavelength}"
         return channel_name
 
+    def _get_channel_display_name_from_wavelength(self, wavelength: int, metadata: SmartspimModel) -> str:
+        """Get consistent channel display name from wavelength only."""
+        filter_mapping = metadata.file_metadata.filter_mapping
+        if filter_mapping and str(wavelength) in filter_mapping:
+            emission_wavelength = filter_mapping[str(wavelength)]
+            return f"Ex_{wavelength}_Em_{emission_wavelength}"
+        return f"Ex_{wavelength}"
+
     def _build_images(self, metadata: SmartspimModel) -> List[ImageSPIM]:
         """Build ImageSPIM objects for spatial/tile information."""
         images = []
-
-        # Get imaging channels and create images for each
-        imaging_channels = metadata.slims_metadata.imaging_channels
-        if not imaging_channels:
-            raise ValueError("imaging_channels is required")
 
         # Extract pixel size from session config
         session_config = metadata.file_metadata.session_config
@@ -394,19 +421,43 @@ class SmartspimMapper(MapperJob):
             raise ValueError("Could not find pixel size in session_config")
         pixel_size = float(pixel_size_um)
 
-        for channel_name in imaging_channels:
-            wavelength = self._extract_wavelength_from_channel(channel_name)
+        # Get tile config and create one ImageSPIM per tile
+        tile_config = metadata.file_metadata.tile_config
+        if not tile_config:
+            raise ValueError("tile_config is required for creating images")
 
-            # Get consistent channel display name
-            channel_display_name = self._get_channel_display_name(channel_name, wavelength, metadata)
+        for tile_key, tile_info in tile_config.items():
+            if not isinstance(tile_info, dict):
+                continue
 
-            # Create filename pattern based on channel
-            filename = f"{channel_display_name}.ims"
+            wavelength = tile_info.get("Laser")
+            if wavelength is None:
+                continue
 
-            # Create transform with actual pixel size
+            wavelength = int(wavelength)
+
+            # Get consistent channel display name for this wavelength
+            channel_display_name = self._get_channel_display_name_from_wavelength(wavelength, metadata)
+
+            # Extract tile position coordinates
+            tile_x = tile_info.get("X") or tile_info.get("x")
+            tile_y = tile_info.get("Y") or tile_info.get("y")
+            tile_z = tile_info.get("Z") or tile_info.get("z")
+
+            if tile_x is None or tile_y is None or tile_z is None:
+                continue
+
+            tile_x = float(tile_x)
+            tile_y = float(tile_y)
+            tile_z = float(tile_z)
+
+            # Create filename pattern based on channel and tile position
+            filename = f"{channel_display_name}/{int(tile_x)}/{int(tile_x)}_{int(tile_y)}/"
+
+            # Create transform with tile position and pixel size
             image_transform = [
                 Scale(scale=[pixel_size, pixel_size, pixel_size]),
-                Translation(translation=[0.0, 0.0, 0.0]),
+                Translation(translation=[tile_x, tile_y, tile_z]),
             ]
 
             image = ImageSPIM(
@@ -565,6 +616,49 @@ class SmartspimMapper(MapperJob):
                         continue
 
         raise ValueError(f"No exposure time found for wavelength {wavelength} " f"in tile_config")
+
+    def _extract_laser_powers_from_tiles(self, metadata: SmartspimModel) -> Dict[int, Dict[str, float]]:
+        """
+        Extract actual laser powers used in tiles.
+        
+        Returns a dict mapping wavelength to a dict of side -> power.
+        E.g., {488: {'left': 25.0, 'right': 30.0}}
+        """
+        tile_config = metadata.file_metadata.tile_config
+        wavelength_config = metadata.file_metadata.wavelength_config
+        
+        if not tile_config or not wavelength_config:
+            return {}
+
+        side_map = {"0": "left", "1": "right"}
+        laser_powers = {}
+
+        for tile_key, tile_info in tile_config.items():
+            if not isinstance(tile_info, dict):
+                continue
+
+            wavelength = tile_info.get("Laser")
+            side = tile_info.get("Side")
+            
+            if wavelength is None or side is None:
+                continue
+
+            wavelength = int(wavelength)
+            side_str = side_map.get(str(side))
+            
+            if not side_str:
+                continue
+
+            if wavelength not in laser_powers:
+                laser_powers[wavelength] = {}
+
+            power_key = f"power_{side_str}"
+            if wavelength in wavelength_config:
+                wavelength_entry = wavelength_config.get(wavelength)
+                if isinstance(wavelength_entry, dict) and power_key in wavelength_entry:
+                    laser_powers[wavelength][side_str] = float(wavelength_entry[power_key])
+
+        return laser_powers
 
     def _build_emission_filters(
         self,

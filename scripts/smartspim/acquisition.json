@@ -94,26 +94,7 @@
                 "compression": null
               },
               "additional_device_names": null,
-              "light_sources": [
-                {
-                  "object_type": "Laser config",
-                  "device_name": "Ex_488",
-                  "wavelength": 488,
-                  "wavelength_unit": "nanometer",
-                  "power": 75.0,
-                  "power_unit": "percent",
-                  "power_measured_at": "left"
-                },
-                {
-                  "object_type": "Laser config",
-                  "device_name": "Ex_488",
-                  "wavelength": 488,
-                  "wavelength_unit": "nanometer",
-                  "power": 60.0,
-                  "power_unit": "percent",
-                  "power_measured_at": "right"
-                }
-              ],
+              "light_sources": [],
               "variable_power": false,
               "excitation_filters": null,
               "emission_filters": [
@@ -138,26 +119,7 @@
                 "compression": null
               },
               "additional_device_names": null,
-              "light_sources": [
-                {
-                  "object_type": "Laser config",
-                  "device_name": "Ex_561",
-                  "wavelength": 561,
-                  "wavelength_unit": "nanometer",
-                  "power": 70.0,
-                  "power_unit": "percent",
-                  "power_measured_at": "left"
-                },
-                {
-                  "object_type": "Laser config",
-                  "device_name": "Ex_561",
-                  "wavelength": 561,
-                  "wavelength_unit": "nanometer",
-                  "power": 60.0,
-                  "power_unit": "percent",
-                  "power_measured_at": "right"
-                }
-              ],
+              "light_sources": [],
               "variable_power": false,
               "excitation_filters": null,
               "emission_filters": [
@@ -182,26 +144,7 @@
                 "compression": null
               },
               "additional_device_names": null,
-              "light_sources": [
-                {
-                  "object_type": "Laser config",
-                  "device_name": "Ex_639",
-                  "wavelength": 639,
-                  "wavelength_unit": "nanometer",
-                  "power": 90.0,
-                  "power_unit": "percent",
-                  "power_measured_at": "left"
-                },
-                {
-                  "object_type": "Laser config",
-                  "device_name": "Ex_639",
-                  "wavelength": 639,
-                  "wavelength_unit": "nanometer",
-                  "power": 80.0,
-                  "power_unit": "percent",
-                  "power_measured_at": "right"
-                }
-              ],
+              "light_sources": [],
               "variable_power": false,
               "excitation_filters": null,
               "emission_filters": [
@@ -254,14 +197,14 @@
                 {
                   "object_type": "Translation",
                   "translation": [
-                    0.0,
-                    0.0,
-                    0.0
+                    436180.0,
+                    167990.0,
+                    1066.0
                   ]
                 }
               ],
               "dimensions": null,
-              "file_name": "Ex_488_Em_525.ims",
+              "file_name": "Ex_488_Em_525/436180/436180_167990",
               "imaging_angle": 0,
               "imaging_angle_unit": "degrees",
               "image_start_time": "2025-07-16T20:47:57-07:00",
@@ -283,14 +226,14 @@
                 {
                   "object_type": "Translation",
                   "translation": [
-                    0.0,
-                    0.0,
-                    0.0
+                    436180.0,
+                    167990.0,
+                    1066.0
                   ]
                 }
               ],
               "dimensions": null,
-              "file_name": "Ex_561_Em_600.ims",
+              "file_name": "Ex_561_Em_600/436180/436180_167990",
               "imaging_angle": 0,
               "imaging_angle_unit": "degrees",
               "image_start_time": "2025-07-16T20:47:57-07:00",
@@ -312,14 +255,2363 @@
                 {
                   "object_type": "Translation",
                   "translation": [
-                    0.0,
-                    0.0,
-                    0.0
+                    436180.0,
+                    167990.0,
+                    1066.0
                   ]
                 }
               ],
               "dimensions": null,
-              "file_name": "Ex_639_Em_680.ims",
+              "file_name": "Ex_639_Em_680/436180/436180_167990",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    167990.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/468580/468580_167990",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    167990.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/468580/468580_167990",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    167990.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/468580/468580_167990",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    167990.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/500980/500980_167990",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    167990.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/500980/500980_167990",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    167990.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/500980/500980_167990",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    167990.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/533380/533380_167990",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    167990.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/533380/533380_167990",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    167990.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/533380/533380_167990",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    193910.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/436180/436180_193910",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    193910.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/436180/436180_193910",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    193910.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/436180/436180_193910",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    193910.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/468580/468580_193910",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    193910.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/468580/468580_193910",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    193910.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/468580/468580_193910",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    193910.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/500980/500980_193910",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    193910.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/500980/500980_193910",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    193910.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/500980/500980_193910",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    193910.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/533380/533380_193910",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    193910.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/533380/533380_193910",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    193910.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/533380/533380_193910",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    219830.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/436180/436180_219830",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    219830.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/436180/436180_219830",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    219830.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/436180/436180_219830",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    219830.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/468580/468580_219830",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    219830.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/468580/468580_219830",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    219830.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/468580/468580_219830",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    219830.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/500980/500980_219830",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    219830.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/500980/500980_219830",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    219830.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/500980/500980_219830",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    219830.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/533380/533380_219830",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    219830.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/533380/533380_219830",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    219830.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/533380/533380_219830",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    245750.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/436180/436180_245750",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    245750.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/436180/436180_245750",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    245750.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/436180/436180_245750",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    245750.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/468580/468580_245750",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    245750.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/468580/468580_245750",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    245750.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/468580/468580_245750",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    245750.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/500980/500980_245750",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    245750.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/500980/500980_245750",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    245750.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/500980/500980_245750",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    245750.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/533380/533380_245750",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    245750.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/533380/533380_245750",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    245750.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/533380/533380_245750",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    271670.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/436180/436180_271670",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    271670.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/436180/436180_271670",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    271670.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/436180/436180_271670",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    271670.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/468580/468580_271670",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    271670.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/468580/468580_271670",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    271670.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/468580/468580_271670",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    271670.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/500980/500980_271670",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    271670.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/500980/500980_271670",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    271670.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/500980/500980_271670",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    271670.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/533380/533380_271670",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    271670.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/533380/533380_271670",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    271670.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/533380/533380_271670",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    297590.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/436180/436180_297590",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    297590.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/436180/436180_297590",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    297590.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/436180/436180_297590",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    297590.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/468580/468580_297590",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    297590.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/468580/468580_297590",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    297590.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/468580/468580_297590",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    297590.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/500980/500980_297590",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    297590.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/500980/500980_297590",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    297590.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/500980/500980_297590",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    297590.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/533380/533380_297590",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    297590.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/533380/533380_297590",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    297590.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/533380/533380_297590",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    323510.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/436180/436180_323510",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    323510.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/436180/436180_323510",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    436180.0,
+                    323510.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/436180/436180_323510",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    323510.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/468580/468580_323510",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    323510.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/468580/468580_323510",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    468580.0,
+                    323510.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/468580/468580_323510",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    323510.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/500980/500980_323510",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    323510.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/500980/500980_323510",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    500980.0,
+                    323510.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/500980/500980_323510",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_488_Em_525",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    323510.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_488_Em_525/533380/533380_323510",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_561_Em_600",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    323510.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_561_Em_600/533380/533380_323510",
+              "imaging_angle": 0,
+              "imaging_angle_unit": "degrees",
+              "image_start_time": "2025-07-16T20:47:57-07:00",
+              "image_end_time": "2025-07-17T01:48:42-07:00"
+            },
+            {
+              "object_type": "Image spim",
+              "channel_name": "Ex_639_Em_680",
+              "dimensions_unit": "pixel",
+              "image_to_acquisition_transform": [
+                {
+                  "object_type": "Scale",
+                  "scale": [
+                    1.8,
+                    1.8,
+                    1.8
+                  ]
+                },
+                {
+                  "object_type": "Translation",
+                  "translation": [
+                    533380.0,
+                    323510.0,
+                    1066.0
+                  ]
+                }
+              ],
+              "dimensions": null,
+              "file_name": "Ex_639_Em_680/533380/533380_323510",
               "imaging_angle": 0,
               "imaging_angle_unit": "degrees",
               "image_start_time": "2025-07-16T20:47:57-07:00",
