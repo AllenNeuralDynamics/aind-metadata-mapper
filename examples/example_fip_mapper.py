@@ -22,6 +22,16 @@ from aind_metadata_mapper.fip.mapper import FIPMapper
 
 
 def main():
+    """Main entry point for the FIP mapper example script.
+
+    Parses command line arguments, loads the input JSON file, validates and transforms
+    it using the FIP mapper, and writes the output acquisition metadata file.
+
+    Returns
+    -------
+    int
+        Exit code: 0 on success, 1 on error.
+    """
     parser = argparse.ArgumentParser(
         description=(
             "Demonstrate FIP mapper workflow: validate and transform "

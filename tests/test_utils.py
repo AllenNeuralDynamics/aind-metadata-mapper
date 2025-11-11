@@ -66,6 +66,7 @@ class TestUtils(unittest.TestCase):
         """
 
         def test_get(url, timeout=None):
+            """Mock HTTP GET function that returns a successful response."""
             resp = SimpleNamespace()
             resp.status_code = 200
             resp.json = lambda: {"ok": True}
@@ -83,6 +84,7 @@ class TestUtils(unittest.TestCase):
         """
 
         def test_get(url, timeout=None):
+            """Mock HTTP GET function that returns a server error response."""
             resp = SimpleNamespace()
             resp.status_code = 500  # Server error
             resp.json = lambda: {}
@@ -99,6 +101,7 @@ class TestUtils(unittest.TestCase):
         """
 
         def test_get(url, timeout=None):
+            """Mock HTTP GET function that returns 400 with valid procedures data."""
             resp = SimpleNamespace()
             resp.status_code = 400
             resp.json = lambda: {"subject_procedures": [{"object_type": "Surgery"}]}
@@ -116,6 +119,7 @@ class TestUtils(unittest.TestCase):
         """
 
         def test_get(url, timeout=None):
+            """Mock HTTP GET function that returns 400 with invalid data."""
             resp = SimpleNamespace()
             resp.status_code = 400
             resp.json = lambda: {"error": "bad request"}
@@ -132,6 +136,7 @@ class TestUtils(unittest.TestCase):
         """
 
         def test_get(url, timeout=None):
+            """Mock HTTP GET function that returns 400 and raises JSON error."""
             resp = SimpleNamespace()
             resp.status_code = 400
             resp.json = lambda: (_ for _ in ()).throw(ValueError("Invalid JSON"))
@@ -149,6 +154,7 @@ class TestUtils(unittest.TestCase):
         """
 
         def test_get(url, timeout=None):
+            """Mock HTTP GET function that raises a network exception."""
             raise Exception("network")
 
         result = utils.get_procedures("123", get_func=test_get)
@@ -162,6 +168,7 @@ class TestUtils(unittest.TestCase):
         """
 
         def test_get(url, timeout=None):
+            """Mock HTTP GET function that raises a RequestException."""
             raise requests.exceptions.RequestException("connection error")
 
         result = utils.get_procedures("123", get_func=test_get)
@@ -175,6 +182,7 @@ class TestUtils(unittest.TestCase):
         """
 
         def test_get(url, timeout=None):
+            """Mock HTTP GET function with non-int status code that returns valid JSON."""
             resp = SimpleNamespace()
             resp.status_code = "200"  # String instead of int
             resp.json = lambda: {"ok": True}
@@ -192,6 +200,7 @@ class TestUtils(unittest.TestCase):
         """
 
         def test_get(url, timeout=None):
+            """Mock HTTP GET function with non-int status code that raises JSON error."""
             resp = SimpleNamespace()
             resp.status_code = "200"  # String instead of int
             resp.json = lambda: (_ for _ in ()).throw(Exception("JSON error"))
@@ -210,6 +219,7 @@ class TestUtils(unittest.TestCase):
         """
 
         def test_get(url, timeout=None):
+            """Mock HTTP GET function that returns successful intended measurements response."""
             resp = SimpleNamespace()
             resp.status_code = 200
             resp.json = lambda: {"data": []}
@@ -227,6 +237,7 @@ class TestUtils(unittest.TestCase):
         """
 
         def test_get(url, timeout=None):
+            """Mock HTTP GET function that returns 404 not found."""
             resp = SimpleNamespace()
             resp.status_code = 404
             resp.json = lambda: {}
@@ -244,6 +255,7 @@ class TestUtils(unittest.TestCase):
         """
 
         def test_get(url, timeout=None):
+            """Mock HTTP GET function that raises a network exception."""
             raise Exception("network")
 
         result = utils.get_intended_measurements("123", get_func=test_get)
@@ -257,6 +269,7 @@ class TestUtils(unittest.TestCase):
         """
 
         def test_get(url, timeout=None):
+            """Mock HTTP GET function that returns 300 redirect with data."""
             resp = SimpleNamespace()
             resp.status_code = 300
             resp.json = lambda: {"data": []}

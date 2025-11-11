@@ -431,8 +431,11 @@ class TestFIPMapper(unittest.TestCase):
         try:
             # Mock FIPDataModel to simulate extractor being available
             class MockFIPDataModel:
+                """Mock FIPDataModel class for testing validation path."""
+
                 @staticmethod
                 def model_validate(data):
+                    """Mock model validation that returns data as SimpleNamespace."""
                     # Return the data as-is (simulating validation)
                     return SimpleNamespace(**data) if isinstance(data, dict) else data
 
