@@ -147,7 +147,7 @@ class TestIntegrationMetadata(unittest.TestCase):
         # Mock the API response - subject_data is already the subject object
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {"data": subject_data}
+        mock_response.json.return_value = subject_data
         mock_get.return_value = mock_response
 
         # Call the method
@@ -170,7 +170,7 @@ class TestIntegrationMetadata(unittest.TestCase):
         # Mock the API response - procedures_data is already the procedures object
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {"data": procedures_data}
+        mock_response.json.return_value = procedures_data
         mock_get.return_value = mock_response
 
         # Call the method

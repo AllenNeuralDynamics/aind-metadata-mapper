@@ -264,7 +264,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_file_exists.return_value = False
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {"data": {"subject_id": "123456"}}
+        mock_response.json.return_value = {"subject_id": "123456"}
         mock_get.return_value = mock_response
 
         result = self.job.get_subject()
@@ -353,7 +353,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_file_exists.return_value = False
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {"data": {"procedures": "data"}}
+        mock_response.json.return_value = {"procedures": "data"}
         mock_get.return_value = mock_response
 
         result = self.job.get_procedures()
