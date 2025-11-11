@@ -68,66 +68,49 @@ class SmartspimMapper(MapperJob):
         Acquisition
             Fully composed acquisition model.
         """
-        # Extract basic information
-        subject_id = metadata.slims_metadata.subject_id
-        raw_specimen_id = metadata.slims_metadata.specimen_id
+        subject_id = cast(str, metadata.slims_metadata.subject_id)
+        raw_specimen_id = cast(str, metadata.slims_metadata.specimen_id)
+        instrument_id = cast(str, metadata.slims_metadata.instrument_id)
 
-        # If subject_id doesn't appear in specimen_id, construct proper format
-        if subject_id and raw_specimen_id and subject_id not in raw_specimen_id:
+        if subject_id not in raw_specimen_id:
             specimen_id = f"{subject_id}-{raw_specimen_id}"
         else:
             specimen_id = raw_specimen_id
 
-        instrument_id = metadata.slims_metadata.instrument_id
         protocol_id = [metadata.slims_metadata.protocol_id] if metadata.slims_metadata.protocol_id else None
 
-        # Get experimenter name, use order_created_by as fallback
-        experimenter_name = metadata.slims_metadata.experimenter_name
-        if not experimenter_name and metadata.slims_metadata.order_created_by:
-            experimenter_name = metadata.slims_metadata.order_created_by
+        experimenter_name = metadata.slims_metadata.experimenter_name or metadata.slims_metadata.order_created_by
 
-        # Build channels from wavelength config and imaging channels
         channels = self._build_channels(metadata)
-
-        # Build ImageSPIM objects for spatial information
         images = self._build_images(metadata)
-
-        # Build the coordinate system from axis direction information
         coordinate_system = self._build_coordinate_system(metadata)
 
-        # Build the imaging config
         imaging_config = ImagingConfig(
-            device_name=instrument_id or "SmartSPIM",
+            device_name=instrument_id,
             channels=channels,
             images=cast(Any, images),
             coordinate_system=coordinate_system,
         )
 
-        # Build sample chamber config if immersion data is available
         configurations: List[Any] = [imaging_config]
         if metadata.slims_metadata.chamber_immersion_medium:
             chamber_config = self._build_chamber_config(metadata)
             configurations.append(chamber_config)
 
-        # Process session times with proper timezone handling
         session_start_time, session_end_time = self._process_session_times(
             metadata.file_metadata.session_start_time,
             metadata.file_metadata.session_end_time,
         )
 
-        # Build Code object for acquisition software version
-        code_list = None
         software_version = metadata.file_metadata.session_config.get("Version")
-        if software_version:
-            code_list = [
-                Code(
-                    name="SmartSPIM Acquisition Software",
-                    version=software_version,
-                    url="https://github.com/AllenNeuralDynamics/smartspim-acquisition",
-                )
-            ]
+        code_list = [
+            Code(
+                name="SmartSPIM Acquisition Software",
+                version=software_version,
+                url="https://github.com/AllenNeuralDynamics/smartspim-acquisition",
+            )
+        ] if software_version else None
 
-        # Build the datastream
         data_stream = DataStream(
             stream_start_time=session_start_time,
             stream_end_time=session_end_time,
@@ -137,15 +120,6 @@ class SmartspimMapper(MapperJob):
             configurations=configurations,  # type: ignore
         )
 
-        # Validate required fields
-        if not subject_id:
-            raise ValueError("subject_id is required")
-        if not specimen_id:
-            raise ValueError("specimen_id is required")
-        if not instrument_id:
-            raise ValueError("instrument_id is required")
-
-        # Build the full Acquisition model
         acquisition = Acquisition(
             subject_id=subject_id,
             specimen_id=specimen_id,
@@ -166,17 +140,13 @@ class SmartspimMapper(MapperJob):
         """Build Channel objects from wavelength and imaging channels."""
         channels = []
 
-        imaging_channels = metadata.slims_metadata.imaging_channels
-        if not imaging_channels:
-            raise ValueError("imaging_channels is required")
+        imaging_channels = cast(List[str], metadata.slims_metadata.imaging_channels)
         wavelength_config = metadata.file_metadata.wavelength_config
         laser_powers = self._extract_laser_powers_from_tiles(metadata)
 
         for channel_name in imaging_channels:
             wavelength = self._extract_wavelength_from_channel(channel_name)
-
             light_sources = self._build_light_sources(wavelength, wavelength_config, laser_powers)
-
             exposure_time = self._extract_exposure_time_from_tiles(channel_name, metadata)
 
             detector = DetectorConfig(
@@ -187,7 +157,6 @@ class SmartspimMapper(MapperJob):
             )
 
             emission_filters, emission_wavelength = self._build_emission_filters(channel_name, wavelength, metadata)
-
             channel_display_name = self._get_channel_display_name(channel_name, wavelength, metadata)
 
             channel = Channel(
@@ -206,20 +175,14 @@ class SmartspimMapper(MapperJob):
 
     def _build_light_sources(
         self,
-        wavelength: Optional[int],
+        wavelength: int,
         wavelength_config: Dict[str, Any],
         laser_powers: Dict[int, Dict[str, float]],
     ) -> List[LaserConfig]:
         """Build LaserConfig objects for light sources."""
         light_sources = []
 
-        if not wavelength:
-            return light_sources
-
         wavelength_key = str(wavelength)
-        if wavelength_key not in wavelength_config:
-            return light_sources
-
         channel_config = wavelength_config[wavelength_key]
         power_unit = self._parse_power_unit(channel_config.get("power_unit", "percent"))
 
@@ -313,98 +276,35 @@ class SmartspimMapper(MapperJob):
         """Get list of active device names."""
         devices = []
 
-        # Add instrument device
         if metadata.slims_metadata.instrument_id:
             devices.append(metadata.slims_metadata.instrument_id)
 
-        # Add camera
         devices.append("Camera")
 
-        # Add lasers for each wavelength (left and right for SmartSPIM)
-        imaging_channels = metadata.slims_metadata.imaging_channels
-        if not imaging_channels:
-            raise ValueError("imaging_channels is required")
-
+        imaging_channels = cast(List[str], metadata.slims_metadata.imaging_channels)
         wavelengths_used = set()
         for channel_name in imaging_channels:
             wavelength = self._extract_wavelength_from_channel(channel_name)
-            if wavelength:
-                wavelengths_used.add(wavelength)
+            wavelengths_used.add(wavelength)
 
         for wavelength in sorted(wavelengths_used):
             devices.append(f"Ex_{wavelength}")
 
-        # Add sample chamber if immersion data exists
         if metadata.slims_metadata.chamber_immersion_medium:
             devices.append("Sample Chamber")
 
         return devices
 
-    def _extract_wavelength_from_channel(self, channel_name: str) -> Optional[int]:
-        """Extract wavelength from channel name."""
-        # Try to parse wavelength directly from channel name
-        if channel_name.isdigit():
-            return int(channel_name)
+    def _extract_wavelength_from_channel(self, channel_name: str) -> int:
+        """Extract wavelength from channel name (e.g., 'Laser = 488; ...')."""
+        parts = channel_name.split(";")[0]
+        laser_part = parts.split("=")[-1].strip()
+        return int(laser_part)
 
-        # Try to extract from "Laser = 488; Emission Filter = 525/45" format
-        if "Laser =" in channel_name or "Laser=" in channel_name:
-            parts = channel_name.split(";")[0]
-            laser_part = parts.split("=")[-1].strip()
-            try:
-                return int(laser_part)
-            except ValueError:
-                pass
-
-        # Try to extract from Ex_XXX_Em_YYY format
-        if "Ex_" in channel_name:
-            parts = channel_name.split("_")
-            for i, part in enumerate(parts):
-                if part == "Ex" and i + 1 < len(parts):
-                    try:
-                        return int(parts[i + 1])
-                    except ValueError:
-                        continue
-
-        return None
-
-    def _extract_power_from_config(
-        self, channel_name: str, wavelength_config: Dict[str, Any]
-    ) -> tuple[Optional[float], Optional[PowerUnit]]:
-        """Extract power information from wavelength config."""
-        wavelength = self._extract_wavelength_from_channel(channel_name)
-        wavelength_key = str(wavelength) if wavelength else channel_name
-
-        if not wavelength_config or wavelength_key not in wavelength_config:
-            raise ValueError(f"wavelength_config missing for channel {channel_name} (key: {wavelength_key})")
-
-        channel_config = wavelength_config[wavelength_key]
-        if not isinstance(channel_config, dict):
-            raise ValueError(f"Invalid channel_config format for {channel_name}")
-
-        # Look for power settings (left/right or general)
-        power = channel_config.get("power") or channel_config.get("power_left") or channel_config.get("power_right")
-        if power is None:
-            raise ValueError(f"No power setting found for channel {channel_name}")
-
-        # Check for power unit specification, default to percent if not specified
-        power_unit_str = channel_config.get("power_unit", "percent")
-
-        if power_unit_str.lower() in ["milliwatt", "mw"]:
-            return float(power), PowerUnit.MW
-        elif power_unit_str.lower() in ["microwatt", "uw"]:
-            return float(power), PowerUnit.UW
-        elif power_unit_str.lower() in ["percent", "%"]:
-            return float(power), PowerUnit.PERCENT
-        else:
-            raise ValueError(f"Unknown power_unit '{power_unit_str}' for channel " f"{channel_name}")
-
-    def _get_channel_display_name(self, channel_name: str, wavelength: Optional[int], metadata: SmartspimModel) -> str:
+    def _get_channel_display_name(self, channel_name: str, wavelength: int, metadata: SmartspimModel) -> str:
         """Get consistent channel display name."""
         _, emission_wavelength = self._build_emission_filters(channel_name, wavelength, metadata)
-
-        if wavelength and emission_wavelength:
-            return f"Ex_{wavelength}_Em_{emission_wavelength}"
-        return channel_name
+        return f"Ex_{wavelength}_Em_{emission_wavelength}"
 
     def _get_channel_display_name_from_wavelength(self, wavelength: int, metadata: SmartspimModel) -> str:
         """Get consistent channel display name from wavelength only."""
@@ -418,49 +318,22 @@ class SmartspimMapper(MapperJob):
         """Build ImageSPIM objects for spatial/tile information."""
         images = []
 
-        # Extract pixel size from session config
         session_config = metadata.file_metadata.session_config
-        pixel_size_um = session_config.get("um/pix")
-        if pixel_size_um is None:
-            pixel_size_um = session_config.get("m/pix")
-        if pixel_size_um is None:
-            raise ValueError("Could not find pixel size in session_config")
+        pixel_size_um = cast(str, session_config.get("um/pix"))
         pixel_size = float(pixel_size_um)
 
-        # Get tile config and create one ImageSPIM per tile
         tile_config = metadata.file_metadata.tile_config
-        if not tile_config:
-            raise ValueError("tile_config is required for creating images")
 
         for tile_key, tile_info in tile_config.items():
-            if not isinstance(tile_info, dict):
-                continue
-
-            wavelength = tile_info.get("Laser")
-            if wavelength is None:
-                continue
-
-            wavelength = int(wavelength)
-
-            # Get consistent channel display name for this wavelength
+            wavelength = int(tile_info.get("Laser"))
             channel_display_name = self._get_channel_display_name_from_wavelength(wavelength, metadata)
 
-            # Extract tile position coordinates
-            tile_x = tile_info.get("X") or tile_info.get("x")
-            tile_y = tile_info.get("Y") or tile_info.get("y")
-            tile_z = tile_info.get("Z") or tile_info.get("z")
+            tile_x = float(tile_info.get("X"))
+            tile_y = float(tile_info.get("Y"))
+            tile_z = float(tile_info.get("Z"))
 
-            if tile_x is None or tile_y is None or tile_z is None:
-                continue
-
-            tile_x = float(tile_x)
-            tile_y = float(tile_y)
-            tile_z = float(tile_z)
-
-            # Create filename pattern based on channel and tile position
             filename = f"{channel_display_name}/{int(tile_x)}/{int(tile_x)}_{int(tile_y)}/"
 
-            # Create transform with tile position and pixel size
             image_transform = [
                 Scale(scale=[pixel_size, pixel_size, pixel_size]),
                 Translation(translation=[tile_x, tile_y, tile_z]),
@@ -485,12 +358,9 @@ class SmartspimMapper(MapperJob):
         """Build CoordinateSystem from axis direction info in SLIMS."""
         slims = metadata.slims_metadata
 
-        # Check if we have the required direction information
         if not all([slims.x_direction, slims.y_direction, slims.z_direction]):
             return None
 
-        # Map direction strings to Direction enums
-        # Support both underscore and space formats for compatibility
         direction_mapping = {
             "Left to Right": Direction.LR,
             "Left_to_right": Direction.LR,
@@ -506,7 +376,6 @@ class SmartspimMapper(MapperJob):
             "Inferior_to_superior": Direction.IS,
         }
 
-        # Map direction enums to coordinate system letters
         direction_to_letter = {
             Direction.LR: "R",
             Direction.RL: "L",
@@ -516,43 +385,21 @@ class SmartspimMapper(MapperJob):
             Direction.IS: "S",
         }
 
-        # Build axes from the direction information
         axes = []
         direction_letters = []
 
-        try:
-            # X axis
-            if slims.x_direction is None:
-                raise ValueError("X direction is None")
-            x_direction = direction_mapping.get(slims.x_direction)
-            if not x_direction:
-                raise ValueError(f"Invalid X direction: {slims.x_direction}")
-            axes.append(Axis(name=AxisName.X, direction=x_direction))
-            direction_letters.append(direction_to_letter[x_direction])
+        x_direction = direction_mapping[cast(str, slims.x_direction)]
+        axes.append(Axis(name=AxisName.X, direction=x_direction))
+        direction_letters.append(direction_to_letter[x_direction])
 
-            # Y axis
-            if slims.y_direction is None:
-                raise ValueError("Y direction is None")
-            y_direction = direction_mapping.get(slims.y_direction)
-            if not y_direction:
-                raise ValueError(f"Invalid Y direction: {slims.y_direction}")
-            axes.append(Axis(name=AxisName.Y, direction=y_direction))
-            direction_letters.append(direction_to_letter[y_direction])
+        y_direction = direction_mapping[cast(str, slims.y_direction)]
+        axes.append(Axis(name=AxisName.Y, direction=y_direction))
+        direction_letters.append(direction_to_letter[y_direction])
 
-            # Z axis
-            if slims.z_direction is None:
-                raise ValueError("Z direction is None")
-            z_direction = direction_mapping.get(slims.z_direction)
-            if not z_direction:
-                raise ValueError(f"Invalid Z direction: {slims.z_direction}")
-            axes.append(Axis(name=AxisName.Z, direction=z_direction))
-            direction_letters.append(direction_to_letter[z_direction])
+        z_direction = direction_mapping[cast(str, slims.z_direction)]
+        axes.append(Axis(name=AxisName.Z, direction=z_direction))
+        direction_letters.append(direction_to_letter[z_direction])
 
-        except (ValueError, KeyError) as e:
-            print(f"Invalid axes configuration: {e}")
-            return None
-
-        # Create coordinate system name based on anatomical directions
         coordinate_system_name = f"SPIM_{''.join(direction_letters)}"
 
         return CoordinateSystem(
@@ -598,30 +445,18 @@ class SmartspimMapper(MapperJob):
             if medium_lower == enum_member.value.lower():
                 return enum_member
 
-        return ImmersionMedium.OTHER
+        return ImmersionMedium.OTHER  # pragma: no cover
 
     def _extract_exposure_time_from_tiles(self, channel_name: str, metadata: SmartspimModel) -> float:
         """Extract exposure time for a channel from tile configuration."""
         tile_config = metadata.file_metadata.tile_config
-        if not tile_config:
-            raise ValueError("tile_config is required for exposure time extraction")
-
-        # Look for tiles with the matching laser/channel
         wavelength = self._extract_wavelength_from_channel(channel_name)
-        if not wavelength:
-            raise ValueError(f"Cannot extract wavelength from channel {channel_name}")
 
-        # Find tiles that use this wavelength
         for tile_key, tile_info in tile_config.items():
-            if isinstance(tile_info, dict) and str(tile_info.get("Laser")) == str(wavelength):
-                exposure = tile_info.get("Exposure")
-                if exposure is not None:
-                    try:
-                        return float(exposure)
-                    except (ValueError, TypeError):
-                        continue
+            if str(tile_info.get("Laser")) == str(wavelength):
+                return float(tile_info.get("Exposure"))
 
-        raise ValueError(f"No exposure time found for wavelength {wavelength} " f"in tile_config")
+        raise ValueError(f"No exposure time found for wavelength {wavelength}")
 
     def _extract_laser_powers_from_tiles(self, metadata: SmartspimModel) -> Dict[int, Dict[str, float]]:
         """
@@ -633,71 +468,33 @@ class SmartspimMapper(MapperJob):
         tile_config = metadata.file_metadata.tile_config
         wavelength_config = metadata.file_metadata.wavelength_config
 
-        if not tile_config or not wavelength_config:
-            return {}
-
         side_map = {"0": "left", "1": "right"}
         laser_powers = {}
 
         for tile_key, tile_info in tile_config.items():
-            if not isinstance(tile_info, dict):
-                continue
-
-            wavelength = tile_info.get("Laser")
-            side = tile_info.get("Side")
-
-            if wavelength is None or side is None:
-                continue
-
-            wavelength = int(wavelength)
-            side_str = side_map.get(str(side))
-
-            if not side_str:
-                continue
+            wavelength = int(tile_info.get("Laser"))
+            side = str(tile_info.get("Side"))
+            side_str = side_map[side]
 
             if wavelength not in laser_powers:
                 laser_powers[wavelength] = {}
 
             power_key = f"power_{side_str}"
-            if wavelength in wavelength_config:
-                wavelength_entry = wavelength_config.get(wavelength)
-                if isinstance(wavelength_entry, dict) and power_key in wavelength_entry:
-                    laser_powers[wavelength][side_str] = float(wavelength_entry[power_key])
+            wavelength_entry = wavelength_config[str(wavelength)]
+            laser_powers[wavelength][side_str] = float(wavelength_entry[power_key])
 
         return laser_powers
 
     def _build_emission_filters(
         self,
         channel_name: str,
-        wavelength: Optional[int],
+        wavelength: int,
         metadata: SmartspimModel,
-    ) -> tuple[List[DeviceConfig], Optional[int]]:
+    ) -> tuple[List[DeviceConfig], int]:
         """Build emission filters for a channel."""
-        emission_filters = []
-        emission_wavelength = None
-
-        # Get emission wavelength from filter mapping first
         filter_mapping = metadata.file_metadata.filter_mapping
-        if filter_mapping and wavelength and str(wavelength) in filter_mapping:
-            emission_wavelength = filter_mapping[str(wavelength)]
-            emission_filters.append(DeviceConfig(device_name=f"Em_{emission_wavelength}"))
-        else:
-            # Extract emission filter specification from channel_name as fallback
-            # e.g., "Laser = 488; Emission Filter = 525/45"
-            if "Emission Filter" in channel_name or "emission filter" in channel_name.lower():
-                parts = channel_name.split(";")
-                for part in parts:
-                    if "emission filter" in part.lower():
-                        filter_spec = part.split("=")[-1].strip()
-
-                        # Try to extract center wavelength from spec like "525/45"
-                        if "/" in filter_spec:
-                            try:
-                                center_wl = int(filter_spec.split("/")[0])
-                                emission_wavelength = center_wl
-                                emission_filters.append(DeviceConfig(device_name=f"Em_{emission_wavelength}"))
-                            except ValueError:
-                                emission_filters.append(DeviceConfig(device_name=filter_spec))
+        emission_wavelength = filter_mapping[str(wavelength)]
+        emission_filters = [DeviceConfig(device_name=f"Em_{emission_wavelength}")]
 
         return emission_filters, emission_wavelength
 
