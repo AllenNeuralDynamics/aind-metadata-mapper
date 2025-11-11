@@ -30,6 +30,14 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
         default="http://aind-metadata-service",
         description="Metadata service URL to download metadata info.",
     )
+    metadata_service_subject_endpoint: Optional[str] = Field(
+        default="/api/v2/subject/",
+        description="Metadata service endpoint for subject metadata.",
+    )
+    metadata_service_procedures_endpoint: Optional[str] = Field(
+        default="/api/v2/procedures/",
+        description="Metadata service endpoint for procedures metadata.",
+    )
 
     # Job settings
     location: Optional[str] = Field(

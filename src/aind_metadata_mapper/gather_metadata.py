@@ -234,7 +234,10 @@ class GatherMetadataJob:
                 f"{self.settings.metadata_service_url}"
             )
             try:
-                response = requests.get(f"{self.settings.metadata_service_url}" f"/api/v2/subject/{subject_id}")
+                response = requests.get(
+                    f"{self.settings.metadata_service_url}"
+                    f"{self.settings.metadata_service_subject_endpoint}{subject_id}"
+                )
                 if response.status_code == 200 or response.status_code == 400:
                     contents = response.json()
                 else:
@@ -265,7 +268,10 @@ class GatherMetadataJob:
                 f"{self.settings.metadata_service_url}"
             )
             try:
-                response = requests.get(f"{self.settings.metadata_service_url}" f"/api/v2/procedures/{subject_id}")
+                response = requests.get(
+                    f"{self.settings.metadata_service_url}"
+                    f"{self.settings.metadata_service_procedures_endpoint}{subject_id}"
+                )
                 if response.status_code == 200 or response.status_code == 400:
                     contents = response.json()
                 else:
