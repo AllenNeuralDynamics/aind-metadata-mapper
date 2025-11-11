@@ -2,37 +2,29 @@
 
 import json
 from pathlib import Path
-from aind_data_schema.core.acquisition import Acquisition, DataStream
+from typing import Any, Dict, List, Optional, cast
+
 from aind_data_schema.components.configs import (
-    ImagingConfig,
     Channel,
     DetectorConfig,
-    LaserConfig,
     DeviceConfig,
-    TriggerType,
-    SampleChamberConfig,
-    Immersion,
     ImageSPIM,
+    ImagingConfig,
+    Immersion,
+    LaserConfig,
+    SampleChamberConfig,
+    TriggerType,
 )
-from aind_data_schema.components.coordinates import (
-    CoordinateSystem,
-    Axis,
-    Scale,
-    Translation,
-)
+from aind_data_schema.components.coordinates import Axis, CoordinateSystem, Scale, Translation
 from aind_data_schema.components.identifiers import Code
 from aind_data_schema.components.wrappers import AssetPath
-from aind_data_schema_models.modalities import Modality
-from aind_data_schema_models.units import (
-    PowerUnit,
-    SizeUnit,
-    TimeUnit,
-    AngleUnit,
-)
-from aind_data_schema_models.devices import ImmersionMedium
+from aind_data_schema.core.acquisition import Acquisition, DataStream
 from aind_data_schema_models.coordinates import AxisName, Direction, Origin
+from aind_data_schema_models.devices import ImmersionMedium
+from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.units import AngleUnit, PowerUnit, SizeUnit, TimeUnit
 from aind_metadata_extractor.models.smartspim import SmartspimModel
-from typing import List, Dict, Any, Optional, cast
+
 from aind_metadata_mapper.base import MapperJob, MapperJobSettings
 
 

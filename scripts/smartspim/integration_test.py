@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+
 from aind_metadata_mapper.smartspim.mapper import SmartspimMapper
 
 test_data_path = Path(__file__).parent.parent.parent / "tests" / "resources" / "smartspim" / "smartspim.json"
