@@ -177,29 +177,24 @@ class InstrumentStore:
             if mod_date_str:
                 timestamp = self._parse_modification_date(mod_date_str)
                 if timestamp:
-                    filename = f"instrument_{timestamp.strftime('%Y%m%d')}.json"
+                    filename = f"instrument_{timestamp.date().isoformat().replace('-', '')}.json"
                     return rig_dir / filename
         except (json.JSONDecodeError, KeyError, ValueError):
             pass
 
         # Fall back to file mtime (use date only)
-        mtime = datetime.fromtimestamp(current_path.stat().st_mtime)
-        filename = f"instrument_{mtime.strftime('%Y%m%d')}.json"
+        mtime_dt = datetime.fromtimestamp(current_path.stat().st_mtime)
+        mtime_date = mtime_dt.date()
+        filename = f"instrument_{mtime_date.isoformat().replace('-', '')}.json"
         return rig_dir / filename
 
     def _parse_modification_date(self, date_str: Optional[str]) -> Optional[datetime]:
-        """Parse modification_date string to datetime.
-
-        Handles various ISO formats:
-        - "2025-11-07" (date only, primary format - uses 00:00:00)
-        - "2025-11-07T14:30:00" (datetime format, for backwards compatibility)
-        - "2025-11-07T14:30:00Z"
-        - "2025-11-07T14:30:00+00:00"
+        """Parse modification_date string to datetime using ISO format.
 
         Parameters
         ----------
         date_str : Optional[str]
-            Date string from JSON.
+            Date string from JSON (ISO format).
 
         Returns
         -------
@@ -209,29 +204,16 @@ class InstrumentStore:
         if date_str is None:
             return None
 
-        # Try full ISO datetime formats
-        formats = [
-            "%Y-%m-%dT%H:%M:%S",
-            "%Y-%m-%dT%H:%M:%SZ",
-            "%Y-%m-%dT%H:%M:%S%z",
-            "%Y-%m-%dT%H:%M:%S.%f",
-            "%Y-%m-%dT%H:%M:%S.%fZ",
-            "%Y-%m-%dT%H:%M:%S.%f%z",
-        ]
-        for fmt in formats:
-            try:
-                return datetime.strptime(date_str, fmt)
-            except ValueError:
-                continue
-
-        # Try date-only format
         try:
-            dt = datetime.strptime(date_str, "%Y-%m-%d")
-            return dt.replace(hour=0, minute=0, second=0, microsecond=0)
-        except ValueError:
-            pass
-
-        return None
+            # Replace Z with +00:00 for fromisoformat compatibility
+            iso_str = date_str.replace("Z", "+00:00")
+            dt = datetime.fromisoformat(iso_str)
+            # Return naive datetime (remove timezone info)
+            if dt.tzinfo is not None:
+                dt = dt.replace(tzinfo=None)
+            return dt
+        except (ValueError, AttributeError):
+            return None
 
 
 # Module-level convenience functions
