@@ -294,13 +294,17 @@ class TestFIPMapper(unittest.TestCase):
         dependency. This prevents confusing errors and guides users to the solution.
         """
         original = mapper_mod.FIPDataModel
+        original_import_func = mapper_mod._import_fip_data_model
         try:
             mapper_mod.FIPDataModel = None
+            # Mock _import_fip_data_model to return None to simulate missing dependency
+            mapper_mod._import_fip_data_model = lambda: None
             with self.assertRaises(ImportError) as cm:
-                self.mapper.transform({})
+                self.mapper.transform({}, skip_validation=False)
             self.assertIn("aind_metadata_extractor is required", str(cm.exception))
         finally:
             mapper_mod.FIPDataModel = original
+            mapper_mod._import_fip_data_model = original_import_func
 
     def test_transform_with_skip_validation(self):
         """Test that transform works with skip_validation=True for testing.
@@ -378,19 +382,21 @@ class TestFIPMapper(unittest.TestCase):
         This test requires aind-metadata-extractor to be installed with the schema file.
         """
         # Check if extractor is available and schema file exists
-        if not hasattr(mapper_mod, "aind_metadata_extractor"):
-            self.skipTest("aind-metadata-extractor not installed, skipping schema validation test")
-            return
+        if not hasattr(mapper_mod, "aind_metadata_extractor"):  # pragma: no cover
+            self.skipTest("aind-metadata-extractor not installed, skipping schema validation test")  # pragma: no cover
+            return  # pragma: no cover
 
         # Check if schema file exists
         try:
             schema_path = Path(mapper_mod.aind_metadata_extractor.__file__).parent / "models" / "fip.json"
-            if not schema_path.exists():
-                self.skipTest("Schema file not found in aind-metadata-extractor, skipping validation test")
-                return
-        except (AttributeError, FileNotFoundError):
-            self.skipTest("Cannot locate schema file, skipping validation test")
-            return
+            if not schema_path.exists():  # pragma: no cover
+                self.skipTest(
+                    "Schema file not found in aind-metadata-extractor, skipping validation test"
+                )  # pragma: no cover
+                return  # pragma: no cover
+        except (AttributeError, FileNotFoundError):  # pragma: no cover
+            self.skipTest("Cannot locate schema file, skipping validation test")  # pragma: no cover
+            return  # pragma: no cover
 
         # Use invalid metadata to trigger validation error
         invalid_metadata = {"subject_id": "test"}  # Missing required rig_config
@@ -406,9 +412,9 @@ class TestFIPMapper(unittest.TestCase):
         """
         from aind_metadata_mapper.fip.mapper import _load_fip_schema
 
-        if not hasattr(mapper_mod, "aind_metadata_extractor"):
-            self.skipTest("aind-metadata-extractor not installed, skipping test")
-            return
+        if not hasattr(mapper_mod, "aind_metadata_extractor"):  # pragma: no cover
+            self.skipTest("aind-metadata-extractor not installed, skipping test")  # pragma: no cover
+            return  # pragma: no cover
 
         # Temporarily modify __file__ to point to a non-existent path
         original_file = mapper_mod.aind_metadata_extractor.__file__
