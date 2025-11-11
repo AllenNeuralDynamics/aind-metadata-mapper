@@ -14,8 +14,13 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import aind_metadata_extractor
 import jsonschema
+
+# Optional dependency - only used in functions marked pragma: no cover
+try:
+    import aind_metadata_extractor
+except ImportError:
+    aind_metadata_extractor = None  # type: ignore
 from aind_data_schema.components.configs import (
     Channel,
     DetectorConfig,

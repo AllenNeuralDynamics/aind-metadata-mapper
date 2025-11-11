@@ -17,7 +17,7 @@ from types import SimpleNamespace
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.fip import mapper as mapper_mod
-from aind_metadata_mapper.fip.mapper import FIPMapper, _import_fip_data_model, _validate_fip_metadata
+from aind_metadata_mapper.fip.mapper import FIPMapper, _import_fip_data_model, _load_fip_schema, _validate_fip_metadata
 
 
 class TestFIPMapper(unittest.TestCase):
@@ -412,8 +412,6 @@ class TestFIPMapper(unittest.TestCase):
         This test temporarily modifies the extractor's __file__ to point to a non-existent
         location to trigger the FileNotFoundError path.
         """
-        from aind_metadata_mapper.fip.mapper import _load_fip_schema
-
         if not hasattr(mapper_mod, "aind_metadata_extractor"):  # pragma: no cover
             self.skipTest("aind-metadata-extractor not installed, skipping test")  # pragma: no cover
             return  # pragma: no cover
