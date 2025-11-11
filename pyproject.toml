@@ -66,8 +66,8 @@ exclude = '''
 '''
 
 [tool.coverage.run]
-omit = ["*__init__*", "tests/integration/*"]
-source = ["aind_metadata_mapper", "tests"]
+omit = ["*__init__*", "tests/integration/*", "tests/*"]
+source = ["aind_metadata_mapper"]
 
 [tool.coverage.report]
 exclude_lines = [
