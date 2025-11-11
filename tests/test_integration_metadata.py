@@ -362,7 +362,9 @@ class TestIntegrationMetadata(unittest.TestCase):
             mock_response.json.return_value = funding_data
             mock_get.return_value = mock_response
 
-            result = self.job.build_data_description()
+            # Pass acquisition_start_time from acquisition_data
+            acquisition_start_time = acquisition_data.get("acquisition_start_time")
+            result = self.job.build_data_description(acquisition_start_time=acquisition_start_time)
 
         # Verify the result has the expected structure
         self.assertIn("name", result)
@@ -383,8 +385,8 @@ class TestIntegrationMetadata(unittest.TestCase):
         self.assertIn(str(now.year), creation_time_str)
         self.assertIn(f"{now.month:02d}", creation_time_str)
 
-    def test_validate_and_create_metadata_with_validation_errors(self):
-        """Test validate_and_create_metadata when validation fails and uses create_metadata_json fallback"""
+    def test_validate_and_create_metadata_with_raise_if_invalid_false(self):
+        """Test validate_and_create_metadata with raise_if_invalid=False (default) - prints errors but not raise"""
         # Create core metadata with invalid data that will cause ValidationError
         core_metadata = {
             "data_description": {
@@ -409,27 +411,201 @@ class TestIntegrationMetadata(unittest.TestCase):
             },
         }
 
-        # Capture stdout to verify error messages are printed
-        from io import StringIO
-        import sys
+        # Capture logging output to verify error messages are logged
+        from unittest.mock import patch
 
-        captured_output = StringIO()
-        sys.stdout = captured_output
-
-        try:
+        with patch("logging.warning") as mock_warning:
             # This should trigger the ValidationError path and use create_metadata_json fallback
+            # Default raise_if_invalid=False should not raise an exception
             result = self.job.validate_and_create_metadata(core_metadata)
 
             # Verify the result is returned (either as dict or Metadata object)
             self.assertIsNotNone(result)
 
-            # Verify error messages were printed to stdout
-            output = captured_output.getvalue()
-            self.assertIn("Validation Errors Found:", output)
+            # Verify error messages were logged
+            mock_warning.assert_called()
+            warning_calls = [call[0][0] for call in mock_warning.call_args_list]
+            self.assertTrue(any("Validation Errors Found:" in call for call in warning_calls))
 
-        finally:
-            # Restore stdout
-            sys.stdout = sys.__stdout__
+    def test_validate_and_create_metadata_with_raise_if_invalid_true(self):
+        """Test validate_and_create_metadata with raise_if_invalid=True - should raise ValidationError"""
+        # Create job settings with raise_if_invalid=True
+        strict_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            subject_id="804670",
+            project_name="Visual Behavior",
+            modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+            metadata_service_url="http://test-service.com",
+            raise_if_invalid=True,
+        )
+        strict_job = GatherMetadataJob(settings=strict_settings)
+
+        # Create core metadata with invalid data that will cause ValidationError
+        core_metadata = {
+            "data_description": {
+                "name": "test_dataset",
+                "creation_time": "2023-01-01T12:00:00",
+                "institution": {"name": "Allen Institute for Neural Dynamics"},
+                "data_level": "raw",
+                "modalities": ["Behavior videos"],
+                "project_name": "Test Project",
+                "funding_source": [{"funder": "Test Funder"}],
+                "investigators": [{"name": "Test Investigator"}],
+                "subject_id": "invalid_subject_id",  # This will cause validation issues
+            },
+            "subject": {
+                "subject_id": "different_subject_id",  # Mismatch will cause validation error
+                "sex": "Invalid Sex Value",  # Invalid enum value
+                "date_of_birth": "invalid-date-format",  # Invalid date format
+            },
+            "acquisition": {
+                "subject_id": "yet_another_subject_id",  # Another mismatch
+                "acquisition_start_time": "invalid-datetime",  # Invalid datetime
+            },
+        }
+
+        # With raise_if_invalid=True, this should raise a ValidationError
+        from pydantic import ValidationError
+
+        with self.assertRaises(ValidationError):
+            strict_job.validate_and_create_metadata(core_metadata)
+
+    def test_validate_and_create_metadata_success_with_location(self):
+        """Test validate_and_create_metadata with location field using valid real metadata resources"""
+        # Create job settings with location specified
+        location_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            subject_id="804670",
+            project_name="Visual Behavior",
+            modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+            metadata_service_url="http://test-service.com",
+            location="s3://my-bucket/my-data",
+        )
+        location_job = GatherMetadataJob(settings=location_settings)
+
+        # Load real metadata files (these should be valid)
+        data_description = self._load_resource_file(V2_METADATA_DIR, "data_description.json")
+        subject = self._load_resource_file(V2_METADATA_DIR, "subject.json")
+        acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
+        procedures = self._load_resource_file(V2_METADATA_DIR, "procedures.json")
+        instrument = self._load_resource_file(V2_METADATA_DIR, "instrument.json")
+        processing = self._load_resource_file(V2_METADATA_DIR, "processing.json")
+        quality_control = self._load_resource_file(V2_METADATA_DIR, "quality_control.json")
+
+        core_metadata = {
+            "data_description": data_description,
+            "subject": subject,
+            "acquisition": acquisition,
+            "procedures": procedures,
+            "instrument": instrument,
+            "processing": processing,
+            "quality_control": quality_control,
+        }
+
+        # With valid data, this should return a Metadata object
+        metadata = location_job.validate_and_create_metadata(core_metadata)
+
+        self.assertIsInstance(metadata, Metadata)
+        self.assertEqual(metadata.location, "s3://my-bucket/my-data")
+
+    def test_validate_and_create_metadata_success_without_location(self):
+        """Test validate_and_create_metadata without location field using valid real metadata resources"""
+        # Load real metadata files (these should be valid)
+        data_description = self._load_resource_file(V2_METADATA_DIR, "data_description.json")
+        subject = self._load_resource_file(V2_METADATA_DIR, "subject.json")
+        acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
+        procedures = self._load_resource_file(V2_METADATA_DIR, "procedures.json")
+        instrument = self._load_resource_file(V2_METADATA_DIR, "instrument.json")
+        processing = self._load_resource_file(V2_METADATA_DIR, "processing.json")
+        quality_control = self._load_resource_file(V2_METADATA_DIR, "quality_control.json")
+
+        core_metadata = {
+            "data_description": data_description,
+            "subject": subject,
+            "acquisition": acquisition,
+            "procedures": procedures,
+            "instrument": instrument,
+            "processing": processing,
+            "quality_control": quality_control,
+        }
+
+        # With valid data, this should return a Metadata object
+        metadata = self.job.validate_and_create_metadata(core_metadata)
+
+        self.assertIsInstance(metadata, Metadata)
+        self.assertEqual(metadata.location, "")
+
+    def test_validate_and_create_metadata_failure_fallback_with_location(self):
+        """Test validate_and_create_metadata fallback with location field using real metadata with invalid field"""
+        # Create job settings with location specified
+        location_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            subject_id="804670",
+            project_name="Visual Behavior",
+            modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+            metadata_service_url="http://test-service.com",
+            location="s3://my-bucket/my-data",
+            raise_if_invalid=False,  # Explicit for clarity
+        )
+        location_job = GatherMetadataJob(settings=location_settings)
+
+        # Load ALL real metadata files
+        data_description = self._load_resource_file(V2_METADATA_DIR, "data_description.json")
+        subject = self._load_resource_file(V2_METADATA_DIR, "subject.json")
+        acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
+        procedures = self._load_resource_file(V2_METADATA_DIR, "procedures.json")
+        instrument = self._load_resource_file(V2_METADATA_DIR, "instrument.json")
+        processing = self._load_resource_file(V2_METADATA_DIR, "processing.json")
+        quality_control = self._load_resource_file(V2_METADATA_DIR, "quality_control.json")
+
+        # Remove required subject_id field to cause Metadata validation to fail
+        del data_description["subject_id"]
+
+        core_metadata = {
+            "data_description": data_description,
+            "subject": subject,
+            "acquisition": acquisition,
+            "procedures": procedures,
+            "instrument": instrument,
+            "processing": processing,
+            "quality_control": quality_control,
+        }
+
+        # With invalid data and raise_if_invalid=False, should return dict from create_metadata_json
+        metadata = location_job.validate_and_create_metadata(core_metadata)
+
+        self.assertIsInstance(metadata, dict)
+        self.assertEqual(metadata["location"], "s3://my-bucket/my-data")
+
+    def test_validate_and_create_metadata_failure_fallback_without_location(self):
+        """Test validate_and_create_metadata fallback without location field using real metadata with invalid field"""
+        # Load ALL real metadata files
+        data_description = self._load_resource_file(V2_METADATA_DIR, "data_description.json")
+        subject = self._load_resource_file(V2_METADATA_DIR, "subject.json")
+        acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
+        procedures = self._load_resource_file(V2_METADATA_DIR, "procedures.json")
+        instrument = self._load_resource_file(V2_METADATA_DIR, "instrument.json")
+        processing = self._load_resource_file(V2_METADATA_DIR, "processing.json")
+        quality_control = self._load_resource_file(V2_METADATA_DIR, "quality_control.json")
+
+        # Remove required name subject_id to cause Metadata validation to fail
+        del data_description["subject_id"]
+
+        core_metadata = {
+            "data_description": data_description,
+            "subject": subject,
+            "acquisition": acquisition,
+            "procedures": procedures,
+            "instrument": instrument,
+            "processing": processing,
+            "quality_control": quality_control,
+        }
+
+        # With invalid data and raise_if_invalid=False (default), should return dict from create_metadata_json
+        metadata = self.job.validate_and_create_metadata(core_metadata)
+
+        self.assertIsInstance(metadata, dict)
+        self.assertEqual(metadata["location"], "")
 
 
 if __name__ == "__main__":

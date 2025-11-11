@@ -190,7 +190,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_file_exists.return_value = True
         mock_get_file.return_value = {"existing": "data"}
 
-        result = self.job.build_data_description()
+        result = self.job.build_data_description(acquisition_start_time=None)
 
         self.assertEqual(result, {"existing": "data"})
         mock_file_exists.assert_called_once_with(file_name="data_description.json")
@@ -209,7 +209,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         mock_datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)
 
-        result = self.job.build_data_description()
+        result = self.job.build_data_description(acquisition_start_time=None)
 
         self.assertIn("creation_time", result)
         self.assertEqual(result["project_name"], "Test Project")
@@ -439,8 +439,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get_file.assert_called_once_with(file_name="model.json")
 
     # Tests for validate_and_create_metadata method
-    def test_validate_and_create_metadata_success(self):
-        """Test validate_and_create_metadata when validation succeeds"""
+    def test_validate_and_create_metadata_success_with_raise_if_invalid_false(self):
+        """Test validate_and_create_metadata when validation succeeds with raise_if_invalid=False (default)"""
         core_metadata = {
             "data_description": {
                 "name": "test_dataset",
@@ -459,6 +459,92 @@ class TestGatherMetadataJob(unittest.TestCase):
             mock_instance = MagicMock()
             mock_metadata.return_value = mock_instance
             result = self.job.validate_and_create_metadata(core_metadata)
+            self.assertEqual(result, mock_instance)
+
+    def test_validate_and_create_metadata_success_with_raise_if_invalid_true(self):
+        """Test validate_and_create_metadata when validation succeeds with raise_if_invalid=True"""
+        # Create job with raise_if_invalid=True
+        strict_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+            metadata_service_url="http://test-service.com",
+            raise_if_invalid=True,
+        )
+        strict_job = GatherMetadataJob(settings=strict_settings)
+
+        core_metadata = {
+            "data_description": {
+                "name": "test_dataset",
+                "creation_time": "2023-01-01T12:00:00",
+                "institution": {"name": "Allen Institute for Neural Dynamics"},
+                "data_level": "processed",  # Use processed to avoid subject_id requirement
+                "modalities": ["Behavior videos"],
+                "project_name": "Test Project",
+                "funding_source": [{"funder": "Test Funder"}],
+                "investigators": [{"name": "Test Investigator"}],
+            }
+        }
+
+        # Mock Metadata to avoid actual validation
+        with patch("aind_metadata_mapper.gather_metadata.Metadata") as mock_metadata:
+            mock_instance = MagicMock()
+            mock_metadata.return_value = mock_instance
+            result = strict_job.validate_and_create_metadata(core_metadata)
+            self.assertEqual(result, mock_instance)
+
+    def test_validate_and_create_metadata_with_location_field(self):
+        """Test validate_and_create_metadata passes location field to Metadata constructor"""
+        # Create job with location specified
+        location_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+            metadata_service_url="http://test-service.com",
+            location="s3://my-bucket/my-data",
+        )
+        location_job = GatherMetadataJob(settings=location_settings)
+
+        core_metadata = {
+            "data_description": {
+                "name": "test_dataset",
+            }
+        }
+
+        # Mock Metadata constructor to verify location is passed
+        with patch("aind_metadata_mapper.gather_metadata.Metadata") as mock_metadata:
+            mock_instance = MagicMock()
+            mock_metadata.return_value = mock_instance
+
+            result = location_job.validate_and_create_metadata(core_metadata)
+
+            # Verify Metadata was called with the location parameter
+            mock_metadata.assert_called_once()
+            call_args = mock_metadata.call_args
+            self.assertEqual(call_args.kwargs["location"], "s3://my-bucket/my-data")
+            self.assertEqual(result, mock_instance)
+
+    def test_validate_and_create_metadata_without_location_field(self):
+        """Test validate_and_create_metadata uses empty string when location is None"""
+        core_metadata = {
+            "data_description": {
+                "name": "test_dataset",
+            }
+        }
+
+        # Mock Metadata constructor to verify location defaults to empty string
+        with patch("aind_metadata_mapper.gather_metadata.Metadata") as mock_metadata:
+            mock_instance = MagicMock()
+            mock_metadata.return_value = mock_instance
+
+            result = self.job.validate_and_create_metadata(core_metadata)
+
+            # Verify Metadata was called with empty string for location
+            mock_metadata.assert_called_once()
+            call_args = mock_metadata.call_args
+            self.assertEqual(call_args.kwargs["location"], "")
             self.assertEqual(result, mock_instance)
 
     # Tests for run_job method
@@ -555,6 +641,213 @@ class TestGatherMetadataJob(unittest.TestCase):
         model_calls = [call for call in mock_write.call_args_list if call[0][0] == "model.json"]
         self.assertEqual(len(model_calls), 1)
         self.assertEqual(model_calls[0][0][1], {"model_name": "test_model"})
+
+    def test_merge_models_instruments(self):
+        """Test _merge_models with instrument objects"""
+        import json
+
+        from aind_data_schema.core.instrument import Instrument
+
+        with open(TEST_DIR / "resources" / "v2_metadata" / "instrument.json") as f:
+            base_instrument = json.load(f)
+
+        instrument1 = base_instrument.copy()
+        instrument2 = base_instrument.copy()
+
+        result = self.job._merge_models(Instrument, [instrument1, instrument2])
+
+        self.assertIsInstance(result, dict)
+        self.assertIn("instrument_id", result)
+
+    def test_merge_models_acquisition(self):
+        """Test _merge_models with acquisition objects"""
+        import json
+
+        from aind_data_schema.core.acquisition import Acquisition
+
+        with open(TEST_DIR / "resources" / "v2_metadata" / "acquisition.json") as f:
+            base_acquisition = json.load(f)
+
+        acquisition1 = base_acquisition.copy()
+        acquisition2 = base_acquisition.copy()
+
+        if "subject_details" in acquisition2:
+            del acquisition2["subject_details"]
+
+        result = self.job._merge_models(Acquisition, [acquisition1, acquisition2])
+
+        self.assertIsInstance(result, dict)
+        self.assertIn("acquisition_start_time", result)
+
+    def test_get_instrument_multiple_files(self):
+        """Test get_instrument with multiple instrument files"""
+        import json
+        import shutil
+        import tempfile
+
+        temp_dir = tempfile.mkdtemp()
+        test_settings = JobSettings(
+            metadata_dir=temp_dir,
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
+        test_job = GatherMetadataJob(settings=test_settings)
+
+        try:
+            with open(TEST_DIR / "resources" / "v2_metadata" / "instrument.json") as f:
+                base_instrument = json.load(f)
+
+            instrument1 = base_instrument.copy()
+            instrument2 = base_instrument.copy()
+
+            with open(os.path.join(temp_dir, "instrument_123.json"), "w") as f:
+                json.dump(instrument1, f)
+
+            with open(os.path.join(temp_dir, "instrument_456.json"), "w") as f:
+                json.dump(instrument2, f)
+
+            result = test_job.get_instrument()
+
+            self.assertIsNotNone(result)
+            self.assertIsInstance(result, dict)
+            self.assertIn("instrument_id", result)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_acquisition_multiple_files(self):
+        """Test get_acquisition with multiple acquisition files"""
+        import json
+        import shutil
+        import tempfile
+
+        temp_dir = tempfile.mkdtemp()
+        test_settings = JobSettings(
+            metadata_dir=temp_dir,
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
+        test_job = GatherMetadataJob(settings=test_settings)
+
+        try:
+            with open(TEST_DIR / "resources" / "v2_metadata" / "acquisition.json") as f:
+                base_acquisition = json.load(f)
+
+            if "subject_details" in base_acquisition:
+                del base_acquisition["subject_details"]
+
+            acquisition1 = base_acquisition.copy()
+            acquisition2 = base_acquisition.copy()
+
+            with open(os.path.join(temp_dir, "acquisition_789.json"), "w") as f:
+                json.dump(acquisition1, f)
+
+            with open(os.path.join(temp_dir, "acquisition_012.json"), "w") as f:
+                json.dump(acquisition2, f)
+
+            result = test_job.get_acquisition()
+
+            self.assertIsNotNone(result)
+            self.assertIsInstance(result, dict)
+            self.assertIn("acquisition_start_time", result)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_quality_control_multiple_files(self):
+        """Test get_quality_control with multiple quality control files"""
+        import json
+        import shutil
+        import tempfile
+
+        temp_dir = tempfile.mkdtemp()
+        test_settings = JobSettings(
+            metadata_dir=temp_dir,
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
+        test_job = GatherMetadataJob(settings=test_settings)
+
+        try:
+            with open(TEST_DIR / "resources" / "v2_metadata" / "quality_control.json") as f:
+                base_qc = json.load(f)
+
+            qc1 = base_qc.copy()
+            qc2 = base_qc.copy()
+
+            with open(os.path.join(temp_dir, "quality_control_345.json"), "w") as f:
+                json.dump(qc1, f)
+
+            with open(os.path.join(temp_dir, "quality_control_678.json"), "w") as f:
+                json.dump(qc2, f)
+
+            result = test_job.get_quality_control()
+
+            self.assertIsNotNone(result)
+            self.assertIsInstance(result, dict)
+            self.assertIn("metrics", result)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_prefixed_files_no_matches(self):
+        """Test _get_prefixed_files_from_user_defined_directory with no matching files"""
+        import json
+        import shutil
+        import tempfile
+
+        temp_dir = tempfile.mkdtemp()
+        test_settings = JobSettings(
+            metadata_dir=temp_dir,
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
+        test_job = GatherMetadataJob(settings=test_settings)
+
+        try:
+            with open(os.path.join(temp_dir, "other_file.json"), "w") as f:
+                json.dump({"data": "test"}, f)
+
+            result = test_job._get_prefixed_files_from_user_defined_directory("instrument")
+
+            self.assertEqual(result, [])
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_prefixed_files_mixed_extensions(self):
+        """Test _get_prefixed_files_from_user_defined_directory ignores non-json files"""
+        import json
+        import shutil
+        import tempfile
+
+        temp_dir = tempfile.mkdtemp()
+        test_settings = JobSettings(
+            metadata_dir=temp_dir,
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
+        test_job = GatherMetadataJob(settings=test_settings)
+
+        try:
+            with open(os.path.join(temp_dir, "instrument_123.json"), "w") as f:
+                json.dump({"instrument_id": "test"}, f)
+
+            with open(os.path.join(temp_dir, "instrument_456.txt"), "w") as f:
+                f.write("not json")
+
+            result = test_job._get_prefixed_files_from_user_defined_directory("instrument")
+
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result[0]["instrument_id"], "test")
+
+        finally:
+            shutil.rmtree(temp_dir)
 
 
 if __name__ == "__main__":
