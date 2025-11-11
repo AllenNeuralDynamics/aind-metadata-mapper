@@ -9,13 +9,13 @@ Usage:
     python examples/example_fip_mapper.py /path/to/ProtoAcquisitionDataSchema.json [output_filename]
 
 Example:
-    python examples/example_fip_mapper.py /Users/doug.ollerenshaw/code/Aind.Physiology.Fip/examples/ProtoAcquisitionDataSchema.json
+    python examples/example_fip_mapper.py \\
+        /Users/doug.ollerenshaw/code/Aind.Physiology.Fip/examples/ProtoAcquisitionDataSchema.json
     python examples/example_fip_mapper.py /path/to/input.json example_acquisition.json
 """
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
 from aind_metadata_mapper.fip.mapper import FIPMapper
@@ -23,15 +23,18 @@ from aind_metadata_mapper.fip.mapper import FIPMapper
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Demonstrate FIP mapper workflow: validate and transform ProtoAcquisitionDataSchema to AIND Data Schema 2.0",
+        description=(
+            "Demonstrate FIP mapper workflow: validate and transform "
+            "ProtoAcquisitionDataSchema to AIND Data Schema 2.0"
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Example usage:
   python examples/example_fip_mapper.py /path/to/ProtoAcquisitionDataSchema.json [output_filename]
-  
+
   # Use default output filename (acquisition.json)
   python examples/example_fip_mapper.py /path/to/input.json
-  
+
   # Specify custom output filename
   python examples/example_fip_mapper.py /path/to/input.json example_acquisition.json
 
@@ -61,7 +64,8 @@ Need an example input file?
         print(f"Error: File not found: {example_path}")
         print("\nNeed an example input file?")
         print(
-            "See: https://github.com/AllenNeuralDynamics/Aind.Physiology.Fip/blob/main/examples/ProtoAcquisitionDataSchema.json"
+            "See: https://github.com/AllenNeuralDynamics/Aind.Physiology.Fip/"
+            "blob/main/examples/ProtoAcquisitionDataSchema.json"
         )
         return 1
 
