@@ -35,8 +35,8 @@ from datetime import date
 from pathlib import Path
 from typing import Optional, Union
 
-import aind_data_schema.components.devices as d
-import aind_data_schema.core.instrument as r
+import aind_data_schema.components.devices as devices
+import aind_data_schema.core.instrument as instrument
 from aind_data_schema.components.connections import Connection
 from aind_data_schema.components.coordinates import CoordinateSystemLibrary
 from aind_data_schema.components.devices import Computer
@@ -119,10 +119,10 @@ def prompt_for_string(
 def create_instrument(
     instrument_id: str,
     values: Optional[dict] = None,
-    previous_instrument: Optional[Union[dict, r.Instrument]] = None,
+    previous_instrument: Optional[Union[dict, instrument.Instrument]] = None,
     base_path: Optional[str] = None,
     input_func=input,
-) -> r.Instrument:
+) -> instrument.Instrument:
     """Create an FIP instrument interactively.
 
     Parameters
@@ -132,7 +132,7 @@ def create_instrument(
     values : Optional[dict]
         Optional dict with keys: location, computer_name, detector_1_serial,
         detector_2_serial, objective_serial. If provided, bypasses prompts.
-    previous_instrument : Optional[Union[dict, r.Instrument]]
+    previous_instrument : Optional[Union[dict, instrument.Instrument]]
         Optional previous instrument data (dict or validated Instrument object).
         If None, will be loaded from store.
     base_path : Optional[str]
@@ -140,7 +140,7 @@ def create_instrument(
 
     Returns
     -------
-    r.Instrument
+    instrument.Instrument
         Created instrument object.
     """
     # Load and validate previous instrument if not provided
@@ -148,11 +148,11 @@ def create_instrument(
     if previous_instrument is None:
         instrument_dict = get_instrument(instrument_id, base_path=base_path)
         if instrument_dict is not None:
-            previous_instrument_obj = r.Instrument.model_validate(instrument_dict)
-    elif isinstance(previous_instrument, dict):
-        previous_instrument_obj = r.Instrument.model_validate(previous_instrument)
-    elif isinstance(previous_instrument, r.Instrument):
-        previous_instrument_obj = previous_instrument
+            previous_instrument_obj = instrument.Instrument.model_validate(instrument_dict)
+        elif isinstance(previous_instrument, dict):
+            previous_instrument_obj = instrument.Instrument.model_validate(previous_instrument)
+        elif isinstance(previous_instrument, instrument.Instrument):
+            previous_instrument_obj = previous_instrument
 
     components_by_name = {}
     computer_component = None
@@ -209,67 +209,67 @@ def create_instrument(
         "Unused patch cables are not physically connected to an implanted fiber during an experiment."
     )
 
-    patch_cord_0 = d.FiberPatchCord(
+    patch_cord_0 = devices.FiberPatchCord(
         name="Patch Cord 0",
-        manufacturer=d.Organization.DORIC,
+        manufacturer=devices.Organization.DORIC,
         model="BBP(4)_200/220/900-0.37_Custom_FCM-4xMF1.25",
         core_diameter=200,
         numerical_aperture=0.37,
         notes=patch_cord_note,
     )
 
-    patch_cord_1 = d.FiberPatchCord(
+    patch_cord_1 = devices.FiberPatchCord(
         name="Patch Cord 1",
-        manufacturer=d.Organization.DORIC,
+        manufacturer=devices.Organization.DORIC,
         model="BBP(4)_200/220/900-0.37_Custom_FCM-4xMF1.25",
         core_diameter=200,
         numerical_aperture=0.37,
         notes=patch_cord_note,
     )
 
-    patch_cord_2 = d.FiberPatchCord(
+    patch_cord_2 = devices.FiberPatchCord(
         name="Patch Cord 2",
-        manufacturer=d.Organization.DORIC,
+        manufacturer=devices.Organization.DORIC,
         model="BBP(4)_200/220/900-0.37_Custom_FCM-4xMF1.25",
         core_diameter=200,
         numerical_aperture=0.37,
         notes=patch_cord_note,
     )
 
-    patch_cord_3 = d.FiberPatchCord(
+    patch_cord_3 = devices.FiberPatchCord(
         name="Patch Cord 3",
-        manufacturer=d.Organization.DORIC,
+        manufacturer=devices.Organization.DORIC,
         model="BBP(4)_200/220/900-0.37_Custom_FCM-4xMF1.25",
         core_diameter=200,
         numerical_aperture=0.37,
         notes=patch_cord_note,
     )
 
-    light_source_1 = d.LightEmittingDiode(
+    light_source_1 = devices.LightEmittingDiode(
         name="470nm LED",
-        manufacturer=d.Organization.THORLABS,
+        manufacturer=devices.Organization.THORLABS,
         model="M470F3",
         wavelength=470,
     )
 
-    light_source_2 = d.LightEmittingDiode(
+    light_source_2 = devices.LightEmittingDiode(
         name="415nm LED",
-        manufacturer=d.Organization.THORLABS,
+        manufacturer=devices.Organization.THORLABS,
         model="M415F3",
         wavelength=415,
     )
 
-    light_source_3 = d.LightEmittingDiode(
+    light_source_3 = devices.LightEmittingDiode(
         name="565nm LED",
-        manufacturer=d.Organization.THORLABS,
+        manufacturer=devices.Organization.THORLABS,
         model="M565F3",
         wavelength=565,
     )
 
-    detector_1 = d.Detector(
+    detector_1 = devices.Detector(
         name="Green CMOS",
         serial_number=detector_1_serial,
-        manufacturer=d.Organization.FLIR,
+        manufacturer=devices.Organization.FLIR,
         model="BFS-U3-20S40M",
         detector_type="Camera",
         data_interface="USB",
@@ -288,10 +288,10 @@ def create_instrument(
         recording_software=bonsai_software,
     )
 
-    detector_2 = d.Detector(
+    detector_2 = devices.Detector(
         name="Red CMOS",
         serial_number=detector_2_serial,
-        manufacturer=d.Organization.FLIR,
+        manufacturer=devices.Organization.FLIR,
         model="BFS-U3-20S40M",
         detector_type="Camera",
         data_interface="USB",
@@ -310,96 +310,96 @@ def create_instrument(
         recording_software=bonsai_software,
     )
 
-    objective = d.Objective(
+    objective = devices.Objective(
         name="Objective",
         serial_number=objective_serial,
-        manufacturer=d.Organization.NIKON,
+        manufacturer=devices.Organization.NIKON,
         model="CFI Plan Apochromat Lambda D 10x",
         numerical_aperture=0.45,
         magnification=10,
         immersion="air",
     )
 
-    filter_1 = d.Filter(
+    filter_1 = devices.Filter(
         name="Green emission filter",
-        manufacturer=d.Organization.SEMROCK,
+        manufacturer=devices.Organization.SEMROCK,
         model="FF01-520/35-25",
         filter_type="Band pass",
         center_wavelength=520,
     )
 
-    filter_2 = d.Filter(
+    filter_2 = devices.Filter(
         name="Red emission filter",
-        manufacturer=d.Organization.SEMROCK,
+        manufacturer=devices.Organization.SEMROCK,
         model="FF01-600/37-25",
         filter_type="Band pass",
         center_wavelength=600,
     )
 
-    filter_3 = d.Filter(
+    filter_3 = devices.Filter(
         name="Emission Dichroic",
         model="FF562-Di03-25x36",
-        manufacturer=d.Organization.SEMROCK,
+        manufacturer=devices.Organization.SEMROCK,
         filter_type="Dichroic",
         cut_off_wavelength=562,
     )
 
-    filter_4 = d.Filter(
+    filter_4 = devices.Filter(
         name="dual-edge standard epi-fluorescence dichroic beamsplitter",
         model="FF493/574-Di01-25x36",
-        manufacturer=d.Organization.SEMROCK,
+        manufacturer=devices.Organization.SEMROCK,
         notes="BrightLine dual-edge standard epi-fluorescence dichroic beamsplitter",
         filter_type="Multiband",
         center_wavelength=[493, 574],
     )
 
-    filter_5 = d.Filter(
+    filter_5 = devices.Filter(
         name="Excitation filter 410nm",
-        manufacturer=d.Organization.THORLABS,
+        manufacturer=devices.Organization.THORLABS,
         model="FB410-10",
         filter_type="Band pass",
         center_wavelength=410,
     )
 
-    filter_6 = d.Filter(
+    filter_6 = devices.Filter(
         name="Excitation filter 470nm",
-        manufacturer=d.Organization.THORLABS,
+        manufacturer=devices.Organization.THORLABS,
         model="FB470-10",
         filter_type="Band pass",
         center_wavelength=470,
     )
 
-    filter_7 = d.Filter(
+    filter_7 = devices.Filter(
         name="Excitation filter 560nm",
-        manufacturer=d.Organization.THORLABS,
+        manufacturer=devices.Organization.THORLABS,
         model="FB560-10",
         filter_type="Band pass",
         center_wavelength=560,
     )
 
-    filter_8 = d.Filter(
+    filter_8 = devices.Filter(
         name="450 Dichroic Longpass Filter",
-        manufacturer=d.Organization.EDMUND_OPTICS,
+        manufacturer=devices.Organization.EDMUND_OPTICS,
         model="#69-898",
         filter_type="Dichroic",
         cut_off_wavelength=450,
     )
 
-    filter_9 = d.Filter(
+    filter_9 = devices.Filter(
         name="500 Dichroic Longpass Filter",
-        manufacturer=d.Organization.EDMUND_OPTICS,
+        manufacturer=devices.Organization.EDMUND_OPTICS,
         model="#69-899",
         filter_type="Dichroic",
         cut_off_wavelength=500,
     )
 
-    lens = d.Lens(
-        manufacturer=d.Organization.THORLABS,
+    lens = devices.Lens(
+        manufacturer=devices.Organization.THORLABS,
         model="AC254-080-A-ML",
         name="Image focusing lens",
     )
 
-    cuttlefish = d.Device(name="cuTTLefishFip")
+    cuttlefish = devices.Device(name="cuTTLefishFip")
 
     connections = [
         Connection(
@@ -412,9 +412,9 @@ def create_instrument(
         ),
     ]
 
-    photemetry_clock = d.Device(name="Photometry Clock")
+    photemetry_clock = devices.Device(name="Photometry Clock")
 
-    instrument = r.Instrument(
+    instrument_model = instrument.Instrument(
         location=location if location else None,
         instrument_id=instrument_id,
         modification_date=date.today(),
@@ -449,7 +449,7 @@ def create_instrument(
         connections=connections,
     )
 
-    return instrument
+    return instrument_model
 
 
 def main(
@@ -505,7 +505,7 @@ def main(
             sys.exit(0)
 
     # Create instrument interactively
-    instrument = create_instrument(
+    instrument_model = create_instrument(
         instrument_id,
         values=values,
         previous_instrument=previous_instrument,
@@ -515,8 +515,8 @@ def main(
 
     # Write to temporary file, then save to instrument store
     temp_dir = tempfile.mkdtemp()
-    instrument.write_standard_file(Path(temp_dir))
-    temp_path = Path(temp_dir) / instrument.default_filename()
+    instrument_model.write_standard_file(Path(temp_dir))
+    temp_path = Path(temp_dir) / instrument_model.default_filename()
 
     # Save to instrument store using the instrument_id we prompted for
     stored_path = save_instrument(path=str(temp_path), rig_id=instrument_id, base_path=base_path)
