@@ -9,6 +9,7 @@ from pathlib import Path
 
 import aind_metadata_mapper.instrument_store as instrument_store_module
 from aind_metadata_mapper.fip.make_instrument import create_instrument, main, prompt_for_string, prompt_yes_no
+from aind_metadata_mapper.instrument_store import save_instrument
 
 
 class TestCreateInstrument(unittest.TestCase):
@@ -277,17 +278,26 @@ class TestMainFunction(unittest.TestCase):
         # Reset the global store to ensure we use the provided base_path
         instrument_store_module._default_store = None
 
-        # Create existing instrument
-        rig_dir = self.tmp_path / "test_rig"
-        rig_dir.mkdir()
-        existing_file = rig_dir / "instrument.json"
-        existing_data = {
-            "instrument_id": "test_rig",
-            "modification_date": "2025-01-15",
+        # Create existing instrument using create_instrument to ensure it's valid
+        previous_values = {
             "location": "428",
+            "computer_name": "prev_computer",
+            "detector_1_serial": "prev_det1",
+            "detector_2_serial": "prev_det2",
+            "objective_serial": "prev_obj",
         }
-        with open(existing_file, "w", encoding="utf-8") as f:
-            json.dump(existing_data, f)
+        previous_instrument = create_instrument("test_rig", values=previous_values)
+
+        # Save it to the store
+        temp_dir = tempfile.mkdtemp()
+        previous_instrument.write_standard_file(Path(temp_dir))
+        temp_path = Path(temp_dir) / previous_instrument.default_filename()
+        save_instrument(path=str(temp_path), rig_id="test_rig", base_path=str(self.tmp_path))
+        Path(temp_path).unlink()
+        Path(temp_dir).rmdir()
+
+        rig_dir = self.tmp_path / "test_rig"
+        existing_file = rig_dir / "instrument.json"
 
         values = {
             "location": "429",

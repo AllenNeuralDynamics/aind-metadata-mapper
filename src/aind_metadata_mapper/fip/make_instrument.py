@@ -149,10 +149,10 @@ def create_instrument(
         instrument_dict = get_instrument(instrument_id, base_path=base_path)
         if instrument_dict is not None:
             previous_instrument_obj = instrument.Instrument.model_validate(instrument_dict)
-        elif isinstance(previous_instrument, dict):
-            previous_instrument_obj = instrument.Instrument.model_validate(previous_instrument)
-        elif isinstance(previous_instrument, instrument.Instrument):
-            previous_instrument_obj = previous_instrument
+    elif isinstance(previous_instrument, dict):
+        previous_instrument_obj = instrument.Instrument.model_validate(previous_instrument)
+    elif isinstance(previous_instrument, instrument.Instrument):
+        previous_instrument_obj = previous_instrument
 
     components_by_name = {}
     computer_component = None
