@@ -33,7 +33,7 @@ import sys
 import tempfile
 from datetime import date
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import aind_data_schema.components.devices as d
 import aind_data_schema.core.instrument as r
@@ -116,64 +116,10 @@ def prompt_for_string(
             print(help_message)
 
 
-def extract_value(
-    instrument_data: dict,
-    source: str,
-    field: Optional[str] = None,
-    component_class: Optional[str] = None,
-) -> Optional[str]:
-    """Extract a value from instrument data.
-
-    Can extract:
-    - Top-level fields (e.g., source="location", field=None, component_class=None)
-    - Component fields by component name (e.g., source="Green CMOS", field="serial_number")
-    - Component fields by class name (e.g., source="Computer", field="name", component_class="Computer")
-
-    Parameters
-    ----------
-    instrument_data : dict
-        Instrument data loaded from JSON.
-    source : str
-        For top-level fields: the field name (e.g., "location").
-        For components: the component name or class name to find.
-    field : Optional[str]
-        Field name to extract. Required for component extraction, None for top-level fields.
-    component_class : Optional[str]
-        If provided, searches for component by class name instead of component name.
-
-    Returns
-    -------
-    Optional[str]
-        Extracted value if found, None otherwise.
-    """
-    if instrument_data is None:
-        return None
-
-    # Handle top-level fields
-    if component_class is None and field is None:
-        return instrument_data.get(source)
-
-    # Handle component extraction (field is required)
-    if field is None:
-        raise ValueError("field parameter is required when extracting from components")
-
-    components = instrument_data.get("components", [])
-    for component in components:
-        # Match by class name if provided
-        if component_class:
-            if component.get("__class_name") == component_class:
-                return component.get(field)
-        # Match by component name
-        elif component.get("name") == source:
-            return component.get(field)
-
-    return None
-
-
 def create_instrument(
     instrument_id: str,
     values: Optional[dict] = None,
-    previous_instrument: Optional[dict] = None,
+    previous_instrument: Optional[Union[dict, r.Instrument]] = None,
     base_path: Optional[str] = None,
     input_func=input,
 ) -> r.Instrument:
@@ -186,8 +132,9 @@ def create_instrument(
     values : Optional[dict]
         Optional dict with keys: location, computer_name, detector_1_serial,
         detector_2_serial, objective_serial. If provided, bypasses prompts.
-    previous_instrument : Optional[dict]
-        Optional previous instrument data. If None, will be loaded from store.
+    previous_instrument : Optional[Union[dict, r.Instrument]]
+        Optional previous instrument data (dict or validated Instrument object).
+        If None, will be loaded from store.
     base_path : Optional[str]
         Optional base path for instrument store. Only used if previous_instrument is None.
 
@@ -196,53 +143,61 @@ def create_instrument(
     r.Instrument
         Created instrument object.
     """
-    # Load previous instrument if not provided
+    # Load and validate previous instrument if not provided
+    previous_instrument_obj = None
     if previous_instrument is None:
-        previous_instrument = get_instrument(instrument_id, base_path=base_path)
+        instrument_dict = get_instrument(instrument_id, base_path=base_path)
+        if instrument_dict is not None:
+            previous_instrument_obj = r.Instrument.model_validate(instrument_dict)
+    elif isinstance(previous_instrument, dict):
+        previous_instrument_obj = r.Instrument.model_validate(previous_instrument)
+    elif isinstance(previous_instrument, r.Instrument):
+        previous_instrument_obj = previous_instrument
 
-    # Get values from dict or prompt
-    if values is not None:
-        location = values.get("location", "")
-        computer_name = values.get("computer_name", socket.gethostname())
-        detector_1_serial = values.get("detector_1_serial", "")
-        detector_2_serial = values.get("detector_2_serial", "")
-        objective_serial = values.get("objective_serial", "")
+    components_by_name = {}
+    computer_component = None
+    if previous_instrument_obj:
+        components_by_name = {
+            getattr(component, "name", ""): component
+            for component in previous_instrument_obj.components
+            if getattr(component, "name", None)
+        }
+        computer_component = next(
+            (component for component in previous_instrument_obj.components if component.object_type == "Computer"),
+            None,
+        )
+
+    defaults = {
+        "location": previous_instrument_obj.location if previous_instrument_obj else None,
+        "computer_name": getattr(computer_component, "name", socket.gethostname()),
+        "detector_1_serial": getattr(components_by_name.get("Green CMOS"), "serial_number", None),
+        "detector_2_serial": getattr(components_by_name.get("Red CMOS"), "serial_number", None),
+        "objective_serial": getattr(components_by_name.get("Objective"), "serial_number", None),
+    }
+
+    user_values: dict = {} if values is None else {**values}
+    if values is None:
+        prompts = (
+            ("location", "Location", False),
+            ("computer_name", "Computer name", False),
+            ("detector_1_serial", "Green CMOS serial number", True),
+            ("detector_2_serial", "Red CMOS serial number", True),
+            ("objective_serial", "Objective serial number", True),
+        )
+        for key, label, require_if_missing in prompts:
+            default_value = defaults[key]
+            required = require_if_missing and default_value is None
+            user_values[key] = prompt_for_string(label, default_value, required=required, input_func=input_func)
     else:
-        # Prompt for location with previous value as default
-        location = prompt_for_string("Location", extract_value(previous_instrument, "location"), input_func=input_func)
+        for key, fallback in defaults.items():
+            if not user_values.get(key) and fallback is not None:
+                user_values[key] = fallback
 
-        # Prompt for computer name with system default or previous value
-        system_hostname = socket.gethostname()
-        previous_computer_name = extract_value(
-            previous_instrument, "Computer", field="name", component_class="Computer"
-        )
-        computer_name_default = previous_computer_name or system_hostname
-        computer_name = prompt_for_string("Computer name", computer_name_default, input_func=input_func)
-
-        # Extract serial number defaults from previous instrument
-        detector_1_serial_default = extract_value(previous_instrument, "Green CMOS", field="serial_number")
-        detector_2_serial_default = extract_value(previous_instrument, "Red CMOS", field="serial_number")
-        objective_serial_default = extract_value(previous_instrument, "Objective", field="serial_number")
-
-        # Prompt for serial numbers (required if no default)
-        detector_1_serial = prompt_for_string(
-            "Green CMOS serial number",
-            detector_1_serial_default,
-            required=detector_1_serial_default is None,
-            input_func=input_func,
-        )
-        detector_2_serial = prompt_for_string(
-            "Red CMOS serial number",
-            detector_2_serial_default,
-            required=detector_2_serial_default is None,
-            input_func=input_func,
-        )
-        objective_serial = prompt_for_string(
-            "Objective serial number",
-            objective_serial_default,
-            required=objective_serial_default is None,
-            input_func=input_func,
-        )
+    location = user_values.get("location", "")
+    computer_name = user_values.get("computer_name", socket.gethostname())
+    detector_1_serial = user_values.get("detector_1_serial", "")
+    detector_2_serial = user_values.get("detector_2_serial", "")
+    objective_serial = user_values.get("objective_serial", "")
 
     computer = Computer(name=computer_name)
 

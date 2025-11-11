@@ -8,98 +8,7 @@ import unittest
 from pathlib import Path
 
 import aind_metadata_mapper.instrument_store as instrument_store_module
-from aind_metadata_mapper.fip.make_instrument import (
-    create_instrument,
-    extract_value,
-    main,
-    prompt_for_string,
-    prompt_yes_no,
-)
-
-
-class TestExtractValue(unittest.TestCase):
-    """Tests for extract_value function."""
-
-    def test_extract_value_top_level(self):
-        """Test extracting top-level field."""
-        data = {"location": "428", "instrument_id": "test"}
-        result = extract_value(data, "location")
-        self.assertEqual(result, "428")
-
-    def test_extract_value_top_level_missing(self):
-        """Test extracting missing top-level field."""
-        data = {"instrument_id": "test"}
-        result = extract_value(data, "location")
-        self.assertIsNone(result)
-
-    def test_extract_value_component_by_name(self):
-        """Test extracting component field by name."""
-        data = {
-            "components": [
-                {"name": "Green CMOS", "serial_number": "12345"},
-                {"name": "Red CMOS", "serial_number": "67890"},
-            ]
-        }
-        result = extract_value(data, "Green CMOS", field="serial_number")
-        self.assertEqual(result, "12345")
-
-    def test_extract_value_component_by_name_missing(self):
-        """Test extracting from missing component."""
-        data = {"components": [{"name": "Other", "serial_number": "12345"}]}
-        result = extract_value(data, "Green CMOS", field="serial_number")
-        self.assertIsNone(result)
-
-    def test_extract_value_component_by_class(self):
-        """Test extracting component field by class name."""
-        data = {
-            "components": [
-                {"__class_name": "Computer", "name": "test_computer"},
-                {"__class_name": "Detector", "name": "detector1"},
-            ]
-        }
-        result = extract_value(data, "Computer", field="name", component_class="Computer")
-        self.assertEqual(result, "test_computer")
-
-    def test_extract_value_component_by_class_missing(self):
-        """Test extracting from missing component class."""
-        data = {"components": [{"__class_name": "Detector", "name": "detector1"}]}
-        result = extract_value(data, "Computer", field="name", component_class="Computer")
-        self.assertIsNone(result)
-
-    def test_extract_value_none_data(self):
-        """Test extracting from None data."""
-        result = extract_value(None, "location")
-        self.assertIsNone(result)
-
-    def test_extract_value_field_required_for_component(self):
-        """Test that field is required for component extraction."""
-        data = {"components": [{"name": "test", "serial_number": "123"}]}
-        # When extracting from components by class, field is required
-        with self.assertRaises(ValueError) as context:
-            extract_value(data, "Computer", component_class="Computer")
-        self.assertIn("field parameter is required", str(context.exception))
-
-    def test_extract_value_component_missing_field(self):
-        """Test extracting field that doesn't exist in component."""
-        data = {
-            "components": [
-                {"name": "Green CMOS", "serial_number": "12345"},
-            ]
-        }
-        result = extract_value(data, "Green CMOS", field="nonexistent_field")
-        self.assertIsNone(result)
-
-    def test_extract_value_empty_components(self):
-        """Test extracting from instrument with empty components list."""
-        data = {"components": []}
-        result = extract_value(data, "Green CMOS", field="serial_number")
-        self.assertIsNone(result)
-
-    def test_extract_value_no_components_key(self):
-        """Test extracting from instrument without components key."""
-        data = {"location": "428"}
-        result = extract_value(data, "Green CMOS", field="serial_number")
-        self.assertIsNone(result)
+from aind_metadata_mapper.fip.make_instrument import create_instrument, main, prompt_for_string, prompt_yes_no
 
 
 class TestCreateInstrument(unittest.TestCase):
@@ -146,21 +55,20 @@ class TestCreateInstrument(unittest.TestCase):
 
     def test_create_instrument_with_previous_instrument(self):
         """Test creating instrument with previous instrument data in a temporary path."""
-        # Create a previous instrument in store
+        # Create a valid previous instrument using create_instrument
+        previous_values = {
+            "location": "428",
+            "computer_name": "previous_computer",
+            "detector_1_serial": "prev_serial",
+            "detector_2_serial": "det2_serial",
+            "objective_serial": "obj_serial",
+        }
+        previous_instrument = create_instrument("test_rig", values=previous_values)
         rig_dir = self.tmp_path / "test_rig"
         rig_dir.mkdir()
         previous_file = rig_dir / "instrument.json"
-        previous_data = {
-            "instrument_id": "test_rig",
-            "modification_date": "2025-01-15",
-            "location": "428",
-            "components": [
-                {"__class_name": "Computer", "name": "previous_computer"},
-                {"name": "Green CMOS", "serial_number": "prev_serial"},
-            ],
-        }
         with open(previous_file, "w", encoding="utf-8") as f:
-            json.dump(previous_data, f)
+            f.write(previous_instrument.model_dump_json(indent=2))
 
         values = {
             "location": "429",  # Override location
@@ -182,13 +90,15 @@ class TestCreateInstrument(unittest.TestCase):
 
     def test_create_instrument_with_previous_instrument_dict(self):
         """Test creating instrument with previous_instrument dict provided."""
-        previous_instrument = {
+        # Create a valid Instrument object using create_instrument
+        previous_values = {
             "location": "428",
-            "components": [
-                {"__class_name": "Computer", "name": "prev_computer"},
-                {"name": "Green CMOS", "serial_number": "prev_serial"},
-            ],
+            "computer_name": "prev_computer",
+            "detector_1_serial": "prev_serial",
+            "detector_2_serial": "det2_serial",
+            "objective_serial": "obj_serial",
         }
+        previous_instrument = create_instrument("test_rig", values=previous_values)
 
         values = {
             "location": "429",
