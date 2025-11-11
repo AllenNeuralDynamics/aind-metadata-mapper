@@ -46,7 +46,7 @@ from aind_data_schema_models.modalities import Modality
 from aind_metadata_mapper.instrument_store import get_instrument, list_instrument_ids, save_instrument
 
 
-def prompt_yes_no(prompt: str, default: bool = True) -> bool:
+def prompt_yes_no(prompt: str, default: bool = True, input_func=input) -> bool:
     """Prompt user for yes/no response.
 
     Parameters
@@ -55,6 +55,8 @@ def prompt_yes_no(prompt: str, default: bool = True) -> bool:
         The prompt message.
     default : bool
         Default value if user presses Enter. Defaults to True (yes).
+    input_func : callable
+        Function to get user input. Defaults to builtin input().
 
     Returns
     -------
@@ -63,7 +65,7 @@ def prompt_yes_no(prompt: str, default: bool = True) -> bool:
     """
     default_str = "Y/n" if default else "y/N"
     full_prompt = f"{prompt} [{default_str}]: "
-    response = input(full_prompt).strip().lower()
+    response = input_func(full_prompt).strip().lower()
 
     if not response:
         return default
@@ -71,7 +73,11 @@ def prompt_yes_no(prompt: str, default: bool = True) -> bool:
 
 
 def prompt_for_string(
-    prompt: str, default: Optional[str] = None, required: bool = False, help_message: Optional[str] = None
+    prompt: str,
+    default: Optional[str] = None,
+    required: bool = False,
+    help_message: Optional[str] = None,
+    input_func=input,
 ) -> str:
     """Prompt user for a string value.
 
@@ -85,6 +91,8 @@ def prompt_for_string(
         If True and no default provided, require non-empty input.
     help_message : Optional[str]
         Optional help message to display when required field is empty.
+    input_func : callable
+        Function to get user input. Defaults to builtin input().
 
     Returns
     -------
@@ -96,7 +104,7 @@ def prompt_for_string(
             full_prompt = f"{prompt} [{default}]: "
         else:
             full_prompt = f"{prompt}: "
-        response = input(full_prompt).strip()
+        response = input_func(full_prompt).strip()
         if response:
             return response
         if default:
@@ -162,30 +170,79 @@ def extract_value(
     return None
 
 
-def create_instrument(instrument_id: str) -> r.Instrument:
+def create_instrument(
+    instrument_id: str,
+    values: Optional[dict] = None,
+    previous_instrument: Optional[dict] = None,
+    base_path: Optional[str] = None,
+    input_func=input,
+) -> r.Instrument:
     """Create an FIP instrument interactively.
 
     Parameters
     ----------
     instrument_id : str
         Instrument identifier for loading previous instrument defaults.
+    values : Optional[dict]
+        Optional dict with keys: location, computer_name, detector_1_serial,
+        detector_2_serial, objective_serial. If provided, bypasses prompts.
+    previous_instrument : Optional[dict]
+        Optional previous instrument data. If None, will be loaded from store.
+    base_path : Optional[str]
+        Optional base path for instrument store. Only used if previous_instrument is None.
 
     Returns
     -------
     r.Instrument
         Created instrument object.
     """
-    # Try to load previous instrument for this ID
-    previous_instrument = get_instrument(instrument_id)
+    # Load previous instrument if not provided
+    if previous_instrument is None:
+        previous_instrument = get_instrument(instrument_id, base_path=base_path)
 
-    # Prompt for location with previous value as default
-    location = prompt_for_string("Location", extract_value(previous_instrument, "location"))
+    # Get values from dict or prompt
+    if values is not None:
+        location = values.get("location", "")
+        computer_name = values.get("computer_name", socket.gethostname())
+        detector_1_serial = values.get("detector_1_serial", "")
+        detector_2_serial = values.get("detector_2_serial", "")
+        objective_serial = values.get("objective_serial", "")
+    else:
+        # Prompt for location with previous value as default
+        location = prompt_for_string("Location", extract_value(previous_instrument, "location"), input_func=input_func)
 
-    # Prompt for computer name with system default or previous value
-    system_hostname = socket.gethostname()
-    previous_computer_name = extract_value(previous_instrument, "Computer", field="name", component_class="Computer")
-    computer_name_default = previous_computer_name or system_hostname
-    computer_name = prompt_for_string("Computer name", computer_name_default)
+        # Prompt for computer name with system default or previous value
+        system_hostname = socket.gethostname()
+        previous_computer_name = extract_value(
+            previous_instrument, "Computer", field="name", component_class="Computer"
+        )
+        computer_name_default = previous_computer_name or system_hostname
+        computer_name = prompt_for_string("Computer name", computer_name_default, input_func=input_func)
+
+        # Extract serial number defaults from previous instrument
+        detector_1_serial_default = extract_value(previous_instrument, "Green CMOS", field="serial_number")
+        detector_2_serial_default = extract_value(previous_instrument, "Red CMOS", field="serial_number")
+        objective_serial_default = extract_value(previous_instrument, "Objective", field="serial_number")
+
+        # Prompt for serial numbers (required if no default)
+        detector_1_serial = prompt_for_string(
+            "Green CMOS serial number",
+            detector_1_serial_default,
+            required=detector_1_serial_default is None,
+            input_func=input_func,
+        )
+        detector_2_serial = prompt_for_string(
+            "Red CMOS serial number",
+            detector_2_serial_default,
+            required=detector_2_serial_default is None,
+            input_func=input_func,
+        )
+        objective_serial = prompt_for_string(
+            "Objective serial number",
+            objective_serial_default,
+            required=objective_serial_default is None,
+            input_func=input_func,
+        )
 
     computer = Computer(name=computer_name)
 
@@ -254,28 +311,12 @@ def create_instrument(instrument_id: str) -> r.Instrument:
         wavelength=565,
     )
 
-    # Extract serial number defaults from previous instrument
-    detector_1_serial_default = extract_value(previous_instrument, "Green CMOS", field="serial_number")
-    detector_2_serial_default = extract_value(previous_instrument, "Red CMOS", field="serial_number")
-    objective_serial_default = extract_value(previous_instrument, "Objective", field="serial_number")
-
-    # Prompt for serial numbers (required if no default)
-    detector_1_serial = prompt_for_string(
-        "Green CMOS serial number", detector_1_serial_default, required=detector_1_serial_default is None
-    )
-    detector_2_serial = prompt_for_string(
-        "Red CMOS serial number", detector_2_serial_default, required=detector_2_serial_default is None
-    )
-    objective_serial = prompt_for_string(
-        "Objective serial number", objective_serial_default, required=objective_serial_default is None
-    )
-
     detector_1 = d.Detector(
         name="Green CMOS",
         serial_number=detector_1_serial,
         manufacturer=d.Organization.FLIR,
         model="BFS-U3-20S40M",
-        detector_type="CMOS",
+        detector_type="Camera",
         data_interface="USB",
         cooling="Air",
         immersion="air",
@@ -297,7 +338,7 @@ def create_instrument(instrument_id: str) -> r.Instrument:
         serial_number=detector_2_serial,
         manufacturer=d.Organization.FLIR,
         model="BFS-U3-20S40M",
-        detector_type="CMOS",
+        detector_type="Camera",
         data_interface="USB",
         cooling="Air",
         immersion="air",
@@ -456,21 +497,42 @@ def create_instrument(instrument_id: str) -> r.Instrument:
     return instrument
 
 
-def main() -> None:
-    """Main function to create an instrument interactively."""
+def main(
+    instrument_id: Optional[str] = None,
+    values: Optional[dict] = None,
+    base_path: Optional[str] = None,
+    skip_confirmation: bool = False,
+    input_func=input,
+) -> None:
+    """Main function to create an instrument interactively.
+
+    Parameters
+    ----------
+    instrument_id : Optional[str]
+        Optional instrument ID. If None, will prompt user.
+    values : Optional[dict]
+        Optional dict with values to bypass prompts. See create_instrument() for keys.
+    base_path : Optional[str]
+        Optional base path for instrument store.
+    skip_confirmation : bool
+        If True, skip confirmation prompt for new instrument IDs.
+    """
     # Get list of existing instrument IDs for help message
-    existing_ids = list_instrument_ids()
+    existing_ids = list_instrument_ids(base_path=base_path)
     if existing_ids:
         help_message = "Below is a list of existing instrument IDs:\n" + "\n".join(f"  - {id}" for id in existing_ids)
     else:
         help_message = "No existing instrument IDs found in store."
 
-    # Prompt for instrument_id (required, no default)
-    instrument_id = prompt_for_string("Instrument ID", required=True, help_message=help_message)
+    # Get instrument_id from parameter or prompt
+    if instrument_id is None:
+        instrument_id = prompt_for_string(
+            "Instrument ID", required=True, help_message=help_message, input_func=input_func
+        )
 
     # Check if instrument exists, and if not, confirm creation of new ID
-    previous_instrument = get_instrument(instrument_id)
-    if previous_instrument is None:
+    previous_instrument = get_instrument(instrument_id, base_path=base_path)
+    if previous_instrument is None and not skip_confirmation:
         print("This is a new instrument ID.")
         if existing_ids:
             print("Here is a list of existing instrument IDs:")
@@ -479,12 +541,22 @@ def main() -> None:
         else:
             print("No existing instrument IDs found in store.")
         print()
-        if not prompt_yes_no(f"Are you sure you want to create a new ID with name '{instrument_id}'?", default=True):
+        if not prompt_yes_no(
+            f"Are you sure you want to create a new ID with name '{instrument_id}'?",
+            default=True,
+            input_func=input_func,
+        ):
             print("Cancelled. Please run the script again with the correct instrument ID.")
             sys.exit(0)
 
     # Create instrument interactively
-    instrument = create_instrument(instrument_id)
+    instrument = create_instrument(
+        instrument_id,
+        values=values,
+        previous_instrument=previous_instrument,
+        base_path=base_path,
+        input_func=input_func,
+    )
 
     # Write to temporary file, then save to instrument store
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as f:
@@ -492,7 +564,7 @@ def main() -> None:
         temp_path = f.name
 
     # Save to instrument store using the instrument_id we prompted for
-    stored_path = save_instrument(path=temp_path, rig_id=instrument_id)
+    stored_path = save_instrument(path=temp_path, rig_id=instrument_id, base_path=base_path)
     print(f"Instrument saved to store: {stored_path}")
 
     # Clean up temporary file

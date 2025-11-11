@@ -6,6 +6,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+# Default base path for instrument store
+DEFAULT_INSTRUMENT_STORE_PATH = "/allen/aind/scratch/instrument_store"
+
 
 class InstrumentStore:
     """Filesystem-based store for instrument.json files with versioning."""
@@ -16,10 +19,10 @@ class InstrumentStore:
         Parameters
         ----------
         base_path : Optional[str]
-            Base directory path for the store. Defaults to /allen/aind/scratch/instrument_store.
+            Base directory path for the store. Defaults to DEFAULT_INSTRUMENT_STORE_PATH.
         """
         if base_path is None:
-            base_path = "/allen/aind/scratch/instrument_store"
+            base_path = DEFAULT_INSTRUMENT_STORE_PATH
         self.base_path = Path(base_path)
         self.base_path.mkdir(parents=True, exist_ok=True)
 
@@ -184,7 +187,7 @@ class InstrumentStore:
         filename = f"instrument_{mtime.strftime('%Y%m%d')}.json"
         return rig_dir / filename
 
-    def _parse_modification_date(self, date_str: str) -> Optional[datetime]:
+    def _parse_modification_date(self, date_str: Optional[str]) -> Optional[datetime]:
         """Parse modification_date string to datetime.
 
         Handles various ISO formats:
@@ -195,7 +198,7 @@ class InstrumentStore:
 
         Parameters
         ----------
-        date_str : str
+        date_str : Optional[str]
             Date string from JSON.
 
         Returns
@@ -203,6 +206,9 @@ class InstrumentStore:
         Optional[datetime]
             Parsed datetime, or None if parsing fails.
         """
+        if date_str is None:
+            return None
+
         # Try full ISO datetime formats
         formats = [
             "%Y-%m-%dT%H:%M:%S",
@@ -238,7 +244,7 @@ def initialize_store(base_path: Optional[str] = None) -> InstrumentStore:
     Parameters
     ----------
     base_path : Optional[str]
-        Base directory path for the store. Defaults to /allen/aind/scratch/instrument_store.
+        Base directory path for the store. Defaults to DEFAULT_INSTRUMENT_STORE_PATH.
 
     Returns
     -------
