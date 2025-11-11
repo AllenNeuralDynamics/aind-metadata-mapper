@@ -10,7 +10,6 @@ from pathlib import Path
 
 import aind_metadata_mapper.instrument_store as instrument_store_module
 from aind_metadata_mapper.instrument_store import (
-    DEFAULT_INSTRUMENT_STORE_PATH,
     InstrumentStore,
     get_instrument,
     initialize_store,
@@ -33,14 +32,14 @@ class TestInstrumentStore(unittest.TestCase):
 
     def test_instrument_store_init_default(self):
         """Test InstrumentStore initialization with default path."""
-        # This test only checks that the path is set correctly
-        # We can't create /allen/aind/scratch/instrument_store in CI, so we
-        # verify the path attribute is set correctly by checking it directly
-        # without triggering directory creation
-        store = InstrumentStore.__new__(InstrumentStore)
-        # Manually set the base_path to avoid __init__ trying to create the directory
-        store.base_path = Path(DEFAULT_INSTRUMENT_STORE_PATH)
-        self.assertEqual(store.base_path, Path(DEFAULT_INSTRUMENT_STORE_PATH))
+        original_default_path = instrument_store_module.DEFAULT_INSTRUMENT_STORE_PATH
+        try:
+            instrument_store_module.DEFAULT_INSTRUMENT_STORE_PATH = str(self.tmp_path)
+            store = InstrumentStore()
+            self.assertEqual(store.base_path, Path(self.tmp_path))
+            self.assertTrue(store.base_path.exists())
+        finally:
+            instrument_store_module.DEFAULT_INSTRUMENT_STORE_PATH = original_default_path
 
     def test_instrument_store_init_custom_path(self):
         """Test InstrumentStore initialization with custom path."""
