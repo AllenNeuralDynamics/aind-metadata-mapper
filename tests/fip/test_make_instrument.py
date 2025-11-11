@@ -462,6 +462,7 @@ def test_prompt_yes_no_with_yes():
     """Test prompt_yes_no returns True for 'yes' input."""
 
     def test_input(prompt):
+        """Test input function that returns 'yes'."""
         return "yes"
 
     result = prompt_yes_no("Continue?", input_func=test_input)
@@ -472,6 +473,7 @@ def test_prompt_yes_no_with_y():
     """Test prompt_yes_no returns True for 'y' input."""
 
     def test_input(prompt):
+        """Test input function that returns 'y'."""
         return "y"
 
     result = prompt_yes_no("Continue?", input_func=test_input)
@@ -482,6 +484,7 @@ def test_prompt_yes_no_with_no():
     """Test prompt_yes_no returns False for 'no' input."""
 
     def test_input(prompt):
+        """Test input function that returns 'no'."""
         return "no"
 
     result = prompt_yes_no("Continue?", input_func=test_input)
@@ -492,6 +495,7 @@ def test_prompt_yes_no_with_empty_default_true():
     """Test prompt_yes_no uses default=True when input is empty."""
 
     def test_input(prompt):
+        """Test input function that returns empty string."""
         return ""
 
     result = prompt_yes_no("Continue?", default=True, input_func=test_input)
@@ -502,6 +506,7 @@ def test_prompt_yes_no_with_empty_default_false():
     """Test prompt_yes_no uses default=False when input is empty."""
 
     def test_input(prompt):
+        """Test input function that returns empty string."""
         return ""
 
     result = prompt_yes_no("Continue?", default=False, input_func=test_input)
@@ -512,6 +517,7 @@ def test_prompt_yes_no_case_insensitive():
     """Test prompt_yes_no is case insensitive."""
 
     def test_input(prompt):
+        """Test input function that returns 'YES' (uppercase)."""
         return "YES"
 
     result = prompt_yes_no("Continue?", input_func=test_input)
@@ -522,6 +528,7 @@ def test_prompt_for_string_with_input():
     """Test prompt_for_string returns user input."""
 
     def test_input(prompt):
+        """Test input function that returns 'test_value'."""
         return "test_value"
 
     result = prompt_for_string("Enter value:", input_func=test_input)
@@ -532,6 +539,7 @@ def test_prompt_for_string_with_default():
     """Test prompt_for_string returns default when input is empty."""
 
     def test_input(prompt):
+        """Test input function that returns empty string."""
         return ""
 
     result = prompt_for_string("Enter value:", default="default_value", input_func=test_input)
@@ -542,6 +550,7 @@ def test_prompt_for_string_with_empty_not_required():
     """Test prompt_for_string returns empty string when not required and no default."""
 
     def test_input(prompt):
+        """Test input function that returns empty string."""
         return ""
 
     result = prompt_for_string("Enter value:", required=False, input_func=test_input)
@@ -553,6 +562,7 @@ def test_prompt_for_string_required_with_help():
     help_printed = []
 
     def test_input(prompt):
+        """Test input function that returns empty first, then 'final_value'."""
         if not help_printed:
             help_printed.append(True)
             return ""  # First call returns empty
@@ -567,6 +577,7 @@ def test_prompt_for_string_strips_whitespace():
     """Test prompt_for_string strips whitespace from input."""
 
     def test_input(prompt):
+        """Test input function that returns value with whitespace."""
         return "  test_value  "
 
     result = prompt_for_string("Enter value:", input_func=test_input)
@@ -578,6 +589,7 @@ def test_create_instrument_with_prompts(tmp_path):
     call_count = 0
 
     def test_input(prompt):
+        """Test input function that returns values in sequence."""
         nonlocal call_count
         call_count += 1
         # Return values in order: location, computer_name, detector_1, detector_2, objective
@@ -605,6 +617,7 @@ def test_main_prompts_for_instrument_id(tmp_path):
     call_count = 0
 
     def test_input(prompt):
+        """Test input function that returns 'test_rig' for Instrument ID prompt."""
         nonlocal call_count
         call_count += 1
         if "Instrument ID" in prompt:
@@ -639,6 +652,7 @@ def test_main_prompts_for_confirmation(tmp_path):
     confirmation_called = False
 
     def test_input(prompt):
+        """Test input function that returns 'yes' for confirmation prompt."""
         nonlocal confirmation_called
         if "Are you sure" in prompt:
             confirmation_called = True
@@ -679,6 +693,7 @@ def test_main_confirmation_with_existing_ids(tmp_path):
     confirmation_called = False
 
     def test_input(prompt):
+        """Test input function that returns 'yes' for confirmation prompt."""
         nonlocal confirmation_called
         if "Are you sure" in prompt:
             confirmation_called = True
@@ -711,6 +726,7 @@ def test_main_confirmation_cancelled(tmp_path):
     instrument_store_module._default_store = None
 
     def test_input(prompt):
+        """Test input function that returns 'no' for confirmation prompt."""
         if "Are you sure" in prompt:
             return "no"  # User cancels
         return ""
