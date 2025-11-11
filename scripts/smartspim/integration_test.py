@@ -1,3 +1,4 @@
+""" Integration test for SmartSPIM metadata mapping."""
 import json
 from pathlib import Path
 
