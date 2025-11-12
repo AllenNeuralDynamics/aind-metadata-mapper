@@ -155,21 +155,16 @@ def create_instrument(
         previous_instrument_obj = previous_instrument
 
     components_by_name = {}
-    computer_component = None
     if previous_instrument_obj:
         components_by_name = {
             getattr(component, "name", ""): component
             for component in previous_instrument_obj.components
             if getattr(component, "name", None)
         }
-        computer_component = next(
-            (component for component in previous_instrument_obj.components if component.object_type == "Computer"),
-            None,
-        )
 
     defaults = {
         "location": previous_instrument_obj.location if previous_instrument_obj else None,
-        "computer_name": getattr(computer_component, "name", socket.gethostname()),
+        "computer_name": socket.gethostname(),
         "detector_1_serial": getattr(components_by_name.get("Green CMOS"), "serial_number", None),
         "detector_2_serial": getattr(components_by_name.get("Red CMOS"), "serial_number", None),
         "objective_serial": getattr(components_by_name.get("Objective"), "serial_number", None),
