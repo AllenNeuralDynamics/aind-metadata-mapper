@@ -399,20 +399,20 @@ def create_instrument(
         name="Image focusing lens",
     )
 
-    cuttlefish = devices.Device(name="cuTTLefishFip")
+    cuttlefish = devices.HarpDevice(
+        name="cuTTLefishFip",
+        harp_device_type=devices.HarpDeviceType.CUTTLEFISHFIP,
+        is_clock_generator=False,
+        data_interface=devices.DataInterface.USB,
+        additional_settings={"port_name": "COM1"},
+    )
 
     connections = [
-        Connection(
-            source_device="Photometry Clock",
-            target_device="cuTTLefishFip",
-        ),
         Connection(
             source_device="cuTTLefishFip",
             target_device=computer_name,
         ),
     ]
-
-    photemetry_clock = devices.Device(name="Photometry Clock")
 
     instrument_model = instrument.Instrument(
         location=location if location else None,
@@ -443,7 +443,6 @@ def create_instrument(
             filter_9,
             lens,
             cuttlefish,
-            photemetry_clock,
         ],
         calibrations=[],
         connections=connections,
