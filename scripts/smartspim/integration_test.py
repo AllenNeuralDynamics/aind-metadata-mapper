@@ -17,9 +17,9 @@ output_file = output_dir / "acquisition.json"
 with open(output_file, "w") as f:
     json.dump(acquisition.model_dump(mode="json"), f, indent=2)
 
-print(f"Integration test completed successfully!")
+print("Integration test completed successfully!")
 print(f"Output written to: {output_file}")
-print(f"\nAcquisition Summary:")
+print("\nAcquisition Summary:")
 print(f"  Subject ID: {acquisition.subject_id}")
 print(f"  Specimen ID: {acquisition.specimen_id}")
 print(f"  Instrument ID: {acquisition.instrument_id}")
