@@ -1,0 +1,505 @@
+{
+   "object_type": "Instrument",
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/instrument.py",
+   "schema_version": "2.0.41",
+   "location": "NEED_TO_ENTER",
+   "instrument_id": "test",
+   "modification_date": "2025-11-12",
+   "modalities": [
+      {
+         "name": "Fiber photometry",
+         "abbreviation": "fib"
+      }
+   ],
+   "calibrations": [],
+   "coordinate_system": {
+      "object_type": "Coordinate system",
+      "name": "BREGMA_ARI",
+      "origin": "Bregma",
+      "axes": [
+         {
+            "object_type": "Axis",
+            "name": "AP",
+            "direction": "Posterior_to_anterior"
+         },
+         {
+            "object_type": "Axis",
+            "name": "ML",
+            "direction": "Left_to_right"
+         },
+         {
+            "object_type": "Axis",
+            "name": "SI",
+            "direction": "Superior_to_inferior"
+         }
+      ],
+      "axis_unit": "millimeter"
+   },
+   "temperature_control": null,
+   "notes": null,
+   "connections": [
+      {
+         "object_type": "Connection",
+         "source_device": "cuTTLefishFip",
+         "source_port": null,
+         "target_device": "NEED_TO_ENTER",
+         "target_port": null,
+         "send_and_receive": false
+      }
+   ],
+   "components": [
+      {
+         "object_type": "Computer",
+         "name": "NEED_TO_ENTER",
+         "serial_number": null,
+         "manufacturer": null,
+         "model": null,
+         "additional_settings": null,
+         "notes": null,
+         "operating_system": null
+      },
+      {
+         "object_type": "Fiber patch cord",
+         "name": "Patch Cord 0",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Doric",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "059n53q30"
+         },
+         "model": "BBP(4)_200/220/900-0.37_Custom_FCM-4xMF1.25",
+         "additional_settings": null,
+         "notes": "All four patch cords are actually a single device at the camera end with four separate connections to connect to up to four implanted fibers. Unused patch cables are not physically connected to an implanted fiber during an experiment.",
+         "core_diameter": "200",
+         "numerical_aperture": "0.37",
+         "photobleaching_date": null
+      },
+      {
+         "object_type": "Fiber patch cord",
+         "name": "Patch Cord 1",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Doric",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "059n53q30"
+         },
+         "model": "BBP(4)_200/220/900-0.37_Custom_FCM-4xMF1.25",
+         "additional_settings": null,
+         "notes": "All four patch cords are actually a single device at the camera end with four separate connections to connect to up to four implanted fibers. Unused patch cables are not physically connected to an implanted fiber during an experiment.",
+         "core_diameter": "200",
+         "numerical_aperture": "0.37",
+         "photobleaching_date": null
+      },
+      {
+         "object_type": "Fiber patch cord",
+         "name": "Patch Cord 2",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Doric",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "059n53q30"
+         },
+         "model": "BBP(4)_200/220/900-0.37_Custom_FCM-4xMF1.25",
+         "additional_settings": null,
+         "notes": "All four patch cords are actually a single device at the camera end with four separate connections to connect to up to four implanted fibers. Unused patch cables are not physically connected to an implanted fiber during an experiment.",
+         "core_diameter": "200",
+         "numerical_aperture": "0.37",
+         "photobleaching_date": null
+      },
+      {
+         "object_type": "Fiber patch cord",
+         "name": "Patch Cord 3",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Doric",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "059n53q30"
+         },
+         "model": "BBP(4)_200/220/900-0.37_Custom_FCM-4xMF1.25",
+         "additional_settings": null,
+         "notes": "All four patch cords are actually a single device at the camera end with four separate connections to connect to up to four implanted fibers. Unused patch cables are not physically connected to an implanted fiber during an experiment.",
+         "core_diameter": "200",
+         "numerical_aperture": "0.37",
+         "photobleaching_date": null
+      },
+      {
+         "object_type": "Light emitting diode",
+         "name": "470nm LED",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Thorlabs",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "04gsnvb07"
+         },
+         "model": "M470F3",
+         "additional_settings": null,
+         "notes": null,
+         "wavelength": 470,
+         "wavelength_unit": "nanometer",
+         "bandwidth": null,
+         "bandwidth_unit": null
+      },
+      {
+         "object_type": "Light emitting diode",
+         "name": "415nm LED",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Thorlabs",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "04gsnvb07"
+         },
+         "model": "M415F3",
+         "additional_settings": null,
+         "notes": null,
+         "wavelength": 415,
+         "wavelength_unit": "nanometer",
+         "bandwidth": null,
+         "bandwidth_unit": null
+      },
+      {
+         "object_type": "Light emitting diode",
+         "name": "565nm LED",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Thorlabs",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "04gsnvb07"
+         },
+         "model": "M565F3",
+         "additional_settings": null,
+         "notes": null,
+         "wavelength": 565,
+         "wavelength_unit": "nanometer",
+         "bandwidth": null,
+         "bandwidth_unit": null
+      },
+      {
+         "object_type": "Detector",
+         "name": "Green CMOS",
+         "serial_number": "NEED_TO_ENTER",
+         "manufacturer": {
+            "name": "Teledyne FLIR",
+            "abbreviation": "FLIR",
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "01j1gwp17"
+         },
+         "model": "BFS-U3-20S40M",
+         "additional_settings": null,
+         "notes": null,
+         "detector_type": "Camera",
+         "data_interface": "USB",
+         "cooling": "Air",
+         "frame_rate": null,
+         "frame_rate_unit": null,
+         "immersion": "air",
+         "chroma": "Monochrome",
+         "sensor_width": null,
+         "sensor_height": null,
+         "size_unit": "pixel",
+         "sensor_format": null,
+         "sensor_format_unit": null,
+         "bit_depth": 16,
+         "bin_mode": "Additive",
+         "bin_width": 4,
+         "bin_height": 4,
+         "bin_unit": "pixel",
+         "gain": "2",
+         "crop_offset_x": 0,
+         "crop_offset_y": 0,
+         "crop_width": 200,
+         "crop_height": 200,
+         "crop_unit": "pixel",
+         "recording_software": {
+            "object_type": "Software",
+            "name": "Bonsai",
+            "version": "2.5"
+         },
+         "driver": null,
+         "driver_version": null
+      },
+      {
+         "object_type": "Detector",
+         "name": "Red CMOS",
+         "serial_number": "NEED_TO_ENTER",
+         "manufacturer": {
+            "name": "Teledyne FLIR",
+            "abbreviation": "FLIR",
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "01j1gwp17"
+         },
+         "model": "BFS-U3-20S40M",
+         "additional_settings": null,
+         "notes": null,
+         "detector_type": "Camera",
+         "data_interface": "USB",
+         "cooling": "Air",
+         "frame_rate": null,
+         "frame_rate_unit": null,
+         "immersion": "air",
+         "chroma": "Monochrome",
+         "sensor_width": null,
+         "sensor_height": null,
+         "size_unit": "pixel",
+         "sensor_format": null,
+         "sensor_format_unit": null,
+         "bit_depth": 16,
+         "bin_mode": "Additive",
+         "bin_width": 4,
+         "bin_height": 4,
+         "bin_unit": "pixel",
+         "gain": "2",
+         "crop_offset_x": 0,
+         "crop_offset_y": 0,
+         "crop_width": 200,
+         "crop_height": 200,
+         "crop_unit": "pixel",
+         "recording_software": {
+            "object_type": "Software",
+            "name": "Bonsai",
+            "version": "2.5"
+         },
+         "driver": null,
+         "driver_version": null
+      },
+      {
+         "object_type": "Objective",
+         "name": "Objective",
+         "serial_number": "NEED_TO_ENTER",
+         "manufacturer": {
+            "name": "Nikon",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "0280y9h11"
+         },
+         "model": "CFI Plan Apochromat Lambda D 10x",
+         "additional_settings": null,
+         "notes": null,
+         "numerical_aperture": "0.45",
+         "magnification": "10",
+         "immersion": "air",
+         "objective_type": null
+      },
+      {
+         "object_type": "Filter",
+         "name": "Green emission filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Semrock",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "FF01-520/35-25",
+         "additional_settings": null,
+         "notes": null,
+         "filter_type": "Band pass",
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": 520,
+         "wavelength_unit": "nanometer"
+      },
+      {
+         "object_type": "Filter",
+         "name": "Red emission filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Semrock",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "FF01-600/37-25",
+         "additional_settings": null,
+         "notes": null,
+         "filter_type": "Band pass",
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": 600,
+         "wavelength_unit": "nanometer"
+      },
+      {
+         "object_type": "Filter",
+         "name": "Emission Dichroic",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Semrock",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "FF562-Di03-25x36",
+         "additional_settings": null,
+         "notes": null,
+         "filter_type": "Dichroic",
+         "cut_off_wavelength": 562,
+         "cut_on_wavelength": null,
+         "center_wavelength": null,
+         "wavelength_unit": "nanometer"
+      },
+      {
+         "object_type": "Filter",
+         "name": "dual-edge standard epi-fluorescence dichroic beamsplitter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Semrock",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "FF493/574-Di01-25x36",
+         "additional_settings": null,
+         "notes": "BrightLine dual-edge standard epi-fluorescence dichroic beamsplitter",
+         "filter_type": "Multiband",
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": [
+            493,
+            574
+         ],
+         "wavelength_unit": "nanometer"
+      },
+      {
+         "object_type": "Filter",
+         "name": "Excitation filter 410nm",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Thorlabs",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "04gsnvb07"
+         },
+         "model": "FB410-10",
+         "additional_settings": null,
+         "notes": null,
+         "filter_type": "Band pass",
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": 410,
+         "wavelength_unit": "nanometer"
+      },
+      {
+         "object_type": "Filter",
+         "name": "Excitation filter 470nm",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Thorlabs",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "04gsnvb07"
+         },
+         "model": "FB470-10",
+         "additional_settings": null,
+         "notes": null,
+         "filter_type": "Band pass",
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": 470,
+         "wavelength_unit": "nanometer"
+      },
+      {
+         "object_type": "Filter",
+         "name": "Excitation filter 560nm",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Thorlabs",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "04gsnvb07"
+         },
+         "model": "FB560-10",
+         "additional_settings": null,
+         "notes": null,
+         "filter_type": "Band pass",
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": 560,
+         "wavelength_unit": "nanometer"
+      },
+      {
+         "object_type": "Filter",
+         "name": "450 Dichroic Longpass Filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Edmund Optics",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "01j1gwp17"
+         },
+         "model": "#69-898",
+         "additional_settings": null,
+         "notes": null,
+         "filter_type": "Dichroic",
+         "cut_off_wavelength": 450,
+         "cut_on_wavelength": null,
+         "center_wavelength": null,
+         "wavelength_unit": "nanometer"
+      },
+      {
+         "object_type": "Filter",
+         "name": "500 Dichroic Longpass Filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Edmund Optics",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "01j1gwp17"
+         },
+         "model": "#69-899",
+         "additional_settings": null,
+         "notes": null,
+         "filter_type": "Dichroic",
+         "cut_off_wavelength": 500,
+         "cut_on_wavelength": null,
+         "center_wavelength": null,
+         "wavelength_unit": "nanometer"
+      },
+      {
+         "object_type": "Lens",
+         "name": "Image focusing lens",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Thorlabs",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "04gsnvb07"
+         },
+         "model": "AC254-080-A-ML",
+         "additional_settings": null,
+         "notes": null
+      },
+      {
+         "object_type": "Harp device",
+         "name": "cuTTLefishFip",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Open Ephys Production Site",
+            "abbreviation": "OEPS",
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "007rkz355"
+         },
+         "model": null,
+         "additional_settings": {
+            "port_name": "COM1"
+         },
+         "notes": null,
+         "data_interface": "USB",
+         "channels": [],
+         "firmware_version": null,
+         "hardware_version": null,
+         "harp_device_type": {
+            "whoami": 1407,
+            "name": "cuTTLefishFip"
+         },
+         "core_version": null,
+         "tag_version": null,
+         "is_clock_generator": false
+      }
+   ]
+}
