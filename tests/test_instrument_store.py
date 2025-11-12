@@ -221,8 +221,8 @@ class TestInstrumentStore(unittest.TestCase):
         """Test listing instrument IDs when base path doesn't exist in a temporary path."""
         nonexistent_path = self.tmp_path / "nonexistent"
         # Delete the directory to test the case where base_path doesn't exist
-        if nonexistent_path.exists():
-            shutil.rmtree(nonexistent_path)
+        if nonexistent_path.exists():  # pragma: no cover
+            shutil.rmtree(nonexistent_path)  # pragma: no cover
         # Use confirm_create=False to avoid prompting in test
         store = InstrumentStore(base_path=str(nonexistent_path), confirm_create=False)
         ids = store.list_instrument_ids()
@@ -389,8 +389,8 @@ class TestInstrumentStore(unittest.TestCase):
         """Test that confirm_create=False creates directory without prompting."""
         new_path = self.tmp_path / "new_store"
         # Ensure it doesn't exist
-        if new_path.exists():
-            shutil.rmtree(new_path)
+        if new_path.exists():  # pragma: no cover
+            shutil.rmtree(new_path)  # pragma: no cover
         store = InstrumentStore(base_path=str(new_path), confirm_create=False)
         self.assertTrue(store.base_path.exists())
 
@@ -398,8 +398,8 @@ class TestInstrumentStore(unittest.TestCase):
         """Test that confirm_create=True with user confirmation creates directory."""
         new_path = self.tmp_path / "new_store_confirm"
         # Ensure it doesn't exist
-        if new_path.exists():
-            shutil.rmtree(new_path)
+        if new_path.exists():  # pragma: no cover
+            shutil.rmtree(new_path)  # pragma: no cover
 
         # Mock input to return "y"
         import unittest.mock
@@ -412,8 +412,8 @@ class TestInstrumentStore(unittest.TestCase):
         """Test that confirm_create=True with user cancellation raises ValueError."""
         new_path = self.tmp_path / "new_store_cancel"
         # Ensure it doesn't exist
-        if new_path.exists():
-            shutil.rmtree(new_path)
+        if new_path.exists():  # pragma: no cover
+            shutil.rmtree(new_path)  # pragma: no cover
 
         # Mock input to return "n"
         import unittest.mock
@@ -426,8 +426,8 @@ class TestInstrumentStore(unittest.TestCase):
     def test_save_instrument_with_confirm_create_false(self):
         """Test save_instrument convenience function with confirm_create=False."""
         new_path = self.tmp_path / "new_store_save"
-        if new_path.exists():
-            shutil.rmtree(new_path)
+        if new_path.exists():  # pragma: no cover
+            shutil.rmtree(new_path)  # pragma: no cover
 
         instrument_file = self.tmp_path / "test_instrument.json"
         instrument_data = {"instrument_id": "test_rig", "modification_date": "2025-01-15"}
@@ -440,8 +440,8 @@ class TestInstrumentStore(unittest.TestCase):
     def test_get_instrument_with_confirm_create_false(self):
         """Test get_instrument convenience function with confirm_create=False."""
         new_path = self.tmp_path / "new_store_get"
-        if new_path.exists():
-            shutil.rmtree(new_path)
+        if new_path.exists():  # pragma: no cover
+            shutil.rmtree(new_path)  # pragma: no cover
 
         result = get_instrument("nonexistent", base_path=str(new_path), confirm_create=False)
         self.assertIsNone(result)
@@ -449,8 +449,8 @@ class TestInstrumentStore(unittest.TestCase):
     def test_list_instrument_ids_with_confirm_create_false(self):
         """Test list_instrument_ids convenience function with confirm_create=False."""
         new_path = self.tmp_path / "new_store_list"
-        if new_path.exists():
-            shutil.rmtree(new_path)
+        if new_path.exists():  # pragma: no cover
+            shutil.rmtree(new_path)  # pragma: no cover
 
         ids = list_instrument_ids(base_path=str(new_path), confirm_create=False)
         self.assertEqual(ids, [])
