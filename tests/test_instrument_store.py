@@ -220,10 +220,11 @@ class TestInstrumentStore(unittest.TestCase):
     def test_list_instrument_ids_nonexistent_base(self):
         """Test listing instrument IDs when base path doesn't exist in a temporary path."""
         nonexistent_path = self.tmp_path / "nonexistent"
-        store = InstrumentStore(base_path=str(nonexistent_path))
         # Delete the directory to test the case where base_path doesn't exist
         if nonexistent_path.exists():
             shutil.rmtree(nonexistent_path)
+        # Use confirm_create=False to avoid prompting in test
+        store = InstrumentStore(base_path=str(nonexistent_path), confirm_create=False)
         ids = store.list_instrument_ids()
         self.assertEqual(ids, [])
 
@@ -375,6 +376,93 @@ class TestInstrumentStore(unittest.TestCase):
         result = store._parse_modification_date("2025-01-15T14:30:00.123456")
         self.assertIsNotNone(result)
         self.assertEqual(result.microsecond, 123456)
+
+    def test_init_parent_directory_not_exists(self):
+        """Test that init raises FileNotFoundError when parent directory doesn't exist."""
+        nonexistent_parent = self.tmp_path / "nonexistent" / "instrument_store"
+        with self.assertRaises(FileNotFoundError) as context:
+            InstrumentStore(base_path=str(nonexistent_parent), confirm_create=False)
+        self.assertIn("Parent directory does not exist", str(context.exception))
+        self.assertIn("network path is not accessible", str(context.exception))
+
+    def test_init_confirm_create_false(self):
+        """Test that confirm_create=False creates directory without prompting."""
+        new_path = self.tmp_path / "new_store"
+        # Ensure it doesn't exist
+        if new_path.exists():
+            shutil.rmtree(new_path)
+        store = InstrumentStore(base_path=str(new_path), confirm_create=False)
+        self.assertTrue(store.base_path.exists())
+
+    def test_init_confirm_create_true_user_confirms(self):
+        """Test that confirm_create=True with user confirmation creates directory."""
+        new_path = self.tmp_path / "new_store_confirm"
+        # Ensure it doesn't exist
+        if new_path.exists():
+            shutil.rmtree(new_path)
+
+        # Mock input to return "y"
+        import unittest.mock
+
+        with unittest.mock.patch("builtins.input", return_value="y"):
+            store = InstrumentStore(base_path=str(new_path), confirm_create=True)
+            self.assertTrue(store.base_path.exists())
+
+    def test_init_confirm_create_true_user_cancels(self):
+        """Test that confirm_create=True with user cancellation raises ValueError."""
+        new_path = self.tmp_path / "new_store_cancel"
+        # Ensure it doesn't exist
+        if new_path.exists():
+            shutil.rmtree(new_path)
+
+        # Mock input to return "n"
+        import unittest.mock
+
+        with unittest.mock.patch("builtins.input", return_value="n"):
+            with self.assertRaises(ValueError) as context:
+                InstrumentStore(base_path=str(new_path), confirm_create=True)
+            self.assertIn("Directory creation cancelled by user", str(context.exception))
+
+    def test_save_instrument_with_confirm_create_false(self):
+        """Test save_instrument convenience function with confirm_create=False."""
+        new_path = self.tmp_path / "new_store_save"
+        if new_path.exists():
+            shutil.rmtree(new_path)
+
+        instrument_file = self.tmp_path / "test_instrument.json"
+        instrument_data = {"instrument_id": "test_rig", "modification_date": "2025-01-15"}
+        with open(instrument_file, "w", encoding="utf-8") as f:
+            json.dump(instrument_data, f)
+
+        saved_path = save_instrument(str(instrument_file), "test_rig", base_path=str(new_path), confirm_create=False)
+        self.assertTrue(saved_path.exists())
+
+    def test_get_instrument_with_confirm_create_false(self):
+        """Test get_instrument convenience function with confirm_create=False."""
+        new_path = self.tmp_path / "new_store_get"
+        if new_path.exists():
+            shutil.rmtree(new_path)
+
+        result = get_instrument("nonexistent", base_path=str(new_path), confirm_create=False)
+        self.assertIsNone(result)
+
+    def test_list_instrument_ids_with_confirm_create_false(self):
+        """Test list_instrument_ids convenience function with confirm_create=False."""
+        new_path = self.tmp_path / "new_store_list"
+        if new_path.exists():
+            shutil.rmtree(new_path)
+
+        ids = list_instrument_ids(base_path=str(new_path), confirm_create=False)
+        self.assertEqual(ids, [])
+
+    def test_list_instrument_ids_base_path_deleted_after_init(self):
+        """Test list_instrument_ids when base_path is deleted after initialization."""
+        store = InstrumentStore(base_path=str(self.tmp_path))
+        # Delete the directory after initialization
+        shutil.rmtree(self.tmp_path)
+        # Should return empty list when base_path doesn't exist
+        ids = store.list_instrument_ids()
+        self.assertEqual(ids, [])
 
 
 if __name__ == "__main__":

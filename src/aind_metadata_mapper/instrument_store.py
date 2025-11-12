@@ -1,29 +1,65 @@
 """Filesystem-based caching for instrument.json files."""
 
 import json
+import os
 import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 # Default base path for instrument store
-DEFAULT_INSTRUMENT_STORE_PATH = "/allen/aind/scratch/instrument_store"
+# On Linux: /allen/aind/scratch/instrument_store
+# On Windows: \\allen\aind\scratch\instrument_store
+# Path class handles platform-specific separators automatically
+DEFAULT_INSTRUMENT_STORE_PATH = os.getenv("AIND_INSTRUMENT_STORE_PATH", "/allen/aind/scratch/instrument_store")
 
 
 class InstrumentStore:
     """Filesystem-based store for instrument.json files with versioning."""
 
-    def __init__(self, base_path: Optional[str] = None) -> None:
+    def __init__(self, base_path: Optional[str] = None, confirm_create: bool = True) -> None:
         """Initialize the instrument store.
 
         Parameters
         ----------
         base_path : Optional[str]
             Base directory path for the store. Defaults to DEFAULT_INSTRUMENT_STORE_PATH.
+        confirm_create : bool
+            If True, prompt for confirmation before creating a new directory.
+            Defaults to True.
+
+        Raises
+        ------
+        FileNotFoundError
+            If the parent directory (one level up) does not exist, indicating
+            the network path is not accessible.
         """
         if base_path is None:
             base_path = DEFAULT_INSTRUMENT_STORE_PATH
         self.base_path = Path(base_path)
+
+        # Verify parent directory exists (one level up) to ensure network connectivity
+        parent_path = self.base_path.parent
+        if not parent_path.exists():
+            raise FileNotFoundError(
+                f"Parent directory does not exist: {parent_path}\n"
+                f"This likely indicates the network path is not accessible on this machine."
+            )
+
+        # If the full path doesn't exist, confirm before creating
+        if not self.base_path.exists():
+            if confirm_create:
+                response = (
+                    input(
+                        f"The instrument store directory does not exist:\n  {self.base_path}\n"
+                        f"Create this directory? [y/N]: "
+                    )
+                    .strip()
+                    .lower()
+                )
+                if response not in ("y", "yes"):
+                    raise ValueError(f"Directory creation cancelled by user: {self.base_path}")
+
         self.base_path.mkdir(parents=True, exist_ok=True)
 
     def save_instrument(self, path: str, rig_id: str) -> Path:
@@ -216,7 +252,7 @@ class InstrumentStore:
             return None
 
 
-def save_instrument(path: str, rig_id: str, base_path: Optional[str] = None) -> Path:
+def save_instrument(path: str, rig_id: str, base_path: Optional[str] = None, confirm_create: bool = True) -> Path:
     """Save instrument.json to store (convenience function).
 
     Parameters
@@ -227,18 +263,21 @@ def save_instrument(path: str, rig_id: str, base_path: Optional[str] = None) -> 
         Rig identifier.
     base_path : Optional[str]
         Base directory path for the store. Only used if store not initialized.
-        Defaults to /allen/aind/scratch/instrument_store.
+        Defaults to /allen/aind/scratch/instrument_store (or AIND_INSTRUMENT_STORE_PATH env var).
+    confirm_create : bool
+        If True, prompt for confirmation before creating a new directory.
+        Defaults to True.
 
     Returns
     -------
     Path
         Path to the saved instrument.json file in the store.
     """
-    store = InstrumentStore(base_path)
+    store = InstrumentStore(base_path, confirm_create=confirm_create)
     return store.save_instrument(path, rig_id)
 
 
-def get_instrument(rig_id: str, base_path: Optional[str] = None) -> Optional[dict]:
+def get_instrument(rig_id: str, base_path: Optional[str] = None, confirm_create: bool = True) -> Optional[dict]:
     """Get current instrument data for a rig (convenience function).
 
     Parameters
@@ -247,30 +286,36 @@ def get_instrument(rig_id: str, base_path: Optional[str] = None) -> Optional[dic
         Rig identifier.
     base_path : Optional[str]
         Base directory path for the store. Only used if store not initialized.
-        Defaults to /allen/aind/scratch/instrument_store.
+        Defaults to /allen/aind/scratch/instrument_store (or AIND_INSTRUMENT_STORE_PATH env var).
+    confirm_create : bool
+        If True, prompt for confirmation before creating a new directory.
+        Defaults to True.
 
     Returns
     -------
     Optional[dict]
         Instrument data as dict, or None if not found.
     """
-    store = InstrumentStore(base_path)
+    store = InstrumentStore(base_path, confirm_create=confirm_create)
     return store.get_instrument(rig_id)
 
 
-def list_instrument_ids(base_path: Optional[str] = None) -> list[str]:
+def list_instrument_ids(base_path: Optional[str] = None, confirm_create: bool = True) -> list[str]:
     """List all instrument IDs in the store (convenience function).
 
     Parameters
     ----------
     base_path : Optional[str]
         Base directory path for the store. Only used if store not initialized.
-        Defaults to /allen/aind/scratch/instrument_store.
+        Defaults to /allen/aind/scratch/instrument_store (or AIND_INSTRUMENT_STORE_PATH env var).
+    confirm_create : bool
+        If True, prompt for confirmation before creating a new directory.
+        Defaults to True.
 
     Returns
     -------
     list[str]
         List of instrument IDs, sorted alphabetically.
     """
-    store = InstrumentStore(base_path)
+    store = InstrumentStore(base_path, confirm_create=confirm_create)
     return store.list_instrument_ids()
