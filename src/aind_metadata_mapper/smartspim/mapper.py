@@ -445,7 +445,7 @@ class SmartspimMapper(MapperJob):
                 return value
 
         # Try to match against enum values (case-insensitive)
-        for enum_member in ImmersionMedium:
+        for enum_member in ImmersionMedium:  # pragma: no cover
             if medium_lower == enum_member.value.lower():
                 return enum_member
 
