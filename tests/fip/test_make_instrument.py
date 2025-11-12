@@ -155,7 +155,6 @@ class TestCreateInstrument(unittest.TestCase):
         self.assertIn("Red CMOS", component_names)
         self.assertIn("Objective", component_names)
         self.assertIn("cuTTLefishFip", component_names)
-        self.assertIn("Photometry Clock", component_names)
 
     def test_create_instrument_connections(self):
         """Test that connections are created correctly."""
@@ -169,10 +168,10 @@ class TestCreateInstrument(unittest.TestCase):
 
         instrument = create_instrument("test_rig", values=values)
 
-        self.assertEqual(len(instrument.connections), 2)
-        connection_targets = [c.target_device for c in instrument.connections]
-        self.assertIn("cuTTLefishFip", connection_targets)
-        self.assertIn("test_computer", connection_targets)
+        self.assertEqual(len(instrument.connections), 1)
+        connection = instrument.connections[0]
+        self.assertEqual(connection.source_device, "cuTTLefishFip")
+        self.assertEqual(connection.target_device, "test_computer")
 
     def test_create_instrument_empty_location(self):
         """Test creating instrument with empty location."""
