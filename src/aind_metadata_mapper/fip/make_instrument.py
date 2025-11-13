@@ -399,7 +399,6 @@ def create_instrument(
         harp_device_type=devices.HarpDeviceType.CUTTLEFISHFIP,
         is_clock_generator=False,
         data_interface=devices.DataInterface.USB,
-        additional_settings={"port_name": "COM1"},
     )
 
     white_rabbit = devices.HarpDevice(
@@ -415,6 +414,7 @@ def create_instrument(
     connections = [
         Connection(
             source_device="cuTTLefishFip",
+            source_port="COM1",
             target_device=computer_name,
         ),
         Connection(

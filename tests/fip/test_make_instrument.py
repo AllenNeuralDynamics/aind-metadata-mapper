@@ -177,7 +177,7 @@ class TestCreateInstrument(unittest.TestCase):
             self.assertIsNotNone(connection.source_device)
             self.assertIsNotNone(connection.target_device)
 
-        # Verify at least one connection has a source_port (WhiteRabbit connection)
+        # Verify at least one connection has a source_port
         connections_with_source_port = [c for c in instrument.connections if c.source_port is not None]
         self.assertGreaterEqual(len(connections_with_source_port), 1)
 
@@ -185,9 +185,11 @@ class TestCreateInstrument(unittest.TestCase):
         connections_to_computer = [c for c in instrument.connections if c.target_device == "test_computer"]
         self.assertGreaterEqual(len(connections_to_computer), 1)
 
-        # Verify connection with source_port has target_port and send_and_receive=False
-        for conn in connections_with_source_port:
-            self.assertIsNotNone(conn.target_port)
+        # Verify connections with both source_port and target_port have send_and_receive=False
+        connections_with_both_ports = [
+            c for c in instrument.connections if c.source_port is not None and c.target_port is not None
+        ]
+        for conn in connections_with_both_ports:
             self.assertFalse(conn.send_and_receive)
 
     def test_create_instrument_empty_location(self):
