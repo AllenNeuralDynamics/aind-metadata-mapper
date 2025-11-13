@@ -38,7 +38,7 @@ class GatherMetadataJob:
         """
         self.settings = settings
         # Create output directory if it doesn't exist
-        os.makedirs(self.settings.output_metadata_path, exist_ok=True)
+        os.makedirs(self.settings.output_dir, exist_ok=True)
 
     def _does_file_exist_in_user_defined_dir(self, file_name: str) -> bool:
         """
@@ -53,7 +53,7 @@ class GatherMetadataJob:
         True if self.settings.metadata_dir is not None and file is in that dir
 
         """
-        file_path_to_check = os.path.join(self.settings.input_metadata_path, file_name)
+        file_path_to_check = os.path.join(self.settings.metadata_dir, file_name)
         if os.path.isfile(file_path_to_check):
             return True
         else:
@@ -72,7 +72,7 @@ class GatherMetadataJob:
         File contents as a dictionary
 
         """
-        file_path = os.path.join(self.settings.input_metadata_path, file_name)
+        file_path = os.path.join(self.settings.metadata_dir, file_name)
         with open(file_path, "r") as f:
             contents = json.load(f)
         return contents
@@ -91,7 +91,7 @@ class GatherMetadataJob:
         list[dict]
             File contents as a list of dictionaries
         """
-        return self._get_prefixed_files_from_directory(self.settings.input_metadata_path, file_name_prefix)
+        return self._get_prefixed_files_from_directory(self.settings.metadata_dir, file_name_prefix)
 
     def _get_prefixed_files_from_directory(self, directory: str, file_name_prefix: str) -> list[dict]:
         """
@@ -290,8 +290,8 @@ class GatherMetadataJob:
         Run mappers for any files in metadata_dir matching a registry key.
         For each file named <mapper>.json, run the corresponding mapper and output acquisition_<mapper>.json.
         """
-        input_dir = self.settings.input_metadata_path
-        output_dir = self.settings.output_metadata_path
+        input_dir = self.settings.metadata_dir
+        output_dir = self.settings.output_dir
         # For each registry key, check if <key>.json exists
         for mapper_name in registry.keys():
             input_filename = f"{mapper_name}.json"
@@ -325,7 +325,7 @@ class GatherMetadataJob:
             self._run_mappers_for_acquisition()
             # then gather all acquisition files with prefixes from output directory
             files = self._get_prefixed_files_from_directory(
-                directory=self.settings.output_metadata_path, file_name_prefix="acquisition"
+                directory=self.settings.output_dir, file_name_prefix="acquisition"
             )
             if files:
                 return self._merge_models(Acquisition, files)
@@ -410,7 +410,7 @@ class GatherMetadataJob:
         contents : dict
           Contents to write to the json file
         """
-        output_file = os.path.join(self.settings.output_metadata_path, filename)
+        output_file = os.path.join(self.settings.output_dir, filename)
         with open(output_file, "w") as f:
             json.dump(contents, f, indent=3, ensure_ascii=False, sort_keys=True)
 

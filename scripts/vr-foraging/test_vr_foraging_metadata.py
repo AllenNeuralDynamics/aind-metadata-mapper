@@ -24,8 +24,8 @@ try:
     print()
 
     settings = JobSettings(
-        input_metadata_path=str(source_metadata_path),
-        output_metadata_path=str(output_subfolder),
+        metadata_dir=str(source_metadata_path),
+        output_dir=str(output_subfolder),
         subject_id="828422",
         project_name="Cognitive flexibility in patch foraging",
         modalities=[Modality.BEHAVIOR, Modality.BEHAVIOR_VIDEOS],

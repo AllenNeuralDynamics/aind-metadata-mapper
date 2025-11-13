@@ -32,8 +32,8 @@ class TestIntegrationMetadata(unittest.TestCase):
     def setUp(self, mock_makedirs):
         """Set up test fixtures"""
         self.test_settings = JobSettings(
-            input_metadata_path="/test/metadata",
-            output_metadata_path="/test/output",
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
             subject_id="804670",
             project_name="Visual Behavior",
             modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
@@ -434,8 +434,8 @@ class TestIntegrationMetadata(unittest.TestCase):
         # Create job settings with raise_if_invalid=True
         with patch("os.makedirs"):
             strict_settings = JobSettings(
-                input_metadata_path="/test/metadata",
-                output_metadata_path="/test/output",
+                metadata_dir="/test/metadata",
+                output_dir="/test/output",
                 subject_id="804670",
                 project_name="Visual Behavior",
                 modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
@@ -479,8 +479,8 @@ class TestIntegrationMetadata(unittest.TestCase):
         # Create job settings with location specified
         with patch("os.makedirs"):
             location_settings = JobSettings(
-                input_metadata_path="/test/metadata",
-                output_metadata_path="/test/output",
+                metadata_dir="/test/metadata",
+                output_dir="/test/output",
                 subject_id="804670",
                 project_name="Visual Behavior",
                 modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
@@ -546,8 +546,8 @@ class TestIntegrationMetadata(unittest.TestCase):
         # Create job settings with location specified
         with patch("os.makedirs"):
             location_settings = JobSettings(
-                input_metadata_path="/test/metadata",
-                output_metadata_path="/test/output",
+                metadata_dir="/test/metadata",
+                output_dir="/test/output",
                 subject_id="804670",
                 project_name="Visual Behavior",
                 modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],

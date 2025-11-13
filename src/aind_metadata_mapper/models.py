@@ -9,21 +9,21 @@ from pydantic_settings import BaseSettings
 
 
 class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=True):
-    """Settings required to fetch metadata from metadata service"""
+    """Settings required to fetch metadata from metadata service and construct the data_description"""
 
     # Path settings
-    input_metadata_path: str = Field(
+    metadata_dir: str = Field(
         ...,
         description=(
             "Location of metadata directory. If a file is not found in this "
             "directory, an attempt will be made to create it and save it here."
         ),
     )
-    output_metadata_path: Optional[str] = Field(
+    output_dir: Optional[str] = Field(
         default=None,
         description=(
             "Location to save updated metadata. If the directory does not exist, "
-            "it will be created. Defaults to input_metadata_path if not specified."
+            "it will be created. Defaults to metadata_dir if not specified."
         ),
     )
     metadata_service_url: Optional[str] = Field(
@@ -100,7 +100,7 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
 
     @model_validator(mode="after")
     def set_output_path_default(self):
-        """Set output_metadata_path to input_metadata_path if not provided"""
-        if self.output_metadata_path is None:
-            self.output_metadata_path = self.input_metadata_path
+        """Set output_dir to metadata_dir if not provided"""
+        if self.output_dir is None:
+            self.output_dir = self.metadata_dir
         return self
