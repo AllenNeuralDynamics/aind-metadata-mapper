@@ -66,7 +66,7 @@ exclude = '''
 '''
 
 [tool.coverage.run]
-omit = ["*__init__*", "tests/integration/*"]
+omit = ["*__init__*", "tests/integration/*", "*make_instrument_minimal*"]
 source = ["aind_metadata_mapper", "tests"]
 
 [tool.coverage.report]
