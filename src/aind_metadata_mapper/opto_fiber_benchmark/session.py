@@ -5,7 +5,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Union
 
 import pandas as pd
 from aind_data_schema.components.devices import Software
@@ -61,9 +61,7 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
 
         super().__init__(job_settings=job_settings_model)
 
-    def _extract_session_start_time(
-        self, data_files: List[Path]
-    ) -> Optional[datetime]:
+    def _extract_session_start_time(self, data_files: List[Path]) -> datetime:
         """Extract session start  time from data files."""
         # Read the first data file to get timing information
         signal_file = data_files[0]
@@ -79,11 +77,11 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
             )
 
             timestamps_signal = df_signal[timestamp_cols[0]]
+        else:
+            timestamps_signal = df_signal.iloc[:, 0]
 
-            start_time = start_time + pd.to_timedelta(timestamps_signal.min())
-            return start_time
-
-        return None
+        start_time = start_time + pd.to_timedelta(timestamps_signal.min())
+        return start_time
 
     def _extract_stimulus_epochs(self, data_files: List[Path]) -> dict:
         """Extracts stimulus epoch information"""
