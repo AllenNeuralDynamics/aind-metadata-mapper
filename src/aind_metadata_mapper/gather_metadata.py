@@ -53,6 +53,8 @@ class GatherMetadataJob:
         True if self.settings.metadata_dir is not None and file is in that dir
 
         """
+        if self.settings.metadata_dir is None:
+            return False
         file_path_to_check = os.path.join(self.settings.metadata_dir, file_name)
         if os.path.isfile(file_path_to_check):
             return True
@@ -72,6 +74,8 @@ class GatherMetadataJob:
         File contents as a dictionary
 
         """
+        if self.settings.metadata_dir is None:
+            return None
         file_path = os.path.join(self.settings.metadata_dir, file_name)
         with open(file_path, "r") as f:
             contents = json.load(f)
@@ -91,6 +95,8 @@ class GatherMetadataJob:
         list[dict]
             File contents as a list of dictionaries
         """
+        if self.settings.metadata_dir is None:
+            return []
         return self._get_prefixed_files_from_directory(self.settings.metadata_dir, file_name_prefix)
 
     def _get_prefixed_files_from_directory(self, directory: str, file_name_prefix: str) -> list[dict]:
@@ -172,7 +178,7 @@ class GatherMetadataJob:
 
         return parsed_funding_info, investigators_list
 
-    def build_data_description(self, acquisition_start_time: Optional[str]) -> dict:
+    def build_data_description(self, acquisition_start_time: str) -> dict:
         """Build data description metadata"""
         logging.info("Gathering data description metadata.")
         file_name = DataDescription.default_filename()
@@ -182,13 +188,9 @@ class GatherMetadataJob:
             logging.debug(f"Using existing {file_name}.")
             return self._get_file_from_user_defined_directory(file_name=file_name)
 
-        if acquisition_start_time:
-            acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
-            creation_time = datetime.fromisoformat(acquisition_start_time)
-            logging.info(f"Using acquisition start time: {creation_time}")
-        else:
-            creation_time = datetime.now()
-            logging.info(f"No start time available, using creation time: {creation_time}")
+        acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
+        creation_time = datetime.fromisoformat(acquisition_start_time)
+        logging.info(f"Using acquisition start time: {creation_time}")
 
         # Get funding information
         funding_source, investigators = self.get_funding()
@@ -290,6 +292,8 @@ class GatherMetadataJob:
         Run mappers for any files in metadata_dir matching a registry key.
         For each file named <mapper>.json, run the corresponding mapper and output acquisition_<mapper>.json.
         """
+        if self.settings.metadata_dir is None:
+            return
         input_dir = self.settings.metadata_dir
         output_dir = self.settings.output_dir
         # For each registry key, check if <key>.json exists
@@ -439,7 +443,7 @@ class GatherMetadataJob:
             quality_control=core_metadata.get("quality_control"),
             model=core_metadata.get("model"),
             name=name,
-            location=self.settings.location if self.settings.location else "",
+            location="",  # we're only doing validation here, no need to set real location
         )
         return metadata
 
@@ -492,7 +496,7 @@ class GatherMetadataJob:
                         "model": core_metadata.get("model"),
                     },
                     name=name,
-                    location=self.settings.location if self.settings.location else "",
+                    location="",
                 )
                 return metadata
 
@@ -510,9 +514,32 @@ class GatherMetadataJob:
             core_metadata["acquisition"] = acquisition
             self._write_json_file(Acquisition.default_filename(), acquisition)
 
+        # Try to get the acquisition_start_time
+        acquisition_start_time = acquisition.get("acquisition_start_time") if acquisition else None
+        if not acquisition_start_time and self.settings.acquisition_start_time:
+            acquisition_start_time = self.settings.acquisition_start_time.isoformat()
+            logging.info(
+                f"No acquisition_start_time found in acquisition metadata. "
+                f"Using provided acquisition_start_time: {acquisition_start_time}"
+            )
+
+        # Raise an error if acquisition_start_time does not match what was pulled
+        local_acq_start_time = datetime.fromisoformat(acquisition_start_time)
+        if local_acq_start_time != self.settings.acquisition_start_time:
+            if self.settings.raise_if_invalid:
+                raise ValueError(
+                    "acquisition_start_time from acquisition metadata does not match "
+                    "the acquisition_start_time provided in settings."
+                )
+            else:
+                logging.error(
+                    "acquisition_start_time from acquisition metadata does not match "
+                    "the acquisition_start_time provided in settings."
+                )
+
         # Always create data description (required)
         data_description = self.build_data_description(
-            acquisition.get("acquisition_start_time") if acquisition else None
+            acquisition_start_time=acquisition_start_time
         )
         if data_description:
             core_metadata["data_description"] = data_description

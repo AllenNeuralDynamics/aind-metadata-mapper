@@ -2,6 +2,7 @@
 
 from typing import List, Optional
 
+from aind_data_schema.base import AwareDatetimeWithDefault
 from aind_data_schema_models.data_name_patterns import Group
 from aind_data_schema_models.modalities import Modality
 from pydantic import Field, field_validator, model_validator
@@ -12,18 +13,17 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
     """Settings required to fetch metadata from metadata service and construct the data_description"""
 
     # Path settings
-    metadata_dir: str = Field(
-        ...,
-        description=(
-            "Location of metadata directory. If a file is not found in this "
-            "directory, an attempt will be made to create it and save it here."
-        ),
-    )
-    output_dir: Optional[str] = Field(
+    metadata_dir: Optional[str] = Field(
         default=None,
         description=(
-            "Location to save updated metadata. If the directory does not exist, "
-            "it will be created. Defaults to metadata_dir if not specified."
+            "Optional location of metadata files. If a file is not found in this "
+            "directory, an attempt will be made to create it."
+        ),
+    )
+    output_dir: str = Field(
+        ...,
+        description=(
+            "Location to save metadata."
         ),
     )
     metadata_service_url: Optional[str] = Field(
@@ -40,10 +40,6 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
     )
 
     # Job settings
-    location: Optional[str] = Field(
-        default=None,
-        description=("Location to be set in the metadata. If None, location will not be set."),
-    )
     raise_if_invalid: bool = Field(
         default=False,
         description=(
@@ -63,6 +59,10 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
     subject_id: str = Field(
         default=...,
         description=("Subject ID. Will be used to download metadata from a service."),
+    )
+    acquisition_start_time: AwareDatetimeWithDefault = Field(
+        default=...,
+        description=("Acquisition start time. If acquisition.json is present, this will be overridden by the value in acquisition.json. If raise_if_invalid is True, this time must match the start time provided by the acquisition.json."),  # noqa: E501
     )
     project_name: str = Field(
         default=...,

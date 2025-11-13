@@ -2,7 +2,7 @@
 
 import os
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
@@ -30,6 +30,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             project_name="Test Project",
             modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
             metadata_service_url="http://test-service.com",
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         self.job = GatherMetadataJob(settings=self.test_settings)
 
@@ -73,6 +74,7 @@ class TestGatherMetadataJob(unittest.TestCase):
                 subject_id="test_subject",
                 project_name="",
                 modalities=[Modality.ECEPHYS],
+                acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
             )
         )
         funding, investigators = job_no_project.get_funding()
@@ -199,7 +201,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_file_exists.return_value = True
         mock_get_file.return_value = {"existing": "data"}
 
-        result = self.job.build_data_description(acquisition_start_time=None)
+        result = self.job.build_data_description(acquisition_start_time="2023-01-01T12:00:00")
 
         self.assertEqual(result, {"existing": "data"})
         mock_file_exists.assert_called_once_with(file_name="data_description.json")
@@ -211,14 +213,13 @@ class TestGatherMetadataJob(unittest.TestCase):
     def test_build_data_description_new_file(self, mock_datetime, mock_get_funding, mock_file_exists):
         """Test build_data_description when creating new file"""
         mock_file_exists.return_value = False
-        # Return valid funding data structure
         mock_get_funding.return_value = (
             [{"funder": Organization.NIMH, "grant_number": "12345"}],
             [{"name": "Test Investigator"}],
         )
         mock_datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)
 
-        result = self.job.build_data_description(acquisition_start_time=None)
+        result = self.job.build_data_description(acquisition_start_time="2023-01-01T12:00:00")
 
         self.assertIn("creation_time", result)
         self.assertEqual(result["project_name"], "Test Project")
@@ -236,6 +237,7 @@ class TestGatherMetadataJob(unittest.TestCase):
                 subject_id="",
                 project_name="Test Project",
                 modalities=[Modality.ECEPHYS],
+                acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
             )
         )
 
@@ -325,6 +327,7 @@ class TestGatherMetadataJob(unittest.TestCase):
                 subject_id="",
                 project_name="Test Project",
                 modalities=[Modality.ECEPHYS],
+                acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
             )
         )
 
@@ -486,7 +489,6 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     def test_validate_and_create_metadata_success_with_raise_if_invalid_true(self):
         """Test validate_and_create_metadata when validation succeeds with raise_if_invalid=True"""
-        # Create job with raise_if_invalid=True
         with patch("os.makedirs"):
             strict_settings = JobSettings(
                 metadata_dir="/test/metadata",
@@ -496,6 +498,7 @@ class TestGatherMetadataJob(unittest.TestCase):
                 modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
                 metadata_service_url="http://test-service.com",
                 raise_if_invalid=True,
+                acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
             )
             strict_job = GatherMetadataJob(settings=strict_settings)
 
@@ -517,61 +520,6 @@ class TestGatherMetadataJob(unittest.TestCase):
             mock_instance = MagicMock()
             mock_metadata.return_value = mock_instance
             result = strict_job.validate_and_create_metadata(core_metadata)
-            self.assertEqual(result, mock_instance)
-
-    def test_validate_and_create_metadata_with_location_field(self):
-        """Test validate_and_create_metadata passes location field to Metadata constructor"""
-        # Create job with location specified
-        with patch("os.makedirs"):
-            location_settings = JobSettings(
-                metadata_dir="/test/metadata",
-                output_dir="/test/output",
-                subject_id="123456",
-                project_name="Test Project",
-                modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
-                metadata_service_url="http://test-service.com",
-                location="s3://my-bucket/my-data",
-            )
-            location_job = GatherMetadataJob(settings=location_settings)
-
-        core_metadata = {
-            "data_description": {
-                "name": "test_dataset",
-            }
-        }
-
-        # Mock Metadata constructor to verify location is passed
-        with patch("aind_metadata_mapper.gather_metadata.Metadata") as mock_metadata:
-            mock_instance = MagicMock()
-            mock_metadata.return_value = mock_instance
-
-            result = location_job.validate_and_create_metadata(core_metadata)
-
-            # Verify Metadata was called with the location parameter
-            mock_metadata.assert_called_once()
-            call_args = mock_metadata.call_args
-            self.assertEqual(call_args.kwargs["location"], "s3://my-bucket/my-data")
-            self.assertEqual(result, mock_instance)
-
-    def test_validate_and_create_metadata_without_location_field(self):
-        """Test validate_and_create_metadata uses empty string when location is None"""
-        core_metadata = {
-            "data_description": {
-                "name": "test_dataset",
-            }
-        }
-
-        # Mock Metadata constructor to verify location defaults to empty string
-        with patch("aind_metadata_mapper.gather_metadata.Metadata") as mock_metadata:
-            mock_instance = MagicMock()
-            mock_metadata.return_value = mock_instance
-
-            result = self.job.validate_and_create_metadata(core_metadata)
-
-            # Verify Metadata was called with empty string for location
-            mock_metadata.assert_called_once()
-            call_args = mock_metadata.call_args
-            self.assertEqual(call_args.kwargs["location"], "")
             self.assertEqual(result, mock_instance)
 
     # Tests for run_job method
@@ -720,6 +668,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             subject_id="123456",
             project_name="Test Project",
             modalities=[Modality.ECEPHYS],
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         test_job = GatherMetadataJob(settings=test_settings)
 
@@ -759,6 +708,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             subject_id="123456",
             project_name="Test Project",
             modalities=[Modality.ECEPHYS],
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         test_job = GatherMetadataJob(settings=test_settings)
 
@@ -802,6 +752,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             subject_id="123456",
             project_name="Test Project",
             modalities=[Modality.ECEPHYS],
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         test_job = GatherMetadataJob(settings=test_settings)
 
@@ -841,6 +792,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             subject_id="123456",
             project_name="Test Project",
             modalities=[Modality.ECEPHYS],
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         test_job = GatherMetadataJob(settings=test_settings)
 
@@ -869,6 +821,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             subject_id="123456",
             project_name="Test Project",
             modalities=[Modality.ECEPHYS],
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         test_job = GatherMetadataJob(settings=test_settings)
 

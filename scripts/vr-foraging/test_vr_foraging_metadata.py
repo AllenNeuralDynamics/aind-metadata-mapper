@@ -1,5 +1,6 @@
 """Integration test for VR Foraging metadata collection."""
 
+from datetime import datetime
 import logging
 import tempfile
 from pathlib import Path
@@ -29,6 +30,7 @@ try:
         subject_id="828422",
         project_name="Cognitive flexibility in patch foraging",
         modalities=[Modality.BEHAVIOR, Modality.BEHAVIOR_VIDEOS],
+        acquisition_start_time=datetime.fromisoformat("2025-11-13T17:38:37.079861Z"),
     )
 
     job = GatherMetadataJob(settings=settings)
