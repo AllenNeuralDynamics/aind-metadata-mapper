@@ -40,7 +40,6 @@ import aind_data_schema.core.instrument as instrument
 from aind_data_schema.components.connections import Connection
 from aind_data_schema.components.coordinates import CoordinateSystemLibrary
 from aind_data_schema.components.devices import Computer
-from aind_data_schema.components.identifiers import Software
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.instrument_store import get_instrument, list_instrument_ids, save_instrument
@@ -196,8 +195,6 @@ def create_instrument(
 
     computer = Computer(name=computer_name)
 
-    bonsai_software = Software(name="Bonsai", version="2.5")
-
     patch_cord_note = (
         "All four patch cords are actually a single device at the camera end "
         "with four separate connections to connect to up to four implanted fibers. "
@@ -280,7 +277,6 @@ def create_instrument(
         gain=2,
         chroma="Monochrome",
         bit_depth=16,
-        recording_software=bonsai_software,
     )
 
     detector_2 = devices.Detector(
@@ -302,7 +298,6 @@ def create_instrument(
         gain=2,
         chroma="Monochrome",
         bit_depth=16,
-        recording_software=bonsai_software,
     )
 
     objective = devices.Objective(
