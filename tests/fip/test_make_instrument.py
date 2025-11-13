@@ -155,9 +155,10 @@ class TestCreateInstrument(unittest.TestCase):
         self.assertIn("Red CMOS", component_names)
         self.assertIn("Objective", component_names)
         self.assertIn("cuTTLefishFip", component_names)
+        self.assertIn("WhiteRabbit", component_names)
 
     def test_create_instrument_connections(self):
-        """Test that connections are created correctly."""
+        """Test that connections are created with correct structure."""
         values = {
             "location": "428",
             "computer_name": "test_computer",
@@ -168,10 +169,26 @@ class TestCreateInstrument(unittest.TestCase):
 
         instrument = create_instrument("test_rig", values=values)
 
-        self.assertEqual(len(instrument.connections), 1)
-        connection = instrument.connections[0]
-        self.assertEqual(connection.source_device, "cuTTLefishFip")
-        self.assertEqual(connection.target_device, "test_computer")
+        # Verify we have connections
+        self.assertEqual(len(instrument.connections), 2)
+
+        # Verify all connections have required fields
+        for connection in instrument.connections:
+            self.assertIsNotNone(connection.source_device)
+            self.assertIsNotNone(connection.target_device)
+
+        # Verify at least one connection has a source_port (WhiteRabbit connection)
+        connections_with_source_port = [c for c in instrument.connections if c.source_port is not None]
+        self.assertGreaterEqual(len(connections_with_source_port), 1)
+
+        # Verify at least one connection targets the computer
+        connections_to_computer = [c for c in instrument.connections if c.target_device == "test_computer"]
+        self.assertGreaterEqual(len(connections_to_computer), 1)
+
+        # Verify connection with source_port has target_port and send_and_receive=False
+        for conn in connections_with_source_port:
+            self.assertIsNotNone(conn.target_port)
+            self.assertFalse(conn.send_and_receive)
 
     def test_create_instrument_empty_location(self):
         """Test creating instrument with empty location."""

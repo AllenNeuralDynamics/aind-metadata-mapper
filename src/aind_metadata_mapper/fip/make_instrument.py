@@ -402,10 +402,27 @@ def create_instrument(
         additional_settings={"port_name": "COM1"},
     )
 
+    white_rabbit = devices.HarpDevice(
+        name="WhiteRabbit",
+        harp_device_type=devices.HarpDeviceType.WHITERABBIT,
+        manufacturer=devices.Organization.AIND,
+        is_clock_generator=True,
+        channels=[
+            devices.DAQChannel(channel_name="ClkOut", channel_type=devices.DaqChannelType.DO),
+        ],
+    )
+
     connections = [
         Connection(
             source_device="cuTTLefishFip",
             target_device=computer_name,
+        ),
+        Connection(
+            source_device="WhiteRabbit",
+            source_port="ClkOut",
+            target_device="cuTTLefishFip",
+            target_port="COM1",
+            send_and_receive=False,
         ),
     ]
 
@@ -438,6 +455,7 @@ def create_instrument(
             filter_9,
             lens,
             cuttlefish,
+            white_rabbit,
         ],
         calibrations=[],
         connections=connections,
