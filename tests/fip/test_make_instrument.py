@@ -155,7 +155,7 @@ class TestCreateInstrument(unittest.TestCase):
         self.assertIn("Red CMOS", component_names)
         self.assertIn("Objective", component_names)
         self.assertIn("cuTTLefishFip", component_names)
-        self.assertIn("WhiteRabbit", component_names)
+        self.assertIn("harp_clock_generator", component_names)
 
     def test_create_instrument_connections(self):
         """Test that connections are created with correct structure."""

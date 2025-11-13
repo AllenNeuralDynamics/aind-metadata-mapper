@@ -402,7 +402,7 @@ def create_instrument(
     )
 
     white_rabbit = devices.HarpDevice(
-        name="WhiteRabbit",
+        name="harp_clock_generator",
         harp_device_type=devices.HarpDeviceType.WHITERABBIT,
         manufacturer=devices.Organization.AIND,
         is_clock_generator=True,
@@ -418,7 +418,7 @@ def create_instrument(
             target_device=computer_name,
         ),
         Connection(
-            source_device="WhiteRabbit",
+            source_device="harp_clock_generator",
             source_port="ClkOut",
             target_device="cuTTLefishFip",
             target_port="COM1",
