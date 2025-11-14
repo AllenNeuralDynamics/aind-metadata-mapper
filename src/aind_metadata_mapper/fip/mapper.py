@@ -14,13 +14,8 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import aind_metadata_extractor
 import jsonschema
-
-# Optional dependency - only used in functions marked pragma: no cover
-try:
-    import aind_metadata_extractor
-except ImportError:
-    aind_metadata_extractor = None  # type: ignore
 from aind_data_schema.components.configs import (
     Channel,
     DetectorConfig,
@@ -32,6 +27,7 @@ from aind_data_schema.components.connections import Connection
 from aind_data_schema.core.acquisition import Acquisition, AcquisitionSubjectDetails, DataStream
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import PowerUnit, SizeUnit, TimeUnit
+from aind_metadata_extractor.models.fip import FIPDataModel
 
 from aind_metadata_mapper.fip.constants import (
     CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND,
@@ -68,32 +64,6 @@ from aind_metadata_mapper.utils import (
 )
 
 logger = logging.getLogger(__name__)
-
-# Try to import FIPDataModel from extractor (optional dependency)
-try:
-    from aind_metadata_extractor.models.fip import FIPDataModel
-except ImportError:
-    FIPDataModel = None
-
-
-def _import_fip_data_model():
-    """Import FIPDataModel from aind_metadata_extractor.
-
-    Returns
-    -------
-    type or None
-        FIPDataModel class if available, None if import fails.
-    """
-    # Check module-level FIPDataModel first (allows tests to mock it)
-    if FIPDataModel is not None:
-        return FIPDataModel
-
-    try:
-        from aind_metadata_extractor.models.fip import FIPDataModel as model
-
-        return model
-    except ImportError:
-        return None
 
 
 def _load_fip_schema() -> dict:  # pragma: no cover
@@ -318,22 +288,12 @@ class FIPMapper:
         ------
         ValueError
             If metadata validation fails.
-        ImportError
-            If aind_metadata_extractor is required but not available.
         """
         if not skip_validation:
-            # Try to use FIPDataModel if available, otherwise raise ImportError
-            fip_model = _import_fip_data_model()
-            if fip_model is None:
-                raise ImportError(
-                    "aind_metadata_extractor is required for FIP metadata validation. "
-                    "Please install it: pip install aind-metadata-extractor"
-                )
-
             # Validate using FIPDataModel
-            validated = fip_model.model_validate(metadata)  # pragma: no cover
+            validated = FIPDataModel.model_validate(metadata)
             # Pass validated model to _transform (it will handle conversion)
-            metadata = validated  # pragma: no cover
+            metadata = validated
 
         return self._transform(metadata, intended_measurements=intended_measurements, implanted_fibers=implanted_fibers)
 

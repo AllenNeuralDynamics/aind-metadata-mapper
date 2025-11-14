@@ -18,7 +18,10 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
-      run: | 
+      run: |
+        # Install aind-metadata-extractor from feat-add-fip-json-schema-model branch until FIPDataModel PR is merged
+        # TODO: Remove this once FIPDataModel is available in PyPI release
+        python -m pip install git+https://github.com/AllenNeuralDynamics/aind-metadata-extractor.git@feat-add-fip-json-schema-model
         python -m pip install -e .[dev]
     - name: Run linter checks
       run: flake8 . && interrogate --verbose .

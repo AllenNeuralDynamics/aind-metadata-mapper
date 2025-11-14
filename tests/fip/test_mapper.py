@@ -17,7 +17,7 @@ from types import SimpleNamespace
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.fip import mapper as mapper_mod
-from aind_metadata_mapper.fip.mapper import FIPMapper, _import_fip_data_model, _load_fip_schema, _validate_fip_metadata
+from aind_metadata_mapper.fip.mapper import FIPMapper, _load_fip_schema, _validate_fip_metadata
 
 
 class TestFIPMapper(unittest.TestCase):
@@ -286,26 +286,6 @@ class TestFIPMapper(unittest.TestCase):
         )
         self.assertIsNone(self.mapper._build_subject_details(data))
 
-    def test_transform_import_error_when_no_extractor(self):
-        """Test that transform raises ImportError when extractor dependency is not available.
-
-        When the aind_metadata_extractor package is not installed, the transform method
-        should raise a clear ImportError with instructions on how to install the missing
-        dependency. This prevents confusing errors and guides users to the solution.
-        """
-        original = mapper_mod.FIPDataModel
-        original_import_func = mapper_mod._import_fip_data_model
-        try:
-            mapper_mod.FIPDataModel = None
-            # Mock _import_fip_data_model to return None to simulate missing dependency
-            mapper_mod._import_fip_data_model = lambda: None
-            with self.assertRaises(ImportError) as cm:
-                self.mapper.transform({}, skip_validation=False)
-            self.assertIn("aind_metadata_extractor is required", str(cm.exception))
-        finally:
-            mapper_mod.FIPDataModel = original
-            mapper_mod._import_fip_data_model = original_import_func
-
     def test_transform_with_skip_validation(self):
         """Test that transform works with skip_validation=True for testing.
 
@@ -320,35 +300,6 @@ class TestFIPMapper(unittest.TestCase):
         )
         # Should complete without ImportError
         self.assertIsNotNone(result)
-
-    def test_import_fip_data_model_success(self):
-        """Test that _import_fip_data_model successfully imports when extractor is available.
-
-        When the aind_metadata_extractor package is installed, _import_fip_data_model should
-        successfully import the FIPDataModel class and return it. This tests the happy path
-        of the optional import mechanism.
-        """
-        result = _import_fip_data_model()
-        # Should return FIPDataModel if available, or None if not
-        # This test just verifies the function doesn't crash
-        self.assertIsNotNone(result or True)  # Always passes, just checks it doesn't crash
-
-    def test_import_fip_data_model_import_error(self):
-        """Test that _import_fip_data_model handles ImportError gracefully when extractor is missing.
-
-        When the aind_metadata_extractor package is not installed, _import_fip_data_model should
-        catch the ImportError and return None. This allows the mapper to work without the extractor
-        dependency while providing clear error messages when needed.
-        """
-        # Temporarily set FIPDataModel to None to simulate missing extractor
-        original = mapper_mod.FIPDataModel
-        try:
-            mapper_mod.FIPDataModel = None
-            result = _import_fip_data_model()
-            # Should return None when FIPDataModel is None
-            self.assertIsNone(result)
-        finally:
-            mapper_mod.FIPDataModel = original
 
     def test_get_led_wavelength_unknown(self):
         """Test that LED wavelength lookup returns None for unknown LED names.
@@ -427,36 +378,20 @@ class TestFIPMapper(unittest.TestCase):
             # Restore original __file__
             mapper_mod.aind_metadata_extractor.__file__ = original_file  # pragma: no cover
 
-    def test_transform_with_fipdatamodel_validation(self):  # pragma: no cover
+    def test_transform_with_fipdatamodel_validation(self):
         """Test that transform validates with FIPDataModel when available.
 
         When skip_validation=False and FIPDataModel is available,
         transform should validate the metadata using FIPDataModel.
         """
-        original = mapper_mod.FIPDataModel  # pragma: no cover
-        try:  # pragma: no cover
-            # Mock FIPDataModel to simulate extractor being available
-            class MockFIPDataModel:  # pragma: no cover
-                """Mock FIPDataModel class for testing validation path."""
-
-                @staticmethod  # pragma: no cover
-                def model_validate(data):  # pragma: no cover
-                    """Mock model validation that returns data as SimpleNamespace."""
-                    # Return the data as-is (simulating validation)
-                    return SimpleNamespace(**data) if isinstance(data, dict) else data  # pragma: no cover
-
-            mapper_mod.FIPDataModel = MockFIPDataModel  # pragma: no cover
-
-            result = self.mapper.transform(  # pragma: no cover
-                self.example_intermediate_data,  # pragma: no cover
-                skip_validation=False,  # pragma: no cover
-                intended_measurements=self.test_intended_measurements,  # pragma: no cover
-                implanted_fibers=self.test_implanted_fibers,  # pragma: no cover
-            )  # pragma: no cover
-            # Should complete successfully with validation
-            self.assertIsNotNone(result)  # pragma: no cover
-        finally:  # pragma: no cover
-            mapper_mod.FIPDataModel = original  # pragma: no cover
+        result = self.mapper.transform(
+            self.example_intermediate_data,
+            skip_validation=False,
+            intended_measurements=self.test_intended_measurements,
+            implanted_fibers=self.test_implanted_fibers,
+        )
+        # Should complete successfully with validation
+        self.assertIsNotNone(result)
 
     def test_run_job_calls_transform(self):
         """Test that run_job correctly orchestrates the transform and write operations.
