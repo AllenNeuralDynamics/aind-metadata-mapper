@@ -195,7 +195,7 @@ class FIPMapper:
             return None
         return result
 
-    def _extract_fiber_index(self, fiber_name: str) -> Optional[int]:
+    def _extract_fiber_index(self, fiber_name: str) -> int:
         """Extract fiber index from fiber name.
 
         Parameters
@@ -205,15 +205,26 @@ class FIPMapper:
 
         Returns
         -------
-        Optional[int]
-            Fiber index if parseable, None otherwise.
+        int
+            Fiber index.
+
+        Raises
+        ------
+        ValueError
+            If fiber name format is invalid and cannot be parsed.
         """
         if not fiber_name.startswith(f"{FIBER_PREFIX}_"):
-            return None
+            raise ValueError(
+                f"Invalid fiber name format: '{fiber_name}'. "
+                f"Expected format: '{FIBER_PREFIX}_<index>' (e.g., '{FIBER_PREFIX}_0')"
+            )
         try:
             return int(fiber_name.split("_")[1])
-        except (IndexError, ValueError):
-            return None
+        except (IndexError, ValueError) as e:
+            raise ValueError(
+                f"Could not parse fiber index from '{fiber_name}'. "
+                f"Expected format: '{FIBER_PREFIX}_<integer>' (e.g., '{FIBER_PREFIX}_0')"
+            ) from e
 
     def _parse_implanted_fibers(self, subject_id: str, data: Optional[dict] = None) -> Optional[List[int]]:
         """Parse implanted fiber indices from procedures data.
@@ -250,8 +261,7 @@ class FIPMapper:
                         if implanted_device.get("object_type") == "Fiber probe":
                             fiber_name = implanted_device.get("name", "")
                             fiber_idx = self._extract_fiber_index(fiber_name)
-                            if fiber_idx is not None:
-                                implanted_indices.add(fiber_idx)
+                            implanted_indices.add(fiber_idx)
 
         if not implanted_indices:
             return None

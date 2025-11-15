@@ -261,15 +261,18 @@ class TestFIPMapper(unittest.TestCase):
         self.assertEqual(self.mapper._extract_fiber_index("Fiber_12"), 12)
 
     def test_extract_fiber_index_invalid(self):
-        """Test that fiber index extraction handles invalid fiber names gracefully.
+        """Test that fiber index extraction raises ValueError for invalid fiber names.
 
         When fiber names don't follow the expected "Fiber_N" format or contain invalid
-        characters, _extract_fiber_index should return None. This prevents errors when
-        processing malformed fiber names from the procedures data.
+        characters, _extract_fiber_index should raise ValueError. This ensures we fail
+        loudly when critical fiber data cannot be parsed.
         """
-        self.assertIsNone(self.mapper._extract_fiber_index("Fiber_"))
-        self.assertIsNone(self.mapper._extract_fiber_index("Other_1"))
-        self.assertIsNone(self.mapper._extract_fiber_index("Fiber_X"))
+        with self.assertRaises(ValueError):
+            self.mapper._extract_fiber_index("Fiber_")
+        with self.assertRaises(ValueError):
+            self.mapper._extract_fiber_index("Other_1")
+        with self.assertRaises(ValueError):
+            self.mapper._extract_fiber_index("Fiber_X")
 
     def test_build_subject_details_none_when_no_platform(self):
         """Test that subject details returns None when no mouse platform is specified.
@@ -568,30 +571,31 @@ class TestFIPMapperEdgeCases(unittest.TestCase):
         self.assertEqual(result, [2])
 
     def test_parse_implanted_fibers_invalid_fiber_name(self):
-        """Test that implanted fibers parsing handles invalid fiber names gracefully.
+        """Test that implanted fibers parsing raises ValueError for invalid fiber names.
 
         When the procedures data contains fiber probes with invalid or malformed names,
-        _parse_implanted_fibers should skip those entries and return None if no valid
-        fiber indices can be extracted. This prevents errors from malformed procedure data.
+        _parse_implanted_fibers should raise ValueError. This ensures we fail loudly
+        when critical fiber data cannot be parsed, rather than silently continuing.
         """
         mapper = FIPMapper()
-        result = mapper._parse_implanted_fibers(
-            "123",
-            data={
-                "subject_procedures": [
-                    {
-                        "object_type": "Surgery",
-                        "procedures": [
-                            {
-                                "object_type": "Probe implant",
-                                "implanted_device": {"object_type": "Fiber probe", "name": "Invalid_Fiber"},
-                            }
-                        ],
-                    }
-                ]
-            },
-        )
-        self.assertIsNone(result)
+        with self.assertRaises(ValueError) as cm:
+            mapper._parse_implanted_fibers(
+                "123",
+                data={
+                    "subject_procedures": [
+                        {
+                            "object_type": "Surgery",
+                            "procedures": [
+                                {
+                                    "object_type": "Probe implant",
+                                    "implanted_device": {"object_type": "Fiber probe", "name": "Invalid_Fiber"},
+                                }
+                            ],
+                        }
+                    ]
+                },
+            )
+        self.assertIn("Invalid_Fiber", str(cm.exception))
 
     def test_camera_exposure_missing_delta_warning(self):
         """Test camera exposure extraction warning when delta_1 is missing."""
