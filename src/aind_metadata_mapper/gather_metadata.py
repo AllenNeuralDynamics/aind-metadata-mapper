@@ -524,6 +524,7 @@ class GatherMetadataJob:
             )
 
         # Raise an error if acquisition_start_time does not match what was pulled
+        acquisition_start_time = acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
         local_acq_start_time = datetime.fromisoformat(acquisition_start_time)
         if local_acq_start_time != self.settings.acquisition_start_time:
             if self.settings.raise_if_invalid:
