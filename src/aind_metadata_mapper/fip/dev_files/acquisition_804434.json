@@ -50,22 +50,22 @@
           "object_type": "Light emitting diode config",
           "device_name": "LED_UV_415nm",
           "power": 20.0,
-          "power_unit": "milliwatt",
-          "power_measured_at": "patch cable end"
+          "power_unit": "percent",
+          "power_measured_at": null
         },
         {
           "object_type": "Light emitting diode config",
           "device_name": "LED_BLUE_470nm",
           "power": 20.0,
-          "power_unit": "milliwatt",
-          "power_measured_at": "patch cable end"
+          "power_unit": "percent",
+          "power_measured_at": null
         },
         {
           "object_type": "Light emitting diode config",
           "device_name": "LED_LIME_565nm",
           "power": 20.0,
-          "power_unit": "milliwatt",
-          "power_measured_at": "patch cable end"
+          "power_unit": "percent",
+          "power_measured_at": null
         },
         {
           "object_type": "Patch cord config",
@@ -89,8 +89,8 @@
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_BLUE_470nm",
                   "power": 20.0,
-                  "power_unit": "milliwatt",
-                  "power_measured_at": "patch cable end"
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -117,8 +117,8 @@
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_UV_415nm",
                   "power": 20.0,
-                  "power_unit": "milliwatt",
-                  "power_measured_at": "patch cable end"
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -145,8 +145,8 @@
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_LIME_565nm",
                   "power": 20.0,
-                  "power_unit": "milliwatt",
-                  "power_measured_at": "patch cable end"
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -179,8 +179,8 @@
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_BLUE_470nm",
                   "power": 20.0,
-                  "power_unit": "milliwatt",
-                  "power_measured_at": "patch cable end"
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -207,8 +207,8 @@
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_UV_415nm",
                   "power": 20.0,
-                  "power_unit": "milliwatt",
-                  "power_measured_at": "patch cable end"
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,
@@ -235,8 +235,8 @@
                   "object_type": "Light emitting diode config",
                   "device_name": "LED_LIME_565nm",
                   "power": 20.0,
-                  "power_unit": "milliwatt",
-                  "power_measured_at": "patch cable end"
+                  "power_unit": "percent",
+                  "power_measured_at": null
                 }
               ],
               "variable_power": false,

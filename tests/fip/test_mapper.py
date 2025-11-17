@@ -400,17 +400,38 @@ class TestFIPMapper(unittest.TestCase):
     def test_transform_calls_validation_when_not_skipped(self):
         """Test that transform calls validation when skip_validation=False.
 
-        This test exercises the validation code path. Since the schema file
-        may not be available in the installed package, validation will gracefully
-        skip with a warning if the file is not found.
+        This test exercises the validation code path. Converts flat test data
+        to proper schema structure before validation.
         """
+        # Convert flat structure to schema-compliant structure
+        flat = self.example_intermediate_data
+        schema_compliant_data = {
+            "data_stream_metadata": [
+                {
+                    "id": "test_stream",
+                    "start_time": flat.get("session_start_time", "2025-07-18T19:32:35.275046Z"),
+                    "end_time": flat.get("session_end_time", "2025-07-18T19:49:22.448358Z"),
+                }
+            ],
+            "session": {
+                "subject": flat.get("subject_id", "test"),
+                "experiment": flat.get("session_type", "FIP"),
+                "experimenter": flat.get("experimenter_full_name", ["Foo", "Bar"]),
+                "notes": flat.get("notes", "test session"),
+                "date": "2025-07-18T19:32:35.275046Z",
+                "root_path": flat.get("data_directory", "/data/test"),
+                "session_name": "test_session",
+            },
+            "rig": flat.get("rig_config", {}),
+        }
+
         result = self.mapper.transform(
-            self.example_intermediate_data,
-            skip_validation=False,  # Don't skip - will attempt validation
+            schema_compliant_data,
+            skip_validation=False,  # Don't skip - will validate against schema
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
         )
-        # Should complete successfully (validation either passes or skips with warning)
+        # Should complete successfully (validation passes)
         self.assertIsNotNone(result)
 
     def test_run_job_calls_transform(self):

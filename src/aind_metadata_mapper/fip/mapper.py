@@ -758,12 +758,12 @@ class FIPMapper:
                     )
 
                 # Create patch cord if we have channels
-            if channels:
-                patch_cord = PatchCordConfig(
-                    device_name=f"{PATCH_CORD_PREFIX} {fiber_idx}",
-                    channels=channels,
-                )
-                configurations.append(patch_cord)
+                if channels:
+                    patch_cord = PatchCordConfig(
+                        device_name=f"{PATCH_CORD_PREFIX} {fiber_idx}",
+                        channels=channels,
+                    )
+                    configurations.append(patch_cord)
 
         return configurations
 
