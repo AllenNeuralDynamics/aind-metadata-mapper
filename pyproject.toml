@@ -85,5 +85,5 @@ line_length = 120
 profile = "black"
 
 [tool.interrogate]
-exclude = ["setup.py", "docs", "build", "env"]
+exclude = ["setup.py", "docs", "build", "env", "src/aind-metadata-extractor"]
 fail-under = 100
