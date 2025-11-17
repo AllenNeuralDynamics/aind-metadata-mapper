@@ -3,6 +3,7 @@
 import json
 import os
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 from unittest.mock import MagicMock, patch
@@ -28,14 +29,17 @@ V2_METADATA_DIR = TEST_DIR / "resources" / "v2_metadata"
 class TestIntegrationMetadata(unittest.TestCase):
     """Integration tests using real metadata resource files"""
 
-    def setUp(self):
+    @patch("os.makedirs")
+    def setUp(self, mock_makedirs):
         """Set up test fixtures"""
         self.test_settings = JobSettings(
             metadata_dir="/test/metadata",
+            output_dir="/test/output",
             subject_id="804670",
             project_name="Visual Behavior",
             modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
             metadata_service_url="http://test-service.com",
+            acquisition_start_time=datetime(2025, 9, 17, 10, 26, 0, tzinfo=timezone.utc),
         )
         self.job = GatherMetadataJob(settings=self.test_settings)
 
@@ -145,7 +149,7 @@ class TestIntegrationMetadata(unittest.TestCase):
         # Mock the API response - subject_data is already the subject object
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {"data": subject_data}
+        mock_response.json.return_value = subject_data
         mock_get.return_value = mock_response
 
         # Call the method
@@ -168,7 +172,7 @@ class TestIntegrationMetadata(unittest.TestCase):
         # Mock the API response - procedures_data is already the procedures object
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {"data": procedures_data}
+        mock_response.json.return_value = procedures_data
         mock_get.return_value = mock_response
 
         # Call the method
@@ -333,17 +337,14 @@ class TestIntegrationMetadata(unittest.TestCase):
     @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_get_file_from_user_defined_directory")
     def test_build_data_description_uses_acquisition_start_time_for_name(self, mock_get_file, mock_file_exists):
         """Test that build_data_description uses acquisition_start_time for DataDescription name formatting"""
-        # Load the real acquisition data
         acquisition_data = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
 
-        # Mock that no data_description.json exists locally, but acquisition.json does
         def mock_exists(file_name):
             """Mock file existence check"""
             return file_name == "acquisition.json"
 
         mock_file_exists.side_effect = mock_exists
 
-        # Mock reading acquisition file
         def mock_read_file(file_name):
             """Mock file reading"""
             if file_name == "acquisition.json":
@@ -353,7 +354,6 @@ class TestIntegrationMetadata(unittest.TestCase):
 
         mock_get_file.side_effect = mock_read_file
 
-        # Mock the funding API call to use real funding data
         funding_data = self._load_resource_file(METADATA_SERVICE_DIR, "funding_response.json")
 
         with patch("requests.get") as mock_get:
@@ -362,16 +362,12 @@ class TestIntegrationMetadata(unittest.TestCase):
             mock_response.json.return_value = funding_data
             mock_get.return_value = mock_response
 
-            # Pass acquisition_start_time from acquisition_data
-            acquisition_start_time = acquisition_data.get("acquisition_start_time")
+            acquisition_start_time = acquisition_data["acquisition_start_time"]
             result = self.job.build_data_description(acquisition_start_time=acquisition_start_time)
 
-        # Verify the result has the expected structure
         self.assertIn("name", result)
         self.assertIn("creation_time", result)
 
-        # The acquisition_start_time is "2025-09-17 10:26:00.474680-07:00"
-        # The name field should use acquisition start time in format: subject_id_YYYY-MM-DD_HH-MM-SS
         expected_name = "804670_2025-09-17_10-26-00"
         self.assertEqual(result["name"], expected_name)
 
@@ -429,16 +425,18 @@ class TestIntegrationMetadata(unittest.TestCase):
 
     def test_validate_and_create_metadata_with_raise_if_invalid_true(self):
         """Test validate_and_create_metadata with raise_if_invalid=True - should raise ValidationError"""
-        # Create job settings with raise_if_invalid=True
-        strict_settings = JobSettings(
-            metadata_dir="/test/metadata",
-            subject_id="804670",
-            project_name="Visual Behavior",
-            modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
-            metadata_service_url="http://test-service.com",
-            raise_if_invalid=True,
-        )
-        strict_job = GatherMetadataJob(settings=strict_settings)
+        with patch("os.makedirs"):
+            strict_settings = JobSettings(
+                metadata_dir="/test/metadata",
+                output_dir="/test/output",
+                subject_id="804670",
+                project_name="Visual Behavior",
+                modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+                metadata_service_url="http://test-service.com",
+                raise_if_invalid=True,
+                acquisition_start_time=datetime(2025, 9, 17, 10, 26, 0),
+            )
+            strict_job = GatherMetadataJob(settings=strict_settings)
 
         # Create core metadata with invalid data that will cause ValidationError
         core_metadata = {
@@ -470,20 +468,8 @@ class TestIntegrationMetadata(unittest.TestCase):
         with self.assertRaises(ValidationError):
             strict_job.validate_and_create_metadata(core_metadata)
 
-    def test_validate_and_create_metadata_success_with_location(self):
-        """Test validate_and_create_metadata with location field using valid real metadata resources"""
-        # Create job settings with location specified
-        location_settings = JobSettings(
-            metadata_dir="/test/metadata",
-            subject_id="804670",
-            project_name="Visual Behavior",
-            modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
-            metadata_service_url="http://test-service.com",
-            location="s3://my-bucket/my-data",
-        )
-        location_job = GatherMetadataJob(settings=location_settings)
-
-        # Load real metadata files (these should be valid)
+    def test_validate_and_create_metadata_success(self):
+        """Test validate_and_create_metadata with valid real metadata resources"""
         data_description = self._load_resource_file(V2_METADATA_DIR, "data_description.json")
         subject = self._load_resource_file(V2_METADATA_DIR, "subject.json")
         acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
@@ -502,54 +488,12 @@ class TestIntegrationMetadata(unittest.TestCase):
             "quality_control": quality_control,
         }
 
-        # With valid data, this should return a Metadata object
-        metadata = location_job.validate_and_create_metadata(core_metadata)
-
-        self.assertIsInstance(metadata, Metadata)
-        self.assertEqual(metadata.location, "s3://my-bucket/my-data")
-
-    def test_validate_and_create_metadata_success_without_location(self):
-        """Test validate_and_create_metadata without location field using valid real metadata resources"""
-        # Load real metadata files (these should be valid)
-        data_description = self._load_resource_file(V2_METADATA_DIR, "data_description.json")
-        subject = self._load_resource_file(V2_METADATA_DIR, "subject.json")
-        acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
-        procedures = self._load_resource_file(V2_METADATA_DIR, "procedures.json")
-        instrument = self._load_resource_file(V2_METADATA_DIR, "instrument.json")
-        processing = self._load_resource_file(V2_METADATA_DIR, "processing.json")
-        quality_control = self._load_resource_file(V2_METADATA_DIR, "quality_control.json")
-
-        core_metadata = {
-            "data_description": data_description,
-            "subject": subject,
-            "acquisition": acquisition,
-            "procedures": procedures,
-            "instrument": instrument,
-            "processing": processing,
-            "quality_control": quality_control,
-        }
-
-        # With valid data, this should return a Metadata object
         metadata = self.job.validate_and_create_metadata(core_metadata)
 
         self.assertIsInstance(metadata, Metadata)
-        self.assertEqual(metadata.location, "")
 
-    def test_validate_and_create_metadata_failure_fallback_with_location(self):
-        """Test validate_and_create_metadata fallback with location field using real metadata with invalid field"""
-        # Create job settings with location specified
-        location_settings = JobSettings(
-            metadata_dir="/test/metadata",
-            subject_id="804670",
-            project_name="Visual Behavior",
-            modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
-            metadata_service_url="http://test-service.com",
-            location="s3://my-bucket/my-data",
-            raise_if_invalid=False,  # Explicit for clarity
-        )
-        location_job = GatherMetadataJob(settings=location_settings)
-
-        # Load ALL real metadata files
+    def test_validate_and_create_metadata_failure_fallback(self):
+        """Test validate_and_create_metadata fallback using real metadata with invalid field"""
         data_description = self._load_resource_file(V2_METADATA_DIR, "data_description.json")
         subject = self._load_resource_file(V2_METADATA_DIR, "subject.json")
         acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
@@ -558,7 +502,6 @@ class TestIntegrationMetadata(unittest.TestCase):
         processing = self._load_resource_file(V2_METADATA_DIR, "processing.json")
         quality_control = self._load_resource_file(V2_METADATA_DIR, "quality_control.json")
 
-        # Remove required subject_id field to cause Metadata validation to fail
         del data_description["subject_id"]
 
         core_metadata = {
@@ -571,41 +514,9 @@ class TestIntegrationMetadata(unittest.TestCase):
             "quality_control": quality_control,
         }
 
-        # With invalid data and raise_if_invalid=False, should return dict from create_metadata_json
-        metadata = location_job.validate_and_create_metadata(core_metadata)
-
-        self.assertIsInstance(metadata, dict)
-        self.assertEqual(metadata["location"], "s3://my-bucket/my-data")
-
-    def test_validate_and_create_metadata_failure_fallback_without_location(self):
-        """Test validate_and_create_metadata fallback without location field using real metadata with invalid field"""
-        # Load ALL real metadata files
-        data_description = self._load_resource_file(V2_METADATA_DIR, "data_description.json")
-        subject = self._load_resource_file(V2_METADATA_DIR, "subject.json")
-        acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
-        procedures = self._load_resource_file(V2_METADATA_DIR, "procedures.json")
-        instrument = self._load_resource_file(V2_METADATA_DIR, "instrument.json")
-        processing = self._load_resource_file(V2_METADATA_DIR, "processing.json")
-        quality_control = self._load_resource_file(V2_METADATA_DIR, "quality_control.json")
-
-        # Remove required name subject_id to cause Metadata validation to fail
-        del data_description["subject_id"]
-
-        core_metadata = {
-            "data_description": data_description,
-            "subject": subject,
-            "acquisition": acquisition,
-            "procedures": procedures,
-            "instrument": instrument,
-            "processing": processing,
-            "quality_control": quality_control,
-        }
-
-        # With invalid data and raise_if_invalid=False (default), should return dict from create_metadata_json
         metadata = self.job.validate_and_create_metadata(core_metadata)
 
         self.assertIsInstance(metadata, dict)
-        self.assertEqual(metadata["location"], "")
 
 
 if __name__ == "__main__":

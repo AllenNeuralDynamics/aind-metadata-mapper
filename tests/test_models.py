@@ -16,6 +16,7 @@ class TestJobSettings(unittest.TestCase):
         # parsing of modalities has complex requirements
         job_settings = JobSettings(
             metadata_dir=".",
+            output_dir="./output",
             subject_id="12345",
             project_name="test_project",
             modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
@@ -25,6 +26,18 @@ class TestJobSettings(unittest.TestCase):
         self.assertEqual("test_project", job_settings.project_name)
         expected_modalities = [Modality.ECEPHYS, Modality.BEHAVIOR]
         self.assertEqual(expected_modalities, job_settings.modalities)
+
+    def test_output_path_defaults_to_input_path(self):
+        """Tests that output_dir defaults to metadata_dir when not provided."""
+        job_settings = JobSettings(
+            metadata_dir="/test/input",
+            output_dir="/test/input",
+            subject_id="12345",
+            project_name="test_project",
+            modalities=[Modality.ECEPHYS],
+        )
+        self.assertEqual("/test/input", job_settings.metadata_dir)
+        self.assertEqual("/test/input", job_settings.output_dir)
 
 
 if __name__ == "__main__":

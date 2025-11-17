@@ -4,7 +4,9 @@ import json
 import logging
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, Optional
+from urllib.parse import urljoin
 
 import requests
 from aind_data_schema.core.acquisition import Acquisition
@@ -25,6 +27,35 @@ from aind_metadata_mapper.base import MapperJobSettings
 from aind_metadata_mapper.mapper_registry import registry
 
 
+def _metadata_service_helper(url: str) -> Optional[dict]:
+    """
+    Helper function to get metadata from a service URL
+    Parameters
+    ----------
+    url : str
+        Full URL to fetch metadata from
+
+    Returns
+    -------
+    dict
+        Metadata as a dictionary, or empty dict if error occurs
+    """
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            # valid object
+            return response.json()
+        elif response.status_code == 400:
+            # invalid object, accept here and let validation handle whether to raise an error later
+            return response.json()
+        else:
+            logging.error(f"Failed to retrieve metadata from {url} (status: {response.status_code})")
+            return None
+    except Exception as e:
+        logging.error(f"Error retrieving metadata from {url}: {e}")
+        return None
+
+
 class GatherMetadataJob:
     """Class to handle retrieving metadata"""
 
@@ -36,6 +67,8 @@ class GatherMetadataJob:
         settings : JobSettings
         """
         self.settings = settings
+        # Create output directory if it doesn't exist
+        os.makedirs(self.settings.output_dir, exist_ok=True)
 
     def _does_file_exist_in_user_defined_dir(self, file_name: str) -> bool:
         """
@@ -50,6 +83,8 @@ class GatherMetadataJob:
         True if self.settings.metadata_dir is not None and file is in that dir
 
         """
+        if self.settings.metadata_dir is None:
+            return False
         file_path_to_check = os.path.join(self.settings.metadata_dir, file_name)
         if os.path.isfile(file_path_to_check):
             return True
@@ -69,6 +104,8 @@ class GatherMetadataJob:
         File contents as a dictionary
 
         """
+        if self.settings.metadata_dir is None:
+            return None
         file_path = os.path.join(self.settings.metadata_dir, file_name)
         with open(file_path, "r") as f:
             contents = json.load(f)
@@ -88,12 +125,32 @@ class GatherMetadataJob:
         list[dict]
             File contents as a list of dictionaries
         """
-        if not os.path.exists(self.settings.metadata_dir):
+        if self.settings.metadata_dir is None:
+            return []
+        return self._get_prefixed_files_from_directory(self.settings.metadata_dir, file_name_prefix)
+
+    def _get_prefixed_files_from_directory(self, directory: str, file_name_prefix: str) -> list[dict]:
+        """
+        Get all files with a given prefix from a specified directory
+
+        Parameters
+        ----------
+        directory : str
+            Directory to search in
+        file_name_prefix : str
+            Prefix, e.g. "instrument"
+
+        Returns
+        -------
+        list[dict]
+            File contents as a list of dictionaries
+        """
+        if not os.path.exists(directory):
             return []
 
         file_paths = [
-            os.path.join(self.settings.metadata_dir, f)
-            for f in os.listdir(self.settings.metadata_dir)
+            os.path.join(directory, f)
+            for f in os.listdir(directory)
             if f.startswith(file_name_prefix) and f.endswith(".json")
         ]
         file_names = [os.path.basename(f) for f in file_paths]
@@ -115,16 +172,10 @@ class GatherMetadataJob:
         if not self.settings.project_name:
             return [], []
 
-        try:
-            funding_url = f"{self.settings.metadata_service_url}" f"/api/v2/funding/{self.settings.project_name}"
-            response = requests.get(funding_url)
-            if response.status_code == 200:
-                funding_info = response.json()
-            else:
-                logging.warning(f"Unable to retrieve funding info: {response.status_code}")
-                return [], []
-        except Exception as e:
-            logging.warning(f"Error retrieving funding info: {e}")
+        funding_url = f"{self.settings.metadata_service_url}" f"/api/v2/funding/{self.settings.project_name}"
+        funding_info = _metadata_service_helper(funding_url)
+
+        if not funding_info:
             return [], []
 
         investigators = []
@@ -151,7 +202,7 @@ class GatherMetadataJob:
 
         return parsed_funding_info, investigators_list
 
-    def build_data_description(self, acquisition_start_time: Optional[str]) -> dict:
+    def build_data_description(self, acquisition_start_time: str) -> dict:
         """Build data description metadata"""
         logging.info("Gathering data description metadata.")
         file_name = DataDescription.default_filename()
@@ -161,23 +212,22 @@ class GatherMetadataJob:
             logging.debug(f"Using existing {file_name}.")
             return self._get_file_from_user_defined_directory(file_name=file_name)
 
-        if acquisition_start_time:
-            acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
-            creation_time = datetime.fromisoformat(acquisition_start_time)
-            logging.info(f"Using acquisition start time: {creation_time}")
-        else:
-            creation_time = datetime.now()
-            logging.info(f"No start time available, using creation time: {creation_time}")
+        acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
+        creation_time = datetime.fromisoformat(acquisition_start_time)
+        logging.info(f"Using acquisition start time: {creation_time}")
 
         # Get funding information
         funding_source, investigators = self.get_funding()
+
+        # Get modalities
+        modalities = self.settings.modalities
 
         # Create new data description
         new_data_description = DataDescription(
             creation_time=creation_time,
             institution=Organization.AIND,
             project_name=self.settings.project_name,
-            modalities=self.settings.modalities,
+            modalities=modalities,
             funding_source=funding_source,
             investigators=investigators,
             data_level=DataLevel.RAW,
@@ -209,16 +259,12 @@ class GatherMetadataJob:
                 f"{self.settings.subject_id} from "
                 f"{self.settings.metadata_service_url}"
             )
-            try:
-                response = requests.get(f"{self.settings.metadata_service_url}" f"/api/v2/subject/{subject_id}")
-                if response.status_code == 200:
-                    contents = response.json().get("data", response.json())
-                else:
-                    logging.error(f"Subject {subject_id} not found in service (status: {response.status_code})")
-                    contents = None
-            except Exception as e:
-                logging.error(f"Failed to retrieve subject metadata: {e}")
-                contents = None
+            subject_url = urljoin(
+                self.settings.metadata_service_url,
+                f"{self.settings.metadata_service_subject_endpoint}{subject_id}",
+            )
+
+            contents = _metadata_service_helper(subject_url)
         else:
             logging.debug(f"Using existing {file_name}.")
             contents = self._get_file_from_user_defined_directory(file_name=file_name)
@@ -240,16 +286,11 @@ class GatherMetadataJob:
                 f"{self.settings.subject_id} from "
                 f"{self.settings.metadata_service_url}"
             )
-            try:
-                response = requests.get(f"{self.settings.metadata_service_url}" f"/api/v2/procedures/{subject_id}")
-                if response.status_code == 200:
-                    contents = response.json().get("data", response.json())
-                else:
-                    logging.error(f"Procedures for {subject_id} not found in service (status: {response.status_code})")
-                    contents = None
-            except Exception as e:
-                logging.error(f"Failed to retrieve procedures metadata: {e}")
-                contents = None
+            procedures_url = urljoin(
+                self.settings.metadata_service_url,
+                f"{self.settings.metadata_service_procedures_endpoint}{subject_id}",
+            )
+            contents = _metadata_service_helper(procedures_url)
         else:
             logging.debug(f"Using existing {file_name}.")
             contents = self._get_file_from_user_defined_directory(file_name=file_name)
@@ -260,18 +301,21 @@ class GatherMetadataJob:
         Run mappers for any files in metadata_dir matching a registry key.
         For each file named <mapper>.json, run the corresponding mapper and output acquisition_<mapper>.json.
         """
-        metadata_dir = self.settings.metadata_dir
+        if self.settings.metadata_dir is None:
+            return
+        input_dir = self.settings.metadata_dir
+        output_dir = self.settings.output_dir
         # For each registry key, check if <key>.json exists
         for mapper_name in registry.keys():
             input_filename = f"{mapper_name}.json"
-            input_path = os.path.join(metadata_dir, input_filename)
+            input_path = os.path.join(input_dir, input_filename)
             output_filename = f"acquisition_{mapper_name}.json"
-            output_path = os.path.join(metadata_dir, output_filename)
+            output_path = os.path.join(output_dir, output_filename)
             # Only run if input exists and output does not already exist
             if os.path.isfile(input_path) and not os.path.isfile(output_path):
                 mapper_cls = registry[mapper_name]
                 # Create job settings for the mapper
-                job_settings = MapperJobSettings(input_filepath=input_path, output_filepath=output_path)
+                job_settings = MapperJobSettings(input_filepath=Path(input_path), output_filepath=Path(output_path))
                 try:
                     mapper = mapper_cls()
                     mapper.run_job(job_settings)
@@ -292,8 +336,10 @@ class GatherMetadataJob:
         else:
             # Run mappers for any matching files
             self._run_mappers_for_acquisition()
-            # then gather all acquisition files with prefixes
-            files = self._get_prefixed_files_from_user_defined_directory(file_name_prefix="acquisition")
+            # then gather all acquisition files with prefixes from output directory
+            files = self._get_prefixed_files_from_directory(
+                directory=self.settings.output_dir, file_name_prefix="acquisition"
+            )
             if files:
                 return self._merge_models(Acquisition, files)
             else:
@@ -369,7 +415,7 @@ class GatherMetadataJob:
 
     def _write_json_file(self, filename: str, contents: dict) -> None:
         """
-        Write a json file
+        Write a json file to the output directory
         Parameters
         ----------
         filename : str
@@ -377,7 +423,7 @@ class GatherMetadataJob:
         contents : dict
           Contents to write to the json file
         """
-        output_file = os.path.join(self.settings.metadata_dir, filename)
+        output_file = os.path.join(self.settings.output_dir, filename)
         with open(output_file, "w") as f:
             json.dump(contents, f, indent=3, ensure_ascii=False, sort_keys=True)
 
@@ -406,7 +452,7 @@ class GatherMetadataJob:
             quality_control=core_metadata.get("quality_control"),
             model=core_metadata.get("model"),
             name=name,
-            location=self.settings.location if self.settings.location else "",
+            location="",  # we're only doing validation here, no need to set real location
         )
         return metadata
 
@@ -459,33 +505,13 @@ class GatherMetadataJob:
                         "model": core_metadata.get("model"),
                     },
                     name=name,
-                    location=self.settings.location if self.settings.location else "",
+                    location="",
                 )
                 return metadata
 
-    def run_job(self) -> None:
-        """Run job"""
-        logging.info("Starting run_job")
+    def add_core_metadata(self, core_metadata: dict) -> Dict[str, Any]:
+        """Get all core metadata as a dictionary"""
 
-        # Gather all core metadata
-        core_metadata = {}
-
-        # Get acquisition first so that we can use the acquisition_start_time
-        # for the data_description
-        acquisition = self.get_acquisition()
-        if acquisition:
-            core_metadata["acquisition"] = acquisition
-            self._write_json_file(Acquisition.default_filename(), acquisition)
-
-        # Always create data description (required)
-        data_description = self.build_data_description(
-            acquisition.get("acquisition_start_time") if acquisition else None
-        )
-        if data_description:
-            core_metadata["data_description"] = data_description
-            self._write_json_file(DataDescription.default_filename(), data_description)
-
-        # Get other metadata (optional)
         subject = self.get_subject()
         if subject:
             core_metadata["subject"] = subject
@@ -516,12 +542,72 @@ class GatherMetadataJob:
             core_metadata["model"] = model
             self._write_json_file(Model.default_filename(), model)
 
+        return core_metadata
+
+    def run_job(self) -> None:
+        """Run job"""
+        logging.info("Starting run_job")
+
+        # Gather all core metadata
+        core_metadata = {}
+
+        # Get acquisition first so that we can use the acquisition_start_time
+        # for the data_description
+        acquisition = self.get_acquisition()
+        if acquisition:
+            core_metadata["acquisition"] = acquisition
+            self._write_json_file(Acquisition.default_filename(), acquisition)
+
+        # Try to get the acquisition_start_time
+        acquisition_start_time = acquisition.get("acquisition_start_time") if acquisition else None
+        if not acquisition_start_time:
+            if self.settings.acquisition_start_time:
+                acquisition_start_time = self.settings.acquisition_start_time.isoformat()
+                logging.info(
+                    f"No acquisition_start_time found in acquisition metadata. "
+                    f"Using provided acquisition_start_time: {acquisition_start_time}"
+                )
+            else:
+                # Crash if no acquisition_start_time is available
+                raise ValueError(
+                    "acquisition_start_time is required but not provided. "
+                    "Either provide acquisition.json with acquisition_start_time, "
+                    "or provide acquisition_start_time in the settings."
+                )
+
+        # Raise an error if acquisition_start_time does not match what was pulled
+        acquisition_start_time = acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
+        local_acq_start_time = datetime.fromisoformat(acquisition_start_time)
+        if local_acq_start_time != self.settings.acquisition_start_time:
+            if self.settings.raise_if_invalid:
+                raise ValueError(
+                    "acquisition_start_time from acquisition metadata does not match "
+                    "the acquisition_start_time provided in settings."
+                )
+            else:
+                logging.error(
+                    "acquisition_start_time from acquisition metadata does not match "
+                    "the acquisition_start_time provided in settings."
+                )
+
+        # Always create data description (required)
+        data_description = self.build_data_description(acquisition_start_time=acquisition_start_time)
+        if data_description:
+            core_metadata["data_description"] = data_description
+            self._write_json_file(DataDescription.default_filename(), data_description)
+
+        # Get other metadata (optional)
+        # Adds subject, procedures, instrument, processing, quality_control, model, if available
+        core_metadata = self.add_core_metadata(core_metadata=core_metadata)
+
         self.validate_and_create_metadata(core_metadata)
 
         logging.info("Finished job.")
 
 
 if __name__ == "__main__":
-    main_job_settings = JobSettings(metadata_dir="./metadata")
+    # JobSettings has cli_parse_args=True, so it automatically parses command line arguments
+    # and handles converting CLI args to the appropriate types
+    main_job_settings = JobSettings()
     job = GatherMetadataJob(settings=main_job_settings)
     job.run_job()

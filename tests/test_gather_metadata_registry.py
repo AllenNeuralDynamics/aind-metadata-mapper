@@ -1,4 +1,5 @@
 """"Unit tests for gather_metadata_registry.py."""
+
 import json
 import os
 import tempfile
@@ -56,6 +57,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         # Provide all required JobSettings fields
         settings = JobSettings(
             metadata_dir=self.metadata_dir,
+            output_dir=self.metadata_dir,
             subject_id="test_subject",
             project_name="Test Project",
             modalities=[Modality.ECEPHYS],
@@ -79,6 +81,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         settings = JobSettings(
             metadata_dir=self.metadata_dir,
+            output_dir=self.metadata_dir,
             subject_id="test_subject",
             project_name="Test Project",
             modalities=[Modality.ECEPHYS],
