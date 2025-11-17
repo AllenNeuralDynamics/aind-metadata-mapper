@@ -322,7 +322,7 @@ class TestFIPMapper(unittest.TestCase):
         _get_active_devices should return an empty list for fiber devices.
         """
         mapper = FIPMapper()
-        rig_config = {"cuttlefish_fip": {}}
+        rig_config = {"cuttlefish_fip": {"name": "cuTTLefishFip"}}
         result = mapper._get_active_devices(rig_config, implanted_fibers=None)
         # Should only contain the controller, no fibers
         self.assertIn("cuTTLefishFip", result)
