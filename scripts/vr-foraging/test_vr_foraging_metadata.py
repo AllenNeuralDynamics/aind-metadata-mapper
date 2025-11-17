@@ -33,7 +33,7 @@ def load_mock_response(filename: str):
 def mock_requests_get(url):
     """Mock requests.get to return responses from local files"""
     mock_response = Mock()
-    
+
     if "/subject/" in url:
         mock_response.status_code = 200
         mock_response.json.return_value = load_mock_response("subject_response.json")
@@ -90,7 +90,7 @@ def run_test():
     if instrument:
         print(f"✓ Instrument loaded: {instrument.get('instrument_id')}")
         print(f"  Modification date: {instrument.get('modification_date')}")
-        modalities = instrument.get('modalities', [])
+        modalities = instrument.get("modalities", [])
         print(f"  Modalities: {len(modalities)}")
         for mod in modalities:
             print(f"    - {mod.get('name')}")
