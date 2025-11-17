@@ -102,7 +102,16 @@ def _validate_fip_metadata(metadata: dict) -> None:  # pragma: no cover
     ValueError
         If validation fails with details about what went wrong.
     """
-    schema = _load_fip_schema()  # pragma: no cover
+    try:  # pragma: no cover
+        schema = _load_fip_schema()  # pragma: no cover
+    except FileNotFoundError:  # pragma: no cover
+        # Schema file not available (e.g., not yet included in package)
+        # Skip validation - this will work once fip.json is properly packaged
+        logger.warning(  # pragma: no cover
+            "FIP JSON schema file not found. Skipping validation. "
+            "This is expected until fip.json is included in the aind-metadata-extractor package."
+        )  # pragma: no cover
+        return  # pragma: no cover
 
     try:  # pragma: no cover
         jsonschema.validate(instance=metadata, schema=schema)  # pragma: no cover
