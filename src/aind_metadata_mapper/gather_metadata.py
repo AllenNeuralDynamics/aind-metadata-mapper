@@ -509,59 +509,9 @@ class GatherMetadataJob:
                 )
                 return metadata
 
-    def run_job(self) -> None:
-        """Run job"""
-        logging.info("Starting run_job")
+    def add_core_metadata(self, core_metadata: dict) -> Dict[str, Any]:
+        """Get all core metadata as a dictionary"""
 
-        # Gather all core metadata
-        core_metadata = {}
-
-        # Get acquisition first so that we can use the acquisition_start_time
-        # for the data_description
-        acquisition = self.get_acquisition()
-        if acquisition:
-            core_metadata["acquisition"] = acquisition
-            self._write_json_file(Acquisition.default_filename(), acquisition)
-
-        # Try to get the acquisition_start_time
-        acquisition_start_time = acquisition.get("acquisition_start_time") if acquisition else None
-        if not acquisition_start_time and self.settings.acquisition_start_time:
-            acquisition_start_time = self.settings.acquisition_start_time.isoformat()
-            logging.info(
-                f"No acquisition_start_time found in acquisition metadata. "
-                f"Using provided acquisition_start_time: {acquisition_start_time}"
-            )
-
-        # Crash if no acquisition_start_time is available
-        if not acquisition_start_time:
-            raise ValueError(
-                "acquisition_start_time is required but not provided. "
-                "Either provide acquisition.json with acquisition_start_time, "
-                "or provide acquisition_start_time in the settings."
-            )
-
-        # Raise an error if acquisition_start_time does not match what was pulled
-        acquisition_start_time = acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
-        local_acq_start_time = datetime.fromisoformat(acquisition_start_time)
-        if local_acq_start_time != self.settings.acquisition_start_time:
-            if self.settings.raise_if_invalid:
-                raise ValueError(
-                    "acquisition_start_time from acquisition metadata does not match "
-                    "the acquisition_start_time provided in settings."
-                )
-            else:
-                logging.error(
-                    "acquisition_start_time from acquisition metadata does not match "
-                    "the acquisition_start_time provided in settings."
-                )
-
-        # Always create data description (required)
-        data_description = self.build_data_description(acquisition_start_time=acquisition_start_time)
-        if data_description:
-            core_metadata["data_description"] = data_description
-            self._write_json_file(DataDescription.default_filename(), data_description)
-
-        # Get other metadata (optional)
         subject = self.get_subject()
         if subject:
             core_metadata["subject"] = subject
@@ -591,6 +541,64 @@ class GatherMetadataJob:
         if model:
             core_metadata["model"] = model
             self._write_json_file(Model.default_filename(), model)
+
+        return core_metadata
+
+    def run_job(self) -> None:
+        """Run job"""
+        logging.info("Starting run_job")
+
+        # Gather all core metadata
+        core_metadata = {}
+
+        # Get acquisition first so that we can use the acquisition_start_time
+        # for the data_description
+        acquisition = self.get_acquisition()
+        if acquisition:
+            core_metadata["acquisition"] = acquisition
+            self._write_json_file(Acquisition.default_filename(), acquisition)
+
+        # Try to get the acquisition_start_time
+        acquisition_start_time = acquisition.get("acquisition_start_time") if acquisition else None
+        if not acquisition_start_time:
+            if self.settings.acquisition_start_time:
+                acquisition_start_time = self.settings.acquisition_start_time.isoformat()
+                logging.info(
+                    f"No acquisition_start_time found in acquisition metadata. "
+                    f"Using provided acquisition_start_time: {acquisition_start_time}"
+                )
+            else:
+                # Crash if no acquisition_start_time is available
+                raise ValueError(
+                    "acquisition_start_time is required but not provided. "
+                    "Either provide acquisition.json with acquisition_start_time, "
+                    "or provide acquisition_start_time in the settings."
+                )
+
+        # Raise an error if acquisition_start_time does not match what was pulled
+        acquisition_start_time = acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
+        local_acq_start_time = datetime.fromisoformat(acquisition_start_time)
+        if local_acq_start_time != self.settings.acquisition_start_time:
+            if self.settings.raise_if_invalid:
+                raise ValueError(
+                    "acquisition_start_time from acquisition metadata does not match "
+                    "the acquisition_start_time provided in settings."
+                )
+            else:
+                logging.error(
+                    "acquisition_start_time from acquisition metadata does not match "
+                    "the acquisition_start_time provided in settings."
+                )
+
+        # Always create data description (required)
+        data_description = self.build_data_description(acquisition_start_time=acquisition_start_time)
+        if data_description:
+            core_metadata["data_description"] = data_description
+            self._write_json_file(DataDescription.default_filename(), data_description)
+
+        # Get other metadata (optional)
+        # Adds subject, procedures, instrument, processing, quality_control, model, if available
+        core_metadata = self.add_core_metadata(core_metadata=core_metadata)
 
         self.validate_and_create_metadata(core_metadata)
 

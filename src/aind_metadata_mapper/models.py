@@ -61,8 +61,10 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
     acquisition_start_time: Optional[AwareDatetimeWithDefault] = Field(
         default=None,
         description=(
-            "Acquisition start time. If acquisition.json is present, this will be overridden by the value in acquisition.json. If raise_if_invalid is True, this time must match the start time provided by the acquisition.json."
-        ),  # noqa: E501
+            "Acquisition start time. If acquisition.json is present, this will be overridden by the value"
+            " in acquisition.json. If raise_if_invalid is True, this time must match the start time provided"
+            " by the acquisition.json."
+        ),
     )
     project_name: str = Field(
         default=...,
