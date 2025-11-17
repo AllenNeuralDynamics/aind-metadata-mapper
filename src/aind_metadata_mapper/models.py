@@ -5,7 +5,7 @@ from typing import List, Optional
 from aind_data_schema.base import AwareDatetimeWithDefault
 from aind_data_schema_models.data_name_patterns import Group
 from aind_data_schema_models.modalities import Modality
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
