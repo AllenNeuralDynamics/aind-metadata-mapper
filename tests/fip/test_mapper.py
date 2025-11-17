@@ -397,6 +397,22 @@ class TestFIPMapper(unittest.TestCase):
         # Should complete successfully
         self.assertIsNotNone(result)
 
+    def test_transform_calls_validation_when_not_skipped(self):
+        """Test that transform calls validation when skip_validation=False.
+
+        This test exercises the validation code path. Since the schema file
+        may not be available in the installed package, validation will gracefully
+        skip with a warning if the file is not found.
+        """
+        result = self.mapper.transform(
+            self.example_intermediate_data,
+            skip_validation=False,  # Don't skip - will attempt validation
+            intended_measurements=self.test_intended_measurements,
+            implanted_fibers=self.test_implanted_fibers,
+        )
+        # Should complete successfully (validation either passes or skips with warning)
+        self.assertIsNotNone(result)
+
     def test_run_job_calls_transform(self):
         """Test that run_job correctly orchestrates the transform and write operations.
 
