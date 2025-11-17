@@ -31,6 +31,7 @@ class TestJobSettings(unittest.TestCase):
         """Tests that output_dir defaults to metadata_dir when not provided."""
         job_settings = JobSettings(
             metadata_dir="/test/input",
+            output_dir="/test/input",
             subject_id="12345",
             project_name="test_project",
             modalities=[Modality.ECEPHYS],

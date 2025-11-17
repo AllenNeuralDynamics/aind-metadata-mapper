@@ -26,15 +26,15 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
             "Location to save metadata."
         ),
     )
-    metadata_service_url: Optional[str] = Field(
+    metadata_service_url: str = Field(
         default="http://aind-metadata-service",
         description="Metadata service URL to download metadata info.",
     )
-    metadata_service_subject_endpoint: Optional[str] = Field(
+    metadata_service_subject_endpoint: str = Field(
         default="/api/v2/subject/",
         description="Metadata service endpoint for subject metadata.",
     )
-    metadata_service_procedures_endpoint: Optional[str] = Field(
+    metadata_service_procedures_endpoint: str = Field(
         default="/api/v2/procedures/",
         description="Metadata service endpoint for procedures metadata.",
     )
@@ -60,8 +60,8 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
         default=...,
         description=("Subject ID. Will be used to download metadata from a service."),
     )
-    acquisition_start_time: AwareDatetimeWithDefault = Field(
-        default=...,
+    acquisition_start_time: Optional[AwareDatetimeWithDefault] = Field(
+        default=None,
         description=("Acquisition start time. If acquisition.json is present, this will be overridden by the value in acquisition.json. If raise_if_invalid is True, this time must match the start time provided by the acquisition.json."),  # noqa: E501
     )
     project_name: str = Field(

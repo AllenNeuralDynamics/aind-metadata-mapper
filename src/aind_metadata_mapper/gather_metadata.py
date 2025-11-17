@@ -6,6 +6,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
+from urllib.parse import urljoin
 
 import requests
 from aind_data_schema.core.acquisition import Acquisition
@@ -236,10 +237,11 @@ class GatherMetadataJob:
                 f"{self.settings.metadata_service_url}"
             )
             try:
-                response = requests.get(
-                    f"{self.settings.metadata_service_url}"
-                    f"{self.settings.metadata_service_subject_endpoint}{subject_id}"
+                subject_url = urljoin(
+                    self.settings.metadata_service_url,
+                    f"{self.settings.metadata_service_subject_endpoint}{subject_id}",
                 )
+                response = requests.get(subject_url)
                 if response.status_code == 200 or response.status_code == 400:
                     contents = response.json()
                 else:
@@ -270,10 +272,11 @@ class GatherMetadataJob:
                 f"{self.settings.metadata_service_url}"
             )
             try:
-                response = requests.get(
-                    f"{self.settings.metadata_service_url}"
-                    f"{self.settings.metadata_service_procedures_endpoint}{subject_id}"
+                procedures_url = urljoin(
+                    self.settings.metadata_service_url,
+                    f"{self.settings.metadata_service_procedures_endpoint}{subject_id}",
                 )
+                response = requests.get(procedures_url)
                 if response.status_code == 200 or response.status_code == 400:
                     contents = response.json()
                 else:
@@ -521,6 +524,14 @@ class GatherMetadataJob:
             logging.info(
                 f"No acquisition_start_time found in acquisition metadata. "
                 f"Using provided acquisition_start_time: {acquisition_start_time}"
+            )
+        
+        # Crash if no acquisition_start_time is available
+        if not acquisition_start_time:
+            raise ValueError(
+                "acquisition_start_time is required but not provided. "
+                "Either provide acquisition.json with acquisition_start_time, "
+                "or provide acquisition_start_time in the settings."
             )
 
         # Raise an error if acquisition_start_time does not match what was pulled
