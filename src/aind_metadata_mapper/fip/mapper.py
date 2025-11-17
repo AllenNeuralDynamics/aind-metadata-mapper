@@ -35,7 +35,6 @@ from aind_metadata_mapper.fip.constants import (
     CHANNEL_TYPE_GREEN,
     CHANNEL_TYPE_ISOSBESTIC,
     CHANNEL_TYPE_RED,
-    CONTROLLER_NAME,
     DEFAULT_ACQUISITION_TYPE,
     DEFAULT_LED_POWER,
     DEFAULT_OUTPUT_FILENAME,
@@ -845,7 +844,9 @@ class FIPMapper:
 
         # Add controller
         if "cuttlefish_fip" in rig_config:
-            devices.append(CONTROLLER_NAME)
+            cuttlefish_name = rig_config["cuttlefish_fip"].get("name")
+            if cuttlefish_name:
+                devices.append(cuttlefish_name)
 
         return devices
 

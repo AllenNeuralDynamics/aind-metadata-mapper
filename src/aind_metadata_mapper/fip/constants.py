@@ -13,20 +13,13 @@ EXCITATION_YELLOW = 565  # Yellow/Lime LED → red emission (RFP signal)
 # ==============================================================================
 # Emission Wavelengths (nm)
 # ==============================================================================
-EMISSION_GREEN = (
-    520  # Green emission: center of 490-540nm bandpass, ~510nm GFP peak
-)
+EMISSION_GREEN = 520  # Green emission: center of 490-540nm bandpass, ~510nm GFP peak
 EMISSION_RED = 590  # Red emission: ~590nm RFP peak
 
 # ==============================================================================
 # Camera Exposure Time
 # ==============================================================================
 CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND = 1000
-
-# ==============================================================================
-# Device Names
-# ==============================================================================
-CONTROLLER_NAME = "cuTTLefishFip"
 
 # ==============================================================================
 # Device Name Prefixes and Keywords
