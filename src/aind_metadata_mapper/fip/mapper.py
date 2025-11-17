@@ -27,7 +27,6 @@ from aind_data_schema.components.connections import Connection
 from aind_data_schema.core.acquisition import Acquisition, AcquisitionSubjectDetails, DataStream
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import PowerUnit, SizeUnit, TimeUnit
-from aind_metadata_extractor.models.fip import FIPDataModel
 
 from aind_metadata_mapper.fip.constants import (
     CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND,
@@ -282,7 +281,7 @@ class FIPMapper:
             Metadata extracted from FIP files via the extractor.
             Must conform to the ProtoAcquisitionDataSchema JSON schema.
         skip_validation : bool, optional
-            If True, skip FIPDataModel validation (useful for testing). Defaults to False.
+            If True, skip JSON schema validation (useful for testing). Defaults to False.
         intended_measurements : Optional[Dict[str, Dict[str, Optional[str]]]], optional
             Intended measurements data. If None, will be fetched from metadata service.
         implanted_fibers : Optional[List[int]], optional
@@ -299,10 +298,8 @@ class FIPMapper:
             If metadata validation fails.
         """
         if not skip_validation:
-            # Validate using FIPDataModel
-            validated = FIPDataModel.model_validate(metadata)
-            # Pass validated model to _transform (it will handle conversion)
-            metadata = validated
+            # Validate using JSON schema
+            _validate_fip_metadata(metadata)
 
         return self._transform(metadata, intended_measurements=intended_measurements, implanted_fibers=implanted_fibers)
 
@@ -929,7 +926,7 @@ class FIPMapper:
         output_directory : Optional[str], optional
             Output directory path, by default None (current directory).
         skip_validation : bool, optional
-            If True, skip FIPDataModel validation (useful for testing). Defaults to False.
+            If True, skip JSON schema validation (useful for testing). Defaults to False.
         intended_measurements : Optional[Dict[str, Dict[str, Optional[str]]]], optional
             Intended measurements data. If None, will be fetched from metadata service.
         implanted_fibers : Optional[List[int]], optional
