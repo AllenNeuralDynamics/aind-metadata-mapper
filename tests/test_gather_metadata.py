@@ -11,10 +11,133 @@ from aind_data_schema.core.metadata import Metadata
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 
-from aind_metadata_mapper.gather_metadata import GatherMetadataJob
+from aind_metadata_mapper.gather_metadata import (
+    GatherMetadataJob,
+    _metadata_service_helper,
+)
 from aind_metadata_mapper.models import JobSettings
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
+
+
+class TestMetadataServiceHelper(unittest.TestCase):
+    """Tests for _metadata_service_helper function"""
+
+    @patch("aind_metadata_mapper.gather_metadata.requests.get")
+    def test_metadata_service_helper_status_200(self, mock_get):
+        """Test helper with successful 200 status"""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"test": "data", "value": 123}
+        mock_get.return_value = mock_response
+
+        result = _metadata_service_helper("http://test.com/api")
+
+        self.assertEqual(result, {"test": "data", "value": 123})
+        mock_get.assert_called_once_with("http://test.com/api")
+        mock_response.json.assert_called_once()
+
+    @patch("aind_metadata_mapper.gather_metadata.requests.get")
+    def test_metadata_service_helper_status_400(self, mock_get):
+        """Test helper with 400 status (invalid object but still returned)"""
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_response.json.return_value = {"error": "invalid", "details": "bad request"}
+        mock_get.return_value = mock_response
+
+        result = _metadata_service_helper("http://test.com/api")
+
+        self.assertEqual(result, {"error": "invalid", "details": "bad request"})
+        mock_get.assert_called_once_with("http://test.com/api")
+
+    @patch("aind_metadata_mapper.gather_metadata.logging.error")
+    @patch("aind_metadata_mapper.gather_metadata.requests.get")
+    def test_metadata_service_helper_status_404(self, mock_get, mock_log_error):
+        """Test helper with 404 status"""
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_get.return_value = mock_response
+
+        result = _metadata_service_helper("http://test.com/notfound")
+
+        self.assertIsNone(result)
+        mock_log_error.assert_called_once()
+        self.assertIn("404", str(mock_log_error.call_args))
+
+    @patch("aind_metadata_mapper.gather_metadata.logging.error")
+    @patch("aind_metadata_mapper.gather_metadata.requests.get")
+    def test_metadata_service_helper_status_500(self, mock_get, mock_log_error):
+        """Test helper with 500 status"""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_get.return_value = mock_response
+
+        result = _metadata_service_helper("http://test.com/error")
+
+        self.assertIsNone(result)
+        mock_log_error.assert_called_once()
+        self.assertIn("500", str(mock_log_error.call_args))
+
+    @patch("aind_metadata_mapper.gather_metadata.logging.error")
+    @patch("aind_metadata_mapper.gather_metadata.requests.get")
+    def test_metadata_service_helper_request_exception(self, mock_get, mock_log_error):
+        """Test helper when request raises exception"""
+        mock_get.side_effect = Exception("Connection failed")
+
+        result = _metadata_service_helper("http://test.com/timeout")
+
+        self.assertIsNone(result)
+        mock_log_error.assert_called_once()
+        self.assertIn("Connection failed", str(mock_log_error.call_args))
+
+    @patch("aind_metadata_mapper.gather_metadata.logging.error")
+    @patch("aind_metadata_mapper.gather_metadata.requests.get")
+    def test_metadata_service_helper_json_decode_error(self, mock_get, mock_log_error):
+        """Test helper when json() raises exception"""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.side_effect = ValueError("Invalid JSON")
+        mock_get.return_value = mock_response
+
+        result = _metadata_service_helper("http://test.com/invalid")
+
+        self.assertIsNone(result)
+        mock_log_error.assert_called_once()
+        self.assertIn("Invalid JSON", str(mock_log_error.call_args))
+
+    @patch("aind_metadata_mapper.gather_metadata.requests.get")
+    def test_metadata_service_helper_empty_response(self, mock_get):
+        """Test helper with empty response data"""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_get.return_value = mock_response
+
+        result = _metadata_service_helper("http://test.com/empty")
+
+        self.assertEqual(result, {})
+
+    @patch("aind_metadata_mapper.gather_metadata.requests.get")
+    def test_metadata_service_helper_complex_response(self, mock_get):
+        """Test helper with complex nested response"""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "data": {
+                "nested": [1, 2, 3],
+                "object": {"key": "value"},
+            },
+            "metadata": {
+                "timestamp": "2023-01-01T00:00:00Z",
+            },
+        }
+        mock_get.return_value = mock_response
+
+        result = _metadata_service_helper("http://test.com/complex")
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result["data"]["nested"], [1, 2, 3])
+        self.assertEqual(result["data"]["object"]["key"], "value")
 
 
 class TestGatherMetadataJob(unittest.TestCase):
@@ -165,8 +288,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual(len(investigators), 0)
 
     @patch("requests.get")
-    @patch("logging.warning")
-    def test_get_funding_http_error(self, mock_warning, mock_get):
+    @patch("logging.error")
+    def test_get_funding_http_error(self, mock_error, mock_get):
         """Test get_funding with HTTP error"""
         mock_response = MagicMock()
         mock_response.status_code = 404
@@ -176,11 +299,11 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertEqual(funding, [])
         self.assertEqual(investigators, [])
-        mock_warning.assert_called()
+        mock_error.assert_called()
 
     @patch("requests.get")
-    @patch("logging.warning")
-    def test_get_funding_request_exception(self, mock_warning, mock_get):
+    @patch("logging.error")
+    def test_get_funding_request_exception(self, mock_error, mock_get):
         """Test get_funding with request exception"""
         mock_get.side_effect = Exception("Network error")
 
@@ -188,7 +311,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertEqual(funding, [])
         self.assertEqual(investigators, [])
-        mock_warning.assert_called()
+        mock_error.assert_called()
 
     # Tests for _write_json_file method
     @patch("builtins.open", new_callable=mock_open)
