@@ -525,7 +525,7 @@ class GatherMetadataJob:
                 f"No acquisition_start_time found in acquisition metadata. "
                 f"Using provided acquisition_start_time: {acquisition_start_time}"
             )
-        
+
         # Crash if no acquisition_start_time is available
         if not acquisition_start_time:
             raise ValueError(
@@ -550,9 +550,7 @@ class GatherMetadataJob:
                 )
 
         # Always create data description (required)
-        data_description = self.build_data_description(
-            acquisition_start_time=acquisition_start_time
-        )
+        data_description = self.build_data_description(acquisition_start_time=acquisition_start_time)
         if data_description:
             core_metadata["data_description"] = data_description
             self._write_json_file(DataDescription.default_filename(), data_description)

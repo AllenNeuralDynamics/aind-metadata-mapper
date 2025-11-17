@@ -22,9 +22,7 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
     )
     output_dir: str = Field(
         ...,
-        description=(
-            "Location to save metadata."
-        ),
+        description=("Location to save metadata."),
     )
     metadata_service_url: str = Field(
         default="http://aind-metadata-service",
@@ -62,7 +60,9 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
     )
     acquisition_start_time: Optional[AwareDatetimeWithDefault] = Field(
         default=None,
-        description=("Acquisition start time. If acquisition.json is present, this will be overridden by the value in acquisition.json. If raise_if_invalid is True, this time must match the start time provided by the acquisition.json."),  # noqa: E501
+        description=(
+            "Acquisition start time. If acquisition.json is present, this will be overridden by the value in acquisition.json. If raise_if_invalid is True, this time must match the start time provided by the acquisition.json."
+        ),  # noqa: E501
     )
     project_name: str = Field(
         default=...,
@@ -97,10 +97,3 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
         elif isinstance(v, list):
             return [Modality.from_abbreviation(mod) if isinstance(mod, str) else mod for mod in v]
         return v
-
-    @model_validator(mode="after")
-    def set_output_path_default(self):
-        """Set output_dir to metadata_dir if not provided"""
-        if self.output_dir is None:
-            self.output_dir = self.metadata_dir
-        return self

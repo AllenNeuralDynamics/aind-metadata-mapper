@@ -51,6 +51,21 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertFalse(result)
         mock_isfile.assert_called_once_with("/test/metadata/missing_file.json")
 
+    @patch("os.makedirs")
+    def test_does_file_exist_in_user_defined_dir_no_metadata_dir(self, mock_makedirs):
+        """Test _does_file_exist_in_user_defined_dir when metadata_dir is None"""
+        job_settings = JobSettings(
+            metadata_dir=None,
+            output_dir="/test/output",
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+        )
+        job = GatherMetadataJob(settings=job_settings)
+        result = job._does_file_exist_in_user_defined_dir("test_file.json")
+        self.assertFalse(result)
+
     @patch("builtins.open", new_callable=mock_open, read_data='{"test": "data"}')
     @patch("json.load")
     def test_get_file_from_user_defined_directory(self, mock_json_load, mock_file):
@@ -412,6 +427,23 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_file_exists.return_value = False
 
         result = self.job.get_acquisition()
+
+        self.assertIsNone(result)
+
+    @patch("os.makedirs")
+    def test_run_mappers_for_acquisition_no_metadata_dir(self, mock_makedirs):
+        """Test _run_mappers_for_acquisition when metadata_dir is None"""
+        job_settings = JobSettings(
+            metadata_dir=None,
+            output_dir="/test/output",
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+        )
+        job = GatherMetadataJob(settings=job_settings)
+
+        result = job._run_mappers_for_acquisition()
 
         self.assertIsNone(result)
 
@@ -839,6 +871,27 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         finally:
             shutil.rmtree(temp_dir)
+
+    @patch.object(GatherMetadataJob, "get_acquisition")
+    @patch("os.makedirs")
+    def test_run_job_missing_acquisition_start_time(self, mock_makedirs, mock_acquisition):
+        """Test run_job raises error when acquisition_start_time is not provided and no acquisition file exists"""
+        mock_acquisition.return_value = None
+
+        job_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+            acquisition_start_time=None,
+        )
+        job = GatherMetadataJob(settings=job_settings)
+
+        with self.assertRaises(ValueError) as context:
+            job.run_job()
+
+        self.assertIn("acquisition_start_time is required", str(context.exception))
 
 
 if __name__ == "__main__":
