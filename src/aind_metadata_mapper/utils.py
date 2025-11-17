@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urljoin
 
 import requests
 import yaml
@@ -101,11 +102,13 @@ def _handle_400_response(response, subject_id: str) -> Optional[dict]:
     return None
 
 
-def get_procedures(subject_id: str, get_func=None) -> Optional[dict]:
+def get_procedures(
+    subject_id: str, get_func=None, service_url: str = "http://aind-metadata-service-dev/api/v2/procedures"
+) -> Optional[dict]:
     """Fetch procedures data for a subject from the metadata service.
 
-    Queries http://aind-metadata-service-dev/api/v2/procedures/{subject_id}
-    to get all procedures performed on a subject.
+    Queries {service_url}/{subject_id} to get all procedures performed on a subject.
+    Default service URL: http://aind-metadata-service-dev/api/v2/procedures
 
     Note: The endpoint may return 400 status code but still contain valid JSON data.
     This function handles that case by checking for valid JSON before treating it as an error.
@@ -117,6 +120,9 @@ def get_procedures(subject_id: str, get_func=None) -> Optional[dict]:
     get_func : callable, optional
         Function to use for HTTP GET requests. If None, uses requests.get.
         Useful for testing without making real network calls.
+    service_url : str, optional
+        Base URL for the procedures service endpoint. Defaults to
+        "http://aind-metadata-service-dev/api/v2/procedures".
 
     Returns
     -------
@@ -127,7 +133,9 @@ def get_procedures(subject_id: str, get_func=None) -> Optional[dict]:
         get_func = requests.get
 
     try:
-        url = f"http://aind-metadata-service-dev/api/v2/procedures/{subject_id}"
+        # Ensure service_url ends with '/' for urljoin to work correctly
+        base_url = service_url.rstrip("/") + "/"
+        url = urljoin(base_url, subject_id.lstrip("/"))
         response = get_func(url, timeout=60)
 
         # Handle 400 status codes that may still contain valid JSON data
