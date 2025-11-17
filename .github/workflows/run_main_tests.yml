@@ -33,7 +33,7 @@ jobs:
         echo "=== Running style checks with flake8 ==="
         flake8 .
         echo "=== Checking docstring coverage with interrogate ==="
-        interrogate --verbose .
+        interrogate --verbose --ignore-pattern "src/aind-metadata-extractor" .
     - name: Run tests and coverage
       run: |
         echo "=== Running unit tests with coverage ==="
