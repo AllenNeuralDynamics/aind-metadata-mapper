@@ -17,7 +17,7 @@ from types import SimpleNamespace
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.fip import mapper as mapper_mod
-from aind_metadata_mapper.fip.mapper import FIPMapper, _load_fip_schema, _validate_fip_metadata
+from aind_metadata_mapper.fip.mapper import FIPMapper, _validate_fip_metadata
 
 
 class TestFIPMapper(unittest.TestCase):
@@ -55,8 +55,9 @@ class TestFIPMapper(unittest.TestCase):
         acquisition type, and experimenter information. This tests the core mapping functionality
         without external dependencies.
         """
-        acquisition = self.mapper._transform(
+        acquisition = self.mapper.transform(
             SimpleNamespace(**self.example_intermediate_data),
+            skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
         )
@@ -74,8 +75,9 @@ class TestFIPMapper(unittest.TestCase):
         ethics_review_id list in the Acquisition schema. This ensures compliance with
         institutional review board requirements and proper tracking of ethical approvals.
         """
-        acquisition = self.mapper._transform(
+        acquisition = self.mapper.transform(
             SimpleNamespace(**self.example_intermediate_data),
+            skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
         )
@@ -94,8 +96,9 @@ class TestFIPMapper(unittest.TestCase):
         data = self.example_intermediate_data.copy()
         data["ethics_review_id"] = None
 
-        acquisition = self.mapper._transform(
+        acquisition = self.mapper.transform(
             SimpleNamespace(**data),
+            skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
         )
@@ -108,8 +111,9 @@ class TestFIPMapper(unittest.TestCase):
         extracted from the intermediate metadata and mapped to the AcquisitionSubjectDetails
         object. This ensures proper tracking of experimental conditions and animal welfare data.
         """
-        acquisition = self.mapper._transform(
+        acquisition = self.mapper.transform(
             SimpleNamespace(**self.example_intermediate_data),
+            skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
         )
@@ -126,8 +130,9 @@ class TestFIPMapper(unittest.TestCase):
         modality. This ensures the acquisition metadata correctly identifies the type of
         experimental data being collected and processed.
         """
-        acquisition = self.mapper._transform(
+        acquisition = self.mapper.transform(
             SimpleNamespace(**self.example_intermediate_data),
+            skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
         )
@@ -145,8 +150,9 @@ class TestFIPMapper(unittest.TestCase):
         in the data stream's active_devices list. This includes cameras, LEDs, and control systems
         that were used during the acquisition session.
         """
-        acquisition = self.mapper._transform(
+        acquisition = self.mapper.transform(
             SimpleNamespace(**self.example_intermediate_data),
+            skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
         )
@@ -188,8 +194,9 @@ class TestFIPMapper(unittest.TestCase):
         LED configurations and patch cord configurations with embedded detector configurations.
         This ensures complete metadata about the experimental setup and device parameters.
         """
-        acquisition = self.mapper._transform(
+        acquisition = self.mapper.transform(
             SimpleNamespace(**self.example_intermediate_data),
+            skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
         )
@@ -214,8 +221,9 @@ class TestFIPMapper(unittest.TestCase):
         information. This is critical for proper temporal analysis and ensures consistency
         across different time zones and systems.
         """
-        acquisition = self.mapper._transform(
+        acquisition = self.mapper.transform(
             SimpleNamespace(**self.example_intermediate_data),
+            skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
         )
@@ -236,8 +244,9 @@ class TestFIPMapper(unittest.TestCase):
         data["session_start_time"] = "2025-07-18T13:00:00-07:00"
         data["session_end_time"] = "2025-07-18T12:00:00-07:00"
 
-        acquisition = self.mapper._transform(
+        acquisition = self.mapper.transform(
             SimpleNamespace(**data),
+            skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
         )
@@ -251,8 +260,9 @@ class TestFIPMapper(unittest.TestCase):
         Acquisition notes field. This preserves important experimental annotations and
         contextual information provided by the experimenter.
         """
-        acquisition = self.mapper._transform(
+        acquisition = self.mapper.transform(
             SimpleNamespace(**self.example_intermediate_data),
+            skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
         )
@@ -265,8 +275,9 @@ class TestFIPMapper(unittest.TestCase):
         so the stimulus_epochs field should be an empty list. This reflects the passive
         nature of most fiber photometry recordings.
         """
-        acquisition = self.mapper._transform(
+        acquisition = self.mapper.transform(
             SimpleNamespace(**self.example_intermediate_data),
+            skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
         )
@@ -382,8 +393,8 @@ class TestFIPMapper(unittest.TestCase):
             _validate_fip_metadata(invalid_metadata)  # pragma: no cover
         self.assertIn("FIP metadata validation failed", str(cm.exception))  # pragma: no cover
 
-    def test_load_fip_schema_file_not_found(self):
-        """Test that _load_fip_schema raises FileNotFoundError when schema file doesn't exist.
+    def test_validate_fip_metadata_schema_not_found(self):
+        """Test that _validate_fip_metadata raises FileNotFoundError when schema file doesn't exist.
 
         This test temporarily modifies the extractor's __file__ to point to a non-existent
         location to trigger the FileNotFoundError path.
@@ -397,7 +408,7 @@ class TestFIPMapper(unittest.TestCase):
         try:  # pragma: no cover
             mapper_mod.aind_metadata_extractor.__file__ = str(Path("/nonexistent/path/__init__.py"))  # pragma: no cover
             with self.assertRaises(FileNotFoundError) as cm:  # pragma: no cover
-                _load_fip_schema()  # pragma: no cover
+                _validate_fip_metadata({"test": "data"})  # pragma: no cover
             self.assertIn("FIP JSON schema not found", str(cm.exception))  # pragma: no cover
         finally:  # pragma: no cover
             # Restore original __file__
@@ -500,8 +511,9 @@ class TestFIPMapper(unittest.TestCase):
         with open("tests/fixtures/fip_intermediate.json", "r", encoding="utf-8") as f:
             test_data = json.load(f)
 
-        acquisition = mapper._transform(
+        acquisition = mapper.transform(
             SimpleNamespace(**test_data),
+            skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
         )
@@ -669,8 +681,9 @@ class TestFIPMapperEdgeCases(unittest.TestCase):
             if key.startswith("light_source_") and "task" in data["rig_config"][key]:
                 data["rig_config"][key]["task"].pop("delta_1", None)
 
-        acquisition = mapper._transform(
+        acquisition = mapper.transform(
             SimpleNamespace(**data),
+            skip_validation=True,
             intended_measurements=None,
             implanted_fibers=None,
         )

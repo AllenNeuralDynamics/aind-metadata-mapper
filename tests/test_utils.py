@@ -292,8 +292,9 @@ class TestUtils(unittest.TestCase):
         # Use the existing mapper to create a proper acquisition
         mapper = FIPMapper()
         # Pass None for intended_measurements and implanted_fibers to avoid network calls
-        acquisition = mapper._transform(
+        acquisition = mapper.transform(
             SimpleNamespace(**payload),
+            skip_validation=True,
             intended_measurements=None,
             implanted_fibers=None,
         )
@@ -324,8 +325,9 @@ class TestUtils(unittest.TestCase):
         # Use the existing mapper to create a proper acquisition
         mapper = FIPMapper()
         # Pass None for intended_measurements and implanted_fibers to avoid network calls
-        acquisition = mapper._transform(
+        acquisition = mapper.transform(
             SimpleNamespace(**payload),
+            skip_validation=True,
             intended_measurements=None,
             implanted_fibers=None,
         )

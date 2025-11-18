@@ -56,31 +56,6 @@ from aind_metadata_mapper.utils import (
 logger = logging.getLogger(__name__)
 
 
-def _load_fip_schema() -> dict:  # pragma: no cover
-    """Load the FIP JSON schema from the extractor package.
-
-    Returns
-    -------
-    dict
-        The loaded JSON schema.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the fip.json schema file cannot be found.
-    """
-    schema_path = Path(aind_metadata_extractor.__file__).parent / "models" / "fip.json"  # pragma: no cover
-
-    if not schema_path.exists():  # pragma: no cover
-        raise FileNotFoundError(  # pragma: no cover
-            f"FIP JSON schema not found at {schema_path}. "  # pragma: no cover
-            "Ensure you have the correct version of aind-metadata-extractor installed."  # pragma: no cover
-        )  # pragma: no cover
-
-    with open(schema_path, "r") as f:  # pragma: no cover
-        return json.load(f)  # pragma: no cover
-
-
 def _validate_fip_metadata(metadata: dict) -> None:  # pragma: no cover
     """Validate FIP metadata against the JSON schema.
 
@@ -91,20 +66,24 @@ def _validate_fip_metadata(metadata: dict) -> None:  # pragma: no cover
 
     Raises
     ------
+    FileNotFoundError
+        If the fip.json schema file cannot be found.
     ValueError
         If validation fails with details about what went wrong.
     """
-    try:  # pragma: no cover
-        schema = _load_fip_schema()  # pragma: no cover
-    except FileNotFoundError:  # pragma: no cover
-        # Schema file not available (e.g., not yet included in package)
-        # Skip validation - this will work once fip.json is properly packaged
-        logger.warning(  # pragma: no cover
-            "FIP JSON schema file not found. Skipping validation. "
-            "This is expected until fip.json is included in the aind-metadata-extractor package."
-        )  # pragma: no cover
-        return  # pragma: no cover
+    # Load schema from extractor package
+    schema_path = Path(aind_metadata_extractor.__file__).parent / "models" / "fip.json"  # pragma: no cover
 
+    if not schema_path.exists():  # pragma: no cover
+        raise FileNotFoundError(  # pragma: no cover
+            f"FIP JSON schema not found at {schema_path}. "  # pragma: no cover
+            "Ensure you have the correct version of aind-metadata-extractor installed."  # pragma: no cover
+        )  # pragma: no cover
+
+    with open(schema_path, "r") as f:  # pragma: no cover
+        schema = json.load(f)  # pragma: no cover
+
+    # Validate metadata against schema
     try:  # pragma: no cover
         jsonschema.validate(instance=metadata, schema=schema)  # pragma: no cover
     except jsonschema.ValidationError as e:  # pragma: no cover
@@ -297,34 +276,10 @@ class FIPMapper:
         ValueError
             If metadata validation fails.
         """
+        # Validate metadata against JSON schema unless skipped
         if not skip_validation:
-            # Validate using JSON schema
             _validate_fip_metadata(metadata)
 
-        return self._transform(metadata, intended_measurements=intended_measurements, implanted_fibers=implanted_fibers)
-
-    def _transform(
-        self,
-        metadata: dict,
-        intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]] = None,
-        implanted_fibers: Optional[List[int]] = None,
-    ) -> Acquisition:
-        """Internal transform method.
-
-        Parameters
-        ----------
-        metadata : dict
-            Validated intermediate metadata dictionary.
-        intended_measurements : Optional[Dict[str, Dict[str, Optional[str]]]], optional
-            Intended measurements data. If None, will be fetched from metadata service.
-        implanted_fibers : Optional[List[int]], optional
-            Implanted fiber indices. If None, will be fetched from metadata service.
-
-        Returns
-        -------
-        Acquisition
-            Complete acquisition metadata.
-        """
         # Handle SimpleNamespace objects from tests
         if not isinstance(metadata, dict):
             metadata = vars(metadata) if hasattr(metadata, "__dict__") else dict(metadata)
