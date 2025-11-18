@@ -597,50 +597,27 @@ class FIPMapper:
                 fiber_name = f"Fiber_{fiber_idx}"
                 fiber_measurements = intended_measurements.get(fiber_name) if intended_measurements else None
 
-                # Create Green channel
-                if green_camera_name:
-                    green_measurement = fiber_measurements.get("G") if fiber_measurements else None
-                    channels.append(
-                        self._create_channel(
-                            fiber_idx,
-                            "Green",
-                            led_configs_by_wavelength.get(EXCITATION_BLUE),
-                            green_measurement,
-                            green_camera_name,
-                            EMISSION_GREEN,
-                            exposure_time_ms,
-                        )
-                    )
+                # Channel definitions: (channel_type, measurement_key, led_wavelength, camera_name, emission_wavelength)
+                channel_defs = [
+                    ("Green", "G", EXCITATION_BLUE, green_camera_name, EMISSION_GREEN),
+                    ("Isosbestic", "Iso", EXCITATION_UV, green_camera_name, EMISSION_GREEN),
+                    ("Red", "R", EXCITATION_YELLOW, red_camera_name, EMISSION_RED),
+                ]
 
-                # Create Isosbestic channel
-                if green_camera_name:
-                    iso_measurement = fiber_measurements.get("Iso") if fiber_measurements else None
-                    channels.append(
-                        self._create_channel(
-                            fiber_idx,
-                            "Isosbestic",
-                            led_configs_by_wavelength.get(EXCITATION_UV),
-                            iso_measurement,
-                            green_camera_name,
-                            EMISSION_GREEN,
-                            exposure_time_ms,
+                for channel_type, measurement_key, led_wavelength, camera_name, emission_wavelength in channel_defs:
+                    if camera_name:
+                        measurement = fiber_measurements.get(measurement_key) if fiber_measurements else None
+                        channels.append(
+                            self._create_channel(
+                                fiber_idx,
+                                channel_type,
+                                led_configs_by_wavelength.get(led_wavelength),
+                                measurement,
+                                camera_name,
+                                emission_wavelength,
+                                exposure_time_ms,
+                            )
                         )
-                    )
-
-                # Create Red channel
-                if red_camera_name:
-                    red_measurement = fiber_measurements.get("R") if fiber_measurements else None
-                    channels.append(
-                        self._create_channel(
-                            fiber_idx,
-                            "Red",
-                            led_configs_by_wavelength.get(EXCITATION_YELLOW),
-                            red_measurement,
-                            red_camera_name,
-                            EMISSION_RED,
-                            exposure_time_ms,
-                        )
-                    )
 
                 # Create patch cord if we have channels
                 if channels:
