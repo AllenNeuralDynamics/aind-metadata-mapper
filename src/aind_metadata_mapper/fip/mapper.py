@@ -446,7 +446,7 @@ class FIPMapper:
                     continue
 
                 # Transform rig key to historical standard name
-                device_name = self._transform_device_name(camera_key)
+                device_name = DEVICE_NAME_MAP.get(camera_key, camera_key)
                 camera_names[camera_type] = device_name
 
         return camera_names
@@ -474,7 +474,7 @@ class FIPMapper:
             wavelength = self._get_led_wavelength(light_source_name.replace("light_source_", ""))
 
             # Transform rig key to historical standard name
-            device_name = self._transform_device_name(light_source_name)
+            device_name = DEVICE_NAME_MAP.get(light_source_name, light_source_name)
 
             led_config = LightEmittingDiodeConfig(
                 device_name=device_name,
@@ -629,25 +629,6 @@ class FIPMapper:
 
         return configurations
 
-    def _transform_device_name(self, rig_key: str) -> str:
-        """Transform rig config key to historical standard device name.
-
-        Uses DEVICE_NAME_MAP to convert rig config keys (e.g., "camera_red",
-        "light_source_uv") to historical standard names (e.g., "Red CMOS",
-        "415nm LED"). If no mapping exists, returns the original key.
-
-        Parameters
-        ----------
-        rig_key : str
-            Key from rig config dictionary (e.g., "camera_red", "light_source_uv").
-
-        Returns
-        -------
-        str
-            Transformed device name, or original key if no mapping exists.
-        """
-        return DEVICE_NAME_MAP.get(rig_key, rig_key)
-
     def _get_led_wavelength(self, led_name: str) -> Optional[int]:
         """Get LED excitation wavelength based on LED name.
 
@@ -702,13 +683,13 @@ class FIPMapper:
         # Add LEDs - use rig keys and transform to historical standard names
         light_source_names = [name for name in rig_config.keys() if name.startswith("light_source_")]
         for light_source_name in light_source_names:
-            device_name = self._transform_device_name(light_source_name)
+            device_name = DEVICE_NAME_MAP.get(light_source_name, light_source_name)
             devices.append(device_name)
 
         # Add cameras - use rig keys and transform to historical standard names
         camera_names = [name for name in rig_config.keys() if name.startswith("camera_")]
         for camera_name in camera_names:
-            device_name = self._transform_device_name(camera_name)
+            device_name = DEVICE_NAME_MAP.get(camera_name, camera_name)
             devices.append(device_name)
 
         # Add patch cords and implanted fibers
