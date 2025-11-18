@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Map FIP acquisition data to ProtoAcquisitionDataSchema for subject 804434.
+"""Extract FIP metadata to ProtoAcquisitionDataSchema for subject 804434.
 
 This script is for testing/development only. In production, the acquisition system
 automatically generates fip.json (ProtoAcquisitionDataSchema) in the data directory.
