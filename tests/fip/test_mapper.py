@@ -329,18 +329,59 @@ class TestFIPMapper(unittest.TestCase):
         result = mapper._get_led_wavelength("unknown_led")
         self.assertIsNone(result)
 
-    def test_get_active_devices_no_roi_settings(self):
-        """Test that _get_active_devices handles missing ROI settings.
+    def test_transform_fails_when_no_implanted_fibers(self):
+        """Test that transform raises ValueError when no implanted fibers are found.
 
-        When implanted_fibers is None and roi_settings is empty or missing,
-        _get_active_devices should return an empty list for fiber devices.
+        When implanted_fibers is None or empty after fetching from service, transform
+        should raise a ValueError since implanted fiber information is required.
         """
-        mapper = FIPMapper()
-        rig_config = {"cuttlefish_fip": {"name": "cuTTLefishFip"}}
-        result = mapper._get_active_devices(rig_config, implanted_fibers=None)
-        # Should only contain the controller, no fibers
-        self.assertIn("cuTTLefishFip", result)
-        self.assertEqual(len([d for d in result if "Fiber" in d or "Patch Cord" in d]), 0)
+        flat = self.example_intermediate_data
+        schema_compliant_data = {
+            "data_stream_metadata": [
+                {
+                    "id": "test_stream",
+                    "start_time": flat.get("session_start_time", "2025-07-18T19:32:35.275046Z"),
+                    "end_time": flat.get("session_end_time", "2025-07-18T19:49:22.448358Z"),
+                }
+            ],
+            "session": {
+                "subject": flat.get("subject_id", "test"),
+                "experiment": flat.get("session_type", "FIP"),
+                "experimenter": flat.get("experimenter_full_name", ["Foo", "Bar"]),
+                "notes": flat.get("notes", "test session"),
+                "date": "2025-07-18T19:32:35.275046Z",
+                "root_path": flat.get("data_directory", "/data/test"),
+                "session_name": "test_session",
+            },
+            "rig": flat.get("rig_config", {}),
+        }
+
+        # Mock _parse_implanted_fibers to return None (simulating service failure)
+        original_method = self.mapper._parse_implanted_fibers
+        self.mapper._parse_implanted_fibers = lambda subject_id, data=None: None
+
+        try:
+            with self.assertRaises(ValueError) as cm:
+                self.mapper.transform(
+                    schema_compliant_data,
+                    skip_validation=True,
+                    intended_measurements=self.test_intended_measurements,
+                    implanted_fibers=None,  # Will trigger fetch, returns None
+                )
+            self.assertIn("No implanted fibers found", str(cm.exception))
+        finally:
+            # Restore original method
+            self.mapper._parse_implanted_fibers = original_method
+
+        # Also test with empty list
+        with self.assertRaises(ValueError) as cm:
+            self.mapper.transform(
+                schema_compliant_data,
+                skip_validation=True,
+                intended_measurements=self.test_intended_measurements,
+                implanted_fibers=[],  # Empty list should also fail
+            )
+        self.assertIn("No implanted fibers found", str(cm.exception))
 
     def test_validate_fip_metadata_error(self):
         """Test that _validate_fip_metadata raises ValueError on validation failure.
@@ -563,8 +604,7 @@ class TestFIPMapperEdgeCases(unittest.TestCase):
         """Test that implanted fibers parsing handles cases where no procedures data is returned from the service.
 
         When the metadata service returns None (due to network issues, service unavailable, etc.),
-        _parse_implanted_fibers should return None. This ensures the mapper can continue processing
-        even when the procedures service is unavailable, falling back to ROI-based fiber detection.
+        _parse_implanted_fibers should return None.
         """
         mapper = FIPMapper()
         result = mapper._parse_implanted_fibers("123", data=None)
@@ -666,7 +706,7 @@ class TestFIPMapperEdgeCases(unittest.TestCase):
             SimpleNamespace(**data),
             skip_validation=True,
             intended_measurements=None,
-            implanted_fibers=None,
+            implanted_fibers=[0, 1],  # Provide actual implanted fibers (no ROI fallback)
         )
         self.assertIsNotNone(acquisition)
 

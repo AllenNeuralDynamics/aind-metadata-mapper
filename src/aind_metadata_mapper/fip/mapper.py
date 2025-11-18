@@ -219,8 +219,7 @@ class FIPMapper:
         -------
         Optional[List[int]]
             List of implanted fiber indices (e.g., [0, 1, 2] for Fiber_0, Fiber_1, Fiber_2).
-            Returns None if procedures data cannot be retrieved or no implanted fibers found,
-            allowing fallback to ROI-based fiber detection.
+            Returns None if procedures data cannot be retrieved or no implanted fibers found.
         """
         if data is None:
             data = get_procedures(subject_id)
@@ -264,6 +263,7 @@ class FIPMapper:
             Intended measurements data. If None, will be fetched from metadata service.
         implanted_fibers : Optional[List[int]], optional
             Implanted fiber indices. If None, will be fetched from metadata service.
+            Must be non-empty after fetching.
 
         Returns
         -------
@@ -327,6 +327,13 @@ class FIPMapper:
         if implanted_fibers is None:
             implanted_fibers = self._parse_implanted_fibers(subject_id)
 
+        # Hard fail if no implanted fibers found
+        if not implanted_fibers:
+            raise ValueError(
+                f"No implanted fibers found for subject_id={subject_id}. "
+                "Implanted fiber information is required to create FIP acquisition metadata."
+            )
+
         # Get protocol URLs for FIP modality
         protocol_id = get_protocols_for_modality("fip") or None
         data_stream = DataStream(
@@ -357,27 +364,6 @@ class FIPMapper:
         )
 
         return acquisition
-
-    def _get_fiber_indices_from_roi(self, roi_settings: Dict) -> List[int]:
-        """Get fiber indices from ROI settings.
-
-        Parameters
-        ----------
-        roi_settings : Dict
-            ROI settings from rig config.
-
-        Returns
-        -------
-        List[int]
-            List of fiber indices based on ROI count.
-        """
-        max_fiber_count = 0
-        for roi_key in roi_settings.keys():
-            if ROI_KEYWORD_ROI in roi_key and ROI_KEYWORD_BACKGROUND not in roi_key:
-                roi_data = roi_settings[roi_key]
-                if isinstance(roi_data, list):
-                    max_fiber_count = max(max_fiber_count, len(roi_data))
-        return list(range(max_fiber_count))
 
     def _extract_camera_exposure_time(self, rig_config: Dict) -> float:
         """Extract camera exposure time from rig configuration.
@@ -555,7 +541,7 @@ class FIPMapper:
     def _build_configurations(
         self,
         rig_config: Dict[str, Any],
-        implanted_fibers: Optional[List[int]],
+        implanted_fibers: List[int],
         intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]] = None,
     ) -> List[Any]:
         """Build device configurations from rig config.
@@ -567,10 +553,9 @@ class FIPMapper:
         intended_measurements : Optional[Dict[str, Dict[str, Optional[str]]]], optional
             Intended measurements from metadata service, mapping fiber names to
             channel measurements (R, G, B, Iso), by default None.
-        implanted_fibers : Optional[List[int]]
-            List of implanted fiber indices from procedures endpoint. Only creates
+        implanted_fibers : List[int]
+            List of implanted fiber indices from procedures endpoint. Creates
             patch cord configurations for these implanted fibers.
-            If None, falls back to ROI-based detection.
 
         Returns
         -------
@@ -589,8 +574,8 @@ class FIPMapper:
         configurations.extend(led_configs)
 
         # Build patch cord configurations
-        # Each ROI index corresponds to: Patch Cord N → Fiber N (implant)
-        # ROI 0 → Patch Cord 0 → Fiber 0, etc.
+        # Each fiber index corresponds to: Patch Cord N → Fiber N (implant)
+        # Patch Cord 0 → Fiber 0, Patch Cord 1 → Fiber 1, etc.
         #
         # Each fiber has 3 channels due to temporal multiplexing:
         #   1. Green: 470nm excitation, ~520nm emission, green camera
@@ -603,11 +588,8 @@ class FIPMapper:
             green_camera_name = camera_names.get("green")
             red_camera_name = camera_names.get("red")
 
-            # Use implanted fibers if available, otherwise fall back to ROI inference
-            if implanted_fibers is None:
-                fiber_indices = self._get_fiber_indices_from_roi(roi_settings)
-            else:
-                fiber_indices = implanted_fibers
+            # Use implanted fibers directly
+            fiber_indices = implanted_fibers
 
             # Create patch cord for each implanted fiber
             for fiber_idx in fiber_indices:
@@ -719,21 +701,19 @@ class FIPMapper:
     def _get_active_devices(
         self,
         rig_config: Dict[str, Any],
-        implanted_fibers: Optional[List[int]],
+        implanted_fibers: List[int],
     ) -> List[str]:
         """Get list of active device names.
 
         Includes implanted fibers and patch cords based on procedures data.
         Each fiber index corresponds to: Patch Cord N → Fiber N (implant).
-        Falls back to ROI-based detection if implanted_fibers is None.
 
         Parameters
         ----------
         rig_config : Dict[str, Any]
             Rig configuration dictionary from metadata.
-        implanted_fibers : Optional[List[int]]
+        implanted_fibers : List[int]
             List of implanted fiber indices from procedures endpoint.
-            If None, falls back to ROI-based detection.
 
         Returns
         -------
@@ -755,15 +735,7 @@ class FIPMapper:
             devices.append(device_name)
 
         # Add patch cords and implanted fibers
-        if implanted_fibers is None:
-            # Fall back to ROI-based detection
-            roi_settings = rig_config.get("roi_settings", {})
-            if roi_settings:
-                fiber_indices = self._get_fiber_indices_from_roi(roi_settings)
-            else:
-                fiber_indices = []
-        else:
-            fiber_indices = implanted_fibers
+        fiber_indices = implanted_fibers
 
         for fiber_idx in fiber_indices:
             devices.append(f"Patch Cord {fiber_idx}")
@@ -777,7 +749,7 @@ class FIPMapper:
 
         return devices
 
-    def _build_connections(self, implanted_fibers: Optional[List[int]]) -> List[Connection]:
+    def _build_connections(self, implanted_fibers: List[int]) -> List[Connection]:
         """Build connections between patch cords and implanted fibers.
 
         Creates Connection objects representing the physical connections
@@ -794,8 +766,6 @@ class FIPMapper:
             List of Connection objects for each patch cord → fiber pair.
         """
         connections = []
-        if implanted_fibers is None:
-            return connections
         for fiber_idx in implanted_fibers:
             patch_cord_name = f"Patch Cord {fiber_idx}"
             fiber_name = f"Fiber {fiber_idx}"
@@ -861,6 +831,7 @@ class FIPMapper:
             Intended measurements data. If None, will be fetched from metadata service.
         implanted_fibers : Optional[List[int]], optional
             Implanted fiber indices. If None, will be fetched from metadata service.
+            Must be non-empty after fetching.
 
         Returns
         -------

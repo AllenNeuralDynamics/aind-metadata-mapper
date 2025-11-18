@@ -291,12 +291,13 @@ class TestUtils(unittest.TestCase):
 
         # Use the existing mapper to create a proper acquisition
         mapper = FIPMapper()
-        # Pass None for intended_measurements and implanted_fibers to avoid network calls
+        # Pass None for intended_measurements to avoid network calls
+        # Provide actual implanted_fibers (no ROI fallback)
         acquisition = mapper.transform(
             SimpleNamespace(**payload),
             skip_validation=True,
             intended_measurements=None,
-            implanted_fibers=None,
+            implanted_fibers=[0, 1],
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -324,12 +325,13 @@ class TestUtils(unittest.TestCase):
 
         # Use the existing mapper to create a proper acquisition
         mapper = FIPMapper()
-        # Pass None for intended_measurements and implanted_fibers to avoid network calls
+        # Pass None for intended_measurements to avoid network calls
+        # Provide actual implanted_fibers (no ROI fallback)
         acquisition = mapper.transform(
             SimpleNamespace(**payload),
             skip_validation=True,
             intended_measurements=None,
-            implanted_fibers=None,
+            implanted_fibers=[0, 1],
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
