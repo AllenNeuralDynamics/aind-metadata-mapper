@@ -150,22 +150,22 @@ class FIPMapper:
             )
             return None
 
-        # Handle both single object and array responses
+        # Normalize to list: handle both single object and array responses
         measurements_list = data.get("data", [])
         if isinstance(measurements_list, dict):
             measurements_list = [measurements_list]
 
         # Convert to fiber-indexed dictionary
-        result = {}
-        for item in measurements_list:
-            fiber_name = item.get("fiber_name")
-            if fiber_name:
-                result[fiber_name] = {
-                    "R": item.get("intended_measurement_R"),
-                    "G": item.get("intended_measurement_G"),
-                    "B": item.get("intended_measurement_B"),
-                    "Iso": item.get("intended_measurement_Iso"),
-                }
+        result = {
+            item["fiber_name"]: {
+                "R": item.get("intended_measurement_R"),
+                "G": item.get("intended_measurement_G"),
+                "B": item.get("intended_measurement_B"),
+                "Iso": item.get("intended_measurement_Iso"),
+            }
+            for item in measurements_list
+            if item.get("fiber_name")
+        }
 
         if not result:
             logger.warning(f"No valid fiber measurements found for subject_id={subject_id}.")
