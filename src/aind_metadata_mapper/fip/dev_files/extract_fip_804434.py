@@ -5,8 +5,11 @@ This script is for testing/development only. In production, the acquisition syst
 automatically generates fip.json (ProtoAcquisitionDataSchema) in the data directory.
 """
 
+import json
 from pathlib import Path
 
+import aind_metadata_extractor
+import jsonschema
 from aind_physiology_fip.data_mappers import ProtoAcquisitionMapper
 
 data_path = "/allen/aind/stage/vr-foraging/data/804434/804434_2025-11-05T014006Z"
@@ -22,3 +25,8 @@ with open(output_path, "w", encoding="utf-8") as f:
     f.write(acquisition_mapped.model_dump_json(indent=2))
 
 print(f"Successfully extracted metadata and created fip.json to {output_path}")
+
+# Validate against JSON schema
+schema = json.load(open(Path(aind_metadata_extractor.__file__).parent / "models" / "fip.json"))
+jsonschema.validate(instance=json.loads(acquisition_mapped.model_dump_json()), schema=schema)
+print("Validation passed")
