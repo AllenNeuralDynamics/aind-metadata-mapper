@@ -242,7 +242,7 @@ class FIPMapper:
         if not implanted_indices:
             return None
 
-        return sorted(list(implanted_indices))
+        return sorted(implanted_indices)
 
     def transform(
         self,
@@ -328,8 +328,7 @@ class FIPMapper:
             implanted_fibers = self._parse_implanted_fibers(subject_id)
 
         # Get protocol URLs for FIP modality
-        protocols = get_protocols_for_modality("fip")
-        protocol_id = protocols if protocols else None
+        protocol_id = get_protocols_for_modality("fip") or None
         data_stream = DataStream(
             stream_start_time=session_start_time,
             stream_end_time=session_end_time,
@@ -340,8 +339,7 @@ class FIPMapper:
         )
 
         # Handle None values explicitly - .get() only uses default if key missing
-        experiment = session.get("experiment")
-        acquisition_type = experiment if experiment else DEFAULT_ACQUISITION_TYPE
+        acquisition_type = session.get("experiment") or DEFAULT_ACQUISITION_TYPE
 
         acquisition = Acquisition(
             subject_id=subject_id,
