@@ -19,6 +19,7 @@ import json
 from pathlib import Path
 
 from aind_metadata_mapper.fip.mapper import FIPMapper
+from aind_metadata_mapper.utils import write_acquisition
 
 
 def main():
@@ -119,7 +120,7 @@ Need an example input file?
 
         # Write output to examples folder
         examples_dir = Path(__file__).parent
-        output_file = mapper.write(acquisition, output_directory=str(examples_dir))
+        output_file = write_acquisition(acquisition, str(examples_dir), mapper.output_filename)
         print(f"\n5. Wrote output to: {output_file.absolute()}")
 
     except ValueError as e:

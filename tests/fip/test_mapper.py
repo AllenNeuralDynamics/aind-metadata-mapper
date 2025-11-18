@@ -18,6 +18,7 @@ from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.fip import mapper as mapper_mod
 from aind_metadata_mapper.fip.mapper import FIPMapper
+from aind_metadata_mapper.utils import write_acquisition
 
 
 class TestFIPMapper(unittest.TestCase):
@@ -520,12 +521,10 @@ class TestFIPMapper(unittest.TestCase):
                 data = json.load(f)
             self.assertIn("subject_id", data)
 
-    def test_write_calls_write_acquisition(self):
-        """Test that write method correctly delegates to write_acquisition utility function.
+    def test_write_acquisition_utility(self):
+        """Test that write_acquisition utility function works correctly.
 
-        The write method should call write_acquisition with the provided Acquisition model,
-        output directory, and the mapper's configured output filename. This tests the
-        integration with the utility function for file writing.
+        This tests the integration with the utility function for file writing.
         """
         mapper = FIPMapper()
 
@@ -541,7 +540,7 @@ class TestFIPMapper(unittest.TestCase):
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            result = mapper.write(acquisition, output_directory=tmpdir)
+            result = write_acquisition(acquisition, tmpdir, mapper.output_filename)
 
             # Verify file was created
             self.assertTrue(result.exists())

@@ -822,23 +822,3 @@ class FIPMapper:
             implanted_fibers=implanted_fibers,
         )
         return write_acquisition(acquisition, output_directory, self.output_filename)
-
-    def write(self, model: Acquisition, output_directory: Optional[str] = None) -> Path:
-        """Write the Acquisition model to a JSON file.
-
-        The output filename is determined by the mapper's output_filename attribute
-        (set during initialization, defaults to acquisition.json).
-
-        Parameters
-        ----------
-        model : Acquisition
-            The acquisition model to write.
-        output_directory : Optional[str], optional
-            Output directory path, by default None (current directory).
-
-        Returns
-        -------
-        Path
-            Path to the written file.
-        """
-        return write_acquisition(model, output_directory, self.output_filename)

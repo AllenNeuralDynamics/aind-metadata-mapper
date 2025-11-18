@@ -40,7 +40,8 @@ mapper = FIPMapper()
 acquisition = mapper.transform(metadata)
 
 # Write output
-output_path = mapper.write(acquisition, output_directory="/output/path")
+from aind_metadata_mapper.utils import write_acquisition
+output_path = write_acquisition(acquisition, "/output/path", mapper.output_filename)
 ```
 
 The mapper expects input JSON with this structure:
