@@ -24,7 +24,7 @@ from aind_data_schema.components.configs import (
     TriggerType,
 )
 from aind_data_schema.components.connections import Connection
-from aind_data_schema.core.acquisition import Acquisition, AcquisitionSubjectDetails, DataStream
+from aind_data_schema.core.acquisition import Acquisition, DataStream
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import PowerUnit, SizeUnit, TimeUnit
 
@@ -306,10 +306,6 @@ class FIPMapper:
                     else []
                 ),
             }
-            # Preserve for _build_subject_details
-            for key in ["mouse_platform_name", "animal_weight_prior", "animal_weight_post"]:
-                if key in flat:
-                    metadata[key] = flat[key]
 
         # Extract fields from nested structure
         session = metadata["session"]
@@ -324,8 +320,6 @@ class FIPMapper:
             data_streams[0]["start_time"],
             data_streams[0]["end_time"],
         )
-
-        subject_details = self._build_subject_details(metadata)
 
         # Fetch intended measurements and implanted fibers from metadata service if not provided
         if intended_measurements is None:
@@ -360,7 +354,7 @@ class FIPMapper:
             notes=session.get("notes"),
             data_streams=[data_stream],
             stimulus_epochs=[],
-            subject_details=subject_details,
+            subject_details=None,  # FIP data contract does not include subject details
             protocol_id=protocol_id,
         )
 
@@ -386,38 +380,6 @@ class FIPMapper:
                 if isinstance(roi_data, list):
                     max_fiber_count = max(max_fiber_count, len(roi_data))
         return list(range(max_fiber_count))
-
-    def _build_subject_details(self, metadata: dict) -> Optional[AcquisitionSubjectDetails]:
-        """Build subject details from metadata.
-
-        Parameters
-        ----------
-        metadata : dict
-            Validated intermediate metadata.
-
-        Returns
-        -------
-        Optional[AcquisitionSubjectDetails]
-            Subject details if any relevant fields are present.
-        """
-        # Handle SimpleNamespace objects
-        if not isinstance(metadata, dict):
-            metadata = vars(metadata) if hasattr(metadata, "__dict__") else dict(metadata)
-
-        # Extract subject detail fields from metadata (may be at top level for flat structure)
-        mouse_platform_name = metadata.get("mouse_platform_name")
-        animal_weight_prior = metadata.get("animal_weight_prior")
-        animal_weight_post = metadata.get("animal_weight_post")
-
-        # Return None if no subject details available
-        if not any([mouse_platform_name, animal_weight_prior, animal_weight_post]):
-            return None
-
-        return AcquisitionSubjectDetails(
-            mouse_platform_name=mouse_platform_name,
-            animal_weight_prior=animal_weight_prior,
-            animal_weight_post=animal_weight_post,
-        )
 
     def _extract_camera_exposure_time(self, rig_config: Dict) -> float:
         """Extract camera exposure time from rig configuration.

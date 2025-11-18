@@ -105,11 +105,10 @@ class TestFIPMapper(unittest.TestCase):
         self.assertIsNone(acquisition.ethics_review_id)
 
     def test_subject_details(self):
-        """Test that subject details are correctly mapped from intermediate metadata to Acquisition.
+        """Test that subject details are None for FIP acquisitions.
 
-        The subject details including mouse platform name and animal weights should be properly
-        extracted from the intermediate metadata and mapped to the AcquisitionSubjectDetails
-        object. This ensures proper tracking of experimental conditions and animal welfare data.
+        The FIP data contract does not include subject details (mouse platform name, animal weights).
+        Therefore, subject_details should always be None for FIP acquisitions.
         """
         acquisition = self.mapper.transform(
             SimpleNamespace(**self.example_intermediate_data),
@@ -118,10 +117,7 @@ class TestFIPMapper(unittest.TestCase):
             implanted_fibers=self.test_implanted_fibers,
         )
 
-        self.assertIsNotNone(acquisition.subject_details)
-        self.assertEqual(acquisition.subject_details.mouse_platform_name, "wheel")
-        self.assertAlmostEqual(float(acquisition.subject_details.animal_weight_prior), 25.3)
-        self.assertAlmostEqual(float(acquisition.subject_details.animal_weight_post), 25.5)
+        self.assertIsNone(acquisition.subject_details)
 
     def test_data_stream_created(self):
         """Test that data stream is created with correct FIP modality.
@@ -306,21 +302,6 @@ class TestFIPMapper(unittest.TestCase):
             self.mapper._extract_fiber_index("Other_1")
         with self.assertRaises(ValueError):
             self.mapper._extract_fiber_index("Fiber_X")
-
-    def test_build_subject_details_none_when_no_platform(self):
-        """Test that subject details returns None when no mouse platform is specified.
-
-        When the intermediate metadata has no mouse_platform_name (None or missing),
-        _build_subject_details should return None since there's insufficient information
-        to create a meaningful AcquisitionSubjectDetails object.
-        """
-        data = SimpleNamespace(
-            mouse_platform_name=None,
-            animal_weight_prior=None,
-            animal_weight_post=None,
-            anaesthesia=None,
-        )
-        self.assertIsNone(self.mapper._build_subject_details(data))
 
     def test_transform_with_skip_validation(self):
         """Test that transform works with skip_validation=True for testing.
