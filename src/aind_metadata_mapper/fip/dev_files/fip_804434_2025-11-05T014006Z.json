@@ -12,8 +12,8 @@
     }
   ],
   "session": {
-    "aind_behavior_services_pkg_version": "0.12.4",
-    "version": "0.12.4",
+    "aind_behavior_services_pkg_version": "0.12.3",
+    "version": "0.12.3",
     "experiment": null,
     "experimenter": [
       "jason.lee"
@@ -29,7 +29,7 @@
     "skip_hardware_validation": false
   },
   "rig": {
-    "aind_behavior_services_pkg_version": "0.12.4",
+    "aind_behavior_services_pkg_version": "0.12.3",
     "version": "0.2.0",
     "computer_name": "DT300043",
     "rig_name": "13A",

@@ -152,12 +152,34 @@ class TestFIPMapper(unittest.TestCase):
         )
         data_stream = acquisition.data_streams[0]
 
-        self.assertIn("test_rig", data_stream.active_devices)
-        self.assertIn("LED_UV", data_stream.active_devices)
-        self.assertIn("LED_BLUE", data_stream.active_devices)
-        self.assertIn("Camera_Green Iso", data_stream.active_devices)
-        self.assertIn("Camera_Red", data_stream.active_devices)
-        self.assertIn("cuTTLefishFip", data_stream.active_devices)
+        # Verify that active devices list is populated
+        self.assertGreater(len(data_stream.active_devices), 0)
+
+        # Verify that devices from rig config are present (using transformation)
+        rig_config = self.example_intermediate_data["rig_config"]
+        from aind_metadata_mapper.fip.constants import DEVICE_NAME_MAP
+
+        # Check cameras are present (transformed from rig config keys)
+        camera_keys = [key for key in rig_config.keys() if key.startswith("camera_")]
+        for camera_key in camera_keys:
+            expected_name = DEVICE_NAME_MAP.get(camera_key, camera_key)
+            self.assertIn(expected_name, data_stream.active_devices, f"Camera {camera_key} not found in active devices")
+
+        # Check light sources are present (transformed from rig config keys)
+        light_source_keys = [key for key in rig_config.keys() if key.startswith("light_source_")]
+        for light_source_key in light_source_keys:
+            expected_name = DEVICE_NAME_MAP.get(light_source_key, light_source_key)
+            self.assertIn(
+                expected_name,
+                data_stream.active_devices,
+                f"Light source {light_source_key} not found in active devices",
+            )
+
+        # Check cuttlefish is present if in rig config
+        if "cuttlefish_fip" in rig_config:
+            cuttlefish_name = rig_config["cuttlefish_fip"].get("name")
+            if cuttlefish_name:
+                self.assertIn(cuttlefish_name, data_stream.active_devices, "Cuttlefish not found in active devices")
 
     def test_configurations_built(self):
         """Test that device configurations are created for all FIP system components.

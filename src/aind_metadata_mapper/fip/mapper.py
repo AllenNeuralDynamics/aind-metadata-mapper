@@ -30,23 +30,15 @@ from aind_data_schema_models.units import PowerUnit, SizeUnit, TimeUnit
 
 from aind_metadata_mapper.fip.constants import (
     CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND,
-    CAMERA_PREFIX,
-    CHANNEL_TYPE_GREEN,
-    CHANNEL_TYPE_ISOSBESTIC,
-    CHANNEL_TYPE_RED,
     DEFAULT_ACQUISITION_TYPE,
     DEFAULT_LED_POWER,
     DEFAULT_OUTPUT_FILENAME,
+    DEVICE_NAME_MAP,
     EMISSION_GREEN,
     EMISSION_RED,
     EXCITATION_BLUE,
     EXCITATION_UV,
     EXCITATION_YELLOW,
-    FIBER_PREFIX,
-    LED_PREFIX,
-    LED_WAVELENGTH_MAP,
-    LIGHT_SOURCE_PREFIX,
-    PATCH_CORD_PREFIX,
     ROI_KEYWORD_BACKGROUND,
     ROI_KEYWORD_GREEN,
     ROI_KEYWORD_ISO,
@@ -220,17 +212,16 @@ class FIPMapper:
         ValueError
             If fiber name format is invalid and cannot be parsed.
         """
-        if not fiber_name.startswith(f"{FIBER_PREFIX}_"):
+        if not fiber_name.startswith("Fiber_"):
             raise ValueError(
-                f"Invalid fiber name format: '{fiber_name}'. "
-                f"Expected format: '{FIBER_PREFIX}_<index>' (e.g., '{FIBER_PREFIX}_0')"
+                f"Invalid fiber name format: '{fiber_name}'. " f"Expected format: 'Fiber_<index>' (e.g., 'Fiber_0')"
             )
         try:
             return int(fiber_name.split("_")[1])
         except (IndexError, ValueError) as e:
             raise ValueError(
                 f"Could not parse fiber index from '{fiber_name}'. "
-                f"Expected format: '{FIBER_PREFIX}_<integer>' (e.g., '{FIBER_PREFIX}_0')"
+                f"Expected format: 'Fiber_<integer>' (e.g., 'Fiber_0')"
             ) from e
 
     def _parse_implanted_fibers(self, subject_id: str, data: Optional[dict] = None) -> Optional[List[int]]:
@@ -507,7 +498,7 @@ class FIPMapper:
         """
         # Find any light source with task data
         for key, value in rig_config.items():
-            if key.startswith(LIGHT_SOURCE_PREFIX) and isinstance(value, dict):
+            if key.startswith("light_source_") and isinstance(value, dict):
                 task = value.get("task", {})
                 if isinstance(task, dict) and "delta_1" in task:
                     delta_1 = task["delta_1"]
@@ -525,9 +516,8 @@ class FIPMapper:
     def _get_camera_names_from_roi(self, roi_settings: Dict) -> Dict[str, str]:
         """Get camera device identifiers from ROI settings.
 
-        Extracts camera config keys from ROI settings to use as device identifiers.
-        The keys themselves (e.g., "camera_green_iso", "camera_red") serve as the
-        device names.
+        Extracts camera config keys from ROI settings and transforms them to
+        historical standard device names using DEVICE_NAME_MAP.
 
         Parameters
         ----------
@@ -537,8 +527,8 @@ class FIPMapper:
         Returns
         -------
         Dict[str, str]
-            Dictionary mapping camera type to camera config key.
-            E.g., {"green": "camera_green_iso", "red": "camera_red"}
+            Dictionary mapping camera type to transformed device name.
+            E.g., {"green": "Green CMOS", "red": "Red CMOS"}
         """
         camera_names = {}
 
@@ -555,8 +545,9 @@ class FIPMapper:
                 else:
                     continue
 
-                # Use the camera config key itself as the device identifier
-                camera_names[camera_type] = camera_key
+                # Transform rig key to historical standard name
+                device_name = self._transform_device_name(camera_key)
+                camera_names[camera_type] = device_name
 
         return camera_names
 
@@ -576,16 +567,14 @@ class FIPMapper:
         """
         led_configs = []
         led_configs_by_wavelength = {}
-        light_source_names = [name for name in rig_config.keys() if name.startswith(LIGHT_SOURCE_PREFIX)]
+        light_source_names = [name for name in rig_config.keys() if name.startswith("light_source_")]
 
         for light_source_name in light_source_names:
             light_source = rig_config[light_source_name]
-            led_name = light_source_name.replace(LIGHT_SOURCE_PREFIX, "").upper()
-            wavelength = self._get_led_wavelength(led_name)
+            wavelength = self._get_led_wavelength(light_source_name.replace("light_source_", ""))
 
-            device_name = f"{LED_PREFIX}{led_name}"
-            if wavelength:
-                device_name = f"{LED_PREFIX}{led_name}_{wavelength}nm"
+            # Transform rig key to historical standard name
+            device_name = self._transform_device_name(light_source_name)
 
             led_config = LightEmittingDiodeConfig(
                 device_name=device_name,
@@ -634,7 +623,7 @@ class FIPMapper:
             Channel configuration.
         """
         return Channel(
-            channel_name=f"{FIBER_PREFIX}_{fiber_idx}_{channel_type}",
+            channel_name=f"Fiber_{fiber_idx}_{channel_type}",
             intended_measurement=intended_measurement,
             detector=DetectorConfig(
                 device_name=camera_name,
@@ -709,7 +698,7 @@ class FIPMapper:
             # Create patch cord for each implanted fiber
             for fiber_idx in fiber_indices:
                 channels = []
-                fiber_name = f"{FIBER_PREFIX}_{fiber_idx}"
+                fiber_name = f"Fiber_{fiber_idx}"
                 fiber_measurements = intended_measurements.get(fiber_name) if intended_measurements else None
 
                 # Create Green channel
@@ -718,7 +707,7 @@ class FIPMapper:
                     channels.append(
                         self._create_channel(
                             fiber_idx,
-                            CHANNEL_TYPE_GREEN,
+                            "Green",
                             led_configs_by_wavelength.get(EXCITATION_BLUE),
                             green_measurement,
                             green_camera_name,
@@ -733,7 +722,7 @@ class FIPMapper:
                     channels.append(
                         self._create_channel(
                             fiber_idx,
-                            CHANNEL_TYPE_ISOSBESTIC,
+                            "Isosbestic",
                             led_configs_by_wavelength.get(EXCITATION_UV),
                             iso_measurement,
                             green_camera_name,
@@ -748,7 +737,7 @@ class FIPMapper:
                     channels.append(
                         self._create_channel(
                             fiber_idx,
-                            CHANNEL_TYPE_RED,
+                            "Red",
                             led_configs_by_wavelength.get(EXCITATION_YELLOW),
                             red_measurement,
                             red_camera_name,
@@ -760,12 +749,31 @@ class FIPMapper:
                 # Create patch cord if we have channels
                 if channels:
                     patch_cord = PatchCordConfig(
-                        device_name=f"{PATCH_CORD_PREFIX} {fiber_idx}",
+                        device_name=f"Patch Cord {fiber_idx}",
                         channels=channels,
                     )
                     configurations.append(patch_cord)
 
         return configurations
+
+    def _transform_device_name(self, rig_key: str) -> str:
+        """Transform rig config key to historical standard device name.
+
+        Uses DEVICE_NAME_MAP to convert rig config keys (e.g., "camera_red",
+        "light_source_uv") to historical standard names (e.g., "Red CMOS",
+        "415nm LED"). If no mapping exists, returns the original key.
+
+        Parameters
+        ----------
+        rig_key : str
+            Key from rig config dictionary (e.g., "camera_red", "light_source_uv").
+
+        Returns
+        -------
+        str
+            Transformed device name, or original key if no mapping exists.
+        """
+        return DEVICE_NAME_MAP.get(rig_key, rig_key)
 
     def _get_led_wavelength(self, led_name: str) -> Optional[int]:
         """Get LED excitation wavelength based on LED name.
@@ -778,7 +786,7 @@ class FIPMapper:
         Parameters
         ----------
         led_name : str
-            LED name (e.g., "UV", "BLUE", "YELLOW", "LIME").
+            LED name from rig config key (e.g., "uv", "blue", "lime").
 
         Returns
         -------
@@ -786,9 +794,12 @@ class FIPMapper:
             LED excitation wavelength in nm, or None if unknown.
         """
         led_lower = led_name.lower()
-        for key, wavelength in LED_WAVELENGTH_MAP.items():
-            if key in led_lower:
-                return wavelength
+        if "uv" in led_lower:
+            return EXCITATION_UV
+        if "blue" in led_lower:
+            return EXCITATION_BLUE
+        if "lime" in led_lower or "yellow" in led_lower:
+            return EXCITATION_YELLOW
         return None
 
     def _get_active_devices(
@@ -817,21 +828,17 @@ class FIPMapper:
         """
         devices = []
 
-        # Add rig name
-        if "rig_name" in rig_config:
-            devices.append(rig_config["rig_name"])
-
-        # Add LEDs
-        light_source_names = [name for name in rig_config.keys() if name.startswith(LIGHT_SOURCE_PREFIX)]
+        # Add LEDs - use rig keys and transform to historical standard names
+        light_source_names = [name for name in rig_config.keys() if name.startswith("light_source_")]
         for light_source_name in light_source_names:
-            led_name = light_source_name.replace(LIGHT_SOURCE_PREFIX, "").upper()
-            devices.append(f"{LED_PREFIX}{led_name}")
+            device_name = self._transform_device_name(light_source_name)
+            devices.append(device_name)
 
-        # Add cameras
-        camera_names = [name for name in rig_config.keys() if name.startswith(CAMERA_PREFIX)]
+        # Add cameras - use rig keys and transform to historical standard names
+        camera_names = [name for name in rig_config.keys() if name.startswith("camera_")]
         for camera_name in camera_names:
-            detector_name = camera_name.replace(CAMERA_PREFIX, "").replace("_", " ").title()
-            devices.append(f"Camera_{detector_name}")
+            device_name = self._transform_device_name(camera_name)
+            devices.append(device_name)
 
         # Add patch cords and implanted fibers
         if implanted_fibers is None:
@@ -845,8 +852,8 @@ class FIPMapper:
             fiber_indices = implanted_fibers
 
         for fiber_idx in fiber_indices:
-            devices.append(f"{PATCH_CORD_PREFIX} {fiber_idx}")
-            devices.append(f"{FIBER_PREFIX} {fiber_idx}")
+            devices.append(f"Patch Cord {fiber_idx}")
+            devices.append(f"Fiber {fiber_idx}")
 
         # Add controller
         if "cuttlefish_fip" in rig_config:
@@ -876,8 +883,8 @@ class FIPMapper:
         if implanted_fibers is None:
             return connections
         for fiber_idx in implanted_fibers:
-            patch_cord_name = f"{PATCH_CORD_PREFIX} {fiber_idx}"
-            fiber_name = f"{FIBER_PREFIX} {fiber_idx}"
+            patch_cord_name = f"Patch Cord {fiber_idx}"
+            fiber_name = f"Fiber {fiber_idx}"
             connections.append(
                 Connection(
                     source_device=patch_cord_name,

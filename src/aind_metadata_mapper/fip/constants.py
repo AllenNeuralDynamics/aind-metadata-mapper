@@ -21,21 +21,6 @@ EMISSION_RED = 590  # Red emission: ~590nm RFP peak
 # ==============================================================================
 CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND = 1000
 
-# ==============================================================================
-# Device Name Prefixes and Keywords
-# ==============================================================================
-LED_PREFIX = "LED_"
-PATCH_CORD_PREFIX = "Patch Cord"
-FIBER_PREFIX = "Fiber"
-LIGHT_SOURCE_PREFIX = "light_source_"
-CAMERA_PREFIX = "camera_"
-
-# ==============================================================================
-# Channel Types
-# ==============================================================================
-CHANNEL_TYPE_GREEN = "Green"
-CHANNEL_TYPE_ISOSBESTIC = "Isosbestic"
-CHANNEL_TYPE_RED = "Red"
 
 # ==============================================================================
 # ROI Keywords
@@ -53,17 +38,17 @@ DEFAULT_OUTPUT_FILENAME = "acquisition.json"
 DEFAULT_ACQUISITION_TYPE = "FIP"
 DEFAULT_LED_POWER = 1.0
 
+
 # ==============================================================================
-# LED Wavelength Mapping
+# Device Name Transformations
 # ==============================================================================
-# Maps LED name keywords to their excitation wavelengths
-LED_WAVELENGTH_MAP = {
-    "uv": EXCITATION_UV,
-    "415": EXCITATION_UV,
-    "blue": EXCITATION_BLUE,
-    "470": EXCITATION_BLUE,
-    "yellow": EXCITATION_YELLOW,
-    "lime": EXCITATION_YELLOW,
-    "565": EXCITATION_YELLOW,
-    "560": EXCITATION_YELLOW,
+# Maps rig config keys to historical standard device names
+# These are the keys from the fip.json rig dictionary that get transformed
+# to match historical naming conventions
+DEVICE_NAME_MAP = {
+    "camera_green_iso": "Green CMOS",
+    "camera_red": "Red CMOS",
+    "light_source_uv": "415nm LED",
+    "light_source_blue": "470nm LED",
+    "light_source_lime": "560nm LED",
 }

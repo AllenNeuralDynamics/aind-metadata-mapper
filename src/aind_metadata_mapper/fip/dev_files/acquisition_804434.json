@@ -33,12 +33,11 @@
       "code": null,
       "notes": null,
       "active_devices": [
-        "13A",
-        "LED_UV",
-        "LED_BLUE",
-        "LED_LIME",
-        "Camera_Green Iso",
-        "Camera_Red",
+        "415nm LED",
+        "470nm LED",
+        "560nm LED",
+        "Green CMOS",
+        "Red CMOS",
         "Patch Cord 0",
         "Fiber 0",
         "Patch Cord 1",
@@ -48,21 +47,21 @@
       "configurations": [
         {
           "object_type": "Light emitting diode config",
-          "device_name": "LED_UV_415nm",
+          "device_name": "415nm LED",
           "power": 20.0,
           "power_unit": "percent",
           "power_measured_at": null
         },
         {
           "object_type": "Light emitting diode config",
-          "device_name": "LED_BLUE_470nm",
+          "device_name": "470nm LED",
           "power": 20.0,
           "power_unit": "percent",
           "power_measured_at": null
         },
         {
           "object_type": "Light emitting diode config",
-          "device_name": "LED_LIME_565nm",
+          "device_name": "560nm LED",
           "power": 20.0,
           "power_unit": "percent",
           "power_measured_at": null
@@ -77,7 +76,7 @@
               "intended_measurement": "calcium",
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "camera_green_iso",
+                "device_name": "Green CMOS",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -87,7 +86,7 @@
               "light_sources": [
                 {
                   "object_type": "Light emitting diode config",
-                  "device_name": "LED_BLUE_470nm",
+                  "device_name": "470nm LED",
                   "power": 20.0,
                   "power_unit": "percent",
                   "power_measured_at": null
@@ -105,7 +104,7 @@
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "camera_green_iso",
+                "device_name": "Green CMOS",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -115,7 +114,7 @@
               "light_sources": [
                 {
                   "object_type": "Light emitting diode config",
-                  "device_name": "LED_UV_415nm",
+                  "device_name": "415nm LED",
                   "power": 20.0,
                   "power_unit": "percent",
                   "power_measured_at": null
@@ -133,7 +132,7 @@
               "intended_measurement": "serotonin",
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "camera_red",
+                "device_name": "Red CMOS",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -143,7 +142,7 @@
               "light_sources": [
                 {
                   "object_type": "Light emitting diode config",
-                  "device_name": "LED_LIME_565nm",
+                  "device_name": "560nm LED",
                   "power": 20.0,
                   "power_unit": "percent",
                   "power_measured_at": null
@@ -167,7 +166,7 @@
               "intended_measurement": "calcium",
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "camera_green_iso",
+                "device_name": "Green CMOS",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -177,7 +176,7 @@
               "light_sources": [
                 {
                   "object_type": "Light emitting diode config",
-                  "device_name": "LED_BLUE_470nm",
+                  "device_name": "470nm LED",
                   "power": 20.0,
                   "power_unit": "percent",
                   "power_measured_at": null
@@ -195,7 +194,7 @@
               "intended_measurement": null,
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "camera_green_iso",
+                "device_name": "Green CMOS",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -205,7 +204,7 @@
               "light_sources": [
                 {
                   "object_type": "Light emitting diode config",
-                  "device_name": "LED_UV_415nm",
+                  "device_name": "415nm LED",
                   "power": 20.0,
                   "power_unit": "percent",
                   "power_measured_at": null
@@ -223,7 +222,7 @@
               "intended_measurement": "serotonin",
               "detector": {
                 "object_type": "Detector config",
-                "device_name": "camera_red",
+                "device_name": "Red CMOS",
                 "exposure_time": 15.65,
                 "exposure_time_unit": "millisecond",
                 "trigger_type": "Internal",
@@ -233,7 +232,7 @@
               "light_sources": [
                 {
                   "object_type": "Light emitting diode config",
-                  "device_name": "LED_LIME_565nm",
+                  "device_name": "560nm LED",
                   "power": 20.0,
                   "power_unit": "percent",
                   "power_measured_at": null

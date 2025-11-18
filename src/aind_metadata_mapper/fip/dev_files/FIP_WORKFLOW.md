@@ -54,7 +54,11 @@ pip install -e .[data]
 cd ..
 ```
 
-## Step 3: Generate ProtoAcquisitionDataSchema JSON
+## Step 3: Generate ProtoAcquisitionDataSchema JSON (Testing/Development Only)
+
+**Note:** In production, the acquisition system automatically generates `fip.json` (ProtoAcquisitionDataSchema)
+in the data directory during acquisition. This step is only needed for testing/development when working with
+raw data that hasn't been processed by the acquisition system yet.
 
 Create a Python script to map raw FIP data to ProtoAcquisitionDataSchema format:
 
@@ -64,10 +68,11 @@ from pathlib import Path
 from aind_physiology_fip.data_mappers import ProtoAcquisitionMapper
 
 # Path to the FIP acquisition data directory
-data_path = "/allen/aind/scratch/vr-foraging/data/804434/804434_2025-11-05T014006Z"
+data_path = "/allen/aind/stage/vr-foraging/data/804434/804434_2025-11-05T014006Z"
 
-# Output path (adjust as needed)
-output_path = Path("fip_804434_2025-11-05T014006Z.json")
+# Output path - write to script directory to avoid writing to data directory
+script_dir = Path(__file__).parent
+output_path = script_dir / "fip_804434_2025-11-05T014006Z.json"
 
 print(f"Mapping FIP data from: {data_path}")
 acquisition_mapped = ProtoAcquisitionMapper(data_path).map()
@@ -85,7 +90,8 @@ Run it:
 python map_fip_data.py
 ```
 
-This creates `fip_804434_2025-11-05T014006Z.json` containing the ProtoAcquisitionDataSchema.
+This creates `fip_804434_2025-11-05T014006Z.json` containing the ProtoAcquisitionDataSchema in the
+same directory as the script (safe location, not the data directory).
 
 ## Step 4: Transform to AIND Data Schema 2.0 Acquisition
 

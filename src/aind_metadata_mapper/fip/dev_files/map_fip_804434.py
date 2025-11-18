@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
-"""Map FIP acquisition data to ProtoAcquisitionDataSchema for subject 804434."""
+"""Map FIP acquisition data to ProtoAcquisitionDataSchema for subject 804434.
+
+This script is for testing/development only. In production, the acquisition system
+automatically generates fip.json (ProtoAcquisitionDataSchema) in the data directory.
+"""
 
 from pathlib import Path
 
 from aind_physiology_fip.data_mappers import ProtoAcquisitionMapper
 
-data_path = "/allen/aind/scratch/vr-foraging/data/804434/804434_2025-11-05T014006Z"
-# Write locally first for testing
-output_path = Path("fip_804434_2025-11-05T014006Z.json")
+data_path = "/allen/aind/stage/vr-foraging/data/804434/804434_2025-11-05T014006Z"
+# Write to the same directory as this script (dev_files/) to avoid writing to data directory
+script_dir = Path(__file__).parent
+output_path = script_dir / "fip_804434_2025-11-05T014006Z.json"
 
 print(f"Mapping FIP data from: {data_path}")
 acquisition_mapped = ProtoAcquisitionMapper(data_path).map()
