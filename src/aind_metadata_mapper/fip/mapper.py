@@ -56,40 +56,6 @@ from aind_metadata_mapper.utils import (
 logger = logging.getLogger(__name__)
 
 
-def _validate_fip_metadata(metadata: dict) -> None:  # pragma: no cover
-    """Validate FIP metadata against the JSON schema.
-
-    Parameters
-    ----------
-    metadata : dict
-        The metadata to validate.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the fip.json schema file cannot be found.
-    ValueError
-        If validation fails with details about what went wrong.
-    """
-    # Load schema from extractor package
-    schema_path = Path(aind_metadata_extractor.__file__).parent / "models" / "fip.json"  # pragma: no cover
-
-    if not schema_path.exists():  # pragma: no cover
-        raise FileNotFoundError(  # pragma: no cover
-            f"FIP JSON schema not found at {schema_path}. "  # pragma: no cover
-            "Ensure you have the correct version of aind-metadata-extractor installed."  # pragma: no cover
-        )  # pragma: no cover
-
-    with open(schema_path, "r") as f:  # pragma: no cover
-        schema = json.load(f)  # pragma: no cover
-
-    # Validate metadata against schema
-    try:  # pragma: no cover
-        jsonschema.validate(instance=metadata, schema=schema)  # pragma: no cover
-    except jsonschema.ValidationError as e:  # pragma: no cover
-        raise ValueError(f"FIP metadata validation failed: {e.message}\nPath: {e.path}") from e  # pragma: no cover
-
-
 class FIPMapper:
     """FIP Mapper - transforms intermediate FIP data into Acquisition metadata.
 
@@ -114,6 +80,39 @@ class FIPMapper:
             Output filename, by default "acquisition.json"
         """
         self.output_filename = output_filename
+
+    def _validate_fip_metadata(self, metadata: dict) -> None:  # pragma: no cover
+        """Validate FIP metadata against the JSON schema.
+
+        Parameters
+        ----------
+        metadata : dict
+            The metadata to validate.
+
+        Raises
+        ------
+        FileNotFoundError
+            If the fip.json schema file cannot be found.
+        ValueError
+            If validation fails with details about what went wrong.
+        """
+        # Load schema from extractor package
+        schema_path = Path(aind_metadata_extractor.__file__).parent / "models" / "fip.json"  # pragma: no cover
+
+        if not schema_path.exists():  # pragma: no cover
+            raise FileNotFoundError(  # pragma: no cover
+                f"FIP JSON schema not found at {schema_path}. "  # pragma: no cover
+                "Ensure you have the correct version of aind-metadata-extractor installed."  # pragma: no cover
+            )  # pragma: no cover
+
+        with open(schema_path, "r") as f:  # pragma: no cover
+            schema = json.load(f)  # pragma: no cover
+
+        # Validate metadata against schema
+        try:  # pragma: no cover
+            jsonschema.validate(instance=metadata, schema=schema)  # pragma: no cover
+        except jsonschema.ValidationError as e:  # pragma: no cover
+            raise ValueError(f"FIP metadata validation failed: {e.message}\nPath: {e.path}") from e  # pragma: no cover
 
     def _parse_intended_measurements(
         self, subject_id: str, data: Optional[dict] = None
@@ -278,7 +277,7 @@ class FIPMapper:
         """
         # Validate metadata against JSON schema unless skipped
         if not skip_validation:
-            _validate_fip_metadata(metadata)
+            self._validate_fip_metadata(metadata)
 
         # Handle SimpleNamespace objects from tests
         if not isinstance(metadata, dict):

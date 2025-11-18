@@ -17,7 +17,7 @@ from types import SimpleNamespace
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.fip import mapper as mapper_mod
-from aind_metadata_mapper.fip.mapper import FIPMapper, _validate_fip_metadata
+from aind_metadata_mapper.fip.mapper import FIPMapper
 
 
 class TestFIPMapper(unittest.TestCase):
@@ -390,7 +390,7 @@ class TestFIPMapper(unittest.TestCase):
         # Use invalid metadata to trigger validation error
         invalid_metadata = {"subject_id": "test"}  # Missing required rig_config  # pragma: no cover
         with self.assertRaises(ValueError) as cm:  # pragma: no cover
-            _validate_fip_metadata(invalid_metadata)  # pragma: no cover
+            self.mapper._validate_fip_metadata(invalid_metadata)  # pragma: no cover
         self.assertIn("FIP metadata validation failed", str(cm.exception))  # pragma: no cover
 
     def test_validate_fip_metadata_schema_not_found(self):
@@ -408,7 +408,7 @@ class TestFIPMapper(unittest.TestCase):
         try:  # pragma: no cover
             mapper_mod.aind_metadata_extractor.__file__ = str(Path("/nonexistent/path/__init__.py"))  # pragma: no cover
             with self.assertRaises(FileNotFoundError) as cm:  # pragma: no cover
-                _validate_fip_metadata({"test": "data"})  # pragma: no cover
+                self.mapper._validate_fip_metadata({"test": "data"})  # pragma: no cover
             self.assertIn("FIP JSON schema not found", str(cm.exception))  # pragma: no cover
         finally:  # pragma: no cover
             # Restore original __file__
