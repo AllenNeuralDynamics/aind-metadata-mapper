@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -22,9 +23,9 @@ from aind_data_schema_models.data_name_patterns import DataLevel
 from aind_data_schema_models.organizations import Organization
 from pydantic import ValidationError
 
-from aind_metadata_mapper.models import JobSettings
 from aind_metadata_mapper.base import MapperJobSettings
 from aind_metadata_mapper.mapper_registry import registry
+from aind_metadata_mapper.models import JobSettings
 
 
 def _metadata_service_helper(url: str) -> Optional[dict]:
@@ -606,8 +607,10 @@ class GatherMetadataJob:
 
 
 if __name__ == "__main__":
-    # JobSettings has cli_parse_args=True, so it automatically parses command line arguments
-    # and handles converting CLI args to the appropriate types
-    main_job_settings = JobSettings()
+    # Allows a user to input job-settings as json string in command line
+    if len(sys.argv[1:]) == 2 and sys.argv[1] == "--job-settings":
+        main_job_settings = JobSettings.model_validate_json(sys.argv[2])
+    else:
+        main_job_settings = JobSettings()
     job = GatherMetadataJob(settings=main_job_settings)
     job.run_job()
