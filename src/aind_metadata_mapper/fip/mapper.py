@@ -24,6 +24,7 @@ from aind_data_schema.components.configs import (
     TriggerType,
 )
 from aind_data_schema.components.connections import Connection
+from aind_data_schema.components.coordinates import CoordinateSystem
 from aind_data_schema.components.identifiers import Code
 from aind_data_schema.core.acquisition import Acquisition, DataStream
 from aind_data_schema_models.modalities import Modality
@@ -32,6 +33,7 @@ from aind_data_schema_models.units import PowerUnit, SizeUnit, TimeUnit
 from aind_metadata_mapper.fip.constants import (
     ACQUISITION_TYPE_AIND_VR_FORAGING,
     CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND,
+    DEFAULT_COORDINATE_SYSTEM,
     DEFAULT_LED_POWER,
     DEFAULT_OUTPUT_FILENAME,
     DEVICE_NAME_MAP,
@@ -361,6 +363,9 @@ class FIPMapper:
             connections=self._build_connections(implanted_fibers),
         )
 
+        # Create coordinate system from default
+        coordinate_system = CoordinateSystem.model_validate(DEFAULT_COORDINATE_SYSTEM)
+
         acquisition = Acquisition(
             subject_id=subject_id,
             acquisition_start_time=session_start_time,
@@ -369,6 +374,7 @@ class FIPMapper:
             ethics_review_id=[session.get("ethics_review_id")] if session.get("ethics_review_id") else None,
             instrument_id=instrument_id,
             acquisition_type=ACQUISITION_TYPE_AIND_VR_FORAGING,
+            coordinate_system=coordinate_system,
             notes=session.get("notes"),
             data_streams=[data_stream],
             stimulus_epochs=[],
