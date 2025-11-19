@@ -35,8 +35,15 @@ ROI_KEYWORD_BACKGROUND = "_background"
 # Default Values
 # ==============================================================================
 DEFAULT_OUTPUT_FILENAME = "acquisition.json"
-DEFAULT_ACQUISITION_TYPE = "FIP"
 DEFAULT_LED_POWER = 1.0
+
+
+# ==============================================================================
+# Acquisition Type
+# ==============================================================================
+# Hardcoded acquisition type for VrForaging-FIP experiments
+# NOTE: Ideally this would come from the extracted metadata, but we don't have it yet.
+ACQUISITION_TYPE_AIND_VR_FORAGING = "AindVrForaging"
 
 
 # ==============================================================================

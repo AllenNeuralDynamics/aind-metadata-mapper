@@ -30,8 +30,8 @@ from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import PowerUnit, SizeUnit, TimeUnit
 
 from aind_metadata_mapper.fip.constants import (
+    ACQUISITION_TYPE_AIND_VR_FORAGING,
     CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND,
-    DEFAULT_ACQUISITION_TYPE,
     DEFAULT_LED_POWER,
     DEFAULT_OUTPUT_FILENAME,
     DEVICE_NAME_MAP,
@@ -354,9 +354,6 @@ class FIPMapper:
             connections=self._build_connections(implanted_fibers),
         )
 
-        # Handle None values explicitly - .get() only uses default if key missing
-        acquisition_type = session.get("experiment") or DEFAULT_ACQUISITION_TYPE
-
         acquisition = Acquisition(
             subject_id=subject_id,
             acquisition_start_time=session_start_time,
@@ -364,7 +361,7 @@ class FIPMapper:
             experimenters=session.get("experimenter", []),
             ethics_review_id=[session.get("ethics_review_id")] if session.get("ethics_review_id") else None,
             instrument_id=instrument_id,
-            acquisition_type=acquisition_type,
+            acquisition_type=ACQUISITION_TYPE_AIND_VR_FORAGING,
             notes=session.get("notes"),
             data_streams=[data_stream],
             stimulus_epochs=[],

@@ -17,7 +17,7 @@ from types import SimpleNamespace
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.fip import mapper as mapper_mod
-from aind_metadata_mapper.fip.constants import VR_FORAGING_FIP_REPO_URL
+from aind_metadata_mapper.fip.constants import ACQUISITION_TYPE_AIND_VR_FORAGING, VR_FORAGING_FIP_REPO_URL
 from aind_metadata_mapper.fip.mapper import FIPMapper
 from aind_metadata_mapper.utils import write_acquisition
 
@@ -66,7 +66,7 @@ class TestFIPMapper(unittest.TestCase):
 
         self.assertEqual(acquisition.subject_id, "test")
         self.assertEqual(acquisition.instrument_id, "test_rig")
-        self.assertEqual(acquisition.acquisition_type, "FIP")
+        self.assertEqual(acquisition.acquisition_type, ACQUISITION_TYPE_AIND_VR_FORAGING)
         self.assertEqual(len(acquisition.experimenters), 2)
         self.assertEqual(acquisition.experimenters[0], "Foo")
 
