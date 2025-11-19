@@ -333,6 +333,71 @@ class TestFIPMapper(unittest.TestCase):
 
         self.assertLess(acquisition.acquisition_start_time, acquisition.acquisition_end_time)
 
+    def test_multiple_epochs_uses_earliest_and_latest_times(self):
+        """Test that multiple epochs in data_stream_metadata are handled correctly.
+
+        When data_stream_metadata contains multiple epochs with different start/end times,
+        the mapper should use the earliest start_time and latest end_time to create a single
+        DataStream that spans all epochs. This follows the aind-data-schema principle that
+        a single DataStream captures all modalities acquired as a group.
+        """
+        # Define epoch times as datetime objects
+        from datetime import datetime, timezone
+
+        t0 = datetime(2025, 7, 18, 12, 30, 0, tzinfo=timezone.utc)  # Epoch 0 start (earliest)
+        t1 = datetime(2025, 7, 18, 12, 35, 0, tzinfo=timezone.utc)  # Epoch 0 end
+        t2 = datetime(2025, 7, 18, 12, 40, 0, tzinfo=timezone.utc)  # Epoch 1 start
+        t3 = datetime(2025, 7, 18, 12, 45, 0, tzinfo=timezone.utc)  # Epoch 1 end
+        t4 = datetime(2025, 7, 18, 12, 50, 0, tzinfo=timezone.utc)  # Epoch 2 start
+        t5 = datetime(2025, 7, 18, 12, 55, 0, tzinfo=timezone.utc)  # Epoch 2 end (latest)
+
+        # Create test metadata with multiple epochs
+        test_metadata = {
+            "data_stream_metadata": [
+                {
+                    "id": "fip_epoch_0",
+                    "start_time": t0.isoformat(),
+                    "end_time": t1.isoformat(),
+                },
+                {
+                    "id": "fip_epoch_1",
+                    "start_time": t2.isoformat(),
+                    "end_time": t3.isoformat(),
+                },
+                {
+                    "id": "fip_epoch_2",
+                    "start_time": t4.isoformat(),
+                    "end_time": t5.isoformat(),
+                },
+            ],
+            "session": {
+                "subject": "test",
+                "experiment": "FIP",
+                "experimenter": ["Test User"],
+                "notes": "Multi-epoch test",
+                "date": t0.isoformat(),
+                "root_path": "/data/test",
+                "session_name": "test_session",
+            },
+            "rig": self.example_intermediate_data.get("rig_config", {}),
+        }
+
+        acquisition = self.mapper.transform(
+            test_metadata,
+            skip_validation=True,
+            intended_measurements=self.test_intended_measurements,
+            implanted_fibers=self.test_implanted_fibers,
+        )
+
+        # Verify that the acquisition uses the earliest start (t0) and latest end (t5)
+        expected_start = t0
+        expected_end = t5
+
+        self.assertEqual(acquisition.acquisition_start_time, expected_start)
+        self.assertEqual(acquisition.acquisition_end_time, expected_end)
+        self.assertEqual(acquisition.data_streams[0].stream_start_time, expected_start)
+        self.assertEqual(acquisition.data_streams[0].stream_end_time, expected_end)
+
     def test_notes_preserved(self):
         """Test that notes field is preserved from intermediate metadata to Acquisition.
 

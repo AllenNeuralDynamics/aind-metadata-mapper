@@ -317,10 +317,17 @@ class FIPMapper:
         subject_id = session["subject"]
         instrument_id = rig["rig_name"]
 
-        # Get timing from first data stream
+        # Get timing from all data streams (handle multiple epochs)
+        # Find earliest start_time and latest end_time across all epochs
+        start_times = [ensure_timezone(ds["start_time"]) for ds in data_streams]
+        end_times = [ensure_timezone(ds["end_time"]) for ds in data_streams]
+
+        earliest_start = min(start_times)
+        latest_end = max(end_times)
+
         session_start_time, session_end_time = self._process_session_times(
-            data_streams[0]["start_time"],
-            data_streams[0]["end_time"],
+            earliest_start,
+            latest_end,
         )
 
         # Fetch intended measurements and implanted fibers from metadata service if not provided
