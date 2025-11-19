@@ -859,11 +859,15 @@ def fingerprint_from_stimulus_file(
         dimnames = fingerprint_stim["dimnames"]
 
         for i, stimulus_frame_indices in enumerate(sweep_frames):
-            stimulus_frame_indices = np.array(stimulus_frame_indices).astype(int)
+            stimulus_frame_indices = np.array(stimulus_frame_indices).astype(
+                int
+            )
             stimulus_frame_indices = stimulus_frame_indices + movie_start_index
 
             # Keep only valid indices
-            valid_mask = (stimulus_frame_indices >= 0) & (stimulus_frame_indices < len(stimulus_session_frame_indices))
+            valid_mask = (stimulus_frame_indices >= 0) & (
+                stimulus_frame_indices < len(stimulus_session_frame_indices)
+            )
             valid_indices = stimulus_frame_indices[valid_mask]
 
             # Skip sweep if no valid indices remain
@@ -871,21 +875,27 @@ def fingerprint_from_stimulus_file(
                 print(f"Skipping sweep {i}: no valid frames")
                 continue
 
-            start_frame, end_frame = stimulus_session_frame_indices[valid_indices]
+            start_frame, end_frame = stimulus_session_frame_indices[
+                valid_indices
+            ]
             start_time = stimulus_timestamps[start_frame]
-            stop_time = stimulus_timestamps[min(end_frame + 1, len(stimulus_timestamps) - 1)]
+            stop_time = stimulus_timestamps[
+                min(end_frame + 1, len(stimulus_timestamps) - 1)
+            ]
 
             stim_row = sweep_table[i]
             stim_info = dict(zip(dimnames, stim_row))
 
-            res.append({
-                "start_time": start_time,
-                "stop_time": stop_time,
-                "start_frame": start_frame,
-                "end_frame": end_frame,
-                "duration": stop_time - start_time,
-                **stim_info,
-            })
+            res.append(
+                {
+                    "start_time": start_time,
+                    "stop_time": stop_time,
+                    "start_frame": start_frame,
+                    "end_frame": end_frame,
+                    "duration": stop_time - start_time,
+                    **stim_info,
+                }
+            )
 
     else:
         print("using old logic for fingerprint stimulus")
