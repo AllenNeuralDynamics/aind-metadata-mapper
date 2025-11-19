@@ -24,6 +24,7 @@ from aind_data_schema.components.configs import (
     TriggerType,
 )
 from aind_data_schema.components.connections import Connection
+from aind_data_schema.components.identifiers import Code
 from aind_data_schema.core.acquisition import Acquisition, DataStream
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import PowerUnit, SizeUnit, TimeUnit
@@ -44,6 +45,7 @@ from aind_metadata_mapper.fip.constants import (
     ROI_KEYWORD_ISO,
     ROI_KEYWORD_RED,
     ROI_KEYWORD_ROI,
+    VR_FORAGING_FIP_REPO_URL,
 )
 from aind_metadata_mapper.utils import (
     ensure_timezone,
@@ -336,10 +338,17 @@ class FIPMapper:
 
         # Get protocol URLs for FIP modality
         protocol_id = get_protocols_for_modality("fip") or None
+
+        # Create code list from session commit hash
+        code = None
+        if session.get("commit_hash"):
+            code = [Code(url=VR_FORAGING_FIP_REPO_URL, version=session["commit_hash"])]
+
         data_stream = DataStream(
             stream_start_time=session_start_time,
             stream_end_time=session_end_time,
             modalities=[Modality.FIB],
+            code=code,
             active_devices=self._get_active_devices(rig, implanted_fibers),
             configurations=self._build_configurations(rig, implanted_fibers, intended_measurements),
             connections=self._build_connections(implanted_fibers),

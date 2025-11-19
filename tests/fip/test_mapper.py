@@ -17,6 +17,7 @@ from types import SimpleNamespace
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.fip import mapper as mapper_mod
+from aind_metadata_mapper.fip.constants import VR_FORAGING_FIP_REPO_URL
 from aind_metadata_mapper.fip.mapper import FIPMapper
 from aind_metadata_mapper.utils import write_acquisition
 
@@ -139,6 +140,88 @@ class TestFIPMapper(unittest.TestCase):
 
         self.assertEqual(len(data_stream.modalities), 1)
         self.assertEqual(data_stream.modalities[0], Modality.FIB)
+
+    def test_code_field_with_commit_hash(self):
+        """Test that code field is populated when commit_hash is present.
+
+        When the session metadata includes a commit_hash, the mapper should create
+        a Code object with the VrForaging-Fip repository URL and the commit hash
+        as the version, allowing tracking of the exact code version used during acquisition.
+        """
+        # Create test metadata with commit_hash
+        test_metadata = {
+            "data_stream_metadata": [
+                {
+                    "id": "test_stream",
+                    "start_time": "2025-07-18T19:32:35.275046Z",
+                    "end_time": "2025-07-18T19:49:22.448358Z",
+                }
+            ],
+            "session": {
+                "subject": "test",
+                "experiment": "FIP",
+                "experimenter": ["Foo", "Bar"],
+                "notes": "test session",
+                "date": "2025-07-18T19:32:35.275046Z",
+                "root_path": "/data/test",
+                "session_name": "test_session",
+                "commit_hash": "abc123def456",
+            },
+            "rig": self.example_intermediate_data.get("rig_config", {}),
+        }
+
+        acquisition = self.mapper.transform(
+            test_metadata,
+            skip_validation=True,
+            intended_measurements=self.test_intended_measurements,
+            implanted_fibers=self.test_implanted_fibers,
+        )
+        data_stream = acquisition.data_streams[0]
+
+        # Verify code field is populated
+        self.assertIsNotNone(data_stream.code)
+        self.assertEqual(len(data_stream.code), 1)
+        self.assertEqual(data_stream.code[0].url, VR_FORAGING_FIP_REPO_URL)
+        self.assertEqual(data_stream.code[0].version, "abc123def456")
+
+    def test_code_field_without_commit_hash(self):
+        """Test that code field is None when commit_hash is absent.
+
+        When the session metadata does not include a commit_hash, the mapper should
+        leave the code field as None rather than creating an incomplete Code object.
+        """
+        # Create test metadata without commit_hash
+        test_metadata = {
+            "data_stream_metadata": [
+                {
+                    "id": "test_stream",
+                    "start_time": "2025-07-18T19:32:35.275046Z",
+                    "end_time": "2025-07-18T19:49:22.448358Z",
+                }
+            ],
+            "session": {
+                "subject": "test",
+                "experiment": "FIP",
+                "experimenter": ["Foo", "Bar"],
+                "notes": "test session",
+                "date": "2025-07-18T19:32:35.275046Z",
+                "root_path": "/data/test",
+                "session_name": "test_session",
+                "commit_hash": None,
+            },
+            "rig": self.example_intermediate_data.get("rig_config", {}),
+        }
+
+        acquisition = self.mapper.transform(
+            test_metadata,
+            skip_validation=True,
+            intended_measurements=self.test_intended_measurements,
+            implanted_fibers=self.test_implanted_fibers,
+        )
+        data_stream = acquisition.data_streams[0]
+
+        # Verify code field is None
+        self.assertIsNone(data_stream.code)
 
     def test_active_devices(self):
         """Test that active devices list is populated with all FIP system components.

@@ -52,3 +52,11 @@ DEVICE_NAME_MAP = {
     "light_source_blue": "470nm LED",
     "light_source_lime": "560nm LED",
 }
+
+
+# ==============================================================================
+# Code Repository
+# ==============================================================================
+# URL for the VrForaging-FIP experiment repository used to track code versions
+# NOTE: Ideally this would come from the extracted metadata, but we don't have it yet.
+VR_FORAGING_FIP_REPO_URL = "https://github.com/AllenNeuralDynamics/Aind.Experiment.VrForaging-Fip"
