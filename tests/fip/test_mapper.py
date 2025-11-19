@@ -153,8 +153,8 @@ class TestFIPMapper(unittest.TestCase):
             "data_stream_metadata": [
                 {
                     "id": "test_stream",
-                    "start_time": "2025-07-18T19:32:35.275046Z",
-                    "end_time": "2025-07-18T19:49:22.448358Z",
+                    "start_time": "2025-07-18 19:32:35.275046+00:00",
+                    "end_time": "2025-07-18 19:49:22.448358+00:00",
                 }
             ],
             "session": {
@@ -162,7 +162,7 @@ class TestFIPMapper(unittest.TestCase):
                 "experiment": "FIP",
                 "experimenter": ["Foo", "Bar"],
                 "notes": "test session",
-                "date": "2025-07-18T19:32:35.275046Z",
+                "date": "2025-07-18 19:32:35.275046+00:00",
                 "root_path": "/data/test",
                 "session_name": "test_session",
                 "commit_hash": "abc123def456",
@@ -195,8 +195,8 @@ class TestFIPMapper(unittest.TestCase):
             "data_stream_metadata": [
                 {
                     "id": "test_stream",
-                    "start_time": "2025-07-18T19:32:35.275046Z",
-                    "end_time": "2025-07-18T19:49:22.448358Z",
+                    "start_time": "2025-07-18 19:32:35.275046+00:00",
+                    "end_time": "2025-07-18 19:49:22.448358+00:00",
                 }
             ],
             "session": {
@@ -204,7 +204,7 @@ class TestFIPMapper(unittest.TestCase):
                 "experiment": "FIP",
                 "experimenter": ["Foo", "Bar"],
                 "notes": "test session",
-                "date": "2025-07-18T19:32:35.275046Z",
+                "date": "2025-07-18 19:32:35.275046+00:00",
                 "root_path": "/data/test",
                 "session_name": "test_session",
                 "commit_hash": None,
