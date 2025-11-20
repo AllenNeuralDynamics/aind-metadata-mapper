@@ -4,9 +4,14 @@ Transforms FIP metadata extracted from acquisition systems into AIND Data Schema
 
 ## Overview
 
-The mapper validates input JSON against the FIP schema (defined in aind-metadata-extractor) and creates an Acquisition object with the proper structure for fiber photometry experiments. It generates three channels per fiber (Green, Isosbestic, Red) reflecting the temporal multiplexing used in FIP rigs.
+The FIP mapper transforms extracted metadata from fiber photometry acquisition systems into AIND Data Schema compliant format. It:
 
-Device names and hardware configuration come directly from the rig metadata. The mapper queries the metadata service for intended measurements and implanted fiber information when available, otherwise infers fiber count from ROI settings.
+1. **Rearranges keys** from the extracted metadata structure to match the schema
+2. **Enriches metadata** by fetching protocols and intended measurements from the metadata service
+3. **Filters devices** to include only patch cords connected to implanted fibers (assumes 1-to-1 mapping between patch cords and implanted fibers from subject procedures)
+4. **Generates channels** - three per fiber (Green, Isosbestic, Red) based on the rig's temporal multiplexing configuration
+
+Input is validated against the FIP schema (defined in `aind-metadata-extractor`). Some fields are currently hard-coded as constants (see `constants.py`) because they're not yet available in the extracted metadata. As upstream extraction improves, these hard-coded values can be replaced with extracted data.
 
 ## Installation
 
