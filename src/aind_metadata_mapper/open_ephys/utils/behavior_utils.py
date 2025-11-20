@@ -850,6 +850,7 @@ def fingerprint_from_stimulus_file(
     res = []
 
     if save_sweep_table:
+        logger.info("using new logic for fingerprint stimulus")
         # Use new logic
         sweep_table = [
             fingerprint_stim["sweep_table"][i]
@@ -861,11 +862,19 @@ def fingerprint_from_stimulus_file(
             stimulus_frame_indices = np.array(stimulus_frame_indices).astype(
                 int
             )
-            valid_indices = np.clip(
-                stimulus_frame_indices + movie_start_index,
-                0,
-                len(stimulus_session_frame_indices) - 1,
+            stimulus_frame_indices = stimulus_frame_indices + movie_start_index
+
+            # Keep only valid indices
+            valid_mask = (stimulus_frame_indices >= 0) & (
+                stimulus_frame_indices < len(stimulus_session_frame_indices)
             )
+            valid_indices = stimulus_frame_indices[valid_mask]
+
+            # Skip sweep if no valid indices remain
+            if len(valid_indices) == 0:
+                logger.info("Skipping sweep %d: no valid frames", i)
+                continue
+
             start_frame, end_frame = stimulus_session_frame_indices[
                 valid_indices
             ]
@@ -887,7 +896,9 @@ def fingerprint_from_stimulus_file(
                     **stim_info,
                 }
             )
+
     else:
+        print("using old logic for fingerprint stimulus")
         # Fallback to older logic
         n_repeats = fingerprint_stim["runs"]
         movie_length = int(len(sweep_frames) / n_repeats)
