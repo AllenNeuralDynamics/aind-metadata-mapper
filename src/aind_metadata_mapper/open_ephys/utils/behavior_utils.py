@@ -850,7 +850,7 @@ def fingerprint_from_stimulus_file(
     res = []
 
     if save_sweep_table:
-        print("using new logic for fingerprint stimulus")
+        logger.info("using new logic for fingerprint stimulus")
         # Use new logic
         sweep_table = [
             fingerprint_stim["sweep_table"][i]
@@ -872,7 +872,7 @@ def fingerprint_from_stimulus_file(
 
             # Skip sweep if no valid indices remain
             if len(valid_indices) == 0:
-                print(f"Skipping sweep {i}: no valid frames")
+                logger.info("Skipping sweep %d: no valid frames", i)
                 continue
 
             start_frame, end_frame = stimulus_session_frame_indices[
