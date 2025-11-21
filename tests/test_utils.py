@@ -11,67 +11,41 @@ class TestPromptFunctions(unittest.TestCase):
 
     def test_prompt_for_string_with_default(self):
         """Test prompt_for_string with default value."""
-        # Empty input should return default
-        result = prompt_for_string("Test prompt", default="default_value", input_func=lambda x: "")
-        self.assertEqual(result, "default_value")
+        self.assertEqual(prompt_for_string("Test", default="default", input_func=lambda x: ""), "default")
+        self.assertEqual(prompt_for_string("Test", default="default", input_func=lambda x: "input"), "input")
 
-        # Non-empty input should return input
-        result = prompt_for_string("Test prompt", default="default_value", input_func=lambda x: "user_input")
-        self.assertEqual(result, "user_input")
-
-    def test_prompt_for_string_without_default_not_required(self):
+    def test_prompt_for_string_not_required(self):
         """Test prompt_for_string without default, not required."""
-        # Empty input should return empty string
-        result = prompt_for_string("Test prompt", required=False, input_func=lambda x: "")
-        self.assertEqual(result, "")
+        self.assertEqual(prompt_for_string("Test", required=False, input_func=lambda x: ""), "")
+        self.assertEqual(prompt_for_string("Test", required=False, input_func=lambda x: "input"), "input")
 
-        # Non-empty input should return input
-        result = prompt_for_string("Test prompt", required=False, input_func=lambda x: "user_input")
-        self.assertEqual(result, "user_input")
-
-    def test_prompt_for_string_required_no_default(self):
+    def test_prompt_for_string_required(self):
         """Test prompt_for_string required=True with no default."""
-        # First empty, then valid input
         call_count = [0]
 
         def input_func(prompt):
             """Mock input function that returns empty first, then valid input."""
             call_count[0] += 1
-            if call_count[0] == 1:
-                return ""  # First call: empty (should prompt again)
-            return "valid_input"  # Second call: valid
+            return "" if call_count[0] == 1 else "input"
 
-        result = prompt_for_string("Test prompt", required=True, input_func=input_func)
-        self.assertEqual(result, "valid_input")
-        self.assertEqual(call_count[0], 2)  # Should have prompted twice
+        with patch("builtins.print"):
+            result = prompt_for_string("Test", required=True, input_func=input_func)
+        self.assertEqual(result, "input")
+        self.assertEqual(call_count[0], 2)
 
     def test_prompt_for_string_with_help_message(self):
         """Test prompt_for_string with help message."""
         call_count = [0]
-        help_printed = [False]
 
         def input_func(prompt):
             """Mock input function that returns empty first, then valid input."""
             call_count[0] += 1
-            if call_count[0] == 1:
-                return ""  # First call: empty
-            return "valid_input"
+            return "" if call_count[0] == 1 else "input"
 
-        def print_func(msg):
-            """Mock print function that tracks if help message was printed."""
-            if "help" in msg.lower() or "required" in msg.lower():
-                help_printed[0] = True
-
-        # Mock print to capture help message
-        with patch("builtins.print", side_effect=print_func):
-            result = prompt_for_string(
-                "Test prompt",
-                required=True,
-                help_message="This is a help message",
-                input_func=input_func,
-            )
-        self.assertEqual(result, "valid_input")
-        self.assertTrue(help_printed[0])
+        with patch("builtins.print") as mock_print:
+            prompt_for_string("Test", required=True, help_message="Help", input_func=input_func)
+        self.assertEqual(call_count[0], 2)
+        self.assertTrue(any("Help" in str(call) for call in mock_print.call_args_list))
 
 
 if __name__ == "__main__":
