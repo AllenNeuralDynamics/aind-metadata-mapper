@@ -423,7 +423,6 @@ def create_instrument(
 
 def main(
     instrument_id: str,
-    values: Optional[dict] = None,
     skip_confirmation: bool = False,
     input_func=input,
 ) -> None:
@@ -433,8 +432,6 @@ def main(
     ----------
     instrument_id : str
         Instrument ID (required).
-    values : Optional[dict]
-        Optional dict with values to bypass prompts. See create_instrument() for keys.
     skip_confirmation : bool
         If True, skip confirmation prompt for new instrument IDs.
     """
@@ -448,7 +445,6 @@ def main(
     # Create instrument interactively
     instrument_model = create_instrument(
         instrument_id,
-        values=values,
         previous_instrument=previous_instrument,
         input_func=input_func,
     )
