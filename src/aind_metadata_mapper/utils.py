@@ -10,7 +10,7 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-API_BASE_URL = "http://aind-metadata-service-dev/api/v2/instrument"
+API_BASE_URL = "http://aind-metadata-service/api/v2/instrument"
 
 
 def get_instrument(instrument_id: str, modification_date: Optional[str] = None) -> Optional[dict]:  # pragma: no cover
