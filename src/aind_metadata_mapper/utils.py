@@ -141,41 +141,14 @@ def check_instrument_id(
     previous_instrument = get_instrument(instrument_id)
     if previous_instrument is None and not skip_confirmation:
         logger.info("This is a new instrument ID.")
-        if not prompt_yes_no(
-            f"Are you sure you want to create a new ID with name '{instrument_id}'?",
-            default=True,
-            input_func=input_func,
-        ):
+        response = (
+            input_func(f"Are you sure you want to create a new ID with name '{instrument_id}'? [Y/n]: ").strip().lower()
+        )
+        if response and response not in ("y", "yes"):
             logger.info("Cancelled. Please run the script again with the correct instrument ID.")
             sys.exit(0)
 
     return previous_instrument
-
-
-def prompt_yes_no(prompt: str, default: bool = True, input_func=input) -> bool:
-    """Prompt user for yes/no response.
-
-    Parameters
-    ----------
-    prompt : str
-        The prompt message.
-    default : bool
-        Default value if user presses Enter. Defaults to True (yes).
-    input_func : callable
-        Function to get user input. Defaults to builtin input().
-
-    Returns
-    -------
-    bool
-        True for yes, False for no.
-    """
-    default_str = "Y/n" if default else "y/N"
-    full_prompt = f"{prompt} [{default_str}]: "
-    response = input_func(full_prompt).strip().lower()
-
-    if not response:
-        return default
-    return response in ("y", "yes")
 
 
 def prompt_for_string(

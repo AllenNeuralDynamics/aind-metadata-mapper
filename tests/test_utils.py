@@ -3,43 +3,11 @@
 import unittest
 from unittest.mock import patch
 
-from aind_metadata_mapper.utils import prompt_for_string, prompt_yes_no
+from aind_metadata_mapper.utils import prompt_for_string
 
 
 class TestPromptFunctions(unittest.TestCase):
     """Tests for prompt utility functions."""
-
-    def test_prompt_yes_no_default_yes(self):
-        """Test prompt_yes_no with default=True."""
-        # Empty input should return default (True)
-        result = prompt_yes_no("Test prompt", default=True, input_func=lambda x: "")
-        self.assertTrue(result)
-
-        # "y" should return True
-        result = prompt_yes_no("Test prompt", default=True, input_func=lambda x: "y")
-        self.assertTrue(result)
-
-        # "yes" should return True
-        result = prompt_yes_no("Test prompt", default=True, input_func=lambda x: "yes")
-        self.assertTrue(result)
-
-        # "n" should return False
-        result = prompt_yes_no("Test prompt", default=True, input_func=lambda x: "n")
-        self.assertFalse(result)
-
-    def test_prompt_yes_no_default_no(self):
-        """Test prompt_yes_no with default=False."""
-        # Empty input should return default (False)
-        result = prompt_yes_no("Test prompt", default=False, input_func=lambda x: "")
-        self.assertFalse(result)
-
-        # "y" should return True
-        result = prompt_yes_no("Test prompt", default=False, input_func=lambda x: "y")
-        self.assertTrue(result)
-
-        # "n" should return False
-        result = prompt_yes_no("Test prompt", default=False, input_func=lambda x: "n")
-        self.assertFalse(result)
 
     def test_prompt_for_string_with_default(self):
         """Test prompt_for_string with default value."""
