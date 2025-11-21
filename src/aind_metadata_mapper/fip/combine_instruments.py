@@ -48,7 +48,6 @@ def main():
     # Align FIP instrument fields to match behavior instrument
     fip_instrument.instrument_id = behavior_instrument.instrument_id
     fip_instrument.location = behavior_instrument.location
-    fip_instrument.coordinate_system = behavior_instrument.coordinate_system
 
     # Combine
     combined_instrument = behavior_instrument + fip_instrument

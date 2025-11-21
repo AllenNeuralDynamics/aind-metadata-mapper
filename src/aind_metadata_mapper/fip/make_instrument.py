@@ -33,7 +33,6 @@ from typing import Optional
 import aind_data_schema.components.devices as devices
 import aind_data_schema.core.instrument as instrument
 from aind_data_schema.components.connections import Connection
-from aind_data_schema.components.coordinates import CoordinateSystemLibrary
 from aind_data_schema.components.devices import Computer
 from aind_data_schema_models.modalities import Modality
 
@@ -89,7 +88,7 @@ def create_instrument(
         - All device specifications (patch cords, LEDs, detectors, objective, filters, lens, harp devices)
         - Detector settings (bin_width=4, bin_height=4, crop offsets, gain=0, etc.)
         - Connection details (source_port="COM14", etc.)
-        - Coordinate system (BREGMA_ARI)
+        - Coordinate system (bregma, matching behavior)
         - Modality (FIB)
         - modification_date (date.today())
     """
@@ -371,12 +370,25 @@ def create_instrument(
         ),
     ]
 
+    # Coordinate system matching behavior (bregma with X/Y/Z axes, not BREGMA_ARI)
+    coordinate_system = {
+        "object_type": "Coordinate system",
+        "name": "origin",
+        "origin": "Bregma",
+        "axes": [
+            {"object_type": "Axis", "name": "X", "direction": "Left_to_right"},
+            {"object_type": "Axis", "name": "Y", "direction": "Anterior_to_posterior"},
+            {"object_type": "Axis", "name": "Z", "direction": "Inferior_to_superior"},
+        ],
+        "axis_unit": "millimeter",
+    }
+
     instrument_model = instrument.Instrument(
         location=location if location else None,
         instrument_id=instrument_id,
         modification_date=date.today(),
         modalities=[Modality.FIB],
-        coordinate_system=CoordinateSystemLibrary.BREGMA_ARI,
+        coordinate_system=coordinate_system,
         components=[
             computer,
             patch_cord_0,
