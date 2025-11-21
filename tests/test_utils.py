@@ -67,6 +67,7 @@ class TestPromptFunctions(unittest.TestCase):
         call_count = [0]
 
         def input_func(prompt):
+            """Mock input function that returns empty first, then valid input."""
             call_count[0] += 1
             if call_count[0] == 1:
                 return ""  # First call: empty (should prompt again)
@@ -82,12 +83,14 @@ class TestPromptFunctions(unittest.TestCase):
         help_printed = [False]
 
         def input_func(prompt):
+            """Mock input function that returns empty first, then valid input."""
             call_count[0] += 1
             if call_count[0] == 1:
                 return ""  # First call: empty
             return "valid_input"
 
         def print_func(msg):
+            """Mock print function that tracks if help message was printed."""
             if "help" in msg.lower() or "required" in msg.lower():
                 help_printed[0] = True
 
