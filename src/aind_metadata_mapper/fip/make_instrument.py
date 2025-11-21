@@ -270,11 +270,11 @@ def create_instrument(
         bin_width=4,
         bin_height=4,
         bin_mode="Additive",
-        crop_offset_x=0,
-        crop_offset_y=0,
+        crop_offset_x=104,
+        crop_offset_y=56,
         crop_width=200,
         crop_height=200,
-        gain=2,
+        gain=0,
         chroma="Monochrome",
         bit_depth=16,
     )
@@ -291,11 +291,11 @@ def create_instrument(
         bin_width=4,
         bin_height=4,
         bin_mode="Additive",
-        crop_offset_x=0,
-        crop_offset_y=0,
+        crop_offset_x=76,
+        crop_offset_y=56,
         crop_width=200,
         crop_height=200,
-        gain=2,
+        gain=0,
         chroma="Monochrome",
         bit_depth=16,
     )
@@ -409,14 +409,14 @@ def create_instrument(
     connections = [
         Connection(
             source_device="cuTTLefishFip",
-            source_port="COM1",
+            source_port="COM14",
             target_device=computer_name,
         ),
         Connection(
             source_device="harp_clock_generator",
             source_port="ClkOut",
             target_device="cuTTLefishFip",
-            target_port="COM1",
+            target_port="COM14",
             send_and_receive=False,
         ),
     ]
