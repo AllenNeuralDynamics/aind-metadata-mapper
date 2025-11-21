@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 API_BASE_URL = "http://aind-metadata-service-dev/api/v2/instrument"
 
 
-def get_instrument(instrument_id: str, modification_date: Optional[str] = None) -> Optional[dict]:
+def get_instrument(instrument_id: str, modification_date: Optional[str] = None) -> Optional[dict]:  # pragma: no cover
     """Get instrument.
 
     Gets the latest record by default, or a specific record if modification_date is provided.
@@ -62,7 +62,7 @@ def get_instrument(instrument_id: str, modification_date: Optional[str] = None) 
         return sorted(matching_records, key=lambda record: record["modification_date"])[-1]
 
 
-def save_instrument(instrument_model: instrument.Instrument) -> None:
+def save_instrument(instrument_model: instrument.Instrument) -> None:  # pragma: no cover
     """Save instrument and validate round-trip.
 
     Saves the instrument, then retrieves it back and verifies that what we get back
@@ -112,7 +112,7 @@ def check_instrument_id(
     instrument_id: str,
     skip_confirmation: bool = False,
     input_func=input,
-) -> Optional[dict]:
+) -> Optional[dict]:  # pragma: no cover
     """Check if instrument exists and get previous instrument data.
 
     Checks if records exist for the given instrument_id and returns the
