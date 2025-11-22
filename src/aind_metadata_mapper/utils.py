@@ -4,16 +4,22 @@ import json
 import logging
 import sys
 from typing import Optional
+from urllib.parse import urljoin
 
 import aind_data_schema.core.instrument as instrument
 import requests
 
 logger = logging.getLogger(__name__)
 
-API_BASE_URL = "http://aind-metadata-service/api/v2/instrument"
+API_BASE_URL = "http://aind-metadata-service"
 
 
-def get_instrument(instrument_id: str, modification_date: Optional[str] = None) -> Optional[dict]:  # pragma: no cover
+def get_instrument(
+        instrument_id: str,
+        modification_date: Optional[str] = None,
+        metadata_service_url: str = API_BASE_URL,
+        metadata_service_instrument_endpoint: str = "/api/v2/instrument/",
+    ) -> Optional[dict]:
     """Get instrument.
 
     Gets the latest record by default, or a specific record if modification_date is provided.
@@ -30,8 +36,11 @@ def get_instrument(instrument_id: str, modification_date: Optional[str] = None) 
     Optional[dict]
         Instrument data as dict, or None if not found.
     """
+
+    endpoint_url = urljoin(metadata_service_url, metadata_service_instrument_endpoint)
+
     response = requests.get(
-        f"{API_BASE_URL}/{instrument_id}",
+        urljoin(endpoint_url, instrument_id),
         params={"partial_match": True},
     )
     if response.status_code == 404:
