@@ -1,6 +1,5 @@
 """Module to define models for Gather Metadata Job"""
 
-from datetime import date
 from typing import List, Optional
 
 from aind_data_schema.base import AwareDatetimeWithDefault
