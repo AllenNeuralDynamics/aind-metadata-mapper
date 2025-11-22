@@ -9,6 +9,53 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
+class DataDescriptionSettings(BaseSettings):
+    """Settings specific to data description metadata"""
+
+    project_name: str = Field(
+        default=...,
+        description=("Project name. Will be used to download metadata from a service."),
+    )
+    modalities: List[Modality.ONE_OF] = Field(
+        default=...,
+        description=("List of data modalities for this dataset."),
+    )
+    tags: Optional[List[str]] = Field(
+        default=None,
+        description="Descriptive strings to help categorize and search for data.",
+    )
+    group: Optional[Group] = Field(
+        default=None,
+        description="A short name for the group of individuals that collected this data.",
+    )
+    restrictions: Optional[str] = Field(
+        default=None,
+        description="Detail any restrictions on publishing or sharing these data.",
+    )
+    data_summary: Optional[str] = Field(
+        default=None,
+        description="Semantic summary of experimental goal.",
+    )
+
+    @field_validator("modalities", mode="before")
+    def convert_modalities_from_string(cls, v):
+        """Convert modalities from string to list if necessary"""
+        if isinstance(v, str):
+            return [Modality.from_abbreviation(v)]
+        elif isinstance(v, list):
+            return [Modality.from_abbreviation(mod) if isinstance(mod, str) else mod for mod in v]
+        return v
+
+
+class InstrumentSettings(BaseSettings):
+    """Settings specific to instrument metadata"""
+
+    instrument_id: str = Field(
+        ...,
+        description="Identifier for the instrument used in data collection.",
+    )
+
+
 class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=True):
     """Settings required to fetch metadata from metadata service and construct the data_description"""
 
@@ -23,18 +70,6 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
     output_dir: str = Field(
         ...,
         description=("Location to save metadata."),
-    )
-    metadata_service_url: str = Field(
-        default="http://aind-metadata-service",
-        description="Metadata service URL to download metadata info.",
-    )
-    metadata_service_subject_endpoint: str = Field(
-        default="/api/v2/subject/",
-        description="Metadata service endpoint for subject metadata.",
-    )
-    metadata_service_procedures_endpoint: str = Field(
-        default="/api/v2/procedures/",
-        description="Metadata service endpoint for procedures metadata.",
     )
 
     # Job settings
@@ -66,36 +101,31 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
             " by the acquisition.json."
         ),
     )
-    project_name: str = Field(
-        default=...,
-        description=("Project Name. Will be used to download metadata from a service."),
+
+    # Core metadata settings
+    data_description_settings: DataDescriptionSettings = Field(
+        ...,
+        description="Settings specific to data description metadata.",
     )
-    modalities: List[Modality.ONE_OF] = Field(
-        default=...,
-        description=("List of data modalities for this dataset."),
-    )
-    tags: Optional[List[str]] = Field(
+    instrument_settings: Optional[InstrumentSettings] = Field(
         default=None,
-        description="Descriptive strings to help categorize and search for data.",
-    )
-    group: Optional[Group] = Field(
-        default=None,
-        description="A short name for the group of individuals that collected this data.",
-    )
-    restrictions: Optional[str] = Field(
-        default=None,
-        description="Detail any restrictions on publishing or sharing these data.",
-    )
-    data_summary: Optional[str] = Field(
-        default=None,
-        description="Semantic summary of experimental goal.",
+        description="Settings specific to instrument metadata.",
     )
 
-    @field_validator("modalities", mode="before")
-    def convert_modalities_from_string(cls, v):
-        """Convert modalities from string to list if necessary"""
-        if isinstance(v, str):
-            return [Modality.from_abbreviation(v)]
-        elif isinstance(v, list):
-            return [Modality.from_abbreviation(mod) if isinstance(mod, str) else mod for mod in v]
-        return v
+    # Metadata service settings
+    metadata_service_url: str = Field(
+        default="http://aind-metadata-service",
+        description="Metadata service URL to download metadata info.",
+    )
+    metadata_service_subject_endpoint: str = Field(
+        default="/api/v2/subject/",
+        description="Metadata service endpoint for subject metadata.",
+    )
+    metadata_service_procedures_endpoint: str = Field(
+        default="/api/v2/procedures/",
+        description="Metadata service endpoint for procedures metadata.",
+    )
+    metadata_service_instrument_endpoint: str = Field(
+        default="/api/v2/instrument/",
+        description="Metadata service endpoint for instrument metadata.",
+    )

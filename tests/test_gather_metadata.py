@@ -15,7 +15,7 @@ from aind_metadata_mapper.gather_metadata import (
     GatherMetadataJob,
     _metadata_service_helper,
 )
-from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.models import DataDescriptionSettings, JobSettings
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
 
@@ -146,12 +146,15 @@ class TestGatherMetadataJob(unittest.TestCase):
     @patch("os.makedirs")
     def setUp(self, mock_makedirs):
         """Set up test fixtures"""
+        data_desc_settings = DataDescriptionSettings(
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+        )
         self.test_settings = JobSettings(
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+            data_description_settings=data_desc_settings,
             metadata_service_url="http://test-service.com",
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
@@ -177,12 +180,16 @@ class TestGatherMetadataJob(unittest.TestCase):
     @patch("os.makedirs")
     def test_does_file_exist_in_user_defined_dir_no_metadata_dir(self, mock_makedirs):
         """Test _does_file_exist_in_user_defined_dir when metadata_dir is None"""
+        data_desc_settings = DataDescriptionSettings(
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
         job_settings = JobSettings(
             metadata_dir=None,
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=data_desc_settings,
+            instrument_settings=None,
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         job = GatherMetadataJob(settings=job_settings)
@@ -205,13 +212,16 @@ class TestGatherMetadataJob(unittest.TestCase):
     @patch("os.makedirs")
     def test_get_funding_no_project_name(self, mock_makedirs, mock_get):
         """Test get_funding when no project name is provided"""
+        data_desc_settings = DataDescriptionSettings(
+            project_name="",
+            modalities=[Modality.ECEPHYS],
+        )
         job_no_project = GatherMetadataJob(
             JobSettings(
                 metadata_dir="/test",
                 output_dir="/test/output",
                 subject_id="test_subject",
-                project_name="",
-                modalities=[Modality.ECEPHYS],
+                data_description_settings=data_desc_settings,
                 acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
             )
         )
@@ -368,13 +378,16 @@ class TestGatherMetadataJob(unittest.TestCase):
     @patch("os.makedirs")
     def test_get_subject_no_subject_id(self, mock_makedirs, mock_file_exists):
         """Test get_subject when no subject_id is provided"""
+        data_desc_settings = DataDescriptionSettings(
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
         job_no_subject = GatherMetadataJob(
             JobSettings(
                 metadata_dir="/test",
                 output_dir="/test/output",
                 subject_id="",
-                project_name="Test Project",
-                modalities=[Modality.ECEPHYS],
+                data_description_settings=data_desc_settings,
                 acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
             )
         )
@@ -458,13 +471,16 @@ class TestGatherMetadataJob(unittest.TestCase):
     @patch("os.makedirs")
     def test_get_procedures_no_subject_id(self, mock_makedirs, mock_file_exists):
         """Test get_procedures when no subject_id is provided"""
+        data_desc_settings = DataDescriptionSettings(
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
         job_no_subject = GatherMetadataJob(
             JobSettings(
                 metadata_dir="/test",
                 output_dir="/test/output",
                 subject_id="",
-                project_name="Test Project",
-                modalities=[Modality.ECEPHYS],
+                data_description_settings=data_desc_settings,
                 acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
             )
         )
@@ -556,12 +572,15 @@ class TestGatherMetadataJob(unittest.TestCase):
     @patch("os.makedirs")
     def test_run_mappers_for_acquisition_no_metadata_dir(self, mock_makedirs):
         """Test _run_mappers_for_acquisition when metadata_dir is None"""
+        data_desc_settings = DataDescriptionSettings(
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
         job_settings = JobSettings(
             metadata_dir=None,
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=data_desc_settings,
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         job = GatherMetadataJob(settings=job_settings)
@@ -645,12 +664,15 @@ class TestGatherMetadataJob(unittest.TestCase):
     def test_validate_and_create_metadata_success_with_raise_if_invalid_true(self):
         """Test validate_and_create_metadata when validation succeeds with raise_if_invalid=True"""
         with patch("os.makedirs"):
+            data_desc_settings = DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+            )
             strict_settings = JobSettings(
                 metadata_dir="/test/metadata",
                 output_dir="/test/output",
                 subject_id="123456",
-                project_name="Test Project",
-                modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+                data_description_settings=data_desc_settings,
                 metadata_service_url="http://test-service.com",
                 raise_if_invalid=True,
                 acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
@@ -817,12 +839,15 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         temp_dir = tempfile.mkdtemp()
         output_dir = tempfile.mkdtemp()
+        data_desc_settings = DataDescriptionSettings(
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
         test_settings = JobSettings(
             metadata_dir=temp_dir,
             output_dir=output_dir,
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=data_desc_settings,
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         test_job = GatherMetadataJob(settings=test_settings)
@@ -857,12 +882,15 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         temp_dir = tempfile.mkdtemp()
         output_dir = tempfile.mkdtemp()
+        data_desc_settings = DataDescriptionSettings(
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
         test_settings = JobSettings(
             metadata_dir=temp_dir,
             output_dir=output_dir,
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=data_desc_settings,
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         test_job = GatherMetadataJob(settings=test_settings)
@@ -901,12 +929,15 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         temp_dir = tempfile.mkdtemp()
         output_dir = tempfile.mkdtemp()
+        data_desc_settings = DataDescriptionSettings(
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
         test_settings = JobSettings(
             metadata_dir=temp_dir,
             output_dir=output_dir,
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=data_desc_settings,
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         test_job = GatherMetadataJob(settings=test_settings)
@@ -941,12 +972,15 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         temp_dir = tempfile.mkdtemp()
         output_dir = tempfile.mkdtemp()
+        data_desc_settings = DataDescriptionSettings(
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
         test_settings = JobSettings(
             metadata_dir=temp_dir,
             output_dir=output_dir,
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=data_desc_settings,
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         test_job = GatherMetadataJob(settings=test_settings)
@@ -970,12 +1004,15 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         temp_dir = tempfile.mkdtemp()
         output_dir = tempfile.mkdtemp()
+        data_desc_settings = DataDescriptionSettings(
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
         test_settings = JobSettings(
             metadata_dir=temp_dir,
             output_dir=output_dir,
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=data_desc_settings,
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         test_job = GatherMetadataJob(settings=test_settings)
@@ -1001,12 +1038,15 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Test run_job raises error when acquisition_start_time is not provided and no acquisition file exists"""
         mock_acquisition.return_value = None
 
+        data_desc_settings = DataDescriptionSettings(
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
         job_settings = JobSettings(
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=data_desc_settings,
             acquisition_start_time=None,
         )
         job = GatherMetadataJob(settings=job_settings)
