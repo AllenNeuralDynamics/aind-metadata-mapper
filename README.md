@@ -17,29 +17,90 @@ The `GatherMetadataJob` is used to create the `data_description.json` and pull t
 
 Install the metadata mapper (requires Python >=3.10).
 
-Before running the mapper, generate valid `instrument.json` and `acquisition.json` files, plus any optional metadata.
-
 ```{python}
 pip install aind-metadata-mapper
 ```
 
-```{python}
-from aind_metadata_mapper.models import JobSettings
-from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-from aind_data_schema_models.modalities import Modality
+#### Default behavior
 
-# Create JobSettings with minimal required parameters
-settings = JobSettings(
-    metadata_dir=".",  # Directory where metadata files are currently stored and will be saved
-    subject_id="123456",         # Replace with actual subject ID
-    project_name="my_project",  # Replace with actual project name
-    modalities=[Modality.ECEPHYS]  # Replace with relevant modalities
-)
+The GatherMetadataJob attempts to find all of the core metadata files (instrument.json, acquisition.json, etc) and then validates them as a full `Metadata` object.
 
-# Create and run the job
-job = GatherMetadataJob(settings=settings)
-job.run_job()
+The job will always prioritize an exact match for the core file. If that fails, it will construct, fetch, merge or run mappers to generate the appropriate metadata, if it is available.
+
+| File | Method 1 | Method 2 | Method 3 |
+|------|----------|----------|----------|
+| data_description.json | Check user directory | Construct from settings and funding service |  |
+| subject.json | Check user directory | Fetch from metadata service (requires subject_id) |  |
+| procedures.json | Check user directory | Fetch from metadata service (requires subject_id) |  |
+| acquisition.json | Check user directory | Run mappers on `<mapper>.json` files | Merge all `acquisition_*.json` files |
+| instrument.json | Check user directory | Merge all `instrument*.json` files | Fetch from metadata service (requires instrument_id) |
+| processing.json | Check user directory |  |  |
+| quality_control.json | Check user directory | Merge all `quality_control*.json` files |  |
+| model.json | Check user directory |  |  |
+
+#### Minimal settings
+
+The following settings are **required**:
+
+- **`output_dir`** (str): Location where all metadata files will be saved.
+- **`subject_id`** (str): Subject ID used to fetch metadata from the service (subject.json, procedures.json).
+- **`data_description_settings`**:
+  - **`project_name`** (str): Project name used to fetch funding and investigator information.
+  - **`modalities`** (List[Modality]): List of data modalities for this dataset (e.g., `["ecephys", "behavior"]`).
+
+Example minimal configuration:
+
+```python
+{
+  "output_dir": "/path/to/output",
+  "subject_id": "123456",
+  "data_description_settings": {
+    "project_name": "<project-name>",
+    "modalities": Modality.ECEPHYS,
+  }
+}
 ```
+
+#### Optional settings
+
+- **`metadata_dir`** (str, optional): Location of existing metadata files. If a file is found here, it will be used directly instead of constructing/fetching it. Supports merging multiple files with prefixes (e.g., `instrument_0.json`, `instrument_1.json` will be merged).
+
+- **`acquisition_start_time`** (datetime, optional): Acquisition start time in ISO 8601 format. **Important edge cases:**
+  - If `acquisition.json` exists in `metadata_dir`, that value takes precedence and will override this setting.
+  - If `acquisition_start_time` is provided in settings AND found in `acquisition.json`, they must match exactly (configurable behavior below).
+  - If neither is provided, `GatherMetadataJob` will raise an error.
+
+- **`instrument_settings`**:
+  - **`instrument_id`** (str): Identifier for the instrument used in data collection.
+
+- **`data_description_settings`**: See [DataDescription](https://aind-data-schema.readthedocs.io/en/latest/data_description.html#datadescription) for details.
+  - **`tags`** (list[str], optional)
+  - **`group`** (str, optional)
+  - **`restrictions`** (str, optional)
+  - **`data_summary`** (str, optional)
+
+#### Validation settings
+
+- **`raise_if_invalid`** (bool, default=False): Controls validation behavior:
+  - `True`: Raises an error if any fetched metadata is invalid.
+  - `False`: Logs a warning and continues with best-effort validation.
+  - Also applies to `acquisition_start_time` mismatch validation (when both settings and acquisition.json provide a value).
+
+- **`raise_if_mapper_errors`** (bool, default=True): Controls mapper execution behavior:
+  - `True`: Raises an error if any automated mapper (e.g., for instrument-specific formats) fails.
+  - `False`: Logs a warning and continues without that mapper's output.
+
+#### Metadata service settings
+
+In general, you shouldn't be modifying these.
+
+- **`metadata_service_url`** (str, default=`http://aind-metadata-service`): Base URL of the metadata service.
+
+- **`metadata_service_*_endpoint`** (str): API endpoints for specific metadata types:
+  - `metadata_service_subject_endpoint` (default="/api/v2/subject/")
+  - `metadata_service_procedures_endpoint` (default="/api/v2/procedures/")
+  - `metadata_service_instrument_endpoint` (default="/api/v2/instrument/")
+
 
 ### Using the individual mappers
 
