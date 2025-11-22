@@ -61,6 +61,10 @@ Example minimal configuration:
 }
 ```
 
+#### Automated mappers
+
+When mappers are developed from the `BaseMapper` class and registered in `mapper_registry.py` they can be automatically run by the GatherMetadataJob. A file matching the mapper name `<mapper>.json` will then be turned into the `acquisition.json`. Multiple mappers can be run and the results will be merged.
+
 #### Optional settings
 
 - **`metadata_dir`** (str, optional): Location of existing metadata files. If a file is found here, it will be used directly instead of constructing/fetching it. Supports merging multiple files with prefixes (e.g., `instrument_0.json`, `instrument_1.json` will be merged).
@@ -101,9 +105,8 @@ In general, you shouldn't be modifying these.
   - `metadata_service_procedures_endpoint` (default="/api/v2/procedures/")
   - `metadata_service_instrument_endpoint` (default="/api/v2/instrument/")
 
+### Developing Mappers
 
-### Using the individual mappers
-
-Each MapperJob class should inherit from the base MapperJob in `base.py`. The only parameter should be the JobSettings from `base.py`. You cannot add additional parameters to your job or it will not be possible for it to be run automatically on the data-transfer-service.
+Each MapperJob class should inherit from `BaseMapper` in `base.py`. The only parameter should be the `MapperJobSettings` from `base.py`. You cannot add additional parameters to your job or it will not be possible for it to be run automatically on the data-transfer-service. GatherMetadataJob will then run your mappers automatically when it detects the extracted metadata output.
 
 #### [todo]
