@@ -4,7 +4,7 @@ import unittest
 
 from aind_data_schema_models.modalities import Modality
 
-from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.models import DataDescriptionSettings, JobSettings
 
 
 class TestJobSettings(unittest.TestCase):
@@ -14,27 +14,33 @@ class TestJobSettings(unittest.TestCase):
         """Tests basic constructor from command line args."""
         # Create JobSettings directly with parameters since command line
         # parsing of modalities has complex requirements
+        data_desc_settings = DataDescriptionSettings(
+            project_name="test_project",
+            modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+        )
         job_settings = JobSettings(
             metadata_dir=".",
             output_dir="./output",
             subject_id="12345",
-            project_name="test_project",
-            modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+            data_description_settings=data_desc_settings,
         )
         self.assertEqual(".", job_settings.metadata_dir)
         self.assertEqual("12345", job_settings.subject_id)
-        self.assertEqual("test_project", job_settings.project_name)
+        self.assertEqual("test_project", job_settings.data_description_settings.project_name)
         expected_modalities = [Modality.ECEPHYS, Modality.BEHAVIOR]
-        self.assertEqual(expected_modalities, job_settings.modalities)
+        self.assertEqual(expected_modalities, job_settings.data_description_settings.modalities)
 
     def test_output_path_defaults_to_input_path(self):
         """Tests that output_dir defaults to metadata_dir when not provided."""
+        data_desc_settings = DataDescriptionSettings(
+            project_name="test_project",
+            modalities=[Modality.ECEPHYS],
+        )
         job_settings = JobSettings(
             metadata_dir="/test/input",
             output_dir="/test/input",
             subject_id="12345",
-            project_name="test_project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=data_desc_settings,
         )
         self.assertEqual("/test/input", job_settings.metadata_dir)
         self.assertEqual("/test/input", job_settings.output_dir)

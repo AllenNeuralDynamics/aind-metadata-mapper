@@ -19,7 +19,7 @@ from aind_data_schema.core.subject import Subject
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.models import DataDescriptionSettings, JobSettings
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
 METADATA_SERVICE_DIR = TEST_DIR / "resources" / "metadata_service"
@@ -32,12 +32,15 @@ class TestIntegrationMetadata(unittest.TestCase):
     @patch("os.makedirs")
     def setUp(self, mock_makedirs):
         """Set up test fixtures"""
+        data_desc_settings = DataDescriptionSettings(
+            project_name="Visual Behavior",
+            modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+        )
         self.test_settings = JobSettings(
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="804670",
-            project_name="Visual Behavior",
-            modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+            data_description_settings=data_desc_settings,
             metadata_service_url="http://test-service.com",
             acquisition_start_time=datetime(2025, 9, 17, 10, 26, 0, tzinfo=timezone.utc),
         )
@@ -124,7 +127,10 @@ class TestIntegrationMetadata(unittest.TestCase):
         funding_source, investigators = self.job.get_funding()
 
         # Verify the request was made correctly
-        expected_url = f"{self.test_settings.metadata_service_url}/api/v2/funding/" f"{self.test_settings.project_name}"
+        expected_url = (
+            f"{self.test_settings.metadata_service_url}/api/v2/funding/"
+            f"{self.test_settings.data_description_settings.project_name}"
+        )
         mock_get.assert_called_once_with(expected_url)
 
         # Verify funding source structure
@@ -426,12 +432,15 @@ class TestIntegrationMetadata(unittest.TestCase):
     def test_validate_and_create_metadata_with_raise_if_invalid_true(self):
         """Test validate_and_create_metadata with raise_if_invalid=True - should raise ValidationError"""
         with patch("os.makedirs"):
+            data_desc_settings = DataDescriptionSettings(
+                project_name="Visual Behavior",
+                modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+            )
             strict_settings = JobSettings(
                 metadata_dir="/test/metadata",
                 output_dir="/test/output",
                 subject_id="804670",
-                project_name="Visual Behavior",
-                modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+                data_description_settings=data_desc_settings,
                 metadata_service_url="http://test-service.com",
                 raise_if_invalid=True,
                 acquisition_start_time=datetime(2025, 9, 17, 10, 26, 0),

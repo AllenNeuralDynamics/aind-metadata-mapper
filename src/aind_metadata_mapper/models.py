@@ -37,6 +37,15 @@ class DataDescriptionSettings(BaseSettings):
         description="Semantic summary of experimental goal.",
     )
 
+    @field_validator("modalities", mode="before")
+    def convert_modalities_from_string(cls, v):
+        """Convert modalities from string to list if necessary"""
+        if isinstance(v, str):
+            return [Modality.from_abbreviation(v)]
+        elif isinstance(v, list):
+            return [Modality.from_abbreviation(mod) if isinstance(mod, str) else mod for mod in v]
+        return v
+
 
 class InstrumentSettings(BaseSettings):
     """Settings specific to instrument metadata"""
@@ -99,7 +108,7 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
         description="Settings specific to data description metadata.",
     )
     instrument_settings: Optional[InstrumentSettings] = Field(
-        ...,
+        default=None,
         description="Settings specific to instrument metadata.",
     )
 
@@ -120,12 +129,3 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
         default="/api/v2/instrument/",
         description="Metadata service endpoint for instrument metadata.",
     )
-
-    @field_validator("modalities", mode="before")
-    def convert_modalities_from_string(cls, v):
-        """Convert modalities from string to list if necessary"""
-        if isinstance(v, str):
-            return [Modality.from_abbreviation(v)]
-        elif isinstance(v, list):
-            return [Modality.from_abbreviation(mod) if isinstance(mod, str) else mod for mod in v]
-        return v

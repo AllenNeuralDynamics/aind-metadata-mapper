@@ -15,11 +15,11 @@ API_BASE_URL = "http://aind-metadata-service"
 
 
 def get_instrument(
-        instrument_id: str,
-        modification_date: Optional[str] = None,
-        metadata_service_url: str = API_BASE_URL,
-        metadata_service_instrument_endpoint: str = "/api/v2/instrument/",
-    ) -> Optional[dict]:
+    instrument_id: str,
+    modification_date: Optional[str] = None,
+    metadata_service_url: str = API_BASE_URL,
+    metadata_service_instrument_endpoint: str = "/api/v2/instrument/",
+) -> Optional[dict]:
     """Get instrument.
 
     Gets the latest record by default, or a specific record if modification_date is provided.
