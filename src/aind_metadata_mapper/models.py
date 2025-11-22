@@ -1,5 +1,6 @@
 """Module to define models for Gather Metadata Job"""
 
+from datetime import date
 from typing import List, Optional
 
 from aind_data_schema.base import AwareDatetimeWithDefault
@@ -7,6 +8,44 @@ from aind_data_schema_models.data_name_patterns import Group
 from aind_data_schema_models.modalities import Modality
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
+
+
+class DataDescriptionSettings(BaseSettings):
+    """Settings specific to data description metadata"""
+
+    project_name: str = Field(
+        default=...,
+        description=("Project name. Will be used to download metadata from a service."),
+    )
+    modalities: List[Modality.ONE_OF] = Field(
+        default=...,
+        description=("List of data modalities for this dataset."),
+    )
+    tags: Optional[List[str]] = Field(
+        default=None,
+        description="Descriptive strings to help categorize and search for data.",
+    )
+    group: Optional[Group] = Field(
+        default=None,
+        description="A short name for the group of individuals that collected this data.",
+    )
+    restrictions: Optional[str] = Field(
+        default=None,
+        description="Detail any restrictions on publishing or sharing these data.",
+    )
+    data_summary: Optional[str] = Field(
+        default=None,
+        description="Semantic summary of experimental goal.",
+    )
+
+
+class InstrumentSettings(BaseSettings):
+    """Settings specific to instrument metadata"""
+
+    instrument_id: str = Field(
+        ...,
+        description="Identifier for the instrument used in data collection.",
+    )
 
 
 class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=True):
@@ -23,18 +62,6 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
     output_dir: str = Field(
         ...,
         description=("Location to save metadata."),
-    )
-    metadata_service_url: str = Field(
-        default="http://aind-metadata-service",
-        description="Metadata service URL to download metadata info.",
-    )
-    metadata_service_subject_endpoint: str = Field(
-        default="/api/v2/subject/",
-        description="Metadata service endpoint for subject metadata.",
-    )
-    metadata_service_procedures_endpoint: str = Field(
-        default="/api/v2/procedures/",
-        description="Metadata service endpoint for procedures metadata.",
     )
 
     # Job settings
@@ -66,29 +93,33 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
             " by the acquisition.json."
         ),
     )
-    project_name: str = Field(
-        default=...,
-        description=("Project Name. Will be used to download metadata from a service."),
+
+    # Core metadata settings
+    data_description_settings: DataDescriptionSettings = Field(
+        ...,
+        description="Settings specific to data description metadata.",
     )
-    modalities: List[Modality.ONE_OF] = Field(
-        default=...,
-        description=("List of data modalities for this dataset."),
+    instrument_settings: Optional[InstrumentSettings] = Field(
+        ...,
+        description="Settings specific to instrument metadata.",
     )
-    tags: Optional[List[str]] = Field(
-        default=None,
-        description="Descriptive strings to help categorize and search for data.",
+
+    # Metadata service settings
+    metadata_service_url: str = Field(
+        default="http://aind-metadata-service",
+        description="Metadata service URL to download metadata info.",
     )
-    group: Optional[Group] = Field(
-        default=None,
-        description="A short name for the group of individuals that collected this data.",
+    metadata_service_subject_endpoint: str = Field(
+        default="/api/v2/subject/",
+        description="Metadata service endpoint for subject metadata.",
     )
-    restrictions: Optional[str] = Field(
-        default=None,
-        description="Detail any restrictions on publishing or sharing these data.",
+    metadata_service_procedures_endpoint: str = Field(
+        default="/api/v2/procedures/",
+        description="Metadata service endpoint for procedures metadata.",
     )
-    data_summary: Optional[str] = Field(
-        default=None,
-        description="Semantic summary of experimental goal.",
+    metadata_service_instrument_endpoint: str = Field(
+        default="/api/v2/instrument/",
+        description="Metadata service endpoint for instrument metadata.",
     )
 
     @field_validator("modalities", mode="before")

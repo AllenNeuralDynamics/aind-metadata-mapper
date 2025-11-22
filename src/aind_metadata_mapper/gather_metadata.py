@@ -26,6 +26,7 @@ from pydantic import ValidationError
 from aind_metadata_mapper.base import MapperJobSettings
 from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.utils import get_instrument
 
 
 def _metadata_service_helper(url: str) -> Optional[dict]:
@@ -170,10 +171,13 @@ class GatherMetadataJob:
         tuple[list, list]
             A tuple of (funding_source, investigators)
         """
-        if not self.settings.project_name:
+        if not self.settings.data_description_settings.project_name:
             return [], []
 
-        funding_url = f"{self.settings.metadata_service_url}" f"/api/v2/funding/{self.settings.project_name}"
+        funding_url = (
+            f"{self.settings.metadata_service_url}"
+            f"/api/v2/funding/{self.settings.data_description_settings.project_name}"
+        )
         funding_info = _metadata_service_helper(funding_url)
 
         if not funding_info:
@@ -221,22 +225,22 @@ class GatherMetadataJob:
         funding_source, investigators = self.get_funding()
 
         # Get modalities
-        modalities = self.settings.modalities
+        modalities = self.settings.data_description_settings.modalities
 
         # Create new data description
         new_data_description = DataDescription(
             creation_time=creation_time,
             institution=Organization.AIND,
-            project_name=self.settings.project_name,
+            project_name=self.settings.data_description_settings.project_name,
             modalities=modalities,
             funding_source=funding_source,
             investigators=investigators,
             data_level=DataLevel.RAW,
             subject_id=self.settings.subject_id,
-            tags=self.settings.tags,
-            group=self.settings.group,
-            restrictions=self.settings.restrictions,
-            data_summary=self.settings.data_summary,
+            tags=self.settings.data_description_settings.tags,
+            group=self.settings.data_description_settings.group,
+            restrictions=self.settings.data_description_settings.restrictions,
+            data_summary=self.settings.data_description_settings.data_summary,
         )
 
         # Over-write creation_time now that the .name field has been populated
@@ -370,6 +374,15 @@ class GatherMetadataJob:
             files = self._get_prefixed_files_from_user_defined_directory(file_name_prefix="instrument")
             if files:
                 return self._merge_models(Instrument, files)
+
+            # Attempt to get instrument from service
+            if self.settings.instrument_settings and self.settings.instrument_settings.instrument_id:
+                return get_instrument(
+                    instrument_id=self.settings.instrument_settings.instrument_id,
+                    metadata_service_url=self.settings.metadata_service_url,
+                    metadata_service_instrument_endpoint=self.settings.metadata_service_instrument_endpoint,
+                )
+
             else:
                 logging.debug("No instrument metadata file found.")
                 return None
