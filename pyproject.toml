@@ -67,8 +67,12 @@ exclude = '''
 )
 '''
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = ["src/aind_metadata_mapper/fip"]
+
 [tool.coverage.run]
-omit = ["*__init__*", "tests/integration/*"]
+omit = ["*__init__*", "tests/integration/*", "*make_instrument.py"]
 source = ["aind_metadata_mapper", "tests"]
 
 [tool.coverage.report]
