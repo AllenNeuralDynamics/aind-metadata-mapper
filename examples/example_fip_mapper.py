@@ -1,17 +1,15 @@
-"""Example script demonstrating FIP mapper with ProtoAcquisitionDataSchema JSON validation.
+"""Example script demonstrating FIP mapper with extracted metadata.
 
 This script demonstrates the complete workflow:
-1. Load ProtoAcquisitionDataSchema JSON file from acquisition repo
-2. Validate against JSON schema from extractor repo
-3. Map to AIND Data Schema 2.0 Acquisition format
+1. Read FIP extracted metadata (fip.json) - raw extracted data, not yet mapped to schema
+2. Map FIP metadata to a schema-compliant acquisition (writes acquisition.json)
 
 Usage:
-    python examples/example_fip_mapper.py /path/to/ProtoAcquisitionDataSchema.json [output_filename]
+    python examples/example_fip_mapper.py /path/to/fip.json [output_filename]
 
 Example:
-    python examples/example_fip_mapper.py \\
-        /Users/doug.ollerenshaw/code/Aind.Physiology.Fip/examples/ProtoAcquisitionDataSchema.json
-    python examples/example_fip_mapper.py /path/to/input.json example_acquisition.json
+    python examples/example_fip_mapper.py /path/to/fip.json
+    python examples/example_fip_mapper.py /path/to/fip.json example_acquisition.json
 """
 
 import argparse
@@ -25,8 +23,8 @@ from aind_metadata_mapper.utils import write_acquisition
 def main():
     """Main entry point for the FIP mapper example script.
 
-    Parses command line arguments, loads the input JSON file, validates and transforms
-    it using the FIP mapper, and writes the output acquisition metadata file.
+    Parses command line arguments, loads the extracted FIP metadata file,
+    transforms it using the FIP mapper, and writes the output acquisition metadata file.
 
     Returns
     -------
@@ -35,28 +33,25 @@ def main():
     """
     parser = argparse.ArgumentParser(
         description=(
-            "Demonstrate FIP mapper workflow: validate and transform "
-            "ProtoAcquisitionDataSchema to AIND Data Schema 2.0"
+            "Demonstrate FIP mapper workflow: transform extracted FIP metadata "
+            "to AIND Data Schema 2.0 Acquisition format"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Example usage:
-  python examples/example_fip_mapper.py /path/to/ProtoAcquisitionDataSchema.json [output_filename]
+  python examples/example_fip_mapper.py /path/to/fip.json [output_filename]
 
   # Use default output filename (acquisition.json)
-  python examples/example_fip_mapper.py /path/to/input.json
+  python examples/example_fip_mapper.py /path/to/fip.json
 
   # Specify custom output filename
-  python examples/example_fip_mapper.py /path/to/input.json example_acquisition.json
-
-Need an example input file?
-  See: https://github.com/AllenNeuralDynamics/Aind.Physiology.Fip/blob/main/examples/ProtoAcquisitionDataSchema.json
+  python examples/example_fip_mapper.py /path/to/fip.json example_acquisition.json
         """,
     )
     parser.add_argument(
-        "input_json",
+        "fip_json",
         type=Path,
-        help="Path to ProtoAcquisitionDataSchema JSON file",
+        help="Path to extracted FIP metadata JSON file (fip.json)",
     )
     parser.add_argument(
         "output_filename",
@@ -67,41 +62,35 @@ Need an example input file?
     )
 
     args = parser.parse_args()
-    example_path = args.input_json
+    fip_path = args.fip_json
     output_filename = args.output_filename
 
     # Validate that the file exists
-    if not example_path.exists():
-        print(f"Error: File not found: {example_path}")
-        print("\nNeed an example input file?")
-        print(
-            "See: https://github.com/AllenNeuralDynamics/Aind.Physiology.Fip/"
-            "blob/main/examples/ProtoAcquisitionDataSchema.json"
-        )
+    if not fip_path.exists():
+        print(f"Error: File not found: {fip_path}")
         return 1
 
     print("=" * 60)
     print("FIP Mapper Example")
     print("=" * 60)
 
-    # Load the example JSON
-    print(f"\n1. Loading example JSON from:\n   {example_path}")
-    with open(example_path) as f:
-        metadata = json.load(f)
+    # Load the extracted FIP metadata
+    print(f"\n1. Loading extracted FIP metadata from:\n   {fip_path}")
+    with open(fip_path) as f:
+        fip_metadata = json.load(f)
 
-    print(f"   ✓ Loaded JSON with keys: {list(metadata.keys())}")
+    print(f"   ✓ Loaded JSON with keys: {list(fip_metadata.keys())}")
 
     # Create mapper
     print(f"\n2. Creating FIP mapper (output: {output_filename})...")
     mapper = FIPMapper(output_filename=output_filename)
     print("   ✓ Mapper initialized")
 
-    # Validate and transform
-    print("\n3. Validating input and transforming to AIND Data Schema 2.0...")
-    print("   (Validating against JSON schema from aind-metadata-extractor)")
+    # Transform to schema-compliant acquisition
+    print("\n3. Mapping FIP metadata to AIND Data Schema 2.0 Acquisition...")
     try:
-        acquisition = mapper.transform(metadata)
-        print("   ✓ Validation passed and transformation complete!")
+        acquisition = mapper.transform(fip_metadata, skip_validation=True)
+        print("   ✓ Transformation complete!")
 
         # Display results
         print("\n4. Acquisition metadata created:")
@@ -120,11 +109,13 @@ Need an example input file?
 
         # Write output to examples folder
         examples_dir = Path(__file__).parent
-        output_file = write_acquisition(acquisition, str(examples_dir), mapper.output_filename)
+        # Use just the filename if output_filename contains a path
+        output_filename = Path(mapper.output_filename).name
+        output_file = write_acquisition(acquisition, str(examples_dir), output_filename)
         print(f"\n5. Wrote output to: {output_file.absolute()}")
 
     except ValueError as e:
-        print(f"\n   ✗ Validation failed: {e}")
+        print(f"\n   ✗ Error: {e}")
         return 1
     except Exception as e:
         print(f"\n   ✗ Error: {e}")
