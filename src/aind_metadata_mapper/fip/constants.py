@@ -67,22 +67,3 @@ DEVICE_NAME_MAP = {
 # URL for the VrForaging-FIP experiment repository used to track code versions
 # NOTE: Ideally this would come from the extracted metadata, but we don't have it yet.
 VR_FORAGING_FIP_REPO_URL = "https://github.com/AllenNeuralDynamics/Aind.Experiment.VrForaging-Fip"
-
-
-# ==============================================================================
-# Coordinate System
-# ==============================================================================
-# Default coordinate system for VrForaging-FIP experiments
-# NOTE: Ideally this would come from the extracted metadata, but we don't have it yet.
-# Using standard Bregma-based coordinate system with anatomical axes
-DEFAULT_COORDINATE_SYSTEM = {
-    "object_type": "Coordinate system",
-    "name": "origin",
-    "origin": "Bregma",
-    "axes": [
-        {"object_type": "Axis", "name": "X", "direction": "Left_to_right"},
-        {"object_type": "Axis", "name": "Y", "direction": "Anterior_to_posterior"},
-        {"object_type": "Axis", "name": "Z", "direction": "Inferior_to_superior"},
-    ],
-    "axis_unit": "millimeter",
-}
