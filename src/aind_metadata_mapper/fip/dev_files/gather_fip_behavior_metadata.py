@@ -44,10 +44,10 @@ def main():
     subject_id = data_dir.parts[-2]  # Gets "804434"
     project_name = "vr-foraging"  # Could parse from path if needed
 
-    # Create JobSettings with local output directory
+    # Create JobSettings following README pattern
     settings = JobSettings(
-        input_source=str(data_dir),
-        metadata_dir=str(output_dir),
+        metadata_dir=str(data_dir),  # Directory where input metadata files are located
+        output_dir=str(output_dir),  # Directory where output metadata files will be saved
         subject_id=subject_id,
         project_name=project_name,
         modalities=[Modality.FIB, Modality.BEHAVIOR],
