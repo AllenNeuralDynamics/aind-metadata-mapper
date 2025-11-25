@@ -11,43 +11,11 @@ from urllib.parse import urljoin
 import aind_data_schema.core.instrument as instrument
 import requests
 import yaml
-from aind_data_schema.core.acquisition import Acquisition
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 API_BASE_URL = "http://aind-metadata-service/api/v2/instrument"
-
-
-def write_acquisition(
-    model: Acquisition, output_directory: Optional[str] = None, filename: str = "acquisition.json"
-) -> Path:
-    """Write an Acquisition model to a JSON file.
-
-    Parameters
-    ----------
-    model : Acquisition
-        The acquisition model to write.
-    output_directory : Optional[str], optional
-        Output directory path, by default None (current directory).
-    filename : str, optional
-        Output filename, by default "acquisition.json".
-
-    Returns
-    -------
-    Path
-        Path to the written file.
-    """
-    if output_directory:
-        output_path = Path(output_directory) / filename
-    else:
-        output_path = Path(filename)
-
-    with open(output_path, "w") as f:
-        f.write(model.model_dump_json(indent=2))
-
-    logger.info(f"Wrote acquisition metadata to {output_path}")
-    return output_path
 
 
 def ensure_timezone(dt):
@@ -151,7 +119,7 @@ def get_intended_measurements(subject_id: str, get_func=None) -> Optional[dict]:
     Optional[dict]
         Intended measurements data dictionary, or None if the request fails.
     """
-    if get_func is None:
+    if get_func is None:  # pragma: no cover
         get_func = requests.get
 
     try:

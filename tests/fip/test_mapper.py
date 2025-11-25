@@ -19,7 +19,6 @@ from aind_data_schema_models.modalities import Modality
 from aind_metadata_mapper.fip import mapper as mapper_mod
 from aind_metadata_mapper.fip.constants import ACQUISITION_TYPE_AIND_VR_FORAGING, VR_FORAGING_FIP_REPO_URL
 from aind_metadata_mapper.fip.mapper import FIPMapper
-from aind_metadata_mapper.utils import write_acquisition
 
 
 class TestFIPMapper(unittest.TestCase):
@@ -691,10 +690,10 @@ class TestFIPMapper(unittest.TestCase):
                 data = json.load(f)
             self.assertIn("subject_id", data)
 
-    def test_write_acquisition_utility(self):
-        """Test that write_acquisition utility function works correctly.
+    def test_write_standard_file(self):
+        """Test that write_standard_file method works correctly.
 
-        This tests the integration with the utility function for file writing.
+        This tests that Acquisition.write_standard_file can be used to write files.
         """
         mapper = FIPMapper()
 
@@ -710,12 +709,13 @@ class TestFIPMapper(unittest.TestCase):
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            result = write_acquisition(acquisition, tmpdir, mapper.output_filename)
+            output_dir = Path(tmpdir)
+            acquisition.write_standard_file(output_directory=output_dir)
 
-            # Verify file was created
-            self.assertTrue(result.exists())
-            self.assertEqual(result.name, "acquisition.json")
-            self.assertEqual(result.parent, Path(tmpdir))
+            # Verify file was created (write_standard_file creates acquisition.json)
+            expected_file = output_dir / "acquisition.json"
+            self.assertTrue(expected_file.exists(), f"Expected {expected_file} but found {list(output_dir.iterdir())}")
+            self.assertEqual(expected_file.name, "acquisition.json")
 
 
 class TestFIPMapperEdgeCases(unittest.TestCase):

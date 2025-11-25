@@ -7,10 +7,7 @@ Strategy:
 - Keep tests fast by avoiding real network or filesystem side effects outside temp dirs.
 """
 
-import json
-import os
 import shutil
-import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -20,7 +17,6 @@ from unittest.mock import patch
 import requests
 
 from aind_metadata_mapper import utils
-from aind_metadata_mapper.fip.mapper import FIPMapper
 
 
 class TestUtils(unittest.TestCase):
@@ -280,69 +276,6 @@ class TestUtils(unittest.TestCase):
         result = utils.get_intended_measurements("123", get_func=test_get)
         self.assertEqual(result, {"data": []})
 
-    def test_write_acquisition_no_output_directory(self):
-        """Test that write_acquisition writes files to current directory when no output directory specified.
-
-        When output_directory is None, write_acquisition should write the acquisition JSON file
-        to the current working directory. This tests the else branch of the conditional logic
-        and ensures the function works correctly when no specific output location is provided.
-        """
-        # Create a minimal acquisition using the fixture data
-        fixture_path = Path("tests/fixtures/fip_intermediate.json")
-        payload = json.loads(fixture_path.read_text())
-
-        # Use the existing mapper to create a proper acquisition
-        mapper = FIPMapper()
-        # Pass None for intended_measurements to avoid network calls
-        # Provide actual implanted_fibers (no ROI fallback)
-        acquisition = mapper.transform(
-            SimpleNamespace(**payload),
-            skip_validation=True,
-            intended_measurements=None,
-            implanted_fibers=[0, 1],
-        )
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            original_cwd = os.getcwd()
-            try:
-                os.chdir(tmpdir)
-
-                result = utils.write_acquisition(acquisition, output_directory=None, filename="test.json")
-
-                self.assertTrue(result.name.endswith("test.json"))
-                self.assertTrue(result.exists())
-            finally:
-                os.chdir(original_cwd)
-
-    def test_write_acquisition_with_output_directory(self):
-        """Test that write_acquisition writes files to specified output directory.
-
-        When output_directory is provided, write_acquisition should write the acquisition JSON file
-        to that specific directory. This tests the if branch of the conditional logic and ensures
-        the function correctly handles custom output locations for the generated metadata files.
-        """
-        # Create a minimal acquisition using the fixture data
-        fixture_path = Path("tests/fixtures/fip_intermediate.json")
-        payload = json.loads(fixture_path.read_text())
-
-        # Use the existing mapper to create a proper acquisition
-        mapper = FIPMapper()
-        # Pass None for intended_measurements to avoid network calls
-        # Provide actual implanted_fibers (no ROI fallback)
-        acquisition = mapper.transform(
-            SimpleNamespace(**payload),
-            skip_validation=True,
-            intended_measurements=None,
-            implanted_fibers=[0, 1],
-        )
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            result = utils.write_acquisition(acquisition, output_directory=tmpdir, filename="test.json")
-
-            self.assertTrue(result.name.endswith("test.json"))
-            self.assertTrue(result.exists())
-            self.assertEqual(result.parent, Path(tmpdir))
-
     def test_get_protocols_for_modality_file_not_found(self):
         """Test get_protocols_for_modality returns empty list when protocols.yaml is missing."""
         protocols_path = Path(__file__).parent.parent / "protocols.yaml"
@@ -376,6 +309,12 @@ class TestUtils(unittest.TestCase):
             protocols_path.unlink(missing_ok=True)
             if backup_path.exists():
                 shutil.move(str(backup_path), str(protocols_path))
+
+    def test_get_protocols_for_modality_success(self):
+        """Test get_protocols_for_modality returns protocols when file exists and is valid."""
+        result = utils.get_protocols_for_modality("fip")
+        # Should return a list (may be empty if protocols.yaml doesn't have fip, but should not error)
+        self.assertIsInstance(result, list)
 
 
 class TestPromptFunctions(unittest.TestCase):
