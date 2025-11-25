@@ -343,8 +343,8 @@ class TestUtils(unittest.TestCase):
             self.assertTrue(result.exists())
             self.assertEqual(result.parent, Path(tmpdir))
 
-    def test_load_protocols_file_not_found(self):
-        """Test load_protocols returns empty dict when protocols.yaml is missing."""
+    def test_get_protocols_for_modality_file_not_found(self):
+        """Test get_protocols_for_modality returns empty list when protocols.yaml is missing."""
         protocols_path = Path(__file__).parent.parent / "protocols.yaml"
         backup_path = Path(__file__).parent.parent / "protocols.yaml.test_backup"
 
@@ -352,14 +352,14 @@ class TestUtils(unittest.TestCase):
             shutil.move(str(protocols_path), str(backup_path))
 
         try:
-            result = utils.load_protocols()
-            self.assertEqual(result, {})
+            result = utils.get_protocols_for_modality("fip")
+            self.assertEqual(result, [])
         finally:
             if backup_path.exists():
                 shutil.move(str(backup_path), str(protocols_path))
 
-    def test_load_protocols_yaml_error(self):
-        """Test load_protocols returns empty dict when YAML is invalid."""
+    def test_get_protocols_for_modality_yaml_error(self):
+        """Test get_protocols_for_modality returns empty list when YAML is invalid."""
         protocols_path = Path(__file__).parent.parent / "protocols.yaml"
         backup_path = Path(__file__).parent.parent / "protocols.yaml.test_backup"
 
@@ -370,8 +370,8 @@ class TestUtils(unittest.TestCase):
             with open(protocols_path, "w") as f:
                 f.write("invalid: yaml: [unclosed")
 
-            result = utils.load_protocols()
-            self.assertEqual(result, {})
+            result = utils.get_protocols_for_modality("fip")
+            self.assertEqual(result, [])
         finally:
             protocols_path.unlink(missing_ok=True)
             if backup_path.exists():

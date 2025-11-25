@@ -171,33 +171,10 @@ def get_intended_measurements(subject_id: str, get_func=None) -> Optional[dict]:
         return None
 
 
-def load_protocols():
-    """Load protocol URLs from protocols.yaml file.
-
-    Returns
-    -------
-    dict
-        Dictionary mapping modality names to lists of protocol URLs.
-    """
-    try:
-        project_root = Path(__file__).parent.parent.parent
-        protocols_file = project_root / "protocols.yaml"
-
-        if not protocols_file.exists():
-            logger.warning(f"Protocols file not found at {protocols_file}")
-            return {}
-
-        with open(protocols_file, "r") as f:
-            protocols = yaml.safe_load(f)
-
-        return protocols or {}
-    except Exception as e:
-        logger.warning(f"Error loading protocols: {e}")
-        return {}
-
-
 def get_protocols_for_modality(modality):
     """Get protocol URLs for a specific modality.
+
+    Loads protocols from protocols.yaml file and returns the list for the given modality.
 
     Parameters
     ----------
@@ -209,8 +186,22 @@ def get_protocols_for_modality(modality):
     list
         List of protocol URLs for the modality.
     """
-    protocols = load_protocols()
-    return protocols.get(modality, [])
+    try:
+        project_root = Path(__file__).parent.parent.parent
+        protocols_file = project_root / "protocols.yaml"
+
+        if not protocols_file.exists():
+            logger.warning(f"Protocols file not found at {protocols_file}")
+            return []
+
+        with open(protocols_file, "r") as f:
+            protocols = yaml.safe_load(f)
+
+        protocols = protocols or {}
+        return protocols.get(modality, [])
+    except Exception as e:
+        logger.warning(f"Error loading protocols: {e}")
+        return []
 
 
 def get_instrument(
