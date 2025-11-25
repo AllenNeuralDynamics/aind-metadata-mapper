@@ -1,0 +1,485 @@
+{
+      "object_type": "Instrument",
+      "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/instrument.py",
+      "schema_version": "2.0.40",
+      "location": null,
+      "instrument_id": "440_SmartSPIM2_20250114",
+      "modification_date": "2025-01-14",
+      "modalities": [],
+      "calibrations": null,
+      "coordinate_system": {
+        "object_type": "Coordinate system",
+        "name": "BREGMA_ARI",
+        "origin": "Bregma",
+        "axes": [
+          {
+            "object_type": "Axis",
+            "name": "AP",
+            "direction": "Posterior_to_anterior"
+          },
+          {
+            "object_type": "Axis",
+            "name": "ML",
+            "direction": "Left_to_right"
+          },
+          {
+            "object_type": "Axis",
+            "name": "SI",
+            "direction": "Superior_to_inferior"
+          }
+        ],
+        "axis_unit": "millimeter"
+      },
+      "temperature_control": false,
+      "notes": null,
+      "connections": [
+        {
+          "object_type": "Connection",
+          "source_device": "440_SmartSPIM2_20250114",
+          "source_port": null,
+          "target_device": "Laser Launch",
+          "target_port": null,
+          "send_and_receive": false
+        },
+        {
+          "object_type": "Connection",
+          "source_device": "440_SmartSPIM2_20250114",
+          "source_port": null,
+          "target_device": "Applied Scientific Instrumentation Tiger",
+          "target_port": null,
+          "send_and_receive": false
+        },
+        {
+          "object_type": "Connection",
+          "source_device": "440_SmartSPIM2_20250114",
+          "source_port": null,
+          "target_device": "MightyZap",
+          "target_port": null,
+          "send_and_receive": false
+        }
+      ],
+      "components": [
+        {
+          "object_type": "Objective",
+          "name": "LCT 3.6x",
+          "serial_number": "Unknown",
+          "manufacturer": {
+            "name": "Thorlabs",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "04gsnvb07"
+          },
+          "model": "TL4X-SAP",
+          "additional_settings": {},
+          "notes": "Thorlabs TL4X-SAP with LifeCanvas dipping cap and correction optics.",
+          "numerical_aperture": "0.2",
+          "magnification": "3.6",
+          "immersion": "multi",
+          "objective_type": null
+        },
+        {
+          "object_type": "Detector",
+          "name": "Camera",
+          "serial_number": "001107",
+          "manufacturer": {
+            "name": "Hamamatsu",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "03natb733"
+          },
+          "model": "C14440-20UP",
+          "additional_settings": {},
+          "notes": null,
+          "detector_type": "Camera",
+          "data_interface": "USB",
+          "cooling": "Water",
+          "frame_rate": null,
+          "frame_rate_unit": "hertz",
+          "immersion": null,
+          "chroma": null,
+          "sensor_width": null,
+          "sensor_height": null,
+          "size_unit": "pixel",
+          "sensor_format": null,
+          "sensor_format_unit": null,
+          "bit_depth": null,
+          "bin_mode": "No binning",
+          "bin_width": null,
+          "bin_height": null,
+          "bin_unit": "pixel",
+          "gain": null,
+          "crop_offset_x": null,
+          "crop_offset_y": null,
+          "crop_width": null,
+          "crop_height": null,
+          "crop_unit": "pixel",
+          "recording_software": null,
+          "driver": null,
+          "driver_version": null
+        },
+        {
+          "object_type": "Laser",
+          "name": "Ex_488",
+          "serial_number": "",
+          "manufacturer": {
+            "name": "Vortran",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "Stradus",
+          "additional_settings": {},
+          "notes": "All lasers controlled via Vortran VersaLase System",
+          "wavelength": 488,
+          "wavelength_unit": "nanometer",
+          "coupling": "Single-mode fiber",
+          "coupling_efficiency": null,
+          "coupling_efficiency_unit": "percent"
+        },
+        {
+          "object_type": "Laser",
+          "name": "Ex_561",
+          "serial_number": "",
+          "manufacturer": {
+            "name": "Other",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "Obis",
+          "additional_settings": {},
+          "notes": "All lasers controlled via Vortran VersaLase System",
+          "wavelength": 561,
+          "wavelength_unit": "nanometer",
+          "coupling": "Single-mode fiber",
+          "coupling_efficiency": null,
+          "coupling_efficiency_unit": "percent"
+        },
+        {
+          "object_type": "Laser",
+          "name": "Ex_639",
+          "serial_number": "",
+          "manufacturer": {
+            "name": "Vortran",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "Stradus",
+          "additional_settings": {},
+          "notes": "All lasers controlled via Vortran VersaLase System",
+          "wavelength": 639,
+          "wavelength_unit": "nanometer",
+          "coupling": "Single-mode fiber",
+          "coupling_efficiency": null,
+          "coupling_efficiency_unit": "percent"
+        },
+        {
+          "object_type": "Filter",
+          "name": "Em_525",
+          "serial_number": "Unknown-1",
+          "manufacturer": {
+            "name": "Semrock",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "FF03-525/50-32",
+          "additional_settings": {},
+          "notes": null,
+          "filter_type": "Band pass",
+          "cut_off_wavelength": null,
+          "cut_on_wavelength": null,
+          "center_wavelength": null,
+          "wavelength_unit": "nanometer"
+        },
+        {
+          "object_type": "Filter",
+          "name": "Em_600",
+          "serial_number": "Unknown-2",
+          "manufacturer": {
+            "name": "Semrock",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "FF01-600/52-32",
+          "additional_settings": {},
+          "notes": null,
+          "filter_type": "Band pass",
+          "cut_off_wavelength": null,
+          "cut_on_wavelength": null,
+          "center_wavelength": null,
+          "wavelength_unit": "nanometer"
+        },
+        {
+          "object_type": "Filter",
+          "name": "Em_680",
+          "serial_number": "Unknown-3",
+          "manufacturer": {
+            "name": "Chroma",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "FF01-680/42-32",
+          "additional_settings": {},
+          "notes": null,
+          "filter_type": "Band pass",
+          "cut_off_wavelength": null,
+          "cut_on_wavelength": null,
+          "center_wavelength": null,
+          "wavelength_unit": "nanometer"
+        },
+        {
+          "object_type": "Motorized stage",
+          "name": "Focus stage",
+          "serial_number": "6244",
+          "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "LS-100",
+          "additional_settings": {},
+          "notes": null,
+          "travel": "100",
+          "travel_unit": "millimeter",
+          "firmware": null
+        },
+        {
+          "object_type": "Motorized stage",
+          "name": "Cylindrical lens #1",
+          "serial_number": "Unknown-1",
+          "manufacturer": {
+            "name": "Other",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "L12-20F-4",
+          "additional_settings": {},
+          "notes": " (v1v2 upgrade): 'manufacturer' was set to 'Other' and notes were empty, manufacturer is unknown.",
+          "travel": "41",
+          "travel_unit": "millimeter",
+          "firmware": null
+        },
+        {
+          "object_type": "Motorized stage",
+          "name": "Cylindrical lens #2",
+          "serial_number": "Unknown-2",
+          "manufacturer": {
+            "name": "Other",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "L12-20F-4",
+          "additional_settings": {},
+          "notes": " (v1v2 upgrade): 'manufacturer' was set to 'Other' and notes were empty, manufacturer is unknown.",
+          "travel": "41",
+          "travel_unit": "millimeter",
+          "firmware": null
+        },
+        {
+          "object_type": "Motorized stage",
+          "name": "Cylindrical lens #3",
+          "serial_number": "Unknown-3",
+          "manufacturer": {
+            "name": "Other",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "L12-20F-4",
+          "additional_settings": {},
+          "notes": " (v1v2 upgrade): 'manufacturer' was set to 'Other' and notes were empty, manufacturer is unknown.",
+          "travel": "41",
+          "travel_unit": "millimeter",
+          "firmware": null
+        },
+        {
+          "object_type": "Motorized stage",
+          "name": "Cylindrical lens #4",
+          "serial_number": "Unknown-4",
+          "manufacturer": {
+            "name": "Other",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "L12-20F-4",
+          "additional_settings": {},
+          "notes": " (v1v2 upgrade): 'manufacturer' was set to 'Other' and notes were empty, manufacturer is unknown.",
+          "travel": "41",
+          "travel_unit": "millimeter",
+          "firmware": null
+        },
+        {
+          "object_type": "Scanning stage",
+          "name": "Sample stage Z",
+          "serial_number": "6243",
+          "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "LS-50",
+          "additional_settings": {},
+          "notes": null,
+          "travel": "50",
+          "travel_unit": "millimeter",
+          "firmware": null,
+          "stage_axis_direction": "Detection axis",
+          "stage_axis_name": "Z"
+        },
+        {
+          "object_type": "Scanning stage",
+          "name": "Sample stage X",
+          "serial_number": "6249",
+          "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "LS-50",
+          "additional_settings": {},
+          "notes": null,
+          "travel": "50",
+          "travel_unit": "millimeter",
+          "firmware": null,
+          "stage_axis_direction": "Illumination axis",
+          "stage_axis_name": "X"
+        },
+        {
+          "object_type": "Scanning stage",
+          "name": "Sample stage Y",
+          "serial_number": "6247",
+          "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "LS-50",
+          "additional_settings": {},
+          "notes": null,
+          "travel": "50",
+          "travel_unit": "millimeter",
+          "firmware": null,
+          "stage_axis_direction": "Perpendicular axis",
+          "stage_axis_name": "Y"
+        },
+        {
+          "object_type": "Additional imaging device",
+          "name": "tunable lens",
+          "serial_number": "Unknown-1",
+          "manufacturer": {
+            "name": "Optotune",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "EL-16-40-TC",
+          "additional_settings": {},
+          "notes": "Electrically tunable lens",
+          "imaging_device_type": "Other"
+        },
+        {
+          "object_type": "Additional imaging device",
+          "name": "tunable lens",
+          "serial_number": "Unknown-2",
+          "manufacturer": {
+            "name": "Optotune",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "EL-16-40-TC",
+          "additional_settings": {},
+          "notes": "Electrically tunable lens",
+          "imaging_device_type": "Other"
+        },
+        {
+          "object_type": "Additional imaging device",
+          "name": "Sample Chamber",
+          "serial_number": "Unknown-1",
+          "manufacturer": {
+            "name": "LifeCanvas",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "Large-uncoated-glass",
+          "additional_settings": {},
+          "notes": null,
+          "imaging_device_type": "Sample Chamber"
+        },
+        {
+          "object_type": "Microscope",
+          "name": "440_SmartSPIM2_20250114",
+          "serial_number": null,
+          "manufacturer": null,
+          "model": null,
+          "additional_settings": null,
+          "notes": null
+        },
+        {
+          "object_type": "Device",
+          "name": "Applied Scientific Instrumentation Tiger",
+          "serial_number": null,
+          "manufacturer": null,
+          "model": null,
+          "additional_settings": null,
+          "notes": "(v1v2 upgrade instrument) This device was not found in the components list, but is referenced in connections."
+        },
+        {
+          "object_type": "Device",
+          "name": "Laser Launch",
+          "serial_number": null,
+          "manufacturer": null,
+          "model": null,
+          "additional_settings": null,
+          "notes": "(v1v2 upgrade instrument) This device was not found in the components list, but is referenced in connections."
+        },
+        {
+          "object_type": "Device",
+          "name": "MightyZap",
+          "serial_number": null,
+          "manufacturer": null,
+          "model": null,
+          "additional_settings": null,
+          "notes": "(v1v2 upgrade instrument) This device was not found in the components list, but is referenced in connections."
+        },
+        {
+          "object_type": "Device",
+          "name": "561",
+          "serial_number": null,
+          "manufacturer": null,
+          "model": null,
+          "additional_settings": null,
+          "notes": "(v1v2 upgrade metadata) This device was not found in the components list, but is referenced in Acquisition.active_devices."
+        },
+        {
+          "object_type": "Device",
+          "name": "639",
+          "serial_number": null,
+          "manufacturer": null,
+          "model": null,
+          "additional_settings": null,
+          "notes": "(v1v2 upgrade metadata) This device was not found in the components list, but is referenced in Acquisition.active_devices."
+        },
+        {
+          "object_type": "Device",
+          "name": "488",
+          "serial_number": null,
+          "manufacturer": null,
+          "model": null,
+          "additional_settings": null,
+          "notes": "(v1v2 upgrade metadata) This device was not found in the components list, but is referenced in Acquisition.active_devices."
+        }
+      ]
+    }
