@@ -8,6 +8,7 @@ The mapper:
 - Creates 3 channels per fiber: Green (470nm), Isosbestic (415nm), Red (565nm)
 - Fetches intended measurements and implanted fiber info from metadata service (optional)
 
+Note: We don't have access to the ethics_review_id in the extracted metadata. This should be provided by the extractor.
 """
 
 import json
