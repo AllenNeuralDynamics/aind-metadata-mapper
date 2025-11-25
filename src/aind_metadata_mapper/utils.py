@@ -213,7 +213,9 @@ def get_protocols_for_modality(modality):
     return protocols.get(modality, [])
 
 
-def get_instrument(instrument_id: str, modification_date: Optional[str] = None) -> Optional[dict]:  # pragma: no cover
+def get_instrument(
+    instrument_id: str, modification_date: Optional[str] = None, suppress_warning: bool = False
+) -> Optional[dict]:  # pragma: no cover
     """Get instrument.
 
     Gets the latest record by default, or a specific record if modification_date is provided.
@@ -224,6 +226,8 @@ def get_instrument(instrument_id: str, modification_date: Optional[str] = None) 
         Instrument identifier.
     modification_date : Optional[str]
         Optional modification date (YYYY-MM-DD format). If None, returns latest record.
+    suppress_warning : bool
+        If True, suppress warning when modification_date not found.
 
     Returns
     -------
@@ -248,21 +252,22 @@ def get_instrument(instrument_id: str, modification_date: Optional[str] = None) 
         for record in matching_records:
             if record.get("modification_date") == modification_date:
                 return record
-        # No matching date found - log available dates
-        available_dates = sorted(
-            set(r.get("modification_date") for r in matching_records if r.get("modification_date"))
-        )
-        logger.warning(
-            f"No record found for instrument_id '{instrument_id}' with modification_date '{modification_date}'. "
-            f"Available dates: {available_dates}"
-        )
+        # No matching date found - log available dates (unless suppressed)
+        if not suppress_warning:
+            available_dates = sorted(
+                set(r.get("modification_date") for r in matching_records if r.get("modification_date"))
+            )
+            logger.warning(
+                f"No record found for instrument_id '{instrument_id}' with modification_date '{modification_date}'. "
+                f"Available dates: {available_dates}"
+            )
         return None
     else:
         # Return latest record
         return sorted(matching_records, key=lambda record: record["modification_date"])[-1]
 
 
-def save_instrument(instrument_model: instrument.Instrument) -> None:  # pragma: no cover
+def save_instrument(instrument_model: instrument.Instrument, replace: bool = False) -> None:  # pragma: no cover
     """Save instrument and validate round-trip.
 
     Saves the instrument, then retrieves it back and verifies that what we get back
@@ -272,6 +277,8 @@ def save_instrument(instrument_model: instrument.Instrument) -> None:  # pragma:
     ----------
     instrument_model : instrument.Instrument
         Instrument to POST.
+    replace : bool
+        If True, overwrite existing record with same instrument_id and modification_date.
 
     Raises
     ------
@@ -283,7 +290,8 @@ def save_instrument(instrument_model: instrument.Instrument) -> None:  # pragma:
     # Use model_dump_json() and parse to ensure dates are properly serialized
     source_dict = json.loads(instrument_model.model_dump_json())
     logger.info(f"POSTing instrument to {API_BASE_URL}")
-    response = requests.post(API_BASE_URL, json=source_dict)
+    params = {"replace": "true"} if replace else {}
+    response = requests.post(API_BASE_URL, json=source_dict, params=params)
     # POST 400 is always an error (e.g., "Record already exists")
     if response.status_code == 400:
         error_msg = response.json().get("message", response.text)
@@ -306,6 +314,28 @@ def save_instrument(instrument_model: instrument.Instrument) -> None:  # pragma:
         logger.info("Instrument.json successfully stored in the db")
     else:
         raise ValueError("Round-trip test failed: Source and read-back instruments differ")
+
+
+def check_existing_instrument(
+    instrument_id: str,
+    modification_date: str,
+) -> bool:  # pragma: no cover
+    """Check if an instrument with the same ID and modification_date already exists.
+
+    Parameters
+    ----------
+    instrument_id : str
+        Instrument identifier.
+    modification_date : str
+        Modification date (YYYY-MM-DD format).
+
+    Returns
+    -------
+    bool
+        True if a record with the same instrument_id and modification_date exists.
+    """
+    existing = get_instrument(instrument_id, modification_date=modification_date, suppress_warning=True)
+    return existing is not None
 
 
 def check_instrument_id(
