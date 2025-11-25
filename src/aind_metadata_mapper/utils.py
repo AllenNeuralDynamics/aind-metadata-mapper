@@ -75,38 +75,6 @@ def ensure_timezone(dt):
     return dt
 
 
-def _handle_400_response(response, subject_id: str) -> Optional[dict]:
-    """Handle 400 status code response that may contain valid JSON data.
-
-    Parameters
-    ----------
-    response : requests.Response
-        The HTTP response object.
-    subject_id : str
-        The subject ID being queried.
-
-    Returns
-    -------
-    Optional[dict]
-        Procedures data if valid, None otherwise.
-    """
-    try:
-        data = response.json()
-        # Check if response contains valid procedures data structure
-        if isinstance(data, dict) and "subject_procedures" in data:
-            logger.warning(
-                f"Procedures endpoint returned 400 for subject {subject_id}, "
-                "but response contains valid data. Proceeding with data."
-            )
-            return data
-    except (ValueError, KeyError):
-        # Not valid JSON or missing expected structure
-        pass
-    # If we get here, 400 response didn't contain valid data
-    logger.warning(f"Procedures endpoint returned 400 for subject {subject_id} " "with invalid or missing data.")
-    return None
-
-
 def get_procedures(
     subject_id: str, get_func=None, service_url: str = "http://aind-metadata-service-dev/api/v2/procedures"
 ) -> Optional[dict]:
@@ -114,9 +82,6 @@ def get_procedures(
 
     Queries {service_url}/{subject_id} to get all procedures performed on a subject.
     Default service URL: http://aind-metadata-service-dev/api/v2/procedures
-
-    Note: The endpoint may return 400 status code but still contain valid JSON data.
-    This function handles that case by checking for valid JSON before treating it as an error.
 
     Parameters
     ----------
@@ -134,7 +99,7 @@ def get_procedures(
     Optional[dict]
         Procedures data dictionary, or None if the request fails.
     """
-    if get_func is None:
+    if get_func is None:  # pragma: no cover
         get_func = requests.get
 
     try:
@@ -143,15 +108,10 @@ def get_procedures(
         url = urljoin(base_url, subject_id.lstrip("/"))
         response = get_func(url, timeout=60)
 
-        # Handle 400 status codes that may still contain valid JSON data
+        # Handle 400 status codes (normal for this API) and successful responses (2xx)
         status_code = response.status_code
-        if status_code == 400:
-            return _handle_400_response(response, subject_id)
-
-        # For successful responses (2xx), return the JSON data
-        # Handle both int status codes and MagicMock objects from tests
         if isinstance(status_code, int):
-            if 200 <= status_code < 300:
+            if status_code == 400 or (200 <= status_code < 300):
                 return response.json()
         else:
             # For test mocks that don't set status_code as int, try to return JSON

@@ -97,8 +97,8 @@ class TestUtils(unittest.TestCase):
     def test_get_procedures_400_with_valid_data(self):
         """Test that get_procedures handles 400 status code with valid data.
 
-        When the endpoint returns 400 but contains valid subject_procedures data,
-        get_procedures should return the data instead of None.
+        When the endpoint returns 400, get_procedures should return the JSON data
+        (400 is treated as a normal response for this API).
         """
 
         def test_get(url, timeout=None):
@@ -112,22 +112,23 @@ class TestUtils(unittest.TestCase):
         self.assertIsNotNone(result)
         self.assertIn("subject_procedures", result)
 
-    def test_get_procedures_400_with_invalid_data(self):
-        """Test that get_procedures handles 400 status code with invalid data.
+    def test_get_procedures_400_with_any_data(self):
+        """Test that get_procedures returns JSON for 400 status code.
 
-        When the endpoint returns 400 without valid subject_procedures data,
-        get_procedures should return None.
+        When the endpoint returns 400, get_procedures should return the JSON data
+        regardless of content (400 is treated as a normal response for this API).
         """
 
         def test_get(url, timeout=None):
-            """Mock HTTP GET function that returns 400 with invalid data."""
+            """Mock HTTP GET function that returns 400 with any JSON data."""
             resp = SimpleNamespace()
             resp.status_code = 400
             resp.json = lambda: {"error": "bad request"}
             return resp
 
         result = utils.get_procedures("123", get_func=test_get)
-        self.assertIsNone(result)
+        # 400 is treated like 200, so it returns the JSON
+        self.assertEqual(result, {"error": "bad request"})
 
     def test_get_procedures_400_json_error(self):
         """Test that get_procedures handles 400 status code with JSON parsing error.
