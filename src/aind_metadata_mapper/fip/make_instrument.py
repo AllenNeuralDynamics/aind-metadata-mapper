@@ -36,7 +36,12 @@ from aind_data_schema.components.connections import Connection
 from aind_data_schema.components.devices import Computer
 from aind_data_schema_models.modalities import Modality
 
-from aind_metadata_mapper.utils import check_instrument_id, prompt_for_string, save_instrument
+from aind_metadata_mapper.utils import (
+    check_existing_instrument,
+    check_instrument_id,
+    prompt_for_string,
+    save_instrument,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -449,9 +454,25 @@ def main(
         input_func=input_func,
     )
 
+    # Check if instrument with same ID and date already exists
+    modification_date_str = instrument_model.modification_date.isoformat()
+    record_exists = check_existing_instrument(instrument_id, modification_date_str)
+    replace = False
+    if record_exists:
+        logger.info(
+            f"An instrument with ID '{instrument_id}' and modification_date '{modification_date_str}' already exists."
+        )
+        response = input_func("Do you want to overwrite the existing record? [y/N]: ").strip().lower()
+        if response in ("y", "yes"):
+            replace = True
+            logger.info("Will overwrite existing record.")
+        else:
+            logger.info("Cancelled. Not overwriting existing record.")
+            sys.exit(0)
+
     # Save instrument (includes round-trip validation)
     try:
-        save_instrument(instrument_model)
+        save_instrument(instrument_model, replace=replace)
     except ValueError as e:
         logger.error(f"Failed - {e}")
         sys.exit(1)
