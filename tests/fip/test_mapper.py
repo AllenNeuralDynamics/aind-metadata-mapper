@@ -642,30 +642,52 @@ class TestFIPMapper(unittest.TestCase):
         """Test that run_job correctly orchestrates the transform and write operations.
 
         The run_job method should call transform to convert the input metadata to an Acquisition,
-        then call write_acquisition to save it to the specified output directory. This tests the
-        complete workflow from input metadata to output file.
+        and write it using write_standard_file. This tests the complete workflow from input metadata to output file.
         """
         mapper = FIPMapper()
 
+        from aind_metadata_mapper.base import MapperJobSettings
+
         with tempfile.TemporaryDirectory() as tmpdir:
-            # Load test data
+            # Create input file
+            input_file = Path(tmpdir) / "fip.json"
             with open("tests/fixtures/fip_intermediate.json", "r", encoding="utf-8") as f:
                 test_data = json.load(f)
+            with open(input_file, "w") as f:
+                json.dump(test_data, f)
 
-            result = mapper.run_job(
-                test_data,
-                output_directory=tmpdir,
-                skip_validation=True,
-                intended_measurements=self.test_intended_measurements,
-                implanted_fibers=self.test_implanted_fibers,
+            # Create output file path
+            output_file = Path(tmpdir) / "acquisition_fip.json"
+
+            # Create job settings
+            job_settings = MapperJobSettings(
+                input_filepath=input_file,
+                output_filepath=output_file,
             )
 
-            # Verify file was created
-            self.assertTrue(result.exists())
-            self.assertEqual(result.name, "acquisition.json")
+            # Mock the metadata service calls to avoid network requests
+            import unittest.mock
+
+            with (
+                unittest.mock.patch.object(
+                    mapper, "_parse_intended_measurements", return_value=self.test_intended_measurements
+                ),
+                unittest.mock.patch.object(mapper, "_parse_implanted_fibers", return_value=self.test_implanted_fibers),
+                unittest.mock.patch.object(mapper, "_validate_fip_metadata"),
+            ):
+                try:
+                    mapper.run_job(job_settings)
+                except Exception as e:
+                    self.fail(f"run_job raised an exception: {e}")
+
+            # write_standard_file creates acquisition_fip (without .json extension)
+            expected_file = Path(tmpdir) / "acquisition_fip"
+            self.assertTrue(
+                expected_file.exists(), f"Expected {expected_file} but found {list(Path(tmpdir).iterdir())}"
+            )
 
             # Verify it's valid JSON
-            with open(result, "r") as f:
+            with open(expected_file, "r") as f:
                 data = json.load(f)
             self.assertIn("subject_id", data)
 

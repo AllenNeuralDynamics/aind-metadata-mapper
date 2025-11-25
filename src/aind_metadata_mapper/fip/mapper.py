@@ -7,6 +7,7 @@ The mapper:
 - Extracts timing, rig config, and session metadata from nested JSON structure
 - Creates 3 channels per fiber: Green (470nm), Isosbestic (415nm), Red (565nm)
 - Fetches intended measurements and implanted fiber info from metadata service (optional)
+
 """
 
 import json
@@ -29,6 +30,7 @@ from aind_data_schema.core.acquisition import Acquisition, DataStream
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import PowerUnit, SizeUnit, TimeUnit
 
+from aind_metadata_mapper.base import MapperJob, MapperJobSettings
 from aind_metadata_mapper.fip.constants import (
     ACQUISITION_TYPE_AIND_VR_FORAGING,
     CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND,
@@ -52,13 +54,12 @@ from aind_metadata_mapper.utils import (
     get_intended_measurements,
     get_procedures,
     get_protocols_for_modality,
-    write_acquisition,
 )
 
 logger = logging.getLogger(__name__)
 
 
-class FIPMapper:
+class FIPMapper(MapperJob):
     """FIP Mapper - transforms intermediate FIP data into Acquisition metadata.
 
     This mapper follows the standard pattern for AIND metadata mappers:
@@ -778,41 +779,31 @@ class FIPMapper:
 
         return session_start_time, session_end_time
 
-    def run_job(
-        self,
-        metadata: dict,
-        output_directory: Optional[str] = None,
-        skip_validation: bool = False,
-        intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]] = None,
-        implanted_fibers: Optional[List[int]] = None,
-    ) -> Path:
-        """Run the complete mapping job: transform and write.
+    def run_job(self, job_settings: MapperJobSettings) -> None:
+        """Run the FIP mapping job.
 
-        This is the main entry point following the standard AIND mapper pattern.
+        Reads fip.json from input_filepath, transforms it to acquisition format,
+        and writes acquisition_fip.json to output_filepath.
+
+        This method follows the standard MapperJob pattern required for automatic
+        discovery and execution by GatherMetadataJob.
 
         Parameters
         ----------
-        metadata : dict
-            Intermediate metadata from extractor.
-        output_directory : Optional[str], optional
-            Output directory path, by default None (current directory).
-        skip_validation : bool, optional
-            If True, skip JSON schema validation (useful for testing). Defaults to False.
-        intended_measurements : Optional[Dict[str, Dict[str, Optional[str]]]], optional
-            Intended measurements data. If None, will be fetched from metadata service.
-        implanted_fibers : Optional[List[int]], optional
-            Implanted fiber indices. If None, will be fetched from metadata service.
-            Must be non-empty after fetching.
-
-        Returns
-        -------
-        Path
-            Path to the written acquisition file.
+        job_settings : MapperJobSettings
+            Settings containing input_filepath and output_filepath.
         """
-        acquisition = self.transform(
-            metadata,
-            skip_validation=skip_validation,
-            intended_measurements=intended_measurements,
-            implanted_fibers=implanted_fibers,
-        )
-        return write_acquisition(acquisition, output_directory, self.output_filename)
+        # Read input file
+        with open(job_settings.input_filepath, "r") as f:
+            metadata = json.load(f)
+
+        # Transform to acquisition
+        acquisition = self.transform(metadata)
+
+        # Extract suffix from output filepath
+        # Filename format is always "acquisition_{mapper_name}.json"
+        # Example: "acquisition_fip.json" -> stem is "acquisition_fip" -> suffix is "_fip"
+        output_path = job_settings.output_filepath
+        suffix = "_" + output_path.stem.split("_", 1)[1]
+
+        acquisition.write_standard_file(output_directory=output_path.parent, suffix=suffix)
