@@ -1,0 +1,451 @@
+{
+   "coordinate_system": null,
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/procedures.py",
+   "notes": null,
+   "object_type": "Procedures",
+   "schema_version": "2.0.34",
+   "specimen_procedures": [],
+   "subject_id": "804434",
+   "subject_procedures": [
+      {
+         "anaesthesia": {
+            "anaesthetic_type": "isoflurane",
+            "duration": 150.0,
+            "duration_unit": "minute",
+            "level": 1.5,
+            "object_type": "Anaesthetic"
+         },
+         "animal_weight_post": 28.9,
+         "animal_weight_prior": 23.4,
+         "coordinate_system": {
+            "axes": [
+               {
+                  "direction": "Posterior_to_anterior",
+                  "name": "AP",
+                  "object_type": "Axis"
+               },
+               {
+                  "direction": "Left_to_right",
+                  "name": "ML",
+                  "object_type": "Axis"
+               },
+               {
+                  "direction": "Superior_to_inferior",
+                  "name": "SI",
+                  "object_type": "Axis"
+               },
+               {
+                  "direction": "Up_to_down",
+                  "name": "Depth",
+                  "object_type": "Axis"
+               }
+            ],
+            "axis_unit": "millimeter",
+            "name": "BREGMA_ARID",
+            "object_type": "Coordinate system",
+            "origin": "Bregma"
+         },
+         "ethics_review_id": "2414",
+         "experimenters": [
+            "NSB-2882"
+         ],
+         "measured_coordinates": {
+            "Lambda": {
+               "object_type": "Translation",
+               "translation": [
+                  -4.325,
+                  0.0,
+                  0.0
+               ]
+            }
+         },
+         "notes": null,
+         "object_type": "Surgery",
+         "procedures": [
+            {
+               "headframe_material": null,
+               "headframe_part_number": null,
+               "headframe_type": "L-shaped",
+               "object_type": "Headframe",
+               "protocol_id": null,
+               "well_part_number": null,
+               "well_type": "No Well"
+            },
+            {
+               "coordinate_system_name": "BREGMA_ARID",
+               "coordinates": [
+                  [
+                     {
+                        "object_type": "Translation",
+                        "translation": [
+                           -4.4,
+                           -1.2,
+                           0.0,
+                           2.6
+                        ]
+                     },
+                     {
+                        "angles": [
+                           20.0,
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        "angles_unit": "degrees",
+                        "object_type": "Rotation"
+                     }
+                  ]
+               ],
+               "dynamics": [
+                  {
+                     "alternating_current": null,
+                     "duration": null,
+                     "duration_unit": null,
+                     "injection_current": null,
+                     "injection_current_unit": null,
+                     "object_type": "Injection dynamics",
+                     "profile": "Bolus",
+                     "volume": 300.0,
+                     "volume_unit": "nanoliter"
+                  }
+               ],
+               "injection_materials": [],
+               "object_type": "Brain injection",
+               "protocol_id": "dx.doi.org/10.17504/protocols.io.bp2l6nr7kgqe/v4",
+               "relative_position": [
+                  "Left"
+               ],
+               "targeted_structure": {
+                  "acronym": "DR",
+                  "atlas": "CCFv3",
+                  "id": "872",
+                  "name": "Dorsal nucleus raphe"
+               }
+            },
+            {
+               "coordinate_system_name": "BREGMA_ARID",
+               "coordinates": [
+                  [
+                     {
+                        "object_type": "Translation",
+                        "translation": [
+                           2.3,
+                           -1.3,
+                           0.0,
+                           2.2
+                        ]
+                     },
+                     {
+                        "angles": [
+                           0.0,
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        "angles_unit": "degrees",
+                        "object_type": "Rotation"
+                     }
+                  ]
+               ],
+               "dynamics": [
+                  {
+                     "alternating_current": null,
+                     "duration": null,
+                     "duration_unit": null,
+                     "injection_current": null,
+                     "injection_current_unit": null,
+                     "object_type": "Injection dynamics",
+                     "profile": "Bolus",
+                     "volume": 200.0,
+                     "volume_unit": "nanoliter"
+                  }
+               ],
+               "injection_materials": [
+                  {
+                     "addgene_id": null,
+                     "name": null,
+                     "object_type": "Viral material",
+                     "tars_identifiers": {
+                        "object_type": "Tars virus identifiers",
+                        "plasmid_tars_alias": null,
+                        "prep_date": "2023-05-03",
+                        "prep_lot_number": "VT5611G",
+                        "prep_protocol": "SOP#VC003",
+                        "prep_type": "Purified",
+                        "virus_tars_id": "AiV300126"
+                     },
+                     "titer": 6000000000000,
+                     "titer_unit": "gc/mL"
+                  }
+               ],
+               "object_type": "Brain injection",
+               "protocol_id": "dx.doi.org/10.17504/protocols.io.bp2l6nr7kgqe/v4",
+               "relative_position": [
+                  "Left"
+               ],
+               "targeted_structure": {
+                  "acronym": "ORBl",
+                  "atlas": "CCFv3",
+                  "id": "723",
+                  "name": "Orbital area, lateral part"
+               }
+            },
+            {
+               "device_config": {
+                  "atlas_coordinate": null,
+                  "coordinate_system": {
+                     "axes": [
+                        {
+                           "direction": "Left_to_right",
+                           "name": "X",
+                           "object_type": "Axis"
+                        },
+                        {
+                           "direction": "Inferior_to_superior",
+                           "name": "Y",
+                           "object_type": "Axis"
+                        },
+                        {
+                           "direction": "Posterior_to_anterior",
+                           "name": "Z",
+                           "object_type": "Axis"
+                        },
+                        {
+                           "direction": "Up_to_down",
+                           "name": "Depth",
+                           "object_type": "Axis"
+                        }
+                     ],
+                     "axis_unit": "millimeter",
+                     "name": "FIBER_PROBE_RSAB",
+                     "object_type": "Coordinate system",
+                     "origin": "Tip"
+                  },
+                  "device_name": "Fiber_0",
+                  "dye": null,
+                  "notes": null,
+                  "object_type": "Probe config",
+                  "other_targeted_structure": null,
+                  "primary_targeted_structure": {
+                     "acronym": "ORBl",
+                     "atlas": "CCFv3",
+                     "id": "723",
+                     "name": "Orbital area, lateral part"
+                  },
+                  "transform": [
+                     {
+                        "object_type": "Translation",
+                        "translation": [
+                           2.3,
+                           -1.3,
+                           0.0
+                        ]
+                     },
+                     {
+                        "angles": [
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        "angles_unit": "degrees",
+                        "object_type": "Rotation"
+                     }
+                  ]
+               },
+               "implanted_device": {
+                  "active_length": null,
+                  "additional_settings": null,
+                  "core_diameter": 200,
+                  "core_diameter_unit": "micrometer",
+                  "ferrule_material": "Ceramic",
+                  "length_unit": "millimeter",
+                  "manufacturer": {
+                     "abbreviation": null,
+                     "name": "Neurophotometrics",
+                     "registry": null,
+                     "registry_identifier": null
+                  },
+                  "model": null,
+                  "name": "Fiber_0",
+                  "notes": null,
+                  "numerical_aperture": 0.37,
+                  "object_type": "Fiber probe",
+                  "serial_number": null,
+                  "total_length": "2.5"
+               },
+               "object_type": "Probe implant",
+               "protocol_id": null
+            },
+            {
+               "coordinate_system_name": "BREGMA_ARID",
+               "coordinates": [
+                  [
+                     {
+                        "object_type": "Translation",
+                        "translation": [
+                           2.3,
+                           0.6,
+                           0.0,
+                           2.2
+                        ]
+                     },
+                     {
+                        "angles": [
+                           0.0,
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        "angles_unit": "degrees",
+                        "object_type": "Rotation"
+                     }
+                  ]
+               ],
+               "dynamics": [
+                  {
+                     "alternating_current": null,
+                     "duration": null,
+                     "duration_unit": null,
+                     "injection_current": null,
+                     "injection_current_unit": null,
+                     "object_type": "Injection dynamics",
+                     "profile": "Bolus",
+                     "volume": 200.0,
+                     "volume_unit": "nanoliter"
+                  }
+               ],
+               "injection_materials": [
+                  {
+                     "addgene_id": null,
+                     "name": null,
+                     "object_type": "Viral material",
+                     "tars_identifiers": {
+                        "object_type": "Tars virus identifiers",
+                        "plasmid_tars_alias": null,
+                        "prep_date": "2023-05-03",
+                        "prep_lot_number": "VT5611G",
+                        "prep_protocol": "SOP#VC003",
+                        "prep_type": "Purified",
+                        "virus_tars_id": "AiV300126"
+                     },
+                     "titer": 6000000000000,
+                     "titer_unit": "gc/mL"
+                  }
+               ],
+               "object_type": "Brain injection",
+               "protocol_id": "dx.doi.org/10.17504/protocols.io.bp2l6nr7kgqe/v4",
+               "relative_position": [
+                  "Right"
+               ],
+               "targeted_structure": {
+                  "acronym": "ORBm",
+                  "atlas": "CCFv3",
+                  "id": "731",
+                  "name": "Orbital area, medial part"
+               }
+            },
+            {
+               "device_config": {
+                  "atlas_coordinate": null,
+                  "coordinate_system": {
+                     "axes": [
+                        {
+                           "direction": "Left_to_right",
+                           "name": "X",
+                           "object_type": "Axis"
+                        },
+                        {
+                           "direction": "Inferior_to_superior",
+                           "name": "Y",
+                           "object_type": "Axis"
+                        },
+                        {
+                           "direction": "Posterior_to_anterior",
+                           "name": "Z",
+                           "object_type": "Axis"
+                        },
+                        {
+                           "direction": "Up_to_down",
+                           "name": "Depth",
+                           "object_type": "Axis"
+                        }
+                     ],
+                     "axis_unit": "millimeter",
+                     "name": "FIBER_PROBE_RSAB",
+                     "object_type": "Coordinate system",
+                     "origin": "Tip"
+                  },
+                  "device_name": "Fiber_1",
+                  "dye": null,
+                  "notes": null,
+                  "object_type": "Probe config",
+                  "other_targeted_structure": null,
+                  "primary_targeted_structure": {
+                     "acronym": "ORBm",
+                     "atlas": "CCFv3",
+                     "id": "731",
+                     "name": "Orbital area, medial part"
+                  },
+                  "transform": [
+                     {
+                        "object_type": "Translation",
+                        "translation": [
+                           2.3,
+                           0.6,
+                           0.0
+                        ]
+                     },
+                     {
+                        "angles": [
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        "angles_unit": "degrees",
+                        "object_type": "Rotation"
+                     }
+                  ]
+               },
+               "implanted_device": {
+                  "active_length": null,
+                  "additional_settings": null,
+                  "core_diameter": 200,
+                  "core_diameter_unit": "micrometer",
+                  "ferrule_material": "Ceramic",
+                  "length_unit": "millimeter",
+                  "manufacturer": {
+                     "abbreviation": null,
+                     "name": "Neurophotometrics",
+                     "registry": null,
+                     "registry_identifier": null
+                  },
+                  "model": null,
+                  "name": "Fiber_1",
+                  "notes": null,
+                  "numerical_aperture": 0.37,
+                  "object_type": "Fiber probe",
+                  "serial_number": null,
+                  "total_length": "2.5"
+               },
+               "object_type": "Probe implant",
+               "protocol_id": null
+            }
+         ],
+         "protocol_id": "dx.doi.org/10.17504/protocols.io.kqdg392o7g25/v2",
+         "start_date": "2025-07-31",
+         "weight_unit": "gram",
+         "workstation_id": "SWS 9"
+      },
+      {
+         "baseline_weight": 26.03,
+         "end_date": null,
+         "minimum_water_per_day": 1.0,
+         "minimum_water_per_day_unit": "milliliter",
+         "object_type": "Water restriction",
+         "start_date": "2025-10-20",
+         "target_fraction_weight": 85,
+         "target_fraction_weight_unit": "percent",
+         "weight_unit": "gram"
+      }
+   ]
+}

@@ -803,8 +803,8 @@ class FIPMapper(MapperJob):
 
         # Extract suffix from output filepath
         # Filename format is always "acquisition_{mapper_name}.json"
-        # Example: "acquisition_fip.json" -> stem is "acquisition_fip" -> suffix is "_fip"
+        # Example: "acquisition_fip.json" -> stem is "acquisition_fip" -> suffix is "fip"
         output_path = job_settings.output_filepath
-        suffix = "_" + output_path.stem.split("_", 1)[1]
+        filename_suffix = output_path.stem.split("_", 1)[1]  # Extract "fip" from "acquisition_fip"
 
-        acquisition.write_standard_file(output_directory=output_path.parent, suffix=suffix)
+        acquisition.write_standard_file(output_directory=output_path.parent, filename_suffix=filename_suffix)
