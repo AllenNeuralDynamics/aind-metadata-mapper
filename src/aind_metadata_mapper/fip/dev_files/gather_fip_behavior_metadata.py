@@ -15,14 +15,6 @@ Production Workflow:
        VAST directory, finds fip.json, runs FIP mapper to create acquisition_fip.json,
        then merges all acquisition_*.json files into a single acquisition.json
 
-This Script (Development/Testing):
-    This script simulates steps 3-5 above. The output_dir (gathered_output folder)
-    simulates the VAST directory where watchdog has moved and renamed files. The script:
-    1. Copies fip.json from input directory to output_dir (simulating watchdog step 3)
-    2. Copies acquisition.json from input directory to output_dir and renames it to
-       acquisition_behavior.json (simulating watchdog step 4)
-    3. Runs GatherMetadataJob pointing at output_dir (simulating step 5)
-
 Prerequisites:
     The data_directory argument should point to the VAST location (where watchdog
     has moved the files). It must contain:
@@ -110,35 +102,17 @@ def main():
     else:
         print(f"Warning: {behavior_acq} not found in {input_dir}. Behavior metadata will not be included.")
 
-    # Step 3: Simulate step 5 - run GatherMetadataJob pointing at output_dir (VAST location)
-    # In production, metadata_dir and output_dir would both be the VAST directory.
-    # GatherMetadataJob will:
-    # - Find fip.json in metadata_dir, run FIP mapper to create acquisition_fip.json in output_dir
-    # - Find acquisition_behavior.json in output_dir
-    # - Merge all acquisition_*.json files into a single acquisition.json
+    # Step 3: Run GatherMetadataJob exactly as shown in README
     settings = JobSettings(
-        metadata_dir=str(output_dir),  # Simulates VAST directory
-        output_dir=str(output_dir),  # Simulates VAST directory (same location in production)
-        subject_id=input_dir.parts[-2],
+        metadata_dir=str(output_dir),
+        output_dir=str(output_dir),
+        subject_id="804434",
         project_name="Cognitive flexibility in patch foraging",
         modalities=[Modality.FIB, Modality.BEHAVIOR],
     )
 
     job = GatherMetadataJob(settings=settings)
-
-    # Workaround: _merge_models doesn't use mode="json" so datetime objects aren't serialized
-    # (This ensures datetime objects are properly serialized to JSON strings)
-    original_merge = job._merge_models
-
-    def merge_with_json_mode(model_class, models):
-        result = original_merge(model_class, models)
-        return model_class.model_validate(result).model_dump(mode="json") if result else {}
-
-    job._merge_models = merge_with_json_mode
-
     job.run_job()
-
-    print(f"\nMetadata files written to: {output_dir}")
 
 
 if __name__ == "__main__":
