@@ -3,6 +3,7 @@
 import unittest
 from datetime import datetime
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
 import pandas as pd
@@ -10,6 +11,7 @@ import pandas as pd
 from aind_metadata_mapper.opto_fiber_benchmark.models import JobSettings
 from aind_metadata_mapper.opto_fiber_benchmark.session import (
     OptoFiberBenchmark,
+    parse_extracted_parameters,
 )
 
 
@@ -86,7 +88,7 @@ class TestOptoFiberBenchmark(unittest.TestCase):
                         "wavelength": 470,
                         "power": 10.0,
                         "laser_name": "Laser Stimulation",
-                        "trials_total": 40
+                        "trials_total": 40,
                     },
                 }
             )
@@ -153,6 +155,36 @@ class TestOptoFiberBenchmark(unittest.TestCase):
             mock_write.assert_called_once()
             self.assertEqual(response.status_code, 200)
             self.assertIn("Wrote model to", response.message)
+
+    def test_parse_extracted_parameters(self):
+        """Tests parsing extracted parameters file"""
+        # Create a temporary parameters file
+        with NamedTemporaryFile("w+", delete=False) as tmp:
+            tmp.write(
+                """
+                pulse_frequency: [1.0, 5.0, 10.0],
+                number_pulse_trains: 5,
+                pulse_width: 5000,
+                fixed_pulse_train_interval: true,
+                baseline_duration: 120,
+                laser_name: Laser Stimulation
+                """
+            )
+            tmp_path = tmp.name
+
+        # Run the function
+        parsed = parse_extracted_parameters(tmp_path)
+
+        expected = {
+            "pulse_frequency": [1.0, 5.0, 10.0],
+            "number_pulse_trains": [5],
+            "pulse_width": [5000],
+            "fixed_pulse_train_interval": [True],
+            "baseline_duration": [120],
+            "laser_name": ["Laser Stimulation"],
+        }
+
+        self.assertEqual(parsed, expected)
 
 
 if __name__ == "__main__":
