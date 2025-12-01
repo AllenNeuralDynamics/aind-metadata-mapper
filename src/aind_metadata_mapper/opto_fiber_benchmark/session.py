@@ -266,8 +266,7 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
         transformed_data = self._transfrom(extracted_data)
         transformed_data.write_standard_file(
             output_directory=Path(
-                # self.job_settings.fiber.data_directory.parent
-                r"C:\Users\arjun.sridhar\Downloads\test_mapper_opto"
+                self.job_settings.fiber.data_directory.parent
             )
         )
 
