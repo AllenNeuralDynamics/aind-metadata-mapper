@@ -1,7 +1,9 @@
 """Session mapper for opto fiber benchmark"""
 
 import argparse
+import ast
 import json
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -71,11 +73,10 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
         timestamp_cols = [
             col for col in df_signal.columns if "ts" in col.lower()
         ]
+        start_time = datetime.strptime(
+            signal_file.stem, "Signal_%Y-%m-%dT%H_%M_%S"
+        )
         if timestamp_cols:
-            start_time = datetime.strptime(
-                signal_file.stem, "Signal_%Y-%m-%dT%H_%M_%S"
-            )
-
             timestamps_signal = df_signal[timestamp_cols[0]]
         else:
             timestamps_signal = df_signal.iloc[:, 0]
@@ -122,7 +123,7 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
             self.job_settings.fiber.data_directory = Path(
                 self.job_settings.fiber.data_directory
             )
-
+        print(self.job_settings.fiber.data_directory)
         data_files = list(
             self.job_settings.fiber.data_directory.glob("*Signal*.csv")
         ) + list(self.job_settings.fiber.data_directory.glob("*Stim*.csv"))
@@ -265,7 +266,8 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
         transformed_data = self._transfrom(extracted_data)
         transformed_data.write_standard_file(
             output_directory=Path(
-                self.job_settings.fiber.data_directory.parent
+                # self.job_settings.fiber.data_directory.parent
+                r"C:\Users\arjun.sridhar\Downloads\test_mapper_opto"
             )
         )
 
@@ -278,6 +280,59 @@ class OptoFiberBenchmark(GenericEtl[JobSettings]):
         )
 
 
+def parse_extracted_parameters(extracted_file_path: str) -> dict:
+    """
+    Parses the extracted parameters from the experimental workflow
+
+    Parameters
+    ----------
+    extracted_file_path: str
+        The path to the file that contains extracted parameters
+
+    Returns
+    -------
+    dict
+        Dictionary with the extracted parameters
+    """
+
+    config = {}
+
+    with open(Path(extracted_file_path), "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line or ":" not in line:
+                continue
+
+            key, value = line.split(":", 1)
+            key = key.strip()
+            value = value.strip()
+
+            # Remove trailing commas that cause tuples
+            if value.endswith(","):
+                value = value[:-1].strip()
+
+            # Try to parse safely (ast.literal_eval safer than eval)
+            try:
+                value = ast.literal_eval(value)
+            except Exception:
+                # fallback for strings like "true" / "false"
+                lower = value.lower()
+                if lower == "true":
+                    value = True
+                elif lower == "false":
+                    value = False
+                else:
+                    value = value  # keep as string
+
+            # Ensure numeric values become lists (your requirement)
+            if not isinstance(value, list):
+                value = [value]
+
+            config[key] = value
+
+    return config
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -286,9 +341,54 @@ if __name__ == "__main__":
         required=True,
         help="Path to the config json file with parameters",
     )
+    parser.add_argument(
+        "--experiment_parameters_path",
+        type=str,
+        required=False,
+        help="Path to the file with extracted output parameters",
+    )
     args = parser.parse_args()
     with open(Path(args.config_json_path), "r") as f:
         config = json.load(f)
+
+    # override with experimental workflow output
+    if args.experiment_parameters_path:
+        extracted_parameters = parse_extracted_parameters(
+            args.experiment_parameters_path
+        )
+        logging.info(
+            "Found experiment workflow file at path "
+            f"{args.experiment_parameters_path}\n"
+            f"Parameters: {extracted_parameters}\n"
+            "Overriding with these parameters"
+        )
+
+        config["opto"]["pulse_frequency"] = extracted_parameters[
+            "pulse_frequency"
+        ]
+        config["opto"]["number_pulse_trains"] = [
+            extracted_parameters["number_pulse_trains"][0]
+            * len(extracted_parameters["pulse_frequency"])
+            * len(extracted_parameters["pulse_train_duration"])
+        ]
+        config["opto"]["trials_total"] = extracted_parameters[
+            "number_pulse_trains"
+        ][0]
+        config["opto"]["pulse_width"] = [
+            p / 1000 for p in extracted_parameters["pulse_width"]
+        ]  # milliseconds
+        config["opto"]["pulse_train_duration"] = extracted_parameters[
+            "pulse_train_duration"
+        ]
+        config["opto"]["fixed_pulse_train_interval"] = extracted_parameters[
+            "fixed_pulse_train_interval"
+        ][0]
+        config["opto"]["pulse_train_interval"] = extracted_parameters[
+            "pulse_train_interval"
+        ][0]
+        config["opto"]["baseline_duration"] = extracted_parameters[
+            "baseline_duration"
+        ][0]
 
     job_settings = JobSettings(**config)
     OptoFiberBenchmark(job_settings).run_job()
