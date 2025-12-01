@@ -356,7 +356,7 @@ class GatherMetadataJob:
         for model in model_objs[1:]:
             merged_model = merged_model + model
 
-        return merged_model.model_dump()
+        return merged_model.model_dump(mode="json")
 
     def get_instrument(self) -> Optional[dict]:
         """Get instrument metadata"""

@@ -1,20 +1,19 @@
 """Tests gather_metadata module"""
 
+import json
 import os
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
 from aind_data_schema.components.identifiers import Person
+from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema.core.metadata import Metadata
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 
-from aind_metadata_mapper.gather_metadata import (
-    GatherMetadataJob,
-    _metadata_service_helper,
-)
+from aind_metadata_mapper.gather_metadata import GatherMetadataJob, _metadata_service_helper
 from aind_metadata_mapper.models import JobSettings
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
@@ -808,6 +807,39 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertIsInstance(result, dict)
         self.assertIn("acquisition_start_time", result)
+
+    def test_merge_models_datetime_serialization(self):
+        """Test that merged models can be JSON serialized (datetime objects converted to strings)"""
+        # Create two minimal acquisition models with datetime fields
+        now = datetime.now(timezone.utc)
+
+        acq1_dict = {
+            "subject_id": "test",
+            "acquisition_start_time": now.isoformat(),
+            "acquisition_end_time": now.isoformat(),
+            "instrument_id": "test",
+            "acquisition_type": "test",
+            "data_streams": [],
+        }
+
+        acq2_dict = {
+            "subject_id": "test",
+            "acquisition_start_time": now.isoformat(),
+            "acquisition_end_time": now.isoformat(),
+            "instrument_id": "test",
+            "acquisition_type": "test",
+            "data_streams": [],
+        }
+
+        # Merge the two acquisitions using _merge_models
+        merged_dict = self.job._merge_models(Acquisition, [acq1_dict, acq2_dict])
+
+        # Verify the merged dict can be JSON serialized
+        # This will fail if merged_dict contains datetime objects instead of strings
+        json_str = json.dumps(merged_dict, indent=2)
+        self.assertIsInstance(json_str, str)
+        # Verify datetime fields are strings, not datetime objects
+        self.assertIsInstance(merged_dict.get("acquisition_start_time"), str)
 
     def test_get_instrument_multiple_files(self):
         """Test get_instrument with multiple instrument files"""
