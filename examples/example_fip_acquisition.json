@@ -1,7 +1,7 @@
 {
   "object_type": "Acquisition",
   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/acquisition.py",
-  "schema_version": "2.1.0",
+  "schema_version": "2.2.0",
   "subject_id": "804434",
   "specimen_id": null,
   "acquisition_start_time": "2025-11-05T01:40:24.283379Z",
@@ -13,7 +13,9 @@
     "https://www.protocols.io/view/modified-frame-projected-independent-fiber-photome-kxygx3e6wg8j/v1",
     "https://www.protocols.io/view/modified-frame-projected-independent-fiber-photome-261ge39edl47/v2"
   ],
-  "ethics_review_id": null,
+  "ethics_review_id": [
+    "2414"
+  ],
   "instrument_id": "13A",
   "acquisition_type": "AindVrForaging",
   "notes": "",
@@ -283,5 +285,6 @@
     }
   ],
   "stimulus_epochs": [],
+  "manipulations": [],
   "subject_details": null
 }

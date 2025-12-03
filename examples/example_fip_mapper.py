@@ -110,27 +110,13 @@ Example usage:
             logger.info(f"   - Active devices: {len(stream.active_devices)}")
             logger.info(f"   - Configurations: {len(stream.configurations)}")
 
-        # Write output to examples folder using write_standard_file
+        # Write output to examples folder
         examples_dir = Path(__file__).parent
-        # Extract suffix from filename if custom (e.g., "example_acquisition.json" -> "_example")
-        output_filename_stem = Path(mapper.output_filename).stem  # Remove .json extension
-        if output_filename_stem == "acquisition":
-            suffix = None
-        else:
-            # Extract suffix from filename like "example_acquisition" -> "_example"
-            # Split on "_acquisition" to get the prefix
-            if "_acquisition" in output_filename_stem:
-                prefix = output_filename_stem.split("_acquisition")[0]
-                suffix = "_" + prefix if prefix else None
-            else:
-                suffix = None
+        output_file = examples_dir / mapper.output_filename
 
-        acquisition.write_standard_file(output_directory=examples_dir, suffix=suffix)
-        # write_standard_file creates acquisition.json or acquisition{suffix}.json
-        if suffix:
-            output_file = examples_dir / f"acquisition{suffix}.json"
-        else:
-            output_file = examples_dir / "acquisition.json"
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(acquisition.model_dump_json(indent=2))
+
         logger.info(f"\n5. Wrote output to: {output_file.absolute()}")
 
     except ValueError as e:

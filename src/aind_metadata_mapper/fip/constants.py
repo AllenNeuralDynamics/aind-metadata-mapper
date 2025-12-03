@@ -74,3 +74,11 @@ VR_FORAGING_FIP_REPO_URL = "https://github.com/AllenNeuralDynamics/Aind.Experime
 # Ethics review ID for VrForaging-FIP experiments
 # NOTE: This is temporarily hardcoded. Ideally this would come from the extracted metadata.
 ETHICS_REVIEW_ID = ["2414"]
+
+# ==============================================================================
+# Camera Compression
+# ==============================================================================
+# FIP cameras do not use compression/encoding
+# NOTE: This is explicitly set to None to document that compression is not used.
+# If compression is added in the future, this should be updated with the appropriate Code object.
+FIP_CAMERA_COMPRESSION = None
