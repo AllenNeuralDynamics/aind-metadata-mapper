@@ -3,28 +3,30 @@ Tests the SmartSPIM acquisition metadata creation
 """
 
 import copy
+import json
 import os
 import unittest
-import json
 from datetime import datetime
-from unittest.mock import MagicMock, patch
-from aind_data_schema.core import acquisition
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+from aind_data_schema.components.coordinates import AnatomicalDirection
+from aind_data_schema.components.devices import ImmersionMedium
+from aind_data_schema.core import acquisition
+from aind_data_schema.core.acquisition import ProcessingSteps, ProcessName
+
 from aind_metadata_mapper.smartspim.acquisition import (
     JobSettings,
-    SmartspimETL,
     SlimsImmersionMedium,
+    SmartspimETL,
 )
 from tests.test_smartspim.example_metadata import (
     example_filter_mapping,
+    example_imaging_info_from_slims,
     example_metadata_info,
     example_processing_manifest,
     example_session_end_time,
-    example_imaging_info_from_slims,
 )
-from aind_data_schema.components.coordinates import AnatomicalDirection
-from aind_data_schema.components.devices import ImmersionMedium
-from aind_data_schema.core.acquisition import ProcessingSteps, ProcessName
 
 RESOURCES_DIR = (
     Path(os.path.dirname(os.path.realpath(__file__)))
@@ -94,8 +96,7 @@ class TestSmartspimETL(unittest.TestCase):
         }
 
         result = (
-            self.example_smartspim_etl_success
-                ._extract_metadata_from_microscope_files()
+            self.example_smartspim_etl_success._extract_metadata_from_microscope_files()
         )
 
         expected_result = {
@@ -286,8 +287,7 @@ class TestSmartspimETL(unittest.TestCase):
         }
 
         test_extracted = (
-            self.example_smartspim_etl_fail_mouseid
-                ._extract_metadata_from_microscope_files()
+            self.example_smartspim_etl_fail_mouseid._extract_metadata_from_microscope_files()
         )
 
         with self.assertRaises(ValueError):

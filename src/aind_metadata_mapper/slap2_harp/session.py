@@ -1,29 +1,32 @@
+import io
 import logging
+from datetime import datetime, timedelta
 from pathlib import Path
-import shutil
 from typing import Union
+
+import harp
 import requests
 import yaml
-import harp
-import io
-import os
-from datetime import datetime, timedelta
+from aind_data_schema.core.session import Session, Stream
+from aind_data_schema_models.modalities import Modality
 
-from aind_data_schema.core.session import Session
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.slap2_harp.models import JobSettings
-from aind_data_schema.core.session import Stream
-from aind_data_schema_models.modalities import Modality
 
 logger = logging.getLogger(__name__)
 
+
 # HARP utility functions for timing alignment
-def _get_who_am_i_list(url: str = "https://raw.githubusercontent.com/harp-tech/protocol/main/whoami.yml"):
+def _get_who_am_i_list(
+    url: str = "https://raw.githubusercontent.com/harp-tech/protocol/main/"
+    "whoami.yml",
+):
     response = requests.get(url, allow_redirects=True, timeout=5)
     content = response.content.decode("utf-8")
     content = yaml.safe_load(content)
     devices = content["devices"]
     return devices
+
 
 def _get_yml_from_who_am_i(who_am_i: int, release: str = "main") -> io.BytesIO:
     try:
@@ -33,7 +36,7 @@ def _get_yml_from_who_am_i(who_am_i: int, release: str = "main") -> io.BytesIO:
 
     repository_url = device.get("repositoryUrl", None)
 
-    if (repository_url is None):
+    if repository_url is None:
         raise ValueError("Device's repositoryUrl not found in whoami.yml")
     else:  # attempt to get the device.yml from the repository
         _repo_hint_paths = [
@@ -55,8 +58,9 @@ def _get_yml_from_who_am_i(who_am_i: int, release: str = "main") -> io.BytesIO:
         else:
             return yml
 
+
 def fetch_yml(harp_path):
-    with open(harp_path / 'Behavior_0.bin', mode='rb') as reg_0:
+    with open(harp_path / "Behavior_0.bin", mode="rb") as reg_0:
         who_am_i = int(harp.read(reg_0).values[0][0])
         yml_bytes = _get_yml_from_who_am_i(who_am_i)
     yaml_content = yml_bytes.getvalue()
@@ -91,7 +95,8 @@ class Slap2HarpSessionEtl(GenericEtl):
 
     def get_timing(self, harp_path):
         """
-        Extract session start and end times from HARP files and set as class attributes.
+        Extract session start and end times from HARP files and set as class
+        attributes.
 
         Parameters
         ----------
@@ -102,24 +107,32 @@ class Slap2HarpSessionEtl(GenericEtl):
         reader = harp.create_reader(harp_path)
 
         # Get SLAP2 trial start and end times
-        start_trial_times = reader.PulseDO0.read()["PulseDO0"].index.to_numpy()[2:]
+        start_trial_times = reader.PulseDO0.read()[
+            "PulseDO0"
+        ].index.to_numpy()[2:]
         end_trial_times = reader.PulseDO1.read().index.to_numpy()[2:]
         self.harp_time_offset = start_trial_times[0]
         norm_end_trial_times = end_trial_times - self.harp_time_offset
 
-        timestamp_str = self.session_path.name.split('_')[-1]
-        session_start_datetime = datetime.strptime(timestamp_str, "%Y%m%dT%H%M%S")
+        timestamp_str = self.session_path.name.split("_")[-1]
+        session_start_datetime = datetime.strptime(
+            timestamp_str, "%Y%m%dT%H%M%S"
+        )
 
         self.session_start = session_start_datetime
-        self.session_end = session_start_datetime + timedelta(seconds=norm_end_trial_times[-1])
+        self.session_end = session_start_datetime + timedelta(
+            seconds=norm_end_trial_times[-1]
+        )
 
     def extract_mouse_id(self):
         """
-        Extract mouse id from the session_path folder name (first 6 digit number)
+        Extract mouse id from the session_path folder name
+        (first 6 digit number)
         and set as class attribute. For example, from '794237_20250508T145040',
         extract '794237'.
         """
         import re
+
         match = re.search(r"(\d{6})", self.session_path.name)
         if match:
             self.mouse_id = match.group(1)
@@ -143,7 +156,10 @@ class Slap2HarpSessionEtl(GenericEtl):
         if not harp_dirs:
             raise FileNotFoundError("No .harp directory found in session path")
         if len(harp_dirs) > 1:
-            raise RuntimeError(f"Multiple .harp directories found in session path: {harp_dirs}")
+            raise RuntimeError(
+                f"Multiple .harp directories found in session path:"
+                f"{harp_dirs}"
+            )
         self.harp_path = harp_dirs[0]
 
         # Ensure device.yml exists
@@ -166,7 +182,8 @@ class Slap2HarpSessionEtl(GenericEtl):
         Parameters
         ----------
         channel_name : str
-            Name of the channel (e.g., 'AnalogInput0', 'Encoder', 'PulseDO0', etc.)
+            Name of the channel (e.g., 'AnalogInput0', 'Encoder', 'PulseDO0',
+            etc.)
         stream_type : str
             'analog' or 'digital'
         Returns
@@ -182,36 +199,49 @@ class Slap2HarpSessionEtl(GenericEtl):
             times = data[channel_name].index.to_numpy()
         else:
             raise ValueError(f"Unknown stream_type: {stream_type}")
-        normalized_times = [float(t)-self.harp_time_offset for t in times]
+        normalized_times = [float(t) - self.harp_time_offset for t in times]
 
         # Assign modality: SLAP for DO0/DO1, otherwise BEHAVIOR
         if channel_name in ["PulseDO0", "PulseDO1"]:
             modality = Modality.SLAP
         else:
             modality = Modality.BEHAVIOR
-        # Use the first and last time as stream start/end (relative to session start)
-        stream_start_time = self.session_start + timedelta(seconds=normalized_times[0])
-        stream_end_time = self.session_start + timedelta(seconds=normalized_times[-1])
+        # Use the first and last time as stream start/end
+        # (relative to session start)
+        stream_start_time = self.session_start + timedelta(
+            seconds=normalized_times[0]
+        )
+        stream_end_time = self.session_start + timedelta(
+            seconds=normalized_times[-1]
+        )
         return Stream(
             stream_start_time=stream_start_time,
             stream_end_time=stream_end_time,
             stream_modalities=[modality],
             daq_names=[channel_name],
-            notes=f"HARP {stream_type} channel"
+            notes=f"HARP {stream_type} channel",
         )
 
     def make_data_streams(self):
         """
-        Create data streams for the session from HARP analog and digital channels.
-        Returns a list of Stream objects.
+        Create data streams for the session from HARP analog and digital
+        channels. Returns a list of Stream objects.
         """
         streams = []
         # Analog channels
         for analog_channel in ["AnalogInput0", "Encoder"]:
-            streams.append(self.make_harp_data_stream(analog_channel, stream_type="analog"))
+            streams.append(
+                self.make_harp_data_stream(
+                    analog_channel, stream_type="analog"
+                )
+            )
         # Digital channels
         for digital_channel in ["PulseDO0", "PulseDO1", "PulseDO2"]:
-            streams.append(self.make_harp_data_stream(digital_channel, stream_type="digital"))
+            streams.append(
+                self.make_harp_data_stream(
+                    digital_channel, stream_type="digital"
+                )
+            )
         return streams
 
     def _transform(self) -> Session:
@@ -239,6 +269,7 @@ class Slap2HarpSessionEtl(GenericEtl):
 
     # Add additional methods as needed for SLAP2 Harp specifics
 
+
 def main() -> None:
     """
     Run Main
@@ -246,6 +277,7 @@ def main() -> None:
     # Replace 'vars' with actual job settings or argument parsing
     sessionETL = Slap2HarpSessionEtl(**vars)
     sessionETL.run_job()
+
 
 if __name__ == "__main__":
     main()

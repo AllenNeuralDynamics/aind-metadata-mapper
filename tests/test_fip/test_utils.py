@@ -2,13 +2,14 @@
 
 import unittest
 from datetime import datetime
-import pandas as pd
+from unittest.mock import MagicMock, patch
 from zoneinfo import ZoneInfo
-from unittest.mock import patch, MagicMock
+
+import pandas as pd
 
 from aind_metadata_mapper.fip.utils import (
-    extract_session_start_time_from_files,
     extract_session_end_time_from_files,
+    extract_session_start_time_from_files,
 )
 from aind_metadata_mapper.utils.timing_utils import (
     convert_ms_since_midnight_to_datetime,

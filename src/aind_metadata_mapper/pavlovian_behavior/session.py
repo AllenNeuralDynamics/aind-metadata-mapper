@@ -15,20 +15,20 @@ external services or handle new data formats.
 import json
 import logging
 import sys
-from pathlib import Path
-from typing import Union, Optional, List
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
+from typing import List, Optional, Union
 
 from aind_data_schema.base import AindCoreModel
+from aind_data_schema.components.stimulus import AuditoryStimulation
 from aind_data_schema.core.session import (
+    RewardDeliveryConfig,
     Session,
-    StimulusEpoch,
     Software,
     SpeakerConfig,
+    StimulusEpoch,
 )
-from aind_data_schema.components.stimulus import AuditoryStimulation
-from aind_data_schema.core.session import RewardDeliveryConfig
 
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.core_models import JobResponse

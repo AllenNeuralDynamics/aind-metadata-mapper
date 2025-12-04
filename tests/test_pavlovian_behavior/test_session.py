@@ -3,10 +3,10 @@
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
-import pandas as pd
 
+import pandas as pd
 from aind_data_schema.core.session import Session, StimulusEpoch
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.units import VolumeUnit

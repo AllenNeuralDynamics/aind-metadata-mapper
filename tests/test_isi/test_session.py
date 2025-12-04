@@ -181,9 +181,7 @@ class TestISI(unittest.TestCase):
         # Test extraction
         stimulus_epochs = isi._extract()
         self.assertEqual(len(stimulus_epochs), 1)
-        self.assertEqual(
-            stimulus_epochs[0].stimulus_name, "IntrinsicStim"
-        )
+        self.assertEqual(stimulus_epochs[0].stimulus_name, "IntrinsicStim")
 
         # Test transformation
         session = isi._transform(stimulus_epochs)

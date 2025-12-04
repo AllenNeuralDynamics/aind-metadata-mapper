@@ -6,13 +6,14 @@ used by multiple metadata modules including
 Pavlovian behavior and FIP (fiber photometry).
 """
 
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
-from typing import Union, Optional
-from pathlib import Path
-import pandas as pd
 import logging
 import math
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Optional, Union
+from zoneinfo import ZoneInfo
+
+import pandas as pd
 
 
 def validate_session_temporal_consistency(session) -> None:

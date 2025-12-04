@@ -361,10 +361,9 @@ class Camstim:
                 continue
 
             if row["stim_name"] != current_epoch[0]:
-                self._summarize_epoch_params(stim_table,
-                                             current_epoch,
-                                             epoch_start_idx,
-                                             current_idx)
+                self._summarize_epoch_params(
+                    stim_table, current_epoch, epoch_start_idx, current_idx
+                )
                 epochs.append(current_epoch)
                 epoch_start_idx = current_idx
                 current_epoch = [
@@ -386,10 +385,9 @@ class Camstim:
                 current_epoch[4].add(row["stim_name"])
 
         # Append the final epoch
-        self._summarize_epoch_params(stim_table,
-                                     current_epoch,
-                                     epoch_start_idx,
-                                     current_idx)
+        self._summarize_epoch_params(
+            stim_table, current_epoch, epoch_start_idx, current_idx
+        )
         epochs.append(current_epoch)
 
         # Slice off the default starting epoch
@@ -411,12 +409,14 @@ class Camstim:
             either a single value or a list of unique values for that
             parameter across the rows.
         """
-        ignore_columns = {"start_time",
-                          "stop_time",
-                          "stim_name",
-                          "stim_type",
-                          "frame",
-                          "time_key"}
+        ignore_columns = {
+            "start_time",
+            "stop_time",
+            "stim_name",
+            "stim_type",
+            "frame",
+            "time_key",
+        }
         params = {}
         for col in rows.columns:
             if col not in ignore_columns:
