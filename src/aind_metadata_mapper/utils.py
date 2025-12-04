@@ -15,7 +15,8 @@ import yaml
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-API_BASE_URL = "http://aind-metadata-service/api/v2/instrument"
+INSTRUMENT_BASE_URL = "http://aind-metadata-service/api/v2/instrument"
+PROCEDURES_BASE_URL = "http://aind-metadata-service/api/v2/procedures"
 
 
 def ensure_timezone(dt):
@@ -43,13 +44,10 @@ def ensure_timezone(dt):
     return dt
 
 
-def get_procedures(
-    subject_id: str, get_func=None, service_url: str = "http://aind-metadata-service-dev/api/v2/procedures"
-) -> Optional[dict]:
+def get_procedures(subject_id: str, get_func=None) -> Optional[dict]:
     """Fetch procedures data for a subject from the metadata service.
 
-    Queries {service_url}/{subject_id} to get all procedures performed on a subject.
-    Default service URL: http://aind-metadata-service-dev/api/v2/procedures
+    Queries {PROCEDURES_BASE_URL}/{subject_id} to get all procedures performed on a subject.
 
     Parameters
     ----------
@@ -58,9 +56,6 @@ def get_procedures(
     get_func : callable, optional
         Function to use for HTTP GET requests. If None, uses requests.get.
         Useful for testing without making real network calls.
-    service_url : str, optional
-        Base URL for the procedures service endpoint. Defaults to
-        "http://aind-metadata-service-dev/api/v2/procedures".
 
     Returns
     -------
@@ -71,8 +66,8 @@ def get_procedures(
         get_func = requests.get
 
     try:
-        # Ensure service_url ends with '/' for urljoin to work correctly
-        base_url = service_url.rstrip("/") + "/"
+        # Ensure base URL ends with '/' for urljoin to work correctly
+        base_url = PROCEDURES_BASE_URL.rstrip("/") + "/"
         url = urljoin(base_url, subject_id.lstrip("/"))
         response = get_func(url, timeout=60)
 
@@ -194,7 +189,7 @@ def get_instrument(
         Instrument data as dict, or None if not found.
     """
     response = requests.get(
-        f"{API_BASE_URL}/{instrument_id}",
+        f"{INSTRUMENT_BASE_URL}/{instrument_id}",
         params={"partial_match": True},
     )
     if response.status_code == 404:
@@ -248,9 +243,9 @@ def save_instrument(instrument_model: instrument.Instrument, replace: bool = Fal
     """
     # Use model_dump_json() and parse to ensure dates are properly serialized
     source_dict = json.loads(instrument_model.model_dump_json())
-    logger.info(f"POSTing instrument to {API_BASE_URL}")
+    logger.info(f"POSTing instrument to {INSTRUMENT_BASE_URL}")
     params = {"replace": "true"} if replace else {}
-    response = requests.post(API_BASE_URL, json=source_dict, params=params)
+    response = requests.post(INSTRUMENT_BASE_URL, json=source_dict, params=params)
     # POST 400 is always an error (e.g., "Record already exists")
     if response.status_code == 400:
         error_msg = response.json().get("message", response.text)
@@ -260,7 +255,8 @@ def save_instrument(instrument_model: instrument.Instrument, replace: bool = Fal
 
     # GET back and validate round-trip
     logger.info(
-        f"GETting instrument from {API_BASE_URL}/{instrument_model.instrument_id} to verify that save was successful"
+        f"GETting instrument from {INSTRUMENT_BASE_URL}/{instrument_model.instrument_id} "
+        "to verify that save was successful"
     )
     latest_record = get_instrument(instrument_model.instrument_id)
     if latest_record is None:
