@@ -112,19 +112,21 @@ class CamstimEphysSessionEtl(
             self.opto_pkl_path = None
 
         self.opto_table_path = (
-            self.session_path / f"{self.folder_name}_opto_epochs.csv"
+            self.output_dir / f"{self.folder_name}_opto_epochs.csv"
         )
         self.opto_conditions_map = job_settings.opto_conditions_map
         self.stim_table_path = (
-            self.session_path / f"{self.folder_name}_stim_epochs.csv"
+            self.output_dir / f"{self.folder_name}_stim_epochs.csv"
         )
         self.vsync_table_path = (
-            self.session_path / f"{self.folder_name}_vsync_epochs.csv"
+            self.output_dir / f"{self.folder_name}_vsync_epochs.csv"
         )
-        self.sync_path = self.session_path / f"{self.folder_name}.sync"
 
+        self.sync_path = next(
+            self.session_path.rglob(f"{self.folder_name}.sync")
+        )
         platform_path = next(
-            self.session_path.glob(f"{self.folder_name}_platform*.json")
+            self.session_path.rglob(f"{self.folder_name}_platform*.json")
         )
         self.platform_json = json.loads(platform_path.read_text())
         self.project_name = self.platform_json["project"]
