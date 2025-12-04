@@ -109,8 +109,6 @@ class TestIntegrationMetadata(unittest.TestCase):
         quality_control = self._load_resource_file(V2_METADATA_DIR, "quality_control.json")
         self.assertEqual(quality_control["object_type"], "Quality control")
 
-
-
     def test_validate_data_description_schema(self):
         """Test DataDescription validation"""
         data_desc_data = self._load_resource_file(V2_METADATA_DIR, "data_description.json")
@@ -281,8 +279,7 @@ class TestIntegrationMetadata(unittest.TestCase):
             acquisition_start_time = acquisition_data["acquisition_start_time"]
             subject_id = acquisition_data["subject_id"]
             result = self.job.build_data_description(
-                acquisition_start_time=acquisition_start_time,
-                subject_id=subject_id
+                acquisition_start_time=acquisition_start_time, subject_id=subject_id
             )
 
         self.assertIn("name", result)
@@ -433,7 +430,7 @@ class TestIntegrationMetadata(unittest.TestCase):
     def test_validate_and_get_subject_id_from_real_acquisition(self):
         """Test _validate_and_get_subject_id with real acquisition metadata"""
         acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
-        
+
         # Test that it extracts subject_id correctly
         subject_id = self.job._validate_and_get_subject_id(acquisition)
         self.assertEqual(subject_id, "804670")
@@ -442,7 +439,7 @@ class TestIntegrationMetadata(unittest.TestCase):
         """Test _validate_acquisition_start_time with real acquisition metadata"""
         acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
         acq_start_time_str = acquisition["acquisition_start_time"]
-        
+
         # Test that it validates correctly
         result = self.job._validate_acquisition_start_time(acq_start_time_str)
         self.assertIsInstance(result, str)
@@ -453,7 +450,7 @@ class TestIntegrationMetadata(unittest.TestCase):
         acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
         acq_start_time_str = acquisition["acquisition_start_time"].replace("Z", "+00:00")
         acq_start_time = datetime.fromisoformat(acq_start_time_str)
-        
+
         with patch("os.makedirs"):
             test_settings = JobSettings(
                 metadata_dir="/test/metadata",
@@ -497,8 +494,7 @@ class TestIntegrationMetadata(unittest.TestCase):
                             test_job.run_job()
 
         mock_build.assert_called_once_with(
-            acquisition_start_time=acquisition_data["acquisition_start_time"],
-            subject_id="804670"
+            acquisition_start_time=acquisition_data["acquisition_start_time"], subject_id="804670"
         )
         mock_add.assert_called_once()
         call_args = mock_add.call_args

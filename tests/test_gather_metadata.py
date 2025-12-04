@@ -212,7 +212,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
         job = GatherMetadataJob(settings=test_settings)
-        
+
         # Test with matching time
         result = job._validate_acquisition_start_time("2023-01-01T12:00:00+00:00")
         self.assertEqual(result, "2023-01-01T12:00:00+00:00")
@@ -230,11 +230,11 @@ class TestGatherMetadataJob(unittest.TestCase):
             raise_if_invalid=True,
         )
         job = GatherMetadataJob(settings=test_settings)
-        
+
         # Test with mismatched time
         with self.assertRaises(ValueError) as context:
             job._validate_acquisition_start_time("2023-01-01T14:00:00+00:00")
-        
+
         self.assertIn("acquisition_start_time from acquisition metadata does not match", str(context.exception))
 
     @patch("logging.error")
@@ -251,15 +251,14 @@ class TestGatherMetadataJob(unittest.TestCase):
             raise_if_invalid=False,
         )
         job = GatherMetadataJob(settings=test_settings)
-        
+
         # Test with mismatched time
         result = job._validate_acquisition_start_time("2023-01-01T14:00:00+00:00")
-        
+
         # Should return the time and log an error
         self.assertEqual(result, "2023-01-01T14:00:00+00:00")
         mock_log_error.assert_called_once()
-        self.assertIn("acquisition_start_time from acquisition metadata does not match", 
-                     str(mock_log_error.call_args))
+        self.assertIn("acquisition_start_time from acquisition metadata does not match", str(mock_log_error.call_args))
 
     @patch("os.makedirs")
     def test_validate_acquisition_start_time_with_z_suffix(self, mock_makedirs):
@@ -273,7 +272,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
         job = GatherMetadataJob(settings=test_settings)
-        
+
         # Test with Z suffix
         result = job._validate_acquisition_start_time("2023-01-01T12:00:00Z")
         self.assertEqual(result, "2023-01-01T12:00:00+00:00")
@@ -291,7 +290,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
         job = GatherMetadataJob(settings=test_settings)
-        
+
         acquisition = {"subject_id": "123456"}
         result = job._validate_and_get_subject_id(acquisition)
         self.assertEqual(result, "123456")
@@ -308,7 +307,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
         job = GatherMetadataJob(settings=test_settings)
-        
+
         acquisition = {}
         result = job._validate_and_get_subject_id(acquisition)
         self.assertEqual(result, "123456")
@@ -325,11 +324,11 @@ class TestGatherMetadataJob(unittest.TestCase):
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
         job = GatherMetadataJob(settings=test_settings)
-        
+
         acquisition = {}
         with self.assertRaises(ValueError) as context:
             job._validate_and_get_subject_id(acquisition)
-        
+
         self.assertIn("subject_id is required but not provided", str(context.exception))
 
     @patch("os.makedirs")
@@ -345,11 +344,11 @@ class TestGatherMetadataJob(unittest.TestCase):
             raise_if_invalid=True,
         )
         job = GatherMetadataJob(settings=test_settings)
-        
+
         acquisition = {"subject_id": "999999"}
         with self.assertRaises(ValueError) as context:
             job._validate_and_get_subject_id(acquisition)
-        
+
         self.assertIn("subject_id from acquisition metadata", str(context.exception))
         self.assertIn("does not match", str(context.exception))
 
@@ -367,10 +366,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             raise_if_invalid=False,
         )
         job = GatherMetadataJob(settings=test_settings)
-        
+
         acquisition = {"subject_id": "999999"}
         result = job._validate_and_get_subject_id(acquisition)
-        
+
         # Should return the acquisition subject_id and log an error
         self.assertEqual(result, "999999")
         mock_log_error.assert_called_once()
@@ -388,7 +387,7 @@ class TestGatherMetadataJob(unittest.TestCase):
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
         job = GatherMetadataJob(settings=test_settings)
-        
+
         result = job._validate_and_get_subject_id(None)
         self.assertEqual(result, "123456")
 
@@ -531,10 +530,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_file_exists.return_value = True
         mock_get_file.return_value = {"existing": "data"}
 
-        result = self.job.build_data_description(
-            acquisition_start_time="2023-01-01T12:00:00",
-            subject_id="123456"
-        )
+        result = self.job.build_data_description(acquisition_start_time="2023-01-01T12:00:00", subject_id="123456")
 
         self.assertEqual(result, {"existing": "data"})
         mock_file_exists.assert_called_once_with(file_name="data_description.json")
@@ -552,10 +548,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         mock_datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)
 
-        result = self.job.build_data_description(
-            acquisition_start_time="2023-01-01T12:00:00",
-            subject_id="123456"
-        )
+        result = self.job.build_data_description(acquisition_start_time="2023-01-01T12:00:00", subject_id="123456")
 
         self.assertIn("creation_time", result)
         self.assertEqual(result["project_name"], "Test Project")
@@ -874,8 +867,6 @@ class TestGatherMetadataJob(unittest.TestCase):
             mock_metadata.return_value = mock_instance
             result = strict_job.validate_and_create_metadata(core_metadata)
             self.assertEqual(result, mock_instance)
-
-
 
     def test_merge_models_instruments(self):
         """Test _merge_models with instrument objects"""

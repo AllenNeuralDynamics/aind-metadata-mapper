@@ -246,7 +246,7 @@ class GatherMetadataJob:
 
     def get_subject(self, subject_id: Optional[str] = None) -> Optional[dict]:
         """Get subject metadata
-        
+
         Parameters
         ----------
         subject_id : Optional[str]
@@ -280,7 +280,7 @@ class GatherMetadataJob:
 
     def get_procedures(self, subject_id: str) -> Optional[dict]:
         """Get procedures metadata
-        
+
         Parameters
         ----------
         subject_id : str
@@ -525,17 +525,17 @@ class GatherMetadataJob:
     def _validate_acquisition_start_time(self, acquisition_start_time: str) -> str:
         """
         Validate that acquisition_start_time matches settings if both are provided.
-        
+
         Parameters
         ----------
         acquisition_start_time : str
             The acquisition start time from acquisition metadata
-            
+
         Returns
         -------
         str
             The validated acquisition_start_time
-            
+
         Raises
         ------
         ValueError
@@ -543,7 +543,7 @@ class GatherMetadataJob:
         """
         acquisition_start_time = acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
         local_acq_start_time = datetime.fromisoformat(acquisition_start_time)
-        
+
         if self.settings.acquisition_start_time and local_acq_start_time != self.settings.acquisition_start_time:
             error_msg = (
                 "acquisition_start_time from acquisition metadata does not match "
@@ -553,36 +553,35 @@ class GatherMetadataJob:
                 raise ValueError(error_msg)
             else:
                 logging.error(error_msg)
-        
+
         return acquisition_start_time
 
     def _validate_and_get_subject_id(self, acquisition: Optional[dict]) -> str:
         """
         Get and validate subject_id from acquisition or settings.
-        
+
         Parameters
         ----------
         acquisition : Optional[dict]
             The acquisition metadata dictionary
-            
+
         Returns
         -------
         str
             The validated subject_id
-            
+
         Raises
         ------
         ValueError
             If subject_id is missing or doesn't match between acquisition and settings
         """
         subject_id = acquisition.get("subject_id") if acquisition else None
-        
+
         if not subject_id:
             if self.settings.subject_id:
                 subject_id = self.settings.subject_id
                 logging.info(
-                    f"No subject_id found in acquisition metadata. "
-                    f"Using provided subject_id: {subject_id}"
+                    f"No subject_id found in acquisition metadata. " f"Using provided subject_id: {subject_id}"
                 )
             else:
                 raise ValueError(
@@ -601,12 +600,12 @@ class GatherMetadataJob:
                     raise ValueError(error_msg)
                 else:
                     logging.error(error_msg)
-        
+
         return subject_id
 
     def add_core_metadata(self, core_metadata: dict, subject_id: str) -> Dict[str, Any]:
         """Get all core metadata as a dictionary
-        
+
         Parameters
         ----------
         core_metadata : dict
@@ -676,7 +675,7 @@ class GatherMetadataJob:
                     "Either provide acquisition.json with acquisition_start_time, "
                     "or provide acquisition_start_time in the settings."
                 )
-        
+
         # Validate acquisition_start_time matches settings if both are provided
         acquisition_start_time = self._validate_acquisition_start_time(acquisition_start_time)
 
