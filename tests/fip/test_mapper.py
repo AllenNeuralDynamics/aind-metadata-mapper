@@ -12,7 +12,6 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 
 from aind_data_schema_models.modalities import Modality
 
@@ -29,7 +28,9 @@ class TestFIPMapper(unittest.TestCase):
         self.mapper = FIPMapper()
         # Load fixture of example intermediate data
         with open("tests/fixtures/fip_intermediate.json", "r", encoding="utf-8") as f:
-            self.example_intermediate_data = json.load(f)
+            flat_data = json.load(f)
+            # Convert flat structure to nested structure expected by mapper
+            self.example_intermediate_data = self._convert_flat_to_nested(flat_data)
 
         # Test data for dependency injection
         self.test_intended_measurements = {
@@ -37,6 +38,29 @@ class TestFIPMapper(unittest.TestCase):
             "Fiber_1": {"R": "jRCaMP1b", "G": "dLight", "B": None, "Iso": "dLight"},
         }
         self.test_implanted_fibers = [0, 1]  # Two implanted fibers
+
+    def _convert_flat_to_nested(self, flat_data):
+        """Convert flat test fixture structure to nested structure expected by mapper."""
+        return {
+            "session": {
+                "subject": flat_data.get("subject_id"),
+                "experiment": flat_data.get("session_type"),
+                "experimenter": flat_data.get("experimenter_full_name", []),
+                "notes": flat_data.get("notes"),
+                "commit_hash": flat_data.get("session_config", {}).get("commit_hash"),
+            },
+            "rig": flat_data.get("rig_config", {}),
+            "data_stream_metadata": (
+                [
+                    {
+                        "start_time": flat_data.get("session_start_time"),
+                        "end_time": flat_data.get("session_end_time"),
+                    }
+                ]
+                if flat_data.get("session_start_time")
+                else []
+            ),
+        }
 
     def test_mapper_initialization(self):
         """Test that FIPMapper can be instantiated with default configuration.
@@ -57,7 +81,7 @@ class TestFIPMapper(unittest.TestCase):
         without external dependencies.
         """
         acquisition = self.mapper.transform(
-            SimpleNamespace(**self.example_intermediate_data),
+            self.example_intermediate_data,
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
@@ -70,14 +94,13 @@ class TestFIPMapper(unittest.TestCase):
         self.assertEqual(acquisition.experimenters[0], "Foo")
 
     def test_ethics_review_id_mapping(self):
-        """Test that ethics review ID is correctly mapped from intermediate metadata to Acquisition.
+        """Test that ethics review ID is correctly set from constant.
 
-        The ethics_review_id field from the intermediate metadata should be mapped to the
-        ethics_review_id list in the Acquisition schema. This ensures compliance with
-        institutional review board requirements and proper tracking of ethical approvals.
+        The ethics_review_id is a constant set by the FIP mapper and should not be
+        provided in the session metadata. If it is provided, we should remove the constant.
         """
         acquisition = self.mapper.transform(
-            SimpleNamespace(**self.example_intermediate_data),
+            self.example_intermediate_data,
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
@@ -85,25 +108,27 @@ class TestFIPMapper(unittest.TestCase):
 
         self.assertIsNotNone(acquisition.ethics_review_id)
         self.assertEqual(len(acquisition.ethics_review_id), 1)
-        self.assertEqual(acquisition.ethics_review_id[0], "2115")
+        from aind_metadata_mapper.fip.constants import ETHICS_REVIEW_ID
 
-    def test_ethics_review_id_none(self):
-        """Test that ethics_review_id is None when no ethics review ID is provided.
+        self.assertEqual(acquisition.ethics_review_id, ETHICS_REVIEW_ID)
 
-        When the intermediate metadata has no ethics_review_id (None or missing), the
-        resulting Acquisition should also have ethics_review_id set to None. This handles
-        cases where ethical approval information is not available or not required.
+    def test_ethics_review_id_error_when_provided(self):
+        """Test that an error is raised when ethics_review_id is provided in session.
+
+        The ethics_review_id is a constant and should not be provided in the session metadata.
+        If it is provided, the mapper should raise a ValueError.
         """
         data = self.example_intermediate_data.copy()
-        data["ethics_review_id"] = None
+        data["session"]["ethics_review_id"] = "2115"
 
-        acquisition = self.mapper.transform(
-            SimpleNamespace(**data),
-            skip_validation=True,
-            intended_measurements=self.test_intended_measurements,
-            implanted_fibers=self.test_implanted_fibers,
-        )
-        self.assertIsNone(acquisition.ethics_review_id)
+        with self.assertRaises(ValueError) as context:
+            self.mapper.transform(
+                data,
+                skip_validation=True,
+                intended_measurements=self.test_intended_measurements,
+                implanted_fibers=self.test_implanted_fibers,
+            )
+        self.assertIn("ethics_review_id is a constant", str(context.exception))
 
     def test_subject_details(self):
         """Test that subject details are None for FIP acquisitions.
@@ -112,7 +137,7 @@ class TestFIPMapper(unittest.TestCase):
         Therefore, subject_details should always be None for FIP acquisitions.
         """
         acquisition = self.mapper.transform(
-            SimpleNamespace(**self.example_intermediate_data),
+            self.example_intermediate_data,
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
@@ -128,7 +153,7 @@ class TestFIPMapper(unittest.TestCase):
         experimental data being collected and processed.
         """
         acquisition = self.mapper.transform(
-            SimpleNamespace(**self.example_intermediate_data),
+            self.example_intermediate_data,
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
@@ -230,7 +255,7 @@ class TestFIPMapper(unittest.TestCase):
         that were used during the acquisition session.
         """
         acquisition = self.mapper.transform(
-            SimpleNamespace(**self.example_intermediate_data),
+            self.example_intermediate_data,
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
@@ -274,7 +299,7 @@ class TestFIPMapper(unittest.TestCase):
         This ensures complete metadata about the experimental setup and device parameters.
         """
         acquisition = self.mapper.transform(
-            SimpleNamespace(**self.example_intermediate_data),
+            self.example_intermediate_data,
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
@@ -301,7 +326,7 @@ class TestFIPMapper(unittest.TestCase):
         across different time zones and systems.
         """
         acquisition = self.mapper.transform(
-            SimpleNamespace(**self.example_intermediate_data),
+            self.example_intermediate_data,
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
@@ -320,11 +345,11 @@ class TestFIPMapper(unittest.TestCase):
         This prevents data corruption from incorrectly ordered timestamps.
         """
         data = self.example_intermediate_data.copy()
-        data["session_start_time"] = "2025-07-18T13:00:00-07:00"
-        data["session_end_time"] = "2025-07-18T12:00:00-07:00"
+        data["data_stream_metadata"][0]["start_time"] = "2025-07-18T13:00:00-07:00"
+        data["data_stream_metadata"][0]["end_time"] = "2025-07-18T12:00:00-07:00"
 
         acquisition = self.mapper.transform(
-            SimpleNamespace(**data),
+            data,
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
@@ -405,7 +430,7 @@ class TestFIPMapper(unittest.TestCase):
         contextual information provided by the experimenter.
         """
         acquisition = self.mapper.transform(
-            SimpleNamespace(**self.example_intermediate_data),
+            self.example_intermediate_data,
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
@@ -420,7 +445,7 @@ class TestFIPMapper(unittest.TestCase):
         nature of most fiber photometry recordings.
         """
         acquisition = self.mapper.transform(
-            SimpleNamespace(**self.example_intermediate_data),
+            self.example_intermediate_data,
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
@@ -603,30 +628,18 @@ class TestFIPMapper(unittest.TestCase):
     def test_transform_calls_validation_when_not_skipped(self):
         """Test that transform calls validation when skip_validation=False.
 
-        This test exercises the validation code path. Converts flat test data
-        to proper schema structure before validation.
+        This test exercises the validation code path. Uses nested structure
+        that matches the expected schema format.
         """
-        # Convert flat structure to schema-compliant structure
-        flat = self.example_intermediate_data
-        schema_compliant_data = {
-            "data_stream_metadata": [
-                {
-                    "id": "test_stream",
-                    "start_time": flat.get("session_start_time", "2025-07-18T19:32:35.275046Z"),
-                    "end_time": flat.get("session_end_time", "2025-07-18T19:49:22.448358Z"),
-                }
-            ],
-            "session": {
-                "subject": flat.get("subject_id", "test"),
-                "experiment": flat.get("session_type", "FIP"),
-                "experimenter": flat.get("experimenter_full_name", ["Foo", "Bar"]),
-                "notes": flat.get("notes", "test session"),
-                "date": "2025-07-18T19:32:35.275046Z",
-                "root_path": flat.get("data_directory", "/data/test"),
-                "session_name": "test_session",
-            },
-            "rig": flat.get("rig_config", {}),
-        }
+        # Use nested structure (already converted in setUp)
+        schema_compliant_data = self.example_intermediate_data.copy()
+        # Add required fields for validation if missing
+        if "date" not in schema_compliant_data["session"]:
+            schema_compliant_data["session"]["date"] = "2025-07-18T19:32:35.275046Z"
+        if "root_path" not in schema_compliant_data["session"]:
+            schema_compliant_data["session"]["root_path"] = "/data/test"
+        if "session_name" not in schema_compliant_data["session"]:
+            schema_compliant_data["session"]["session_name"] = "test_session"
 
         result = self.mapper.transform(
             schema_compliant_data,
@@ -679,8 +692,8 @@ class TestFIPMapper(unittest.TestCase):
                 except Exception as e:
                     self.fail(f"run_job raised an exception: {e}")
 
-            # write_standard_file creates acquisition_fip (without .json extension)
-            expected_file = Path(tmpdir) / "acquisition_fip"
+            # write_standard_file creates acquisition_fip.json (with .json extension)
+            expected_file = Path(tmpdir) / "acquisition_fip.json"
             self.assertTrue(
                 expected_file.exists(), f"Expected {expected_file} but found {list(Path(tmpdir).iterdir())}"
             )
@@ -699,10 +712,11 @@ class TestFIPMapper(unittest.TestCase):
 
         # Create a test acquisition
         with open("tests/fixtures/fip_intermediate.json", "r", encoding="utf-8") as f:
-            test_data = json.load(f)
+            flat_data = json.load(f)
+            test_data = self._convert_flat_to_nested(flat_data)
 
         acquisition = mapper.transform(
-            SimpleNamespace(**test_data),
+            test_data,
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
@@ -865,14 +879,17 @@ class TestFIPMapperEdgeCases(unittest.TestCase):
 
         # Load fixture and remove delta_1
         with open("tests/fixtures/fip_intermediate.json", "r") as f:
-            data = json.load(f)
+            flat_data = json.load(f)
 
-        for key in data["rig_config"]:
-            if key.startswith("light_source_") and "task" in data["rig_config"][key]:
-                data["rig_config"][key]["task"].pop("delta_1", None)
+        # Convert to nested structure
+        data = self._convert_flat_to_nested(flat_data)
+
+        for key in data["rig"]:
+            if key.startswith("light_source_") and "task" in data["rig"][key]:
+                data["rig"][key]["task"].pop("delta_1", None)
 
         acquisition = mapper.transform(
-            SimpleNamespace(**data),
+            data,
             skip_validation=True,
             intended_measurements=None,
             implanted_fibers=[0, 1],  # Provide actual implanted fibers (no ROI fallback)

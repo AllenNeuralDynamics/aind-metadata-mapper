@@ -289,34 +289,17 @@ class FIPMapper(MapperJob):
         if not isinstance(metadata, dict):
             metadata = vars(metadata) if hasattr(metadata, "__dict__") else dict(metadata)
 
-        # Handle flat structure from test fixtures
-        if "session" not in metadata:
-            flat = metadata
-            metadata = {
-                "session": {
-                    "subject": flat.get("subject_id"),
-                    "experiment": flat.get("session_type"),
-                    "experimenter": flat.get("experimenter_full_name", []),
-                    "notes": flat.get("notes"),
-                    "ethics_review_id": flat.get("ethics_review_id"),
-                },
-                "rig": flat.get("rig_config", {}),
-                "data_stream_metadata": (
-                    [
-                        {
-                            "start_time": flat.get("session_start_time"),
-                            "end_time": flat.get("session_end_time"),
-                        }
-                    ]
-                    if flat.get("session_start_time")
-                    else []
-                ),
-            }
-
         # Extract fields from nested structure
         session = metadata["session"]
         rig = metadata["rig"]
         data_streams = metadata["data_stream_metadata"]
+
+        # Validate that ethics_review_id is not in session (it's a constant)
+        if "ethics_review_id" in session:
+            raise ValueError(
+                "ethics_review_id is a constant and should not be provided in the session metadata. "
+                "It is automatically set from the FIP mapper constants."
+            )
 
         subject_id = session["subject"]
         instrument_id = rig["rig_name"]
