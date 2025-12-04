@@ -87,16 +87,28 @@ class CamstimEphysSessionEtl(
         self.motor_locs_path = (
             self.session_path / f"{self.folder_name}.motor-locs.csv"
         )
-        self.pkl_path = self.session_path / f"{self.folder_name}.stim.pkl"
-        if not self.pkl_path.exists():
-            self.pkl_path = (
-                self.session_path / f"{self.folder_name}.behavior.pkl"
-            )
+
+        pkl_paths = list(self.session_path.rglob('*.behavior.pkl')) + \
+            list(self.session_path.rglob('*.stim.pkl'))
+        assert len(pkl_paths) == 1, (
+            f"Expected exactly one .stim.pkl file, found {len(pkl_paths)}"
+        )
+        self.pkl_path = pkl_paths[0]
         logger.debug("Using pickle:", self.pkl_path)
         self.pkl_data = pkl.load_pkl(self.pkl_path)
         self.fps = pkl.get_fps(self.pkl_data)
 
-        self.opto_pkl_path = self.session_path / f"{self.folder_name}.opto.pkl"
+        opto_pkl_paths = list(self.session_path.rglob('*.opto.pkl'))
+        if len(opto_pkl_paths) > 1:
+            raise Exception(
+                f"Expected at most one .opto.pkl file, found "
+                f"{len(opto_pkl_paths)}"
+            )
+        elif len(opto_pkl_paths) == 1:
+            self.opto_pkl_path = opto_pkl_paths[0]
+        else:
+            self.opto_pkl_path = None
+
         self.opto_table_path = (
             self.session_path / f"{self.folder_name}_opto_epochs.csv"
         )
@@ -136,7 +148,7 @@ class CamstimEphysSessionEtl(
                 self.build_behavior_table()
             else:
                 self.build_stimulus_table()
-        if self.opto_pkl_path.exists() and (
+        if self.opto_pkl_path and (
             not self.opto_table_path.exists()
             or self.job_settings.overwrite_tables
         ):
