@@ -77,6 +77,8 @@ class CamstimEphysSessionEtl(
         self.folder_name = self.session_path.name
         self.output_dir = job_settings.output_directory
         # sometimes data files are deleted on npexp so try files on lims
+        # import np_session
+        # session_inst = np_session.Session(job_settings.session_id)
         # try:
         #     self.recording_dir = get_single_oebin_path(
         #         session_inst.lims_path
@@ -87,30 +89,45 @@ class CamstimEphysSessionEtl(
         self.motor_locs_path = (
             self.session_path / f"{self.folder_name}.motor-locs.csv"
         )
-        self.pkl_path = self.session_path / f"{self.folder_name}.stim.pkl"
-        if not self.pkl_path.exists():
-            self.pkl_path = (
-                self.session_path / f"{self.folder_name}.behavior.pkl"
-            )
+
+        pkl_paths = list(self.session_path.rglob("*.behavior.pkl")) + list(
+            self.session_path.rglob("*.stim.pkl")
+        )
+        assert (
+            len(pkl_paths) == 1
+        ), f"Expected exactly one .stim.pkl file, found {len(pkl_paths)}"
+        self.pkl_path = pkl_paths[0]
         logger.debug("Using pickle:", self.pkl_path)
         self.pkl_data = pkl.load_pkl(self.pkl_path)
         self.fps = pkl.get_fps(self.pkl_data)
 
-        self.opto_pkl_path = self.session_path / f"{self.folder_name}.opto.pkl"
+        opto_pkl_paths = list(self.session_path.rglob("*.opto.pkl"))
+        if len(opto_pkl_paths) > 1:
+            raise Exception(
+                f"Expected at most one .opto.pkl file, found "
+                f"{len(opto_pkl_paths)}"
+            )
+        elif len(opto_pkl_paths) == 1:
+            self.opto_pkl_path = opto_pkl_paths[0]
+        else:
+            self.opto_pkl_path = None
+
         self.opto_table_path = (
-            self.session_path / f"{self.folder_name}_opto_epochs.csv"
+            self.output_dir / f"{self.folder_name}_opto_epochs.csv"
         )
         self.opto_conditions_map = job_settings.opto_conditions_map
         self.stim_table_path = (
-            self.session_path / f"{self.folder_name}_stim_epochs.csv"
+            self.output_dir / f"{self.folder_name}_stim_epochs.csv"
         )
         self.vsync_table_path = (
-            self.session_path / f"{self.folder_name}_vsync_epochs.csv"
+            self.output_dir / f"{self.folder_name}_vsync_epochs.csv"
         )
-        self.sync_path = self.session_path / f"{self.folder_name}.sync"
 
+        self.sync_path = next(
+            self.session_path.rglob(f"{self.folder_name}.sync")
+        )
         platform_path = next(
-            self.session_path.glob(f"{self.folder_name}_platform*.json")
+            self.session_path.rglob(f"{self.folder_name}_platform*.json")
         )
         self.platform_json = json.loads(platform_path.read_text())
         self.project_name = self.platform_json["project"]
@@ -136,7 +153,7 @@ class CamstimEphysSessionEtl(
                 self.build_behavior_table()
             else:
                 self.build_stimulus_table()
-        if self.opto_pkl_path.exists() and (
+        if self.opto_pkl_path and (
             not self.opto_table_path.exists()
             or self.job_settings.overwrite_tables
         ):
@@ -365,6 +382,83 @@ class CamstimEphysSessionEtl(
         # data_streams.append(self.video_stream())
         return tuple(data_streams)
 
+    def clean_isi_discrepancies(
+        self,
+        sync_start_times,
+        sync_end_times,
+        pkl_isis,
+        mismatch_threshold=0.015,
+    ):
+        """
+        When there are extra blips in the sync, the sync times and pkl ISIs
+        can get out of alignment. This function removes sync times and related
+        pkl times that are likely erroneous based on large discrepancies
+        between expected ISIs from the pkl and observed ISIs from the sync.
+        """
+        assert len(sync_start_times) == len(
+            sync_end_times
+        ), "Sync start and end times must be the same length"
+
+        # always keep first sync time
+        keep_sync_idxs = [0]
+        keep_pkl_idxs = []
+        s_end, s_start, p = 0, 1, 0  # index in sync_times and pkl_isis
+        approx_pkl_time = 0
+        while (
+            s_end < len(sync_end_times) - 1
+            and s_start < len(sync_start_times)
+            and p < len(pkl_isis)
+        ):
+            assert (
+                s_start > s_end
+            ), "Sync start index must be after sync end index to get "
+            "a valid ISI"
+            approx_pkl_time = sync_end_times[s_end] + pkl_isis[p]
+            # each ISI is the time between the current end idx and
+            # next start idx
+            this_sync_isi = sync_start_times[s_start] - sync_end_times[s_end]
+            # difference between ISI expected from pkl and ISI observed in sync
+            pre_isi_discrepancy = this_sync_isi - pkl_isis[p]
+
+            # print(s_end, sync_end_times[s_end], s_start,
+            # sync_start_times[s_start], this_sync_isi, p, pkl_isis[p],
+            # pre_isi_discrepancy)
+
+            # after a sync time has been skipped, the next pkl ISI may also be
+            # erroneous, skip it to be safe
+            if (
+                approx_pkl_time - sync_start_times[s_start]
+                < -mismatch_threshold
+            ):
+                # print(f"skipping pkl time at p {p}")
+                p += 1
+                continue
+
+            # if the ISI is significantly different from expected,
+            # this is an erroneous sync time, skip it
+            if (
+                pre_isi_discrepancy < -mismatch_threshold
+                or pre_isi_discrepancy > mismatch_threshold
+            ):
+                # print(f"skipping sync start time at s_start {s_start}")
+                s_start += 1
+                s_end += 1
+                continue
+
+            # if expected and observed ISI are similar,
+            # keep this start time and iterate
+            keep_sync_idxs.append(s_start)
+            keep_pkl_idxs.append(p)
+            s_start += 1
+            s_end += 1
+            p += 1
+
+        # always keep trailing pkl interval
+        # (it is not followed by a sync pulse at end of session)
+        keep_pkl_idxs.append(len(pkl_isis) - 1)
+        sync_start_times = sync_start_times[keep_sync_idxs]
+        return sync_start_times, keep_pkl_idxs
+
     def build_optogenetics_table(self):
         """
         Builds an optogenetics table from the opto pickle file and sync file.
@@ -383,8 +477,19 @@ class CamstimEphysSessionEtl(
         start_times = sync.extract_led_times(
             sync_file, self.opto_conditions_map
         )
-        condition_nums = [str(item) for item in opto_file["opto_conditions"]]
-        levels = opto_file["opto_levels"]
+        stop_times = sync.get_falling_edges(sync_file, 18, units="seconds")
+        assert len(start_times) == len(
+            stop_times
+        ), "Number of opto start times does not match number of stop times"
+        start_times, keep_pkl_idxs = self.clean_isi_discrepancies(
+            start_times,
+            stop_times,
+            opto_file["opto_ISIs"],
+        )
+        condition_nums = [
+            str(item) for item in opto_file["opto_conditions"][keep_pkl_idxs]
+        ]
+        levels = opto_file["opto_levels"][keep_pkl_idxs]
         assert len(condition_nums) == len(levels)
         if len(start_times) > len(condition_nums):
             raise ValueError(

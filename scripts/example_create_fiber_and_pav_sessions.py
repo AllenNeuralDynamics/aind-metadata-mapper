@@ -33,18 +33,19 @@ Example Usage:
 """
 
 import argparse
-import sys
 import logging
+import sys
 from pathlib import Path
 
-from aind_metadata_mapper.pavlovian_behavior.example_create_session import (
-    create_metadata as create_pavlovian_metadata,
-)
+from aind_data_schema.core.session import Session
+
 from aind_metadata_mapper.fip.example_create_session import (
     create_metadata as create_fip_metadata,
 )
+from aind_metadata_mapper.pavlovian_behavior.example_create_session import (
+    create_metadata as create_pavlovian_metadata,
+)
 from aind_metadata_mapper.utils.merge_sessions import merge_sessions
-from aind_data_schema.core.session import Session
 
 
 def create_unified_session_metadata(

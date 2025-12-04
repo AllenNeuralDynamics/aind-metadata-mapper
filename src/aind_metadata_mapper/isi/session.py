@@ -57,7 +57,7 @@ class ISI(GenericEtl[JobSettings]):
                     "monitor": "testMonitor",
                     "fullscr": True,
                     "color": [0, 0, 0],
-                    "screen": 2
+                    "screen": 2,
                 },
                 "mask": None,
                 "units": "pix",
@@ -73,8 +73,8 @@ class ISI(GenericEtl[JobSettings]):
                 "flipHoriz": False,
                 "flipVert": False,
                 "texRes": 256,
-                "warp": True
-            }
+                "warp": True,
+            },
         )
         stimulus_epoch = [
             StimulusEpoch(
@@ -82,7 +82,7 @@ class ISI(GenericEtl[JobSettings]):
                 stimulus_end_time=self.job_settings.session_end_time,
                 stimulus_name="IntrinsicStim",
                 stimulus_modalities=[StimulusModality.VISUAL],
-                stimulus_parameters=[visual_stim_params]
+                stimulus_parameters=[visual_stim_params],
             )
         ]
 

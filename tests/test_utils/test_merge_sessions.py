@@ -1,12 +1,13 @@
 """Tests for session merging functionality."""
 
-import pytest
 import json
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
-import unittest
 import logging
-from unittest.mock import patch, mock_open
+import unittest
+from datetime import datetime, timedelta
+from unittest.mock import mock_open, patch
+from zoneinfo import ZoneInfo
+
+import pytest
 
 from aind_metadata_mapper.utils.merge_sessions import merge_sessions
 

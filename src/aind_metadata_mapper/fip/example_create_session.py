@@ -42,13 +42,13 @@ create_metadata(
 
 """
 
-from pathlib import Path
-from typing import List, Optional
 import logging
 import sys
+from pathlib import Path
+from typing import List, Optional
 
-from aind_metadata_mapper.fip.session import FIBEtl
 from aind_metadata_mapper.fip.models import JobSettings
+from aind_metadata_mapper.fip.session import FIBEtl
 
 
 def create_metadata(

@@ -11,14 +11,14 @@ The ETL class provides hooks for future extension to fetch additional data from
 external services or handle new data formats.
 """
 
-import sys
 import json
-from typing import Union, Optional, List
+import sys
 from dataclasses import dataclass
-from pathlib import Path
 from datetime import datetime
-import pandas as pd
+from pathlib import Path
+from typing import List, Optional, Union
 
+import pandas as pd
 from aind_data_schema.base import AindCoreModel
 from aind_data_schema.core.session import (
     DetectorConfig,
@@ -33,8 +33,8 @@ from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.core_models import JobResponse
 from aind_metadata_mapper.fip.models import JobSettings
 from aind_metadata_mapper.fip.utils import (
-    extract_session_start_time_from_files,
     extract_session_end_time_from_files,
+    extract_session_start_time_from_files,
 )
 from aind_metadata_mapper.utils.timing_utils import (
     validate_session_temporal_consistency,

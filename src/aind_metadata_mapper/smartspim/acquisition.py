@@ -1,21 +1,21 @@
 """SmartSPIM ETL to map metadata"""
 
+import logging
 import os
 import re
 import sys
-import requests
-import logging
 from datetime import datetime
-from typing import Dict, Union, List
+from typing import Dict, List, Union
 
+import requests
 from aind_data_schema.components.coordinates import ImageAxis
+from aind_data_schema.components.devices import ImmersionMedium
 from aind_data_schema.core.acquisition import (
     Acquisition,
     Immersion,
     ProcessingSteps,
 )
 from aind_data_schema_models.process_names import ProcessName
-from aind_data_schema.components.devices import ImmersionMedium
 
 from aind_metadata_mapper.core import GenericEtl
 from aind_metadata_mapper.core_models import JobResponse
@@ -24,13 +24,13 @@ from aind_metadata_mapper.smartspim.models import (
     SlimsImmersionMedium,
 )
 from aind_metadata_mapper.smartspim.utils import (
+    ensure_list,
     get_anatomical_direction,
     get_excitation_emission_waves,
     get_session_end,
     make_acq_tiles,
-    read_json_as_dict,
     parse_channel_name,
-    ensure_list,
+    read_json_as_dict,
 )
 
 

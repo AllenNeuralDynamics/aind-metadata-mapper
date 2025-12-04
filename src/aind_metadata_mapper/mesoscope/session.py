@@ -5,7 +5,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Union, Tuple
+from typing import Tuple, Union
 
 import h5py as h5
 import tifffile
