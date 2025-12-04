@@ -96,7 +96,8 @@ class TestSmartspimETL(unittest.TestCase):
         }
 
         result = (
-            self.example_smartspim_etl_success._extract_metadata_from_microscope_files()
+            self.example_smartspim_etl_success
+            ._extract_metadata_from_microscope_files()
         )
 
         expected_result = {
@@ -287,7 +288,8 @@ class TestSmartspimETL(unittest.TestCase):
         }
 
         test_extracted = (
-            self.example_smartspim_etl_fail_mouseid._extract_metadata_from_microscope_files()
+            self.example_smartspim_etl_fail_mouseid
+            ._extract_metadata_from_microscope_files()
         )
 
         with self.assertRaises(ValueError):
