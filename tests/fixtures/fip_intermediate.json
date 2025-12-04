@@ -1,23 +1,30 @@
 {
-  "job_settings_name": "FIP",
-  "experimenter_full_name": ["Foo", "Bar"],
-  "session_start_time": "2025-07-18 12:32:35.275046-07:00",
-  "session_end_time": "2025-07-18 12:49:22.448358-07:00",
-  "subject_id": "test",
-  "rig_id": "test_rig",
-  "mouse_platform_name": "wheel",
-  "active_mouse_platform": false,
-  "data_streams": [],
-  "session_type": "FIP",
-  "ethics_review_id": "2115",
-  "notes": "test session",
-  "anaesthesia": null,
-  "animal_weight_post": 25.5,
-  "animal_weight_prior": 25.3,
-  "protocol_id": [],
-  "data_directory": "/data/test",
-  "data_files": [],
-  "rig_config": {
+  "data_stream_metadata": [
+    {
+      "id": "fip_2025-07-18T192959",
+      "start_time": "2025-07-18 12:32:35.275046-07:00",
+      "end_time": "2025-07-18 12:49:22.448358-07:00"
+    }
+  ],
+  "session": {
+    "aind_behavior_services_pkg_version": "0.12.2",
+    "version": "0.12.2",
+    "experiment": "AindPhysioFip",
+    "experimenter": [
+      "Foo",
+      "Bar"
+    ],
+    "date": "2025-07-18 19:29:59.958644+00:00",
+    "root_path": "c://",
+    "session_name": "test_2025-07-18T192959Z",
+    "subject": "test",
+    "experiment_version": "0.0.0",
+    "notes": "test session",
+    "commit_hash": null,
+    "allow_dirty_repo": true,
+    "skip_hardware_validation": false
+  },
+  "rig": {
     "aind_behavior_services_pkg_version": "0.12.2",
     "version": "0.1.0",
     "computer_name": "DT300043",
@@ -195,24 +202,5 @@
         "topic": "fip"
       }
     }
-  },
-  "session_config": {
-    "aind_behavior_services_pkg_version": "0.12.2",
-    "version": "0.12.2",
-    "experiment": "AindPhysioFip",
-    "experimenter": [
-      "Foo",
-      "Bar"
-    ],
-    "date": "2025-07-18 19:29:59.958644+00:00",
-    "root_path": "c://",
-    "session_name": "test_2025-07-18T192959Z",
-    "subject": "test",
-    "experiment_version": "0.0.0",
-    "notes": "test session",
-    "commit_hash": null,
-    "allow_dirty_repo": true,
-    "skip_hardware_validation": false
-  },
-  "output_directory": "/data/test"
+  }
 }

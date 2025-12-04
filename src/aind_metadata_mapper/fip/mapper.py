@@ -285,17 +285,13 @@ class FIPMapper(MapperJob):
         if not skip_validation:
             self._validate_fip_metadata(metadata)
 
-        # Handle SimpleNamespace objects from tests
-        if not isinstance(metadata, dict):
-            metadata = vars(metadata) if hasattr(metadata, "__dict__") else dict(metadata)
-
         # Extract fields from nested structure
         session = metadata["session"]
         rig = metadata["rig"]
         data_streams = metadata["data_stream_metadata"]
 
         # Validate that ethics_review_id is not in session (it's a constant)
-        if "ethics_review_id" in session:
+        if isinstance(session, dict) and "ethics_review_id" in session:
             raise ValueError(
                 "ethics_review_id is a constant and should not be provided in the session metadata. "
                 "It is automatically set from the FIP mapper constants."
