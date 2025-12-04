@@ -26,6 +26,7 @@ from pydantic import ValidationError
 from aind_metadata_mapper.base import MapperJobSettings
 from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.utils import get_ethics_id
 
 
 def _metadata_service_helper(url: str) -> Optional[dict]:
@@ -358,6 +359,46 @@ class GatherMetadataJob:
 
         return merged_model.model_dump(mode="json")
 
+    def _add_ethics_id_to_acquisition(self, acquisition: dict, subject_id: str) -> None:
+        """Add or verify ethics_review_id in acquisition metadata based on ethics ID lookup.
+
+        If an ethics ID is found for the subject_id:
+        - If ethics_review_id is None or empty, adds the ethics ID to it
+        - If ethics_review_id already exists, verifies the ethics ID matches (raises error if not)
+
+        If no ethics ID is found, does nothing (doesn't modify existing ethics_review_id).
+
+        Parameters
+        ----------
+        acquisition : dict
+            Acquisition metadata dictionary (modified in place)
+        subject_id : str
+            Subject ID to look up ethics ID for
+
+        Raises
+        ------
+        ValueError
+            If ethics_review_id exists but doesn't match the ethics ID found for this subject
+        """
+        ethics_id = get_ethics_id(subject_id)
+        if ethics_id:
+            current_ethics_review_id = acquisition.get("ethics_review_id")
+            if current_ethics_review_id is None or current_ethics_review_id == []:
+                # No ethics_review_id provided, add the ethics ID
+                acquisition["ethics_review_id"] = [ethics_id]
+                logging.info(f"Added ethics_review_id [{ethics_id}] for subject {subject_id}")
+            elif isinstance(current_ethics_review_id, list) and len(current_ethics_review_id) > 0:
+                # Ethics_review_id already exists, verify it matches
+                if ethics_id not in current_ethics_review_id:
+                    raise ValueError(
+                        f"ethics_review_id mismatch for subject {subject_id}: "
+                        f"found {current_ethics_review_id} but expected ethics ID {ethics_id}"
+                    )
+                logging.debug(
+                    f"Verified ethics_review_id {current_ethics_review_id} matches ethics ID {ethics_id} "
+                    f"for subject {subject_id}"
+                )
+
     def get_instrument(self) -> Optional[dict]:
         """Get instrument metadata"""
         logging.info("Gathering instrument metadata.")
@@ -556,6 +597,9 @@ class GatherMetadataJob:
         # for the data_description
         acquisition = self.get_acquisition()
         if acquisition:
+            # Add or verify ethics_review_id from ethics ID lookup
+            if self.settings.subject_id:
+                self._add_ethics_id_to_acquisition(acquisition, self.settings.subject_id)
             core_metadata["acquisition"] = acquisition
             self._write_json_file(Acquisition.default_filename(), acquisition)
 

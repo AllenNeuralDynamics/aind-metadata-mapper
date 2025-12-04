@@ -316,6 +316,11 @@ class TestUtils(unittest.TestCase):
         # Should return a list (may be empty if protocols.yaml doesn't have fip, but should not error)
         self.assertIsInstance(result, list)
 
+    def test_get_ethics_id_not_found(self):
+        """Test that get_ethics_id returns None for subject IDs not in the mapping."""
+        result = utils.get_ethics_id("test")
+        self.assertIsNone(result)
+
 
 class TestPromptFunctions(unittest.TestCase):
     """Tests for prompt utility functions."""

@@ -19,6 +19,60 @@ INSTRUMENT_BASE_URL = "http://aind-metadata-service/api/v2/instrument"
 PROCEDURES_BASE_URL = "http://aind-metadata-service/api/v2/procedures"
 
 
+def get_ethics_id(subject_id: str) -> Optional[str]:
+    """Get ethics review ID for a subject ID.
+
+    Currently uses a hard-coded mapping for VR Foraging mice.
+    TODO: Replace with API call to Dataverse when table exists.
+
+    Parameters
+    ----------
+    subject_id : str
+        The subject ID to look up.
+
+    Returns
+    -------
+    Optional[str]
+        Ethics review ID string (e.g., "2414") if found, None otherwise.
+    """
+    # Hard-coded mapping of VR Foraging subject IDs to ethics review ID
+    # TODO: Replace with API call to Dataverse when table exists
+    vr_foraging_ethics_map = {
+        "788731": "2414",
+        "789907": "2414",
+        "795133": "2414",
+        "798279": "2414",
+        "804434": "2414",
+        "807086": "2414",
+        "808619": "2414",
+        "808729": "2414",
+        "810750": "2414",
+        "811021": "2414",
+        "815102": "2414",
+        "815104": "2414",
+        "828417": "2414",
+        "828420": "2414",
+        "828422": "2414",
+        "828425": "2414",
+        "789903": "2414",
+        "789917": "2414",
+        "795556": "2414",
+        "804430": "2414",
+        "806527": "2414",
+        "807093": "2414",
+        "808728": "2414",
+        "810351": "2414",
+        "810761": "2414",
+        "811026": "2414",
+        "815103": "2414",
+        "828416": "2414",
+        "828418": "2414",
+        "828421": "2414",
+        "828423": "2414",
+    }
+    return vr_foraging_ethics_map.get(subject_id)
+
+
 def ensure_timezone(dt):
     """Ensure datetime has timezone info using system local timezone.
 
