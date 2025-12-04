@@ -46,17 +46,17 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
     @patch("pandas.read_csv")
     @patch("json.loads")
     @patch("pathlib.Path.read_text")
-    @patch("pathlib.Path.glob")
     @patch("pathlib.Path.exists")
     @patch(
         "aind_metadata_mapper.open_ephys.camstim_ephys_session."
         "get_single_oebin_path"
     )
+    @patch("pathlib.Path.rglob")
     def setUp(
         self,
+        mock_rglob,
         mock_oebin,
         mock_exists,
-        mock_glob,
         mock_read_text,
         mock_json_loads,
         mock_read_csv,
@@ -73,8 +73,6 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
         # Configure all mocks
         mock_oebin.return_value = Path(self.temp_dir) / "fake.oebin"
         mock_exists.return_value = True
-        # Return an iterator instead of a list
-        mock_glob.return_value = iter([Path(self.temp_dir) / "platform.json"])
         mock_read_text.return_value = '{"project": "test_project"}'
         mock_json_loads.return_value = {
             "project": "test_project",
@@ -83,13 +81,22 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
             "InsertionNotes": {},
         }
 
-        # instead of returning just the platform.json
-        mock_glob.return_value = iter([
-            Path(self.temp_dir) / "platform.json",
-            Path(self.temp_dir) / "session.stim.pkl"  # <-- add this
-        ])
+        # Mock rglob
+        def rglob_side_effect(pattern):
+            if pattern == "*.stim.pkl":
+                return [Path(self.temp_dir) / "session.stim.pkl"]
+            elif pattern == "*.opto.pkl":
+                return []
+            elif pattern.endswith(".sync"):
+                return [Path(self.temp_dir) / "session.sync"]
+            elif "_platform" in pattern:
+                return [Path(self.temp_dir) / "session_platform.json"]
+            else:
+                return []
 
-        # Mock pandas.read_csv to return a DataFrame with all expected columns
+        mock_rglob.side_effect = rglob_side_effect
+
+        # pandas.read_csv
         mock_read_csv.return_value = pd.DataFrame(
             {
                 "Start": [0.0, 10.0, 20.0],
@@ -106,7 +113,6 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
             "session_uuid": "test-session-uuid-123",
         }
         mock_load_sync.return_value = None
-        # Return datetime objects instead of floats
         mock_start_time.return_value = datetime(2023, 1, 1, 10, 0, 0)
         mock_stop_time.return_value = datetime(2023, 1, 1, 12, 0, 0)
         mock_fps.return_value = 60
