@@ -229,6 +229,13 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
             if power_ratio:
                 power_ratio = float(power_ratio)
             for plane in group["imaging_planes"]:
+                if isinstance(plane["targeted_structure_id"], int):
+                    structure_id = plane["targeted_structure_id"]
+                    targeted_structure = self._STRUCTURE_LOOKUP_DICT.get(
+                        structure_id, "Unknown"
+                    )
+                else:
+                    targeted_structure = plane["targeted_structure_id"]
                 fov = FieldOfView(
                     coupled_fov_index=int(
                         group["local_z_stack_tif"].split(".")[0][-1]
@@ -240,9 +247,7 @@ class MesoscopeEtl(GenericEtl[JobSettings]):
                     magnification=self.job_settings.magnification,
                     fov_scale_factor=0.78,
                     imaging_depth=plane["targeted_depth"],
-                    targeted_structure=self._STRUCTURE_LOOKUP_DICT[
-                        plane["targeted_structure_id"]
-                    ],
+                    targeted_structure=targeted_structure,
                     scanimage_roi_index=plane["scanimage_roi_index"],
                     fov_width=meta[0]["SI.hRoiManager.pixelsPerLine"],
                     fov_height=meta[0]["SI.hRoiManager.linesPerFrame"],
