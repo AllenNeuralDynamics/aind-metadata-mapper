@@ -264,6 +264,7 @@ class TestIntegrationMetadata(unittest.TestCase):
         acquisition_data = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
 
         def mock_read_file(file_name):
+            """Mock file reading"""
             if file_name == "acquisition.json":
                 return acquisition_data
             else:
@@ -544,11 +545,13 @@ class TestIntegrationMetadata(unittest.TestCase):
         model_data = self._load_resource_file(V2_METADATA_DIR, "model.json")
 
         def mock_exists(file_name):
+            """Mock file existence check"""
             return file_name == "model.json"
 
         mock_file_exists.side_effect = mock_exists
 
         def mock_read_file(file_name):
+            """Mock file reading"""
             if file_name == "model.json":
                 return model_data
             raise FileNotFoundError(f"File {file_name} not found")
