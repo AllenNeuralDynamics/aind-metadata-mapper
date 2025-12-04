@@ -1,3 +1,6 @@
+"""
+Metadata mapper for SLAP2 Harp sessions.
+"""
 import io
 import logging
 from datetime import datetime, timedelta
@@ -21,6 +24,9 @@ def _get_who_am_i_list(
     url: str = "https://raw.githubusercontent.com/harp-tech/protocol/main/"
     "whoami.yml",
 ):
+    """
+    Fetch the whoami yaml from the given URL and return the devices list.
+    """
     response = requests.get(url, allow_redirects=True, timeout=5)
     content = response.content.decode("utf-8")
     content = yaml.safe_load(content)
@@ -29,6 +35,9 @@ def _get_who_am_i_list(
 
 
 def _get_yml_from_who_am_i(who_am_i: int, release: str = "main") -> io.BytesIO:
+    """
+    Find device.yml for give whoAmi for this harp device
+    """
     try:
         device = _get_who_am_i_list()[who_am_i]
     except KeyError as e:
@@ -60,6 +69,9 @@ def _get_yml_from_who_am_i(who_am_i: int, release: str = "main") -> io.BytesIO:
 
 
 def fetch_yml(harp_path):
+    """
+    fetch and open the whoami yaml for this harp bin
+    """
     with open(harp_path / "Behavior_0.bin", mode="rb") as reg_0:
         who_am_i = int(harp.read(reg_0).values[0][0])
         yml_bytes = _get_yml_from_who_am_i(who_am_i)
