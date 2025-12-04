@@ -32,6 +32,7 @@ try:
 
     settings = JobSettings(
         metadata_dir=str(temp_metadata_path),
+        output_dir=str(temp_metadata_path),
         subject_id="804670",
         project_name="Learning mFISH-V1omFISH",
         modalities=[Modality.POPHYS, Modality.BEHAVIOR_VIDEOS, Modality.BEHAVIOR],

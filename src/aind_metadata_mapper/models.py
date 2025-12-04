@@ -54,9 +54,11 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
     )
 
     # Metadata settings
-    subject_id: str = Field(
+    subject_id: Optional[str] = Field(
         default=...,
-        description=("Subject ID. Will be used to download metadata from a service."),
+        description=("Subject ID. If acquisition.json is present, this will be overriden by the value"
+                     " in acquisition.json. If raise_if_invalid is True, the subject_id in both locations must match."
+                     "The subject_id is used to download the subject and procedures from the metadata-service."),
     )
     acquisition_start_time: Optional[AwareDatetimeWithDefault] = Field(
         default=None,
