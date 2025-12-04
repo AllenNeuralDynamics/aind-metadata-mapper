@@ -87,13 +87,13 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
             Returns temp files for rglob.
             """
             if pattern == "*.stim.pkl":
-                return [Path(self.temp_dir) / "session.stim.pkl"]
+                return iter([Path(self.temp_dir) / "session.stim.pkl"])
             elif pattern == "*.opto.pkl":
                 return []
             elif pattern.endswith(".sync"):
-                return [Path(self.temp_dir) / "session.sync"]
+                return iter([Path(self.temp_dir) / "session.sync"])
             elif "_platform" in pattern:
-                return [Path(self.temp_dir) / "session_platform.json"]
+                return iter([Path(self.temp_dir) / "session_platform.json"])
             else:
                 return []
 
@@ -129,6 +129,7 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
             mtrain_server="test_server",
             session_id="test_session_id",
             input_source=self.temp_dir,
+            output_directory=self.temp_dir,
         )
         self.etl = CamstimEphysSessionEtl(job_settings=self.job_settings)
 

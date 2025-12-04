@@ -1,6 +1,7 @@
 """
 Metadata mapper for SLAP2 Harp sessions.
 """
+
 import io
 import logging
 from datetime import datetime, timedelta
