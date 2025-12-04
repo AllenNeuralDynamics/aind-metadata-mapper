@@ -83,6 +83,9 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
 
         # Mock rglob
         def rglob_side_effect(pattern):
+            """
+            Returns temp files for rglob.
+            """
             if pattern == "*.stim.pkl":
                 return [Path(self.temp_dir) / "session.stim.pkl"]
             elif pattern == "*.opto.pkl":
