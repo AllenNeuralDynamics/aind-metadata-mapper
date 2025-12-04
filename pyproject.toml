@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
+requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -32,6 +32,10 @@ dev = [
     "furo",
 ]
 
+opto_fiber_benchmark = [
+    "aind_metadata_mapper[fip]"
+]
+
 fip = [
     "aind-metadata-mapper[schema]",
     "tzlocal>=5.3.1",
@@ -46,6 +50,7 @@ all = [
     "aind-metadata-mapper[dynamicrouting]",
     "aind-metadata-mapper[u19]",
     "aind-metadata-mapper[fip]",
+    "aind_metadata_mapper[opto_fiber_benchmark]",
 ]
 
 schema = [
@@ -77,12 +82,13 @@ openephys = [
     "aind-metadata-mapper[schema]",
     "h5py >= 3.11.0",
     "hdmf < 4.0.0",
-    "npc_ephys >= 0.1.18",
+    "npc_ephys == 0.1.35",
     "scipy >= 1.11.0",
     "pandas >= 2.2.2",
     "numpy >= 1.26.4",
-    "npc_mvr >= 0.1.6",
+    "npc_mvr == 0.1.11",
     "wavpack-numcodecs<0.2.2",
+    "pyarrow == 20.0.0",
     "numcodecs<0.16.0",
 ]
 
