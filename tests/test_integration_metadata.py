@@ -503,6 +503,67 @@ class TestIntegrationMetadata(unittest.TestCase):
         call_args = mock_add.call_args
         self.assertEqual(call_args.kwargs["subject_id"], "804670")
 
+    def test_run_job_uses_acquisition_start_time_from_settings_when_not_in_acquisition(self):
+        """Test that acquisition_start_time from settings is used when not in acquisition.json"""
+        acq_start_time = datetime(2025, 9, 17, 10, 26, 0, tzinfo=timezone.utc)
+        with patch("os.makedirs"):
+            test_settings = JobSettings(
+                metadata_dir="/test/metadata",
+                output_dir="/test/output",
+                subject_id="804670",
+                acquisition_start_time=acq_start_time,
+                project_name="Visual Behavior",
+                modalities=[Modality.BEHAVIOR],
+            )
+            test_job = GatherMetadataJob(settings=test_settings)
+
+        acquisition_data = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
+        acquisition_without_time = acquisition_data.copy()
+        del acquisition_without_time["acquisition_start_time"]
+
+        with patch.object(test_job, "get_acquisition", return_value=acquisition_without_time):
+            with patch.object(test_job, "build_data_description", return_value={"name": "test"}) as mock_build:
+                with patch.object(test_job, "add_core_metadata", return_value={}):
+                    with patch.object(test_job, "validate_and_create_metadata"):
+                        with patch.object(test_job, "_write_json_file"):
+                            with patch("logging.info") as mock_log_info:
+                                test_job.run_job()
+
+        mock_build.assert_called_once_with(
+            acquisition_start_time=acq_start_time.isoformat(), subject_id="804670"
+        )
+        log_calls = [call[0][0] for call in mock_log_info.call_args_list]
+        self.assertTrue(
+            any("No acquisition_start_time found in acquisition metadata" in call for call in log_calls)
+        )
+
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_get_file_from_user_defined_directory")
+    def test_add_core_metadata_with_model(self, mock_get_file, mock_file_exists):
+        """Test that add_core_metadata correctly retrieves and writes model metadata"""
+        model_data = self._load_resource_file(V2_METADATA_DIR, "model.json")
+
+        def mock_exists(file_name):
+            return file_name == "model.json"
+
+        mock_file_exists.side_effect = mock_exists
+
+        def mock_read_file(file_name):
+            if file_name == "model.json":
+                return model_data
+            raise FileNotFoundError(f"File {file_name} not found")
+
+        mock_get_file.side_effect = mock_read_file
+
+        core_metadata = {}
+
+        with patch.object(self.job, "_write_json_file") as mock_write:
+            result = self.job.add_core_metadata(core_metadata=core_metadata, subject_id="804670")
+
+        self.assertIn("model", result)
+        self.assertEqual(result["model"], model_data)
+        mock_write.assert_any_call("model.json", model_data)
+
 
 if __name__ == "__main__":
     unittest.main()
