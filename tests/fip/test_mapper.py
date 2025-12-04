@@ -471,6 +471,9 @@ class TestFIPMapper(unittest.TestCase):
         that matches the expected schema format.
         """
         schema_compliant_data = self.example_intermediate_data.copy()
+        # Remove id to test the code path that adds it
+        for stream in schema_compliant_data["data_stream_metadata"]:
+            stream.pop("id", None)
         # Ensure data_stream_metadata items have id (required by schema)
         for stream in schema_compliant_data["data_stream_metadata"]:
             if "id" not in stream:
@@ -522,10 +525,7 @@ class TestFIPMapper(unittest.TestCase):
                 unittest.mock.patch.object(mapper, "_parse_implanted_fibers", return_value=self.test_implanted_fibers),
                 unittest.mock.patch.object(mapper, "_validate_fip_metadata"),
             ):
-                try:
-                    mapper.run_job(job_settings)
-                except Exception as e:
-                    self.fail(f"run_job raised an exception: {e}")
+                mapper.run_job(job_settings)
 
             # write_standard_file creates acquisition_fip.json (with .json extension)
             expected_file = Path(tmpdir) / "acquisition_fip.json"
