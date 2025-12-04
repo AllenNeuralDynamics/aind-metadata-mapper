@@ -83,6 +83,12 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
             "InsertionNotes": {},
         }
 
+        # instead of returning just the platform.json
+        mock_glob.return_value = iter([
+            Path(self.temp_dir) / "platform.json",
+            Path(self.temp_dir) / "session.stim.pkl"  # <-- add this
+        ])
+
         # Mock pandas.read_csv to return a DataFrame with all expected columns
         mock_read_csv.return_value = pd.DataFrame(
             {
