@@ -1,4 +1,9 @@
-"""Tests gather_metadata module"""
+"""Tests gather_metadata module
+
+Tests in this file ONLY test helper functions.
+
+Do not test run_job() inside this file, use the integration tests.
+"""
 
 import json
 import os
@@ -9,7 +14,6 @@ from unittest.mock import MagicMock, mock_open, patch
 
 from aind_data_schema.components.identifiers import Person
 from aind_data_schema.core.acquisition import Acquisition
-from aind_data_schema.core.metadata import Metadata
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 

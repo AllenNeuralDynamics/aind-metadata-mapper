@@ -1,4 +1,7 @@
-"""Integration tests for metadata gathering using real resource files"""
+"""Integration tests for metadata gathering using real resource files
+
+Tests in this file should use run_job()
+"""
 
 import json
 import os
