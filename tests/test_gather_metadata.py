@@ -1049,5 +1049,75 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertIn("acquisition_start_time is required", str(context.exception))
 
 
+class TestAddEthicsIdToAcquisition(unittest.TestCase):
+    """Tests for _add_ethics_id_to_acquisition method."""
+
+    @patch("aind_metadata_mapper.gather_metadata.get_ethics_id")
+    def test_add_ethics_id_when_missing(self, mock_get_ethics_id):
+        """Test that ethics_review_id is added when it's None or empty."""
+        mock_get_ethics_id.return_value = "2414"
+        acquisition = {"subject_id": "test_subject"}
+        job = GatherMetadataJob(
+            settings=JobSettings(
+                output_dir="/tmp", subject_id="test_subject", project_name="Test", modalities=[Modality.ECEPHYS]
+            )
+        )
+
+        job._add_ethics_id_to_acquisition(acquisition, "test_subject")
+
+        self.assertEqual(acquisition["ethics_review_id"], ["2414"])
+        mock_get_ethics_id.assert_called_once_with("test_subject")
+
+    @patch("aind_metadata_mapper.gather_metadata.get_ethics_id")
+    def test_verify_ethics_id_when_matches(self, mock_get_ethics_id):
+        """Test that no error is raised when ethics_review_id matches the found ethics ID."""
+        mock_get_ethics_id.return_value = "2414"
+        acquisition = {"subject_id": "test_subject", "ethics_review_id": ["2414"]}
+        job = GatherMetadataJob(
+            settings=JobSettings(
+                output_dir="/tmp", subject_id="test_subject", project_name="Test", modalities=[Modality.ECEPHYS]
+            )
+        )
+
+        # Should not raise an error
+        job._add_ethics_id_to_acquisition(acquisition, "test_subject")
+
+        self.assertEqual(acquisition["ethics_review_id"], ["2414"])
+
+    @patch("aind_metadata_mapper.gather_metadata.get_ethics_id")
+    def test_verify_ethics_id_when_mismatch(self, mock_get_ethics_id):
+        """Test that ValueError is raised when ethics_review_id doesn't match."""
+        mock_get_ethics_id.return_value = "2414"
+        acquisition = {"subject_id": "test_subject", "ethics_review_id": ["2115"]}
+        job = GatherMetadataJob(
+            settings=JobSettings(
+                output_dir="/tmp", subject_id="test_subject", project_name="Test", modalities=[Modality.ECEPHYS]
+            )
+        )
+
+        with self.assertRaises(ValueError) as context:
+            job._add_ethics_id_to_acquisition(acquisition, "test_subject")
+
+        self.assertIn("ethics_review_id mismatch", str(context.exception))
+        self.assertIn("2115", str(context.exception))
+        self.assertIn("2414", str(context.exception))
+
+    @patch("aind_metadata_mapper.gather_metadata.get_ethics_id")
+    def test_no_change_when_ethics_id_not_found(self, mock_get_ethics_id):
+        """Test that acquisition is not modified when get_ethics_id returns None."""
+        mock_get_ethics_id.return_value = None
+        acquisition = {"subject_id": "test_subject", "ethics_review_id": ["2115"]}
+        job = GatherMetadataJob(
+            settings=JobSettings(
+                output_dir="/tmp", subject_id="test_subject", project_name="Test", modalities=[Modality.ECEPHYS]
+            )
+        )
+
+        job._add_ethics_id_to_acquisition(acquisition, "test_subject")
+
+        # Should remain unchanged
+        self.assertEqual(acquisition["ethics_review_id"], ["2115"])
+
+
 if __name__ == "__main__":
     unittest.main()
