@@ -1,0 +1,914 @@
+{
+    "acquisition_type": "SmartSPIM",
+    "file_metadata": {
+        "session_config": {
+            "Obj": "LCT 3.6x",
+            "Immersion": "1.52+",
+            "Empty": "Blank",
+            "V_Res": "1600",
+            "um/pix": "1.800",
+            "Z step (um)": "2.00",
+            "Scanning": "Fast",
+            "Sampling": "1/1",
+            "Destripe": "N/0",
+            "Flat": "None",
+            "Z_Block": "8212",
+            "Version": "5.4.0.3",
+            "obj_magnification": 3.611111111111111
+        },
+        "wavelength_config": {
+            "488": {
+                "power_left": "75.00",
+                "power_right": "60.00"
+            },
+            "561": {
+                "power_left": "70.00",
+                "power_right": "60.00"
+            },
+            "639": {
+                "power_left": "90.00",
+                "power_right": "80.00"
+            },
+            "785": {
+                "power_left": "20.00",
+                "power_right": "20.00"
+            }
+        },
+        "tile_config": {
+            "t_0": {
+                "X": "436180",
+                "Y": "167990",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_1": {
+                "X": "436180",
+                "Y": "167990",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_2": {
+                "X": "436180",
+                "Y": "167990",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_3": {
+                "X": "468580",
+                "Y": "167990",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_4": {
+                "X": "468580",
+                "Y": "167990",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_5": {
+                "X": "468580",
+                "Y": "167990",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_6": {
+                "X": "500980",
+                "Y": "167990",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_7": {
+                "X": "500980",
+                "Y": "167990",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_8": {
+                "X": "500980",
+                "Y": "167990",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_9": {
+                "X": "533380",
+                "Y": "167990",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_10": {
+                "X": "533380",
+                "Y": "167990",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_11": {
+                "X": "533380",
+                "Y": "167990",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_12": {
+                "X": "436180",
+                "Y": "193910",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_13": {
+                "X": "436180",
+                "Y": "193910",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_14": {
+                "X": "436180",
+                "Y": "193910",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_15": {
+                "X": "468580",
+                "Y": "193910",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_16": {
+                "X": "468580",
+                "Y": "193910",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_17": {
+                "X": "468580",
+                "Y": "193910",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_18": {
+                "X": "500980",
+                "Y": "193910",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_19": {
+                "X": "500980",
+                "Y": "193910",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_20": {
+                "X": "500980",
+                "Y": "193910",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_21": {
+                "X": "533380",
+                "Y": "193910",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_22": {
+                "X": "533380",
+                "Y": "193910",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_23": {
+                "X": "533380",
+                "Y": "193910",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_24": {
+                "X": "436180",
+                "Y": "219830",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_25": {
+                "X": "436180",
+                "Y": "219830",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_26": {
+                "X": "436180",
+                "Y": "219830",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_27": {
+                "X": "468580",
+                "Y": "219830",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_28": {
+                "X": "468580",
+                "Y": "219830",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_29": {
+                "X": "468580",
+                "Y": "219830",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_30": {
+                "X": "500980",
+                "Y": "219830",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_31": {
+                "X": "500980",
+                "Y": "219830",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_32": {
+                "X": "500980",
+                "Y": "219830",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_33": {
+                "X": "533380",
+                "Y": "219830",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_34": {
+                "X": "533380",
+                "Y": "219830",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_35": {
+                "X": "533380",
+                "Y": "219830",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_36": {
+                "X": "436180",
+                "Y": "245750",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_37": {
+                "X": "436180",
+                "Y": "245750",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_38": {
+                "X": "436180",
+                "Y": "245750",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_39": {
+                "X": "468580",
+                "Y": "245750",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_40": {
+                "X": "468580",
+                "Y": "245750",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_41": {
+                "X": "468580",
+                "Y": "245750",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_42": {
+                "X": "500980",
+                "Y": "245750",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_43": {
+                "X": "500980",
+                "Y": "245750",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_44": {
+                "X": "500980",
+                "Y": "245750",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_45": {
+                "X": "533380",
+                "Y": "245750",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_46": {
+                "X": "533380",
+                "Y": "245750",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_47": {
+                "X": "533380",
+                "Y": "245750",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_48": {
+                "X": "436180",
+                "Y": "271670",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_49": {
+                "X": "436180",
+                "Y": "271670",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_50": {
+                "X": "436180",
+                "Y": "271670",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_51": {
+                "X": "468580",
+                "Y": "271670",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_52": {
+                "X": "468580",
+                "Y": "271670",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_53": {
+                "X": "468580",
+                "Y": "271670",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_54": {
+                "X": "500980",
+                "Y": "271670",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_55": {
+                "X": "500980",
+                "Y": "271670",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_56": {
+                "X": "500980",
+                "Y": "271670",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_57": {
+                "X": "533380",
+                "Y": "271670",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_58": {
+                "X": "533380",
+                "Y": "271670",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_59": {
+                "X": "533380",
+                "Y": "271670",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_60": {
+                "X": "436180",
+                "Y": "297590",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_61": {
+                "X": "436180",
+                "Y": "297590",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_62": {
+                "X": "436180",
+                "Y": "297590",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_63": {
+                "X": "468580",
+                "Y": "297590",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_64": {
+                "X": "468580",
+                "Y": "297590",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_65": {
+                "X": "468580",
+                "Y": "297590",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_66": {
+                "X": "500980",
+                "Y": "297590",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_67": {
+                "X": "500980",
+                "Y": "297590",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_68": {
+                "X": "500980",
+                "Y": "297590",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_69": {
+                "X": "533380",
+                "Y": "297590",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_70": {
+                "X": "533380",
+                "Y": "297590",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_71": {
+                "X": "533380",
+                "Y": "297590",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_72": {
+                "X": "436180",
+                "Y": "323510",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_73": {
+                "X": "436180",
+                "Y": "323510",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_74": {
+                "X": "436180",
+                "Y": "323510",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_75": {
+                "X": "468580",
+                "Y": "323510",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_76": {
+                "X": "468580",
+                "Y": "323510",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_77": {
+                "X": "468580",
+                "Y": "323510",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "0",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_78": {
+                "X": "500980",
+                "Y": "323510",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_79": {
+                "X": "500980",
+                "Y": "323510",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_80": {
+                "X": "500980",
+                "Y": "323510",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            },
+            "t_81": {
+                "X": "533380",
+                "Y": "323510",
+                "Z": "1066",
+                "Laser": "488",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "0"
+            },
+            "t_82": {
+                "X": "533380",
+                "Y": "323510",
+                "Z": "1066",
+                "Laser": "561",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "1"
+            },
+            "t_83": {
+                "X": "533380",
+                "Y": "323510",
+                "Z": "1066",
+                "Laser": "639",
+                "Side": "1",
+                "Exposure": "2",
+                "Skip": "1",
+                "Filter": "2"
+            }
+        },
+        "session_start_time": "2025-07-16T20:47:57",
+        "session_end_time": "2025-07-17T01:48:42",
+        "filter_mapping": {
+            "488": 525,
+            "561": 600,
+            "639": 680
+        }
+    },
+    "slims_metadata": {
+        "experiment_run_created_on": "2025-07-17T04:13:20.834000Z",
+        "order_created_by": "EllaHilton-VanOsdall",
+        "order_project_id": "Discovery-Neuromodulator circuit dynamics during foraging - Subproject 1 Electrophysiological Recordings from NM Neurons During Behavior",
+        "specimen_id": "BRN00000292",
+        "subject_id": "762444",
+        "protocol_name": "Imaging cleared mouse brains on SmartSPIM",
+        "protocol_id": "https://dx.doi.org/10.17504/protocols.io.3byl4jo1rlo5/v1",
+        "date_performed": "2025-07-17T04:13:00Z",
+        "chamber_immersion_medium": "Cargille Oil 1.5200",
+        "sample_immersion_medium": "EasyIndex",
+        "chamber_refractive_index": "1.5186",
+        "sample_refractive_index": "1.5148",
+        "instrument_id": "440_SmartSPIM2_20240327",
+        "experimenter_name": null,
+        "z_direction": "Superior to Inferior",
+        "y_direction": "Anterior to Posterior",
+        "x_direction": "Left to Right",
+        "imaging_channels": [
+            "Laser = 488; Emission Filter = 525/45",
+            "Laser = 561; Emission Filter = 593/40",
+            "Laser = 639; Emission Filter = 667/30"
+        ],
+        "stitching_channels": "Laser = 639, Emission Filter = 667/30",
+        "ccf_registration_channels": "Laser = 639, Emission Filter = 667/30",
+        "cell_segmentation_channels": null
+    }
+}
