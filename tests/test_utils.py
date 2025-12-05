@@ -12,15 +12,16 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import requests
 
-from aind_metadata_mapper import utils
+from aind_metadata_mapper import
+from aind_metadata_mapper.utils import ensure_timezone, get_intended_measurements, get_procedures, get_protocols_for_modality, get_subject, prompt_for_string 
 
 
 class TestUtils(unittest.TestCase):
-    """Test cases for utility functions in aind_metadata_mapper.utils."""
+    """Test cases for utility functions in aind_metadata_mapper."""
 
     def test_ensure_timezone_none(self):
         """Test that ensure_timezone handles None input by returning current time with timezone.
@@ -29,7 +30,7 @@ class TestUtils(unittest.TestCase):
         with timezone information. This is useful for cases where a datetime field
         is optional but we need a timezone-aware datetime for processing.
         """
-        dt = utils.ensure_timezone(None)
+        dt = ensure_timezone(None)
         self.assertIsNotNone(dt.tzinfo)
 
     def test_ensure_timezone_naive_datetime(self):
@@ -40,7 +41,7 @@ class TestUtils(unittest.TestCase):
         datetime objects are timezone-aware for consistent processing.
         """
         naive = datetime(2025, 1, 1, 12, 0, 0)
-        dt = utils.ensure_timezone(naive)
+        dt = ensure_timezone(naive)
         self.assertIsNotNone(dt.tzinfo)
 
     def test_ensure_timezone_iso_string(self):
@@ -51,7 +52,7 @@ class TestUtils(unittest.TestCase):
         case of datetime strings from APIs or configuration files.
         """
         aware_iso = "2025-01-01T12:00:00+00:00"
-        dt = utils.ensure_timezone(aware_iso)
+        dt = ensure_timezone(aware_iso)
         self.assertEqual(dt.tzinfo, timezone(timedelta(seconds=0)))
 
     @patch("requests.get")
@@ -68,7 +69,7 @@ class TestUtils(unittest.TestCase):
         mock_resp.raise_for_status = lambda: None
         mock_get.return_value = mock_resp
 
-        result = utils.get_procedures("123")
+        result = get_procedures("123")
         self.assertEqual(result, {"ok": True})
 
     @patch("requests.get")
@@ -84,7 +85,7 @@ class TestUtils(unittest.TestCase):
         mock_resp.json = lambda: {}
         mock_get.return_value = mock_resp
 
-        result = utils.get_procedures("123")
+        result = get_procedures("123")
         self.assertIsNone(result)
 
     @patch("requests.get")
@@ -99,7 +100,7 @@ class TestUtils(unittest.TestCase):
         mock_resp.json = lambda: {"subject_procedures": [{"object_type": "Surgery"}]}
         mock_get.return_value = mock_resp
 
-        result = utils.get_procedures("123")
+        result = get_procedures("123")
         self.assertIsNotNone(result)
         self.assertIn("subject_procedures", result)
 
@@ -115,7 +116,7 @@ class TestUtils(unittest.TestCase):
         mock_resp.json = lambda: {"error": "bad request"}
         mock_get.return_value = mock_resp
 
-        result = utils.get_procedures("123")
+        result = get_procedures("123")
         self.assertEqual(result, {"error": "bad request"})
 
     @patch("requests.get")
@@ -130,7 +131,7 @@ class TestUtils(unittest.TestCase):
         mock_resp.json = lambda: (_ for _ in ()).throw(ValueError("Invalid JSON"))
         mock_get.return_value = mock_resp
 
-        result = utils.get_procedures("123")
+        result = get_procedures("123")
         self.assertIsNone(result)
 
     @patch("requests.get")
@@ -143,7 +144,7 @@ class TestUtils(unittest.TestCase):
         """
         mock_get.side_effect = Exception("network")
 
-        result = utils.get_procedures("123")
+        result = get_procedures("123")
         self.assertIsNone(result)
 
     @patch("requests.get")
@@ -155,7 +156,7 @@ class TestUtils(unittest.TestCase):
         """
         mock_get.side_effect = requests.exceptions.RequestException("connection error")
 
-        result = utils.get_procedures("123")
+        result = get_procedures("123")
         self.assertIsNone(result)
 
     @patch("requests.get")
@@ -171,7 +172,7 @@ class TestUtils(unittest.TestCase):
         mock_resp.raise_for_status = lambda: None
         mock_get.return_value = mock_resp
 
-        result = utils.get_subject("123")
+        result = get_subject("123")
         self.assertEqual(result, {"subject_id": "123"})
 
     @patch("requests.get")
@@ -182,7 +183,7 @@ class TestUtils(unittest.TestCase):
         mock_resp.json = lambda: {}
         mock_get.return_value = mock_resp
 
-        result = utils.get_subject("123")
+        result = get_subject("123")
         self.assertIsNone(result)
 
     @patch("requests.get")
@@ -190,7 +191,7 @@ class TestUtils(unittest.TestCase):
         """Test that get_subject handles network exceptions gracefully."""
         mock_get.side_effect = Exception("network")
 
-        result = utils.get_subject("123")
+        result = get_subject("123")
         self.assertIsNone(result)
 
     @patch("requests.get")
@@ -208,7 +209,7 @@ class TestUtils(unittest.TestCase):
         mock_resp.raise_for_status = lambda: None
         mock_get.return_value = mock_resp
 
-        result = utils.get_intended_measurements("123")
+        result = get_intended_measurements("123")
         self.assertEqual(result, {"data": []})
 
     @patch("requests.get")
@@ -224,7 +225,7 @@ class TestUtils(unittest.TestCase):
         mock_resp.json = lambda: {}
         mock_get.return_value = mock_resp
 
-        result = utils.get_intended_measurements("123")
+        result = get_intended_measurements("123")
         self.assertIsNone(result)
 
     @patch("requests.get")
@@ -237,7 +238,7 @@ class TestUtils(unittest.TestCase):
         """
         mock_get.side_effect = Exception("network")
 
-        result = utils.get_intended_measurements("123")
+        result = get_intended_measurements("123")
         self.assertIsNone(result)
 
     @patch("requests.get")
@@ -252,7 +253,7 @@ class TestUtils(unittest.TestCase):
         mock_resp.json = lambda: {"data": []}
         mock_get.return_value = mock_resp
 
-        result = utils.get_intended_measurements("123")
+        result = get_intended_measurements("123")
         self.assertIsNone(result)
 
     def test_get_protocols_for_modality_file_not_found(self):
@@ -264,7 +265,7 @@ class TestUtils(unittest.TestCase):
             shutil.move(str(protocols_path), str(backup_path))
 
         try:
-            result = utils.get_protocols_for_modality("fip")
+            result = get_protocols_for_modality("fip")
             self.assertEqual(result, [])
         finally:
             if backup_path.exists():
@@ -282,7 +283,7 @@ class TestUtils(unittest.TestCase):
             with open(protocols_path, "w") as f:
                 f.write("invalid: yaml: [unclosed")
 
-            result = utils.get_protocols_for_modality("fip")
+            result = get_protocols_for_modality("fip")
             self.assertEqual(result, [])
         finally:
             protocols_path.unlink(missing_ok=True)
@@ -291,7 +292,7 @@ class TestUtils(unittest.TestCase):
 
     def test_get_protocols_for_modality_success(self):
         """Test get_protocols_for_modality returns protocols when file exists and is valid."""
-        result = utils.get_protocols_for_modality("fip")
+        result = get_protocols_for_modality("fip")
         # Should return a list (may be empty if protocols.yaml doesn't have fip, but should not error)
         self.assertIsInstance(result, list)
 
@@ -301,13 +302,13 @@ class TestPromptFunctions(unittest.TestCase):
 
     def test_prompt_for_string_with_default(self):
         """Test prompt_for_string with default value."""
-        self.assertEqual(utils.prompt_for_string("Test", default="default", input_func=lambda x: ""), "default")
-        self.assertEqual(utils.prompt_for_string("Test", default="default", input_func=lambda x: "input"), "input")
+        self.assertEqual(prompt_for_string("Test", default="default", input_func=lambda x: ""), "default")
+        self.assertEqual(prompt_for_string("Test", default="default", input_func=lambda x: "input"), "input")
 
     def test_prompt_for_string_not_required(self):
         """Test prompt_for_string without default, not required."""
-        self.assertEqual(utils.prompt_for_string("Test", required=False, input_func=lambda x: ""), "")
-        self.assertEqual(utils.prompt_for_string("Test", required=False, input_func=lambda x: "input"), "input")
+        self.assertEqual(prompt_for_string("Test", required=False, input_func=lambda x: ""), "")
+        self.assertEqual(prompt_for_string("Test", required=False, input_func=lambda x: "input"), "input")
 
     def test_prompt_for_string_required(self):
         """Test prompt_for_string required=True with no default."""
@@ -319,7 +320,7 @@ class TestPromptFunctions(unittest.TestCase):
             return "" if call_count[0] == 1 else "input"
 
         with patch("builtins.print"):
-            result = utils.prompt_for_string("Test", required=True, input_func=input_func)
+            result = prompt_for_string("Test", required=True, input_func=input_func)
         self.assertEqual(result, "input")
         self.assertEqual(call_count[0], 2)
 
@@ -333,7 +334,7 @@ class TestPromptFunctions(unittest.TestCase):
             return "" if call_count[0] == 1 else "input"
 
         with patch("builtins.print") as mock_print:
-            utils.prompt_for_string("Test", required=True, help_message="Help", input_func=input_func)
+            prompt_for_string("Test", required=True, help_message="Help", input_func=input_func)
         self.assertEqual(call_count[0], 2)
         self.assertTrue(any("Help" in str(call) for call in mock_print.call_args_list))
 
