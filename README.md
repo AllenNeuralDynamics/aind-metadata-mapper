@@ -43,7 +43,6 @@ The job will always prioritize an exact match for the core file. If that fails, 
 The following settings are **required**:
 
 - **`output_dir`** (str): Location where all metadata files will be saved.
-- **`subject_id`** (str): Subject ID used to fetch metadata from the service (subject.json, procedures.json).
 - **`data_description_settings`**:
   - **`project_name`** (str): Project name used to fetch funding and investigator information.
   - **`modalities`** (List[Modality]): List of data modalities for this dataset (e.g., `["ecephys", "behavior"]`).
@@ -69,13 +68,18 @@ When mappers are developed from the `BaseMapper` class and registered in `mapper
 
 - **`metadata_dir`** (str, optional): Location of existing metadata files. If a file is found here, it will be used directly instead of constructing/fetching it. Supports merging multiple files with prefixes (e.g., `instrument_0.json`, `instrument_1.json` will be merged).
 
+- **`subject_id`** (str): Subject ID used to fetch metadata from the service (subject.json, procedures.json). **Important edge cases:**
+  - If `acquisition.json` exists in `metadata_dir`, that value takes precedence and will override this setting.
+  - If `subject_id` is provided in settings AND found in `acquisition.json`, they must match exactly (configurable behavior below).
+  - If neither is provided, `GatherMetadataJob` will raise an error.
+
 - **`acquisition_start_time`** (datetime, optional): Acquisition start time in ISO 8601 format. **Important edge cases:**
   - If `acquisition.json` exists in `metadata_dir`, that value takes precedence and will override this setting.
   - If `acquisition_start_time` is provided in settings AND found in `acquisition.json`, they must match exactly (configurable behavior below).
   - If neither is provided, `GatherMetadataJob` will raise an error.
 
 - **`instrument_settings`**:
-  - **`instrument_id`** (str): Identifier for the instrument used in data collection.
+  - **`instrument_id`** (str): Identifier for the instrument used in data collection. When set, the instrument.json will attempt to be fetched from the metadata-service and saved as `instrument_<modality-abbreviation(s)>.json`. If multiple instrument.json files exist after fetching they will be merged. 
 
 - **`data_description_settings`**: See [DataDescription](https://aind-data-schema.readthedocs.io/en/latest/data_description.html#datadescription) for details.
   - **`tags`** (list[str], optional)
@@ -86,9 +90,8 @@ When mappers are developed from the `BaseMapper` class and registered in `mapper
 #### Validation settings
 
 - **`raise_if_invalid`** (bool, default=False): Controls validation behavior:
-  - `True`: Raises an error if any fetched metadata is invalid.
-  - `False`: Logs a warning and continues with best-effort validation.
-  - Also applies to `acquisition_start_time` mismatch validation (when both settings and acquisition.json provide a value).
+  - `True`: Raises an error if any fetched metadata is invalid, or if `acquisition_start_time` or `subject_id` mismatch between settings and acquisition.json.
+  - `False`: Logs an error and continues when `acquisition_start_time` or `subject_id` mismatch between settings and acquisition.json. Logs a warning and continues with best-effort validation for other metadata issues.
 
 - **`raise_if_mapper_errors`** (bool, default=True): Controls mapper execution behavior:
   - `True`: Raises an error if any automated mapper (e.g., for instrument-specific formats) fails.
