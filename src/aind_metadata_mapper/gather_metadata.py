@@ -25,7 +25,7 @@ from pydantic import ValidationError
 from aind_metadata_mapper.base import MapperJobSettings
 from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
-from aind_metadata_mapper.utils import get_procedures, get_subject, metadata_service_helper
+from aind_metadata_mapper.utils import get_instrument, get_procedures, get_subject, metadata_service_helper
 
 
 class GatherMetadataJob:
@@ -287,13 +287,12 @@ class GatherMetadataJob:
         if self.settings.metadata_dir is None:
             return
         input_dir = self.settings.metadata_dir
-        output_dir = self.settings.output_dir
         # For each registry key, check if <key>.json exists
         for mapper_name in registry.keys():
             input_filename = f"{mapper_name}.json"
             input_path = os.path.join(input_dir, input_filename)
             output_filename = f"acquisition_{mapper_name}.json"
-            output_path = os.path.join(output_dir, output_filename)
+            output_path = os.path.join(input_dir, output_filename)
             # Only run if input exists and output does not already exist
             if os.path.isfile(input_path) and not os.path.isfile(output_path):
                 mapper_cls = registry[mapper_name]
@@ -349,17 +348,29 @@ class GatherMetadataJob:
             logging.debug(f"Using existing {file_name}.")
             return self._get_file_from_user_defined_directory(file_name=file_name)
         else:
+            # Attempt to get instrument from service
+            # This may write a second instrument_*.json file!
+            if self.settings.instrument_settings and self.settings.instrument_settings.instrument_id:
+                base_url = urljoin(
+                    self.settings.metadata_service_url,
+                    self.settings.metadata_service_instrument_endpoint,
+                )
+                instrument = get_instrument(
+                    instrument_id=self.settings.instrument_settings.instrument_id,
+                    base_url=base_url,
+                )
+                if instrument:
+                    # Write this instrument using it's modalities
+                    instrument_suffix = "_".join(instrument["modalities"])
+                    self._write_json_file(
+                        filename=f"instrument_{instrument_suffix}.json",
+                        contents=instrument,
+                        output_dir=False,
+                    )
+
             files = self._get_prefixed_files_from_user_defined_directory(file_name_prefix="instrument")
             if files:
                 return self._merge_models(Instrument, files)
-
-            # Attempt to get instrument from service
-            if self.settings.instrument_settings and self.settings.instrument_settings.instrument_id:
-                return get_instrument(
-                    instrument_id=self.settings.instrument_settings.instrument_id,
-                    metadata_service_url=self.settings.metadata_service_url,
-                    metadata_service_instrument_endpoint=self.settings.metadata_service_instrument_endpoint,
-                )
 
             else:
                 logging.debug("No instrument metadata file found.")
@@ -405,7 +416,7 @@ class GatherMetadataJob:
             logging.debug("No model metadata file found.")
             return None
 
-    def _write_json_file(self, filename: str, contents: dict) -> None:
+    def _write_json_file(self, filename: str, contents: dict, output_dir: bool = True) -> None:
         """
         Write a json file to the output directory
         Parameters
@@ -415,7 +426,11 @@ class GatherMetadataJob:
         contents : dict
           Contents to write to the json file
         """
-        output_file = os.path.join(self.settings.output_dir, filename)
+        if output_dir or self.settings.metadata_dir is None:
+            output_file = os.path.join(self.settings.output_dir, filename)
+        else:
+            output_file = os.path.join(self.settings.metadata_dir, filename)
+
         with open(output_file, "w") as f:
             json.dump(contents, f, indent=3, ensure_ascii=False, sort_keys=True)
 
@@ -564,9 +579,7 @@ class GatherMetadataJob:
                 )
             else:
                 raise ValueError(
-                    "subject_id is required but not provided. "
-                    "Either provide acquisition.json with subject_id, "
-                    "or provide subject_id in the settings."
+                    "Either provide acquisition.json with subject_id, or provide subject_id in the settings."
                 )
         else:
             # Validate that subject_id matches if both are provided
