@@ -1,54 +1,22 @@
 """Integration test for VR Foraging FIP metadata collection."""
 
-from datetime import datetime
-import json
 import logging
 import shutil
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, Mock
 
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-from aind_metadata_mapper.models import DataDescriptionSettings, JobSettings
+from aind_metadata_mapper.models import DataDescriptionSettings, InstrumentSettings, JobSettings
 
 logging.basicConfig(level=logging.INFO)
 
 # Set to False to use mock responses from tests/resources/ instead of the metadata service
-USE_METADATA_SERVICE = False
+USE_METADATA_SERVICE = True
 
 source_metadata_path = Path(__file__).parent
-tests_resources_path = Path(__file__).parent.parent.parent / "tests" / "resources"
-
 output_subfolder = Path(tempfile.mkdtemp(prefix="vr_foraging_fip_test_"))
-
-
-def load_mock_response(filename: str):
-    """Load a mock response from tests/resources/metadata_service/"""
-    filepath = tests_resources_path / "metadata_service" / filename
-    with open(filepath, "r") as f:
-        return json.load(f)
-
-
-def mock_requests_get(url):
-    """Mock requests.get to return responses from local files"""
-    mock_response = Mock()
-
-    if "/subject/" in url:
-        mock_response.status_code = 200
-        mock_response.json.return_value = load_mock_response("subject_response.json")
-    elif "/procedures/" in url:
-        mock_response.status_code = 200
-        mock_response.json.return_value = load_mock_response("procedures_response.json")
-    elif "/funding/" in url:
-        mock_response.status_code = 200
-        mock_response.json.return_value = load_mock_response("funding_response.json")
-    else:
-        mock_response.status_code = 404
-        mock_response.json.return_value = {}
-
-    return mock_response
 
 
 def run_test():
@@ -64,12 +32,13 @@ def run_test():
     settings = JobSettings(
         metadata_dir=str(source_metadata_path),
         output_dir=str(output_subfolder),
-        subject_id="804434",
         data_description_settings=DataDescriptionSettings(
             project_name="Cognitive flexibility in patch foraging",
             modalities=[Modality.BEHAVIOR, Modality.BEHAVIOR_VIDEOS, Modality.FIB],
         ),
-        acquisition_start_time=datetime.fromisoformat("2025-11-14T01:02:41.034814+00:00"),
+        instrument_settings=InstrumentSettings(
+            instrument_id="13A"
+        )
     )
 
     job = GatherMetadataJob(settings=settings)
