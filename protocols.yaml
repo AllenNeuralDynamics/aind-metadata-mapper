@@ -1,0 +1,15 @@
+# Protocol URLs for each modality
+# This file maps modality names to lists of protocol.io URLs that are used
+# in acquisition metadata. The mapper loads this file and includes the protocol
+# URLs in the protocol_id field of the generated acquisition.json files.
+#
+# Format:
+#   modality_name:
+#     - protocol_url_1
+#     - protocol_url_2
+#
+# The mapper uses get_protocols_for_modality() from utils.py to retrieve
+# the protocol URLs for a given modality.
+
+fip:
+  - https://www.protocols.io/view/modified-frame-projected-independent-fiber-photome-261ge39edl47/v2
