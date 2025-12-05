@@ -597,9 +597,7 @@ class TestIntegrationMetadata(unittest.TestCase):
             test_job.get_instrument_from_service()
 
         mock_get_instrument.assert_called_once()
-        mock_write.assert_called_once_with(
-            filename="instrument_fib.json", contents=instrument_data, output_dir=False
-        )
+        mock_write.assert_called_once_with(filename="instrument_fib.json", contents=instrument_data, output_dir=False)
 
     @patch("builtins.open", new_callable=unittest.mock.mock_open)
     @patch("os.makedirs")

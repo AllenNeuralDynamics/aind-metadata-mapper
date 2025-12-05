@@ -231,7 +231,10 @@ class TestGatherMetadataJob(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             job._validate_and_get_subject_id(acquisition)
 
-        self.assertIn("Either provide acquisition.json with subject_id, or provide subject_id in the settings.", str(context.exception))
+        self.assertIn(
+            "Either provide acquisition.json with subject_id, or provide subject_id in the settings.",
+            str(context.exception),
+        )
 
     @patch("os.makedirs")
     def test_validate_and_get_subject_id_mismatch_raises(self, mock_makedirs):
