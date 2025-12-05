@@ -7,11 +7,24 @@ Strategy:
 - Keep tests fast by avoiding real network or filesystem side effects outside temp dirs.
 """
 
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 import shutil
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch, MagicMock
 
-from aind_metadata_mapper.utils import get_instrument, prompt_for_string
+import requests
+
+from aind_metadata_mapper.utils import (
+    get_instrument,
+    prompt_for_string,
+    ensure_timezone,
+    get_procedures,
+    get_subject,
+    get_intended_measurements,
+    get_protocols_for_modality,
+)
 
 
 class TestGetInstrument(unittest.TestCase):

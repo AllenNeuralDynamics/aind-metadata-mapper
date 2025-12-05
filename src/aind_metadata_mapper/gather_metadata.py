@@ -144,7 +144,7 @@ class GatherMetadataJob:
         if not self.settings.data_description_settings.project_name:
             return [], []
 
-        funding_url = f"{self.settings.metadata_service_url}" f"/api/v2/funding/{self.settings.project_name}"
+        funding_url = f"{self.settings.metadata_service_url}" f"/api/v2/funding/{self.settings.data_description_settings.project_name}"
         funding_info = metadata_service_helper(funding_url)
 
         if not funding_info:

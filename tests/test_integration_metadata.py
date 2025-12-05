@@ -22,7 +22,7 @@ from aind_data_schema.core.subject import Subject
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.models import DataDescriptionSettings, JobSettings
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
 METADATA_SERVICE_DIR = TEST_DIR / "resources" / "metadata_service"
@@ -39,8 +39,10 @@ class TestIntegrationMetadata(unittest.TestCase):
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="804670",
-            project_name="Visual Behavior",
-            modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Visual Behavior",
+                modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+            ),
             metadata_service_url="http://test-service.com",
             acquisition_start_time=datetime(2025, 9, 17, 10, 26, 0, tzinfo=timezone.utc),
         )
@@ -344,8 +346,10 @@ class TestIntegrationMetadata(unittest.TestCase):
                 metadata_dir="/test/metadata",
                 output_dir="/test/output",
                 subject_id="804670",
-                project_name="Visual Behavior",
-                modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Visual Behavior",
+                    modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+                ),
                 metadata_service_url="http://test-service.com",
                 raise_if_invalid=True,
                 acquisition_start_time=datetime(2025, 9, 17, 10, 26, 0),
@@ -460,8 +464,10 @@ class TestIntegrationMetadata(unittest.TestCase):
                 metadata_dir="/test/metadata",
                 output_dir="/test/output",
                 subject_id="123456",  # Different from acquisition (804670)
-                project_name="Visual Behavior",
-                modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Visual Behavior",
+                    modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+                ),
                 metadata_service_url="http://test-service.com",
                 acquisition_start_time=acq_start_time,
                 raise_if_invalid=True,
@@ -483,8 +489,10 @@ class TestIntegrationMetadata(unittest.TestCase):
                 output_dir="/test/output",
                 subject_id=None,
                 acquisition_start_time=None,
-                project_name="Visual Behavior",
-                modalities=[Modality.BEHAVIOR],
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Visual Behavior",
+                    modalities=[Modality.BEHAVIOR],
+                ),
             )
             test_job = GatherMetadataJob(settings=test_settings)
 
@@ -513,8 +521,10 @@ class TestIntegrationMetadata(unittest.TestCase):
                 output_dir="/test/output",
                 subject_id="804670",
                 acquisition_start_time=acq_start_time,
-                project_name="Visual Behavior",
-                modalities=[Modality.BEHAVIOR],
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Visual Behavior",
+                    modalities=[Modality.BEHAVIOR],
+                ),
             )
             test_job = GatherMetadataJob(settings=test_settings)
 
