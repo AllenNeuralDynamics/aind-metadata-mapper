@@ -11,12 +11,13 @@ The models define the structure and validation rules for:
 
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Literal, Dict, Any, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from aind_data_schema.core.session import RewardDeliveryConfig
 from aind_data_schema_models.units import VolumeUnit
-from aind_metadata_mapper.core_models import BaseJobSettings
 from pydantic import BaseModel
+
+from aind_metadata_mapper.core_models import BaseJobSettings
 
 
 class StimulusEpochSettings(BaseModel):

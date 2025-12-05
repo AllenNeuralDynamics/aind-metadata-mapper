@@ -5,13 +5,14 @@ specific to fiber photometry data, including conversion between milliseconds
 and datetime objects, and extraction of session times from data files.
 """
 
-from datetime import datetime
-from zoneinfo import ZoneInfo
-from typing import Union, Optional
-from pathlib import Path
-from tzlocal import get_localzone
 import logging
 import re
+from datetime import datetime
+from pathlib import Path
+from typing import Optional, Union
+from zoneinfo import ZoneInfo
+
+from tzlocal import get_localzone
 
 from aind_metadata_mapper.utils.timing_utils import (
     find_latest_timestamp_in_csv_files,

@@ -1,20 +1,20 @@
 """Tests parsing of session information from fip rig."""
 
 import unittest
-from datetime import datetime, timedelta
 import zoneinfo
-from unittest.mock import patch, mock_open
+from datetime import datetime, timedelta
+from unittest.mock import mock_open, patch
 
 from aind_data_schema.core.session import (
-    Session,
-    Stream,
-    LightEmittingDiodeConfig,
     DetectorConfig,
     FiberConnectionConfig,
+    LightEmittingDiodeConfig,
+    Session,
+    Stream,
 )
 from aind_data_schema_models.modalities import Modality
 
-from aind_metadata_mapper.fip.session import FIBEtl, JobSettings, FiberData
+from aind_metadata_mapper.fip.session import FiberData, FIBEtl, JobSettings
 
 
 class TestSchemaWriter(unittest.TestCase):

@@ -12,15 +12,16 @@ Functions are organized by their specific tasks:
 - Session timing calculations
 """
 
-import pandas as pd
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 from zoneinfo import ZoneInfo
 
+import pandas as pd
 from aind_data_schema.core.session import StimulusEpoch
 from tzlocal import get_localzone
+
 from aind_metadata_mapper.utils.timing_utils import (
     find_latest_timestamp_in_csv_files,
 )

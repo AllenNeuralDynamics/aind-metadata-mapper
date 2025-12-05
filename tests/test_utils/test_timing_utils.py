@@ -3,16 +3,17 @@
 import unittest
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
+
 import pandas as pd
-from unittest.mock import patch, Mock
 
 from aind_metadata_mapper.utils.timing_utils import (
+    _extract_max_timestamp,
+    _read_csv_safely,
     convert_ms_since_midnight_to_datetime,
     find_latest_timestamp_in_csv_files,
     validate_session_temporal_consistency,
-    _read_csv_safely,
-    _extract_max_timestamp,
 )
 
 

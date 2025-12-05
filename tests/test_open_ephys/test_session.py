@@ -8,18 +8,17 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
+
 import pandas as pd
 
 from aind_metadata_mapper.open_ephys.camstim_ephys_session import (
-    CamstimEphysSessionEtl
+    CamstimEphysSessionEtl,
 )
 from aind_metadata_mapper.open_ephys.models import (
-    JobSettings as CamstimEphysJobSettings
+    JobSettings as CamstimEphysJobSettings,
 )
 
-RESOURCES_DIR = (
-    Path(__file__).parent.parent / "resources" / "open_ephys"
-)
+RESOURCES_DIR = Path(__file__).parent.parent / "resources" / "open_ephys"
 
 EXAMPLE_STAGE_LOGS = [
     RESOURCES_DIR / "newscale_main.csv",
@@ -38,26 +37,26 @@ EXPECTED_CAMSTIM_JSON = RESOURCES_DIR / "camstim_ephys_session.json"
 class TestCamstimEphysSessionEtl(unittest.TestCase):
     """Test methods in camstim ephys session module."""
 
-    @patch('aind_metadata_mapper.open_ephys.utils.pkl_utils.get_stage')
-    @patch('aind_metadata_mapper.open_ephys.utils.pkl_utils.get_fps')
-    @patch('aind_metadata_mapper.open_ephys.utils.sync_utils.get_stop_time')
-    @patch('aind_metadata_mapper.open_ephys.utils.sync_utils.get_start_time')
-    @patch('aind_metadata_mapper.open_ephys.utils.sync_utils.load_sync')
-    @patch('aind_metadata_mapper.open_ephys.utils.pkl_utils.load_pkl')
-    @patch('pandas.read_csv')
-    @patch('json.loads')
-    @patch('pathlib.Path.read_text')
-    @patch('pathlib.Path.glob')
-    @patch('pathlib.Path.exists')
+    @patch("aind_metadata_mapper.open_ephys.utils.pkl_utils.get_stage")
+    @patch("aind_metadata_mapper.open_ephys.utils.pkl_utils.get_fps")
+    @patch("aind_metadata_mapper.open_ephys.utils.sync_utils.get_stop_time")
+    @patch("aind_metadata_mapper.open_ephys.utils.sync_utils.get_start_time")
+    @patch("aind_metadata_mapper.open_ephys.utils.sync_utils.load_sync")
+    @patch("aind_metadata_mapper.open_ephys.utils.pkl_utils.load_pkl")
+    @patch("pandas.read_csv")
+    @patch("json.loads")
+    @patch("pathlib.Path.read_text")
+    @patch("pathlib.Path.exists")
     @patch(
-        'aind_metadata_mapper.open_ephys.camstim_ephys_session.'
-        'get_single_oebin_path'
+        "aind_metadata_mapper.open_ephys.camstim_ephys_session."
+        "get_single_oebin_path"
     )
+    @patch("pathlib.Path.rglob")
     def setUp(
         self,
+        mock_rglob,
         mock_oebin,
         mock_exists,
-        mock_glob,
         mock_read_text,
         mock_json_loads,
         mock_read_csv,
@@ -74,32 +73,49 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
         # Configure all mocks
         mock_oebin.return_value = Path(self.temp_dir) / "fake.oebin"
         mock_exists.return_value = True
-        # Return an iterator instead of a list
-        mock_glob.return_value = iter([Path(self.temp_dir) / "platform.json"])
         mock_read_text.return_value = '{"project": "test_project"}'
         mock_json_loads.return_value = {
             "project": "test_project",
             "operatorID": "test.operator",
             "rig_id": "test_rig",
-            "InsertionNotes": {}
+            "InsertionNotes": {},
         }
 
-        # Mock pandas.read_csv to return a DataFrame with all expected columns
-        mock_read_csv.return_value = pd.DataFrame({
-            'Start': [0.0, 10.0, 20.0],
-            'End': [5.0, 15.0, 25.0],
-            'start_time': [0.0, 10.0, 20.0],
-            'stop_time': [5.0, 15.0, 25.0],
-            'stim_name': ['stim1', 'stim2', 'stim3']
-        })
+        # Mock rglob
+        def rglob_side_effect(pattern):
+            """
+            Returns temp files for rglob.
+            """
+            if pattern == "*.stim.pkl":
+                return iter([Path(self.temp_dir) / "session.stim.pkl"])
+            elif pattern == "*.opto.pkl":
+                return []
+            elif pattern.endswith(".sync"):
+                return iter([Path(self.temp_dir) / "session.sync"])
+            elif "_platform" in pattern:
+                return iter([Path(self.temp_dir) / "session_platform.json"])
+            else:
+                return []
+
+        mock_rglob.side_effect = rglob_side_effect
+
+        # pandas.read_csv
+        mock_read_csv.return_value = pd.DataFrame(
+            {
+                "Start": [0.0, 10.0, 20.0],
+                "End": [5.0, 15.0, 25.0],
+                "start_time": [0.0, 10.0, 20.0],
+                "stop_time": [5.0, 15.0, 25.0],
+                "stim_name": ["stim1", "stim2", "stim3"],
+            }
+        )
 
         mock_load_pkl.return_value = {
             "fps": 60,
             "stage": "test_stage",
-            "session_uuid": "test-session-uuid-123"
+            "session_uuid": "test-session-uuid-123",
         }
         mock_load_sync.return_value = None
-        # Return datetime objects instead of floats
         mock_start_time.return_value = datetime(2023, 1, 1, 10, 0, 0)
         mock_stop_time.return_value = datetime(2023, 1, 1, 12, 0, 0)
         mock_fps.return_value = 60
@@ -112,7 +128,8 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
             description="test_description",
             mtrain_server="test_server",
             session_id="test_session_id",
-            input_source=self.temp_dir
+            input_source=self.temp_dir,
+            output_directory=self.temp_dir,
         )
         self.etl = CamstimEphysSessionEtl(job_settings=self.job_settings)
 
@@ -126,11 +143,11 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
 
     def test_has_job_settings(self):
         """Test that job_settings attribute exists."""
-        self.assertTrue(hasattr(self.etl, 'job_settings'))
+        self.assertTrue(hasattr(self.etl, "job_settings"))
 
     def test_basic_attributes_exist(self):
         """Test that basic attributes exist."""
-        attrs = ['job_settings', 'recording_dir']
+        attrs = ["job_settings", "recording_dir"]
         for attr in attrs:
             self.assertTrue(hasattr(self.etl, attr))
 

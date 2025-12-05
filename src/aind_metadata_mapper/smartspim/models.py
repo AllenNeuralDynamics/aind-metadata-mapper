@@ -1,12 +1,12 @@
 """Module defining JobSettings for SmartSPIM ETL"""
 
+from enum import Enum
 from pathlib import Path
 from typing import Literal, Optional, Union
 
 from pydantic import Field
 
 from aind_metadata_mapper.core_models import BaseJobSettings
-from enum import Enum
 
 
 class SlimsImmersionMedium(Enum):

@@ -16,27 +16,28 @@ python src/aind_metadata_mapper/pavlovian_behavior/example_create_session.py \
 =======
 """
 
-from pathlib import Path
-from typing import List, Optional
 import logging
 import sys
+from pathlib import Path
+from typing import List, Optional
 
-from aind_metadata_mapper.pavlovian_behavior.session import ETL
-from aind_metadata_mapper.pavlovian_behavior.models import JobSettings
-from aind_data_schema_models.modalities import Modality
-from aind_data_schema_models.units import VolumeUnit
-from aind_data_schema.core.session import (
-    RewardDeliveryConfig,
-    RewardSolution,
-    RewardSpoutConfig,
-    SpoutSide,
-    RelativePosition,
-)
 from aind_data_schema.components.coordinates import (
     Axis,
     AxisName,
     Translation3dTransform,
 )
+from aind_data_schema.core.session import (
+    RelativePosition,
+    RewardDeliveryConfig,
+    RewardSolution,
+    RewardSpoutConfig,
+    SpoutSide,
+)
+from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.units import VolumeUnit
+
+from aind_metadata_mapper.pavlovian_behavior.models import JobSettings
+from aind_metadata_mapper.pavlovian_behavior.session import ETL
 
 
 def create_reward_delivery_config() -> RewardDeliveryConfig:

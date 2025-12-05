@@ -6,7 +6,7 @@ import json
 import os
 import re
 from datetime import datetime
-from typing import List, Optional, Any
+from typing import Any, List, Optional
 
 from aind_data_schema.components import tile
 from aind_data_schema.components.coordinates import AnatomicalDirection

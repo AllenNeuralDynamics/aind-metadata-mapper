@@ -3,17 +3,18 @@
 import unittest
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
+
 import pandas as pd
-from unittest.mock import patch, Mock
 
 from aind_metadata_mapper.pavlovian_behavior.utils import (
-    find_behavior_files,
-    parse_session_start_time,
-    extract_trial_data,
     calculate_session_timing_from_trials,
     create_stimulus_epoch,
     extract_session_data,
+    extract_trial_data,
+    find_behavior_files,
+    parse_session_start_time,
     validate_behavior_file_format,
     validate_trial_file_format,
 )
