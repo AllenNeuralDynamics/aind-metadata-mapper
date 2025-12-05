@@ -157,9 +157,9 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         job = GatherMetadataJob(settings=test_settings)
 
-        # Test with Z suffix
+        # Test with Z suffix (Python 3.11+ supports this natively)
         result = job._validate_acquisition_start_time("2023-01-01T12:00:00Z")
-        self.assertEqual(result, "2023-01-01T12:00:00+00:00")
+        self.assertEqual(result, "2023-01-01T12:00:00Z")
 
     # Tests for _validate_and_get_subject_id method
     @patch("os.makedirs")

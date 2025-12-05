@@ -452,8 +452,7 @@ class TestIntegrationMetadata(unittest.TestCase):
     def test_validate_and_get_subject_id_mismatch_with_real_data(self):
         """Test _validate_and_get_subject_id raises error with mismatched subject_id"""
         acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
-        acq_start_time_str = acquisition["acquisition_start_time"].replace("Z", "+00:00")
-        acq_start_time = datetime.fromisoformat(acq_start_time_str)
+        acq_start_time = datetime.fromisoformat(acquisition["acquisition_start_time"])
 
         with patch("os.makedirs"):
             test_settings = JobSettings(
