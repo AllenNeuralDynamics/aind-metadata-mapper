@@ -92,10 +92,10 @@ class TestCamstimEphysSessionEtl(unittest.TestCase):
                 return []
             elif pattern.endswith(".sync"):
                 return iter([Path(self.temp_dir) / "session.sync"])
-            elif "_platform" in pattern:
+            elif "platform" in pattern:
                 return iter([Path(self.temp_dir) / "session_platform.json"])
             else:
-                return []
+                return iter([])
 
         mock_rglob.side_effect = rglob_side_effect
 
