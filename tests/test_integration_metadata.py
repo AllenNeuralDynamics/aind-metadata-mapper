@@ -22,7 +22,7 @@ from aind_data_schema.core.subject import Subject
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-from aind_metadata_mapper.models import DataDescriptionSettings, JobSettings
+from aind_metadata_mapper.models import DataDescriptionSettings, InstrumentSettings, JobSettings
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
 METADATA_SERVICE_DIR = TEST_DIR / "resources" / "metadata_service"
@@ -572,6 +572,34 @@ class TestIntegrationMetadata(unittest.TestCase):
         self.assertIn("model", result)
         self.assertEqual(result["model"], model_data)
         mock_write.assert_any_call("model.json", model_data)
+
+    @patch("aind_metadata_mapper.gather_metadata.get_instrument")
+    def test_get_instrument_from_service(self, mock_get_instrument):
+        """Test get_instrument_from_service retrieves and writes instrument metadata"""
+        instrument_data = self._load_resource_file(METADATA_SERVICE_DIR, "instrument_response.json")
+        mock_get_instrument.return_value = instrument_data
+
+        with patch("os.makedirs"):
+            test_job = GatherMetadataJob(
+                settings=JobSettings(
+                    metadata_dir="/test/metadata",
+                    output_dir="/test/output",
+                    subject_id="804670",
+                    data_description_settings=DataDescriptionSettings(
+                        project_name="Visual Behavior",
+                        modalities=[Modality.FIB],
+                    ),
+                    instrument_settings=InstrumentSettings(instrument_id="13A"),
+                )
+            )
+
+        with patch.object(test_job, "_write_json_file") as mock_write:
+            test_job.get_instrument_from_service()
+
+        mock_get_instrument.assert_called_once()
+        mock_write.assert_called_once_with(
+            filename="instrument_fib.json", contents=instrument_data, output_dir=False
+        )
 
 
 if __name__ == "__main__":

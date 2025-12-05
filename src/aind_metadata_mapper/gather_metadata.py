@@ -342,6 +342,27 @@ class GatherMetadataJob:
 
         return merged_model.model_dump(mode="json")
 
+    def get_instrument_from_service(self) -> Optional[dict]:
+        """Get instrument metadata from service and write to the metadata directory"""
+        if self.settings.instrument_settings and self.settings.instrument_settings.instrument_id:
+            base_url = urljoin(
+                self.settings.metadata_service_url,
+                self.settings.metadata_service_instrument_endpoint,
+            )
+            instrument = get_instrument(
+                instrument_id=self.settings.instrument_settings.instrument_id,
+                base_url=base_url,
+            )
+            if instrument:
+                # Write this instrument using it's modalities
+                modality_abbreviations = [mod["abbreviation"] for mod in instrument.get("modalities", [])]
+                instrument_suffix = "_".join(modality_abbreviations)
+                self._write_json_file(
+                    filename=f"instrument_{instrument_suffix}.json",
+                    contents=instrument,
+                    output_dir=False,
+                )
+
     def get_instrument(self) -> Optional[dict]:
         """Get instrument metadata"""
         logging.info("Gathering instrument metadata.")
@@ -353,24 +374,7 @@ class GatherMetadataJob:
         else:
             # Attempt to get instrument from service
             # This may write a second instrument_*.json file!
-            if self.settings.instrument_settings and self.settings.instrument_settings.instrument_id:
-                base_url = urljoin(
-                    self.settings.metadata_service_url,
-                    self.settings.metadata_service_instrument_endpoint,
-                )
-                instrument = get_instrument(
-                    instrument_id=self.settings.instrument_settings.instrument_id,
-                    base_url=base_url,
-                )
-                if instrument:
-                    # Write this instrument using it's modalities
-                    modality_abbreviations = [mod["abbreviation"] for mod in instrument.get("modalities", [])]
-                    instrument_suffix = "_".join(modality_abbreviations)
-                    self._write_json_file(
-                        filename=f"instrument_{instrument_suffix}.json",
-                        contents=instrument,
-                        output_dir=False,
-                    )
+            self.get_instrument_from_service()
 
             files = self._get_prefixed_files_from_user_defined_directory(file_name_prefix="instrument")
             if files:

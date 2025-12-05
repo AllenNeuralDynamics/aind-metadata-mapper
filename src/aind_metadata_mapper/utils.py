@@ -37,7 +37,6 @@ def ensure_timezone(dt):
     if dt is None:
         return datetime.now().astimezone()
     if isinstance(dt, str):
-        dt.replace("Z", "+00:00")  # Handle UTC 'Z' suffix for Python < 3.11
         dt = datetime.fromisoformat(dt)
     if dt.tzinfo is None:
         # Use system's local timezone
