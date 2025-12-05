@@ -601,6 +601,46 @@ class TestIntegrationMetadata(unittest.TestCase):
             filename="instrument_fib.json", contents=instrument_data, output_dir=False
         )
 
+    @patch("builtins.open", new_callable=unittest.mock.mock_open)
+    @patch("os.makedirs")
+    def test_write_json_file_to_metadata_dir(self, mock_makedirs, mock_open):
+        """Test _write_json_file writes to metadata_dir when output_dir=False"""
+        test_job = GatherMetadataJob(
+            settings=JobSettings(
+                metadata_dir="/test/metadata",
+                output_dir="/test/output",
+                subject_id="804670",
+                data_description_settings=DataDescriptionSettings(project_name="Test", modalities=[Modality.FIB]),
+            )
+        )
+        test_job._write_json_file("test.json", {"key": "value"}, output_dir=False)
+        mock_open.assert_called_once_with("/test/metadata/test.json", "w")
+
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob.get_acquisition")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob.build_data_description")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob.add_core_metadata")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob.validate_and_create_metadata")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob._write_json_file")
+    @patch("os.makedirs")
+    def test_run_job_sets_metadata_dir_from_output_dir(
+        self, mock_makedirs, mock_write, mock_validate, mock_add, mock_build, mock_get_acq
+    ):
+        """Test run_job sets metadata_dir from output_dir when None"""
+        mock_get_acq.return_value = {"subject_id": "804670", "acquisition_start_time": "2025-09-17T10:26:00+00:00"}
+        mock_build.return_value = {"name": "test"}
+        mock_add.return_value = {}
+
+        test_job = GatherMetadataJob(
+            settings=JobSettings(
+                metadata_dir=None,
+                output_dir="/test/output",
+                subject_id="804670",
+                data_description_settings=DataDescriptionSettings(project_name="Test", modalities=[Modality.FIB]),
+            )
+        )
+        test_job.run_job()
+        self.assertEqual(test_job.settings.metadata_dir, "/test/output")
+
 
 if __name__ == "__main__":
     unittest.main()
