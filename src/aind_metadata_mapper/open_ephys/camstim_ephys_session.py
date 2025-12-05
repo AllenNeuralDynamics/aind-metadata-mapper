@@ -87,7 +87,7 @@ class CamstimEphysSessionEtl(
         self.recording_dir = get_single_oebin_path(self.session_path).parent
 
         self.motor_locs_path = (
-            self.session_path / f"*.motor-locs.csv"
+            self.session_path / "*.motor-locs.csv"
         )
 
         pkl_paths = list(self.session_path.rglob("*.behavior.pkl")) + list(
@@ -124,10 +124,10 @@ class CamstimEphysSessionEtl(
         )
 
         self.sync_path = next(
-            self.session_path.rglob(f"*.sync")
+            self.session_path.rglob("*.sync")
         )
         platform_path = next(
-            self.session_path.rglob(f"*platform*.json")
+            self.session_path.rglob("*platform*.json")
         )
         self.platform_json = json.loads(platform_path.read_text())
         self.project_name = self.platform_json["project"]
