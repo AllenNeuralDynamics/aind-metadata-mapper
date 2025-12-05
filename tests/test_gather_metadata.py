@@ -17,130 +17,11 @@ from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 
-from aind_metadata_mapper.gather_metadata import GatherMetadataJob, _metadata_service_helper
+from aind_metadata_mapper import utils
+from aind_metadata_mapper.gather_metadata import GatherMetadataJob
 from aind_metadata_mapper.models import JobSettings
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
-
-
-class TestMetadataServiceHelper(unittest.TestCase):
-    """Tests for _metadata_service_helper function"""
-
-    @patch("aind_metadata_mapper.gather_metadata.requests.get")
-    def test_metadata_service_helper_status_200(self, mock_get):
-        """Test helper with successful 200 status"""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"test": "data", "value": 123}
-        mock_get.return_value = mock_response
-
-        result = _metadata_service_helper("http://test.com/api")
-
-        self.assertEqual(result, {"test": "data", "value": 123})
-        mock_get.assert_called_once_with("http://test.com/api")
-        mock_response.json.assert_called_once()
-
-    @patch("aind_metadata_mapper.gather_metadata.requests.get")
-    def test_metadata_service_helper_status_400(self, mock_get):
-        """Test helper with 400 status (invalid object but still returned)"""
-        mock_response = MagicMock()
-        mock_response.status_code = 400
-        mock_response.json.return_value = {"error": "invalid", "details": "bad request"}
-        mock_get.return_value = mock_response
-
-        result = _metadata_service_helper("http://test.com/api")
-
-        self.assertEqual(result, {"error": "invalid", "details": "bad request"})
-        mock_get.assert_called_once_with("http://test.com/api")
-
-    @patch("aind_metadata_mapper.gather_metadata.logging.error")
-    @patch("aind_metadata_mapper.gather_metadata.requests.get")
-    def test_metadata_service_helper_status_404(self, mock_get, mock_log_error):
-        """Test helper with 404 status"""
-        mock_response = MagicMock()
-        mock_response.status_code = 404
-        mock_get.return_value = mock_response
-
-        result = _metadata_service_helper("http://test.com/notfound")
-
-        self.assertIsNone(result)
-        mock_log_error.assert_called_once()
-        self.assertIn("404", str(mock_log_error.call_args))
-
-    @patch("aind_metadata_mapper.gather_metadata.logging.error")
-    @patch("aind_metadata_mapper.gather_metadata.requests.get")
-    def test_metadata_service_helper_status_500(self, mock_get, mock_log_error):
-        """Test helper with 500 status"""
-        mock_response = MagicMock()
-        mock_response.status_code = 500
-        mock_get.return_value = mock_response
-
-        result = _metadata_service_helper("http://test.com/error")
-
-        self.assertIsNone(result)
-        mock_log_error.assert_called_once()
-        self.assertIn("500", str(mock_log_error.call_args))
-
-    @patch("aind_metadata_mapper.gather_metadata.logging.error")
-    @patch("aind_metadata_mapper.gather_metadata.requests.get")
-    def test_metadata_service_helper_request_exception(self, mock_get, mock_log_error):
-        """Test helper when request raises exception"""
-        mock_get.side_effect = Exception("Connection failed")
-
-        result = _metadata_service_helper("http://test.com/timeout")
-
-        self.assertIsNone(result)
-        mock_log_error.assert_called_once()
-        self.assertIn("Connection failed", str(mock_log_error.call_args))
-
-    @patch("aind_metadata_mapper.gather_metadata.logging.error")
-    @patch("aind_metadata_mapper.gather_metadata.requests.get")
-    def test_metadata_service_helper_json_decode_error(self, mock_get, mock_log_error):
-        """Test helper when json() raises exception"""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.side_effect = ValueError("Invalid JSON")
-        mock_get.return_value = mock_response
-
-        result = _metadata_service_helper("http://test.com/invalid")
-
-        self.assertIsNone(result)
-        mock_log_error.assert_called_once()
-        self.assertIn("Invalid JSON", str(mock_log_error.call_args))
-
-    @patch("aind_metadata_mapper.gather_metadata.requests.get")
-    def test_metadata_service_helper_empty_response(self, mock_get):
-        """Test helper with empty response data"""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {}
-        mock_get.return_value = mock_response
-
-        result = _metadata_service_helper("http://test.com/empty")
-
-        self.assertEqual(result, {})
-
-    @patch("aind_metadata_mapper.gather_metadata.requests.get")
-    def test_metadata_service_helper_complex_response(self, mock_get):
-        """Test helper with complex nested response"""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "data": {
-                "nested": [1, 2, 3],
-                "object": {"key": "value"},
-            },
-            "metadata": {
-                "timestamp": "2023-01-01T00:00:00Z",
-            },
-        }
-        mock_get.return_value = mock_response
-
-        result = _metadata_service_helper("http://test.com/complex")
-
-        self.assertIsNotNone(result)
-        self.assertEqual(result["data"]["nested"], [1, 2, 3])
-        self.assertEqual(result["data"]["object"]["key"], "value")
 
 
 class TestGatherMetadataJob(unittest.TestCase):
@@ -482,31 +363,25 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertEqual(len(investigators), 0)
 
-    @patch("requests.get")
-    @patch("logging.error")
-    def test_get_funding_http_error(self, mock_error, mock_get):
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_get_funding_http_error(self, mock_helper):
         """Test get_funding with HTTP error"""
-        mock_response = MagicMock()
-        mock_response.status_code = 404
-        mock_get.return_value = mock_response
+        mock_helper.return_value = None
 
         funding, investigators = self.job.get_funding()
 
         self.assertEqual(funding, [])
         self.assertEqual(investigators, [])
-        mock_error.assert_called()
 
-    @patch("requests.get")
-    @patch("logging.error")
-    def test_get_funding_request_exception(self, mock_error, mock_get):
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_get_funding_request_exception(self, mock_helper):
         """Test get_funding with request exception"""
-        mock_get.side_effect = Exception("Network error")
+        mock_helper.return_value = None
 
         funding, investigators = self.job.get_funding()
 
         self.assertEqual(funding, [])
         self.assertEqual(investigators, [])
-        mock_error.assert_called()
 
     # Tests for _write_json_file method
     @patch("builtins.open", new_callable=mock_open)
@@ -593,60 +468,49 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get_file.assert_called_once_with(file_name="subject.json")
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("requests.get")
-    def test_get_subject_api_success(self, mock_get, mock_file_exists):
+    @patch("aind_metadata_mapper.utils.get_subject")
+    def test_get_subject_api_success(self, mock_get_subject, mock_file_exists):
         """Test get_subject when downloading from API successfully"""
         mock_file_exists.return_value = False
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"subject_id": "123456"}
-        mock_get.return_value = mock_response
+        mock_get_subject.return_value = {"subject_id": "123456"}
 
         result = self.job.get_subject()
 
         self.assertEqual(result, {"subject_id": "123456"})
-        mock_get.assert_called_once_with("http://test-service.com/api/v2/subject/123456")
+        mock_get_subject.assert_called_once_with("123456", base_url="http://test-service.com/api/v2/subject/")
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("requests.get")
-    def test_get_subject_api_404(self, mock_get, mock_file_exists):
+    @patch("aind_metadata_mapper.utils.get_subject")
+    def test_get_subject_api_404(self, mock_get_subject, mock_file_exists):
         """Test get_subject when subject not found in API"""
         mock_file_exists.return_value = False
-        mock_response = MagicMock()
-        mock_response.status_code = 500
-        mock_response.json.return_value = {"error": "Subject not found"}
-        mock_get.return_value = mock_response
+        mock_get_subject.return_value = None
 
         result = self.job.get_subject()
 
         self.assertIsNone(result)
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("requests.get")
-    def test_get_subject_api_other_error(self, mock_get, mock_file_exists):
+    @patch("aind_metadata_mapper.utils.get_subject")
+    def test_get_subject_api_other_error(self, mock_get_subject, mock_file_exists):
         """Test get_subject when API returns other error"""
         mock_file_exists.return_value = False
-        mock_response = MagicMock()
-        mock_response.status_code = 503
-        mock_response.json.return_value = {"error": "Server error"}
-        mock_get.return_value = mock_response
+        mock_get_subject.return_value = None
 
         result = self.job.get_subject()
 
         self.assertIsNone(result)
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("requests.get")
-    @patch("logging.error")
-    def test_get_subject_api_exception(self, mock_log_error, mock_get, mock_file_exists):
+    @patch("aind_metadata_mapper.utils.get_subject")
+    def test_get_subject_api_exception(self, mock_get_subject, mock_file_exists):
         """Test get_subject when API request raises exception"""
         mock_file_exists.return_value = False
-        mock_get.side_effect = Exception("Network error")
+        mock_get_subject.return_value = None
 
         result = self.job.get_subject()
 
         self.assertIsNone(result)
-        mock_log_error.assert_called_once()
 
     # Tests for get_procedures method
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
@@ -683,60 +547,49 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get_file.assert_called_once_with(file_name="procedures.json")
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("requests.get")
-    def test_get_procedures_api_success(self, mock_get, mock_file_exists):
+    @patch("aind_metadata_mapper.utils.get_procedures")
+    def test_get_procedures_api_success(self, mock_get_procedures, mock_file_exists):
         """Test get_procedures when downloading from API successfully"""
         mock_file_exists.return_value = False
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"procedures": "data"}
-        mock_get.return_value = mock_response
+        mock_get_procedures.return_value = {"procedures": "data"}
 
         result = self.job.get_procedures(subject_id="123456")
 
         self.assertEqual(result, {"procedures": "data"})
-        mock_get.assert_called_once_with("http://test-service.com/api/v2/procedures/123456")
+        mock_get_procedures.assert_called_once_with("123456", base_url="http://test-service.com/api/v2/procedures/")
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("requests.get")
-    def test_get_procedures_api_404(self, mock_get, mock_file_exists):
+    @patch("aind_metadata_mapper.utils.get_procedures")
+    def test_get_procedures_api_404(self, mock_get_procedures, mock_file_exists):
         """Test get_procedures when procedures not found in API"""
         mock_file_exists.return_value = False
-        mock_response = MagicMock()
-        mock_response.status_code = 500
-        mock_response.json.return_value = {"error": "Procedures not found"}
-        mock_get.return_value = mock_response
+        mock_get_procedures.return_value = None
 
         result = self.job.get_procedures(subject_id="123456")
 
         self.assertIsNone(result)
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("requests.get")
-    def test_get_procedures_api_other_status(self, mock_get, mock_file_exists):
+    @patch("aind_metadata_mapper.utils.get_procedures")
+    def test_get_procedures_api_other_status(self, mock_get_procedures, mock_file_exists):
         """Test get_procedures when API returns other status code"""
         mock_file_exists.return_value = False
-        mock_response = MagicMock()
-        mock_response.status_code = 503
-        mock_response.json.return_value = {"error": "Server error"}
-        mock_get.return_value = mock_response
+        mock_get_procedures.return_value = None
 
         result = self.job.get_procedures(subject_id="123456")
 
         self.assertIsNone(result)
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("requests.get")
-    @patch("logging.error")
-    def test_get_procedures_api_exception(self, mock_log_error, mock_get, mock_file_exists):
+    @patch("aind_metadata_mapper.utils.get_procedures")
+    def test_get_procedures_api_exception(self, mock_get_procedures, mock_file_exists):
         """Test get_procedures when API request raises exception"""
         mock_file_exists.return_value = False
-        mock_get.side_effect = Exception("Network error")
+        mock_get_procedures.return_value = None
 
         result = self.job.get_procedures(subject_id="123456")
 
         self.assertIsNone(result)
-        mock_log_error.assert_called_once()
 
     # Tests for other metadata getter methods
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")

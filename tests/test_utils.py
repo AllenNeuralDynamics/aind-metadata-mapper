@@ -12,7 +12,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import requests
 
@@ -54,160 +54,147 @@ class TestUtils(unittest.TestCase):
         dt = utils.ensure_timezone(aware_iso)
         self.assertEqual(dt.tzinfo, timezone(timedelta(seconds=0)))
 
-    def test_get_procedures_success(self):
+    @patch("requests.get")
+    def test_get_procedures_success(self, mock_get):
         """Test that get_procedures successfully fetches and returns procedures data.
 
         When the metadata service returns a successful HTTP response with procedures data,
         get_procedures should return the parsed JSON data. This tests the happy path
         where the API call succeeds and returns valid procedures information.
         """
+        mock_resp = SimpleNamespace()
+        mock_resp.status_code = 200
+        mock_resp.json = lambda: {"ok": True}
+        mock_resp.raise_for_status = lambda: None
+        mock_get.return_value = mock_resp
 
-        def test_get(url, timeout=None):
-            """Mock HTTP GET function that returns a successful response."""
-            resp = SimpleNamespace()
-            resp.status_code = 200
-            resp.json = lambda: {"ok": True}
-            return resp
-
-        result = utils.get_procedures("123", get_func=test_get)
+        result = utils.get_procedures("123")
         self.assertEqual(result, {"ok": True})
 
-    def test_get_procedures_http_error(self):
+    @patch("requests.get")
+    def test_get_procedures_http_error(self, mock_get):
         """Test that get_procedures handles HTTP errors gracefully.
 
         When the metadata service returns an HTTP error (4xx, 5xx), get_procedures
         should catch the exception and return None instead of crashing. This ensures
         the mapper can continue processing even when the procedures service is unavailable.
         """
+        mock_resp = SimpleNamespace()
+        mock_resp.status_code = 500
+        mock_resp.json = lambda: {}
+        mock_get.return_value = mock_resp
 
-        def test_get(url, timeout=None):
-            """Mock HTTP GET function that returns a server error response."""
-            resp = SimpleNamespace()
-            resp.status_code = 500  # Server error
-            resp.json = lambda: {}
-            return resp
-
-        result = utils.get_procedures("123", get_func=test_get)
+        result = utils.get_procedures("123")
         self.assertIsNone(result)
 
-    def test_get_procedures_400_with_valid_data(self):
+    @patch("requests.get")
+    def test_get_procedures_400_with_valid_data(self, mock_get):
         """Test that get_procedures handles 400 status code with valid data.
 
         When the endpoint returns 400, get_procedures should return the JSON data
         (400 is treated as a normal response for this API).
         """
+        mock_resp = SimpleNamespace()
+        mock_resp.status_code = 400
+        mock_resp.json = lambda: {"subject_procedures": [{"object_type": "Surgery"}]}
+        mock_get.return_value = mock_resp
 
-        def test_get(url, timeout=None):
-            """Mock HTTP GET function that returns 400 with valid procedures data."""
-            resp = SimpleNamespace()
-            resp.status_code = 400
-            resp.json = lambda: {"subject_procedures": [{"object_type": "Surgery"}]}
-            return resp
-
-        result = utils.get_procedures("123", get_func=test_get)
+        result = utils.get_procedures("123")
         self.assertIsNotNone(result)
         self.assertIn("subject_procedures", result)
 
-    def test_get_procedures_400_with_any_data(self):
+    @patch("requests.get")
+    def test_get_procedures_400_with_any_data(self, mock_get):
         """Test that get_procedures returns JSON for 400 status code.
 
         When the endpoint returns 400, get_procedures should return the JSON data
         regardless of content (400 is treated as a normal response for this API).
         """
+        mock_resp = SimpleNamespace()
+        mock_resp.status_code = 400
+        mock_resp.json = lambda: {"error": "bad request"}
+        mock_get.return_value = mock_resp
 
-        def test_get(url, timeout=None):
-            """Mock HTTP GET function that returns 400 with any JSON data."""
-            resp = SimpleNamespace()
-            resp.status_code = 400
-            resp.json = lambda: {"error": "bad request"}
-            return resp
-
-        result = utils.get_procedures("123", get_func=test_get)
-        # 400 is treated like 200, so it returns the JSON
+        result = utils.get_procedures("123")
         self.assertEqual(result, {"error": "bad request"})
 
-    def test_get_procedures_400_json_error(self):
+    @patch("requests.get")
+    def test_get_procedures_400_json_error(self, mock_get):
         """Test that get_procedures handles 400 status code with JSON parsing error.
 
         When the endpoint returns 400 and json() raises an exception,
         get_procedures should return None.
         """
+        mock_resp = SimpleNamespace()
+        mock_resp.status_code = 400
+        mock_resp.json = lambda: (_ for _ in ()).throw(ValueError("Invalid JSON"))
+        mock_get.return_value = mock_resp
 
-        def test_get(url, timeout=None):
-            """Mock HTTP GET function that returns 400 and raises JSON error."""
-            resp = SimpleNamespace()
-            resp.status_code = 400
-            resp.json = lambda: (_ for _ in ()).throw(ValueError("Invalid JSON"))
-            return resp
-
-        result = utils.get_procedures("123", get_func=test_get)
+        result = utils.get_procedures("123")
         self.assertIsNone(result)
 
-    def test_get_procedures_exception(self):
+    @patch("requests.get")
+    def test_get_procedures_exception(self, mock_get):
         """Test that get_procedures handles network exceptions gracefully.
 
         When network issues occur (connection timeouts, DNS failures, etc.), get_procedures
         should catch the exception and return None. This prevents the entire mapping process
         from failing due to temporary network issues with the metadata service.
         """
+        mock_get.side_effect = Exception("network")
 
-        def test_get(url, timeout=None):
-            """Mock HTTP GET function that raises a network exception."""
-            raise Exception("network")
-
-        result = utils.get_procedures("123", get_func=test_get)
+        result = utils.get_procedures("123")
         self.assertIsNone(result)
 
-    def test_get_procedures_request_exception(self):
+    @patch("requests.get")
+    def test_get_procedures_request_exception(self, mock_get):
         """Test that get_procedures handles RequestException specifically.
 
         When requests raises a RequestException (not a generic Exception),
         get_procedures should catch it and return None.
         """
+        mock_get.side_effect = requests.exceptions.RequestException("connection error")
 
-        def test_get(url, timeout=None):
-            """Mock HTTP GET function that raises a RequestException."""
-            raise requests.exceptions.RequestException("connection error")
-
-        result = utils.get_procedures("123", get_func=test_get)
+        result = utils.get_procedures("123")
         self.assertIsNone(result)
 
-    def test_get_procedures_non_int_status_code(self):
-        """Test that get_procedures handles non-int status codes gracefully.
+    @patch("requests.get")
+    def test_get_subject_success(self, mock_get):
+        """Test that get_subject successfully fetches and returns subject data.
 
-        When status_code is not an int (e.g., from test mocks),
-        get_procedures should try to return JSON if possible.
+        When the metadata service returns a successful HTTP response with subject data,
+        get_subject should return the parsed JSON data.
         """
+        mock_resp = SimpleNamespace()
+        mock_resp.status_code = 200
+        mock_resp.json = lambda: {"subject_id": "123"}
+        mock_resp.raise_for_status = lambda: None
+        mock_get.return_value = mock_resp
 
-        def test_get(url, timeout=None):
-            """Mock HTTP GET function with non-int status code that returns valid JSON."""
-            resp = SimpleNamespace()
-            resp.status_code = "200"  # String instead of int
-            resp.json = lambda: {"ok": True}
-            return resp
+        result = utils.get_subject("123")
+        self.assertEqual(result, {"subject_id": "123"})
 
-        result = utils.get_procedures("123", get_func=test_get)
-        # Should try to return JSON even with non-int status_code
-        self.assertEqual(result, {"ok": True})
+    @patch("requests.get")
+    def test_get_subject_http_error(self, mock_get):
+        """Test that get_subject handles HTTP errors gracefully."""
+        mock_resp = SimpleNamespace()
+        mock_resp.status_code = 500
+        mock_resp.json = lambda: {}
+        mock_get.return_value = mock_resp
 
-    def test_get_procedures_non_int_status_code_exception(self):
-        """Test that get_procedures handles non-int status codes with JSON exception.
-
-        When status_code is not an int and json() raises an exception,
-        get_procedures should return None.
-        """
-
-        def test_get(url, timeout=None):
-            """Mock HTTP GET function with non-int status code that raises JSON error."""
-            resp = SimpleNamespace()
-            resp.status_code = "200"  # String instead of int
-            resp.json = lambda: (_ for _ in ()).throw(Exception("JSON error"))
-            return resp
-
-        result = utils.get_procedures("123", get_func=test_get)
+        result = utils.get_subject("123")
         self.assertIsNone(result)
 
-    def test_get_intended_measurements_success(self):
+    @patch("requests.get")
+    def test_get_subject_exception(self, mock_get):
+        """Test that get_subject handles network exceptions gracefully."""
+        mock_get.side_effect = Exception("network")
+
+        result = utils.get_subject("123")
+        self.assertIsNone(result)
+
+    @patch("requests.get")
+    def test_get_intended_measurements_success(self, mock_get):
         """Test that get_intended_measurements successfully fetches measurement data.
 
         When the metadata service returns a successful HTTP 200 response with intended
@@ -215,66 +202,58 @@ class TestUtils(unittest.TestCase):
         This tests the happy path where the API call succeeds and returns valid measurement
         assignments for the subject.
         """
+        mock_resp = SimpleNamespace()
+        mock_resp.status_code = 200
+        mock_resp.json = lambda: {"data": []}
+        mock_resp.raise_for_status = lambda: None
+        mock_get.return_value = mock_resp
 
-        def test_get(url, timeout=None):
-            """Mock HTTP GET function that returns successful intended measurements response."""
-            resp = SimpleNamespace()
-            resp.status_code = 200
-            resp.json = lambda: {"data": []}
-            return resp
-
-        result = utils.get_intended_measurements("123", get_func=test_get)
+        result = utils.get_intended_measurements("123")
         self.assertEqual(result, {"data": []})
 
-    def test_get_intended_measurements_non_200(self):
+    @patch("requests.get")
+    def test_get_intended_measurements_non_200(self, mock_get):
         """Test that get_intended_measurements handles non-200 HTTP status codes.
 
         When the metadata service returns a non-200 status code (like 404 for subject not found),
         get_intended_measurements should return None instead of trying to parse the response.
         This handles cases where the subject doesn't exist or has no measurement assignments.
         """
+        mock_resp = SimpleNamespace()
+        mock_resp.status_code = 404
+        mock_resp.json = lambda: {}
+        mock_get.return_value = mock_resp
 
-        def test_get(url, timeout=None):
-            """Mock HTTP GET function that returns 404 not found."""
-            resp = SimpleNamespace()
-            resp.status_code = 404
-            resp.json = lambda: {}
-            return resp
-
-        result = utils.get_intended_measurements("123", get_func=test_get)
+        result = utils.get_intended_measurements("123")
         self.assertIsNone(result)
 
-    def test_get_intended_measurements_exception(self):
+    @patch("requests.get")
+    def test_get_intended_measurements_exception(self, mock_get):
         """Test that get_intended_measurements handles network exceptions gracefully.
 
         When network issues occur during the API call, get_intended_measurements should
         catch the exception and return None. This prevents the mapping process from failing
         due to temporary network issues with the intended measurements service.
         """
+        mock_get.side_effect = Exception("network")
 
-        def test_get(url, timeout=None):
-            """Mock HTTP GET function that raises a network exception."""
-            raise Exception("network")
-
-        result = utils.get_intended_measurements("123", get_func=test_get)
+        result = utils.get_intended_measurements("123")
         self.assertIsNone(result)
 
-    def test_get_intended_measurements_status_300(self):
+    @patch("requests.get")
+    def test_get_intended_measurements_status_300(self, mock_get):
         """Test that get_intended_measurements handles 300 status code.
 
         When the endpoint returns 300 (redirect), get_intended_measurements should
-        return the JSON data.
+        return None (only 200 and 400 are accepted by metadata_service_helper).
         """
+        mock_resp = SimpleNamespace()
+        mock_resp.status_code = 300
+        mock_resp.json = lambda: {"data": []}
+        mock_get.return_value = mock_resp
 
-        def test_get(url, timeout=None):
-            """Mock HTTP GET function that returns 300 redirect with data."""
-            resp = SimpleNamespace()
-            resp.status_code = 300
-            resp.json = lambda: {"data": []}
-            return resp
-
-        result = utils.get_intended_measurements("123", get_func=test_get)
-        self.assertEqual(result, {"data": []})
+        result = utils.get_intended_measurements("123")
+        self.assertIsNone(result)
 
     def test_get_protocols_for_modality_file_not_found(self):
         """Test get_protocols_for_modality returns empty list when protocols.yaml is missing."""

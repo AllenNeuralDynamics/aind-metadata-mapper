@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 INSTRUMENT_BASE_URL = "http://aind-metadata-service/api/v2/instrument"
 PROCEDURES_BASE_URL = "http://aind-metadata-service/api/v2/procedures"
+SUBJECT_BASE_URL = "http://aind-metadata-service/api/v2/subject"
 
 
 def ensure_timezone(dt):
@@ -44,91 +45,109 @@ def ensure_timezone(dt):
     return dt
 
 
-def get_procedures(subject_id: str, get_func=None) -> Optional[dict]:
-    """Fetch procedures data for a subject from the metadata service.
+def metadata_service_helper(url: str, timeout: int = 60) -> Optional[dict]:
+    """Fetch metadata from a service URL.
 
-    Queries {PROCEDURES_BASE_URL}/{subject_id} to get all procedures performed on a subject.
+    Parameters
+    ----------
+    url : str
+        Full URL to fetch metadata from.
+    timeout : int
+        Request timeout in seconds. Default is 60.
+
+    Returns
+    -------
+    Optional[dict]
+        Metadata as a dictionary, or None if error occurs.
+    """
+    try:
+        response = requests.get(url, timeout=timeout)
+        if response.status_code == 400:
+            return response.json()
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error retrieving metadata from {url}: {e}")
+        return None
+
+
+def get_subject(subject_id: str, base_url: str = SUBJECT_BASE_URL) -> Optional[dict]:
+    """Fetch subject data from the metadata service.
 
     Parameters
     ----------
     subject_id : str
         The subject ID to query.
-    get_func : callable, optional
-        Function to use for HTTP GET requests. If None, uses requests.get.
-        Useful for testing without making real network calls.
+    base_url : str
+        Base URL for the subject endpoint. Defaults to SUBJECT_BASE_URL.
+
+    Returns
+    -------
+    Optional[dict]
+        Subject data dictionary, or None if the request fails.
+    """
+    try:
+        url_base = base_url.rstrip("/") + "/"
+        url = urljoin(url_base, subject_id.lstrip("/"))
+        result = metadata_service_helper(url)
+        if result is None:
+            logger.warning(f"Could not fetch subject {subject_id}")
+        return result
+    except Exception as e:
+        logger.warning(f"Unexpected error fetching subject {subject_id}: {e}")
+        return None
+
+
+def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL) -> Optional[dict]:
+    """Fetch procedures data for a subject from the metadata service.
+
+    Parameters
+    ----------
+    subject_id : str
+        The subject ID to query.
+    base_url : str
+        Base URL for the procedures endpoint. Defaults to PROCEDURES_BASE_URL.
 
     Returns
     -------
     Optional[dict]
         Procedures data dictionary, or None if the request fails.
     """
-    if get_func is None:  # pragma: no cover
-        get_func = requests.get
-
     try:
-        # Ensure base URL ends with '/' for urljoin to work correctly
-        base_url = PROCEDURES_BASE_URL.rstrip("/") + "/"
-        url = urljoin(base_url, subject_id.lstrip("/"))
-        response = get_func(url, timeout=60)
-
-        # Handle 400 status codes (normal for this API) and successful responses (2xx)
-        status_code = response.status_code
-        if isinstance(status_code, int):
-            if status_code == 400 or (200 <= status_code < 300):
-                return response.json()
-        else:
-            # For test mocks that don't set status_code as int, try to return JSON
-            # This handles cases where the mock response is successful
-            try:
-                return response.json()
-            except Exception:
-                pass
-
-        # For other status codes, log warning and return None
-        logger.warning(f"Could not fetch procedures for subject {subject_id} " f"(status {status_code})")
-        return None
-    except requests.exceptions.RequestException as e:
-        logger.warning(f"Could not fetch procedures for subject {subject_id}: {e}")
-        return None
+        url_base = base_url.rstrip("/") + "/"
+        url = urljoin(url_base, subject_id.lstrip("/"))
+        result = metadata_service_helper(url)
+        if result is None:
+            logger.warning(f"Could not fetch procedures for subject {subject_id}")
+        return result
     except Exception as e:
         logger.warning(f"Unexpected error fetching procedures for subject {subject_id}: {e}")
         return None
 
 
-def get_intended_measurements(subject_id: str, get_func=None) -> Optional[dict]:
+def get_intended_measurements(
+    subject_id: str, base_url: str = "http://aind-metadata-service/intended_measurements"
+) -> Optional[dict]:
     """Fetch intended measurements for a subject from the metadata service.
-
-    Queries http://aind-metadata-service/intended_measurements/{subject_id}
-    to get the measurement assignments.
 
     Parameters
     ----------
     subject_id : str
         The subject ID to query.
-    get_func : callable, optional
-        Function to use for HTTP GET requests. If None, uses requests.get.
-        Useful for testing without making real network calls.
+    base_url : str
+        Base URL for the intended measurements endpoint.
 
     Returns
     -------
     Optional[dict]
         Intended measurements data dictionary, or None if the request fails.
     """
-    if get_func is None:  # pragma: no cover
-        get_func = requests.get
-
     try:
-        url = f"http://aind-metadata-service/intended_measurements/{subject_id}"
-        response = get_func(url, timeout=5)
-
-        if response.status_code not in [200, 300]:
-            logger.warning(
-                f"Could not fetch intended measurements for subject {subject_id} " f"(status {response.status_code})"
-            )
-            return None
-
-        return response.json()
-
+        url = f"{base_url}/{subject_id}"
+        result = metadata_service_helper(url, timeout=5)
+        if result is None:
+            logger.warning(f"Could not fetch intended measurements for subject {subject_id}")
+        return result
     except Exception as e:
         logger.warning(f"Error fetching intended measurements for subject {subject_id}: {e}")
         return None
@@ -168,7 +187,10 @@ def get_protocols_for_modality(modality):
 
 
 def get_instrument(
-    instrument_id: str, modification_date: Optional[str] = None, suppress_warning: bool = False
+    instrument_id: str,
+    modification_date: Optional[str] = None,
+    suppress_warning: bool = False,
+    base_url: str = INSTRUMENT_BASE_URL,
 ) -> Optional[dict]:  # pragma: no cover
     """Get instrument.
 
@@ -182,43 +204,48 @@ def get_instrument(
         Optional modification date (YYYY-MM-DD format). If None, returns latest record.
     suppress_warning : bool
         If True, suppress warning when modification_date not found.
+    base_url : str
+        Base URL for the instrument endpoint. Defaults to INSTRUMENT_BASE_URL.
 
     Returns
     -------
     Optional[dict]
         Instrument data as dict, or None if not found.
     """
-    response = requests.get(
-        f"{INSTRUMENT_BASE_URL}/{instrument_id}",
-        params={"partial_match": True},
-    )
-    if response.status_code == 404:
-        return None
-    # GET 400 returns valid JSON data (API quirk)
-    records = response.json()
-    # Find records matching instrument_id
-    matching_records = [r for r in records if r.get("modification_date") and r.get("instrument_id") == instrument_id]
-    if not matching_records:
-        return None
+    try:
+        url_base = base_url.rstrip("/") + "/"
+        url = urljoin(url_base, instrument_id.lstrip("/"))
+        url_with_params = f"{url}?partial_match=true"
+        result = metadata_service_helper(url_with_params)
+        if result is None:
+            logger.warning(f"Could not fetch instrument {instrument_id}")
+            return None
 
-    if modification_date:
-        # Return record matching specific date
-        for record in matching_records:
-            if record.get("modification_date") == modification_date:
-                return record
-        # No matching date found - log available dates (unless suppressed)
-        if not suppress_warning:
-            available_dates = sorted(
-                set(r.get("modification_date") for r in matching_records if r.get("modification_date"))
-            )
-            logger.warning(
-                f"No record found for instrument_id '{instrument_id}' with modification_date '{modification_date}'. "
-                f"Available dates: {available_dates}"
-            )
+        records = result if isinstance(result, list) else [result]
+        matching_records = [
+            r for r in records if r.get("modification_date") and r.get("instrument_id") == instrument_id
+        ]
+        if not matching_records:
+            return None
+
+        if modification_date:
+            for record in matching_records:
+                if record.get("modification_date") == modification_date:
+                    return record
+            if not suppress_warning:
+                available_dates = sorted(
+                    set(r.get("modification_date") for r in matching_records if r.get("modification_date"))
+                )
+                logger.warning(
+                    f"No record found for instrument_id '{instrument_id}' with modification_date '{modification_date}'. "
+                    f"Available dates: {available_dates}"
+                )
+            return None
+        else:
+            return sorted(matching_records, key=lambda record: record["modification_date"])[-1]
+    except Exception as e:
+        logger.warning(f"Unexpected error fetching instrument {instrument_id}: {e}")
         return None
-    else:
-        # Return latest record
-        return sorted(matching_records, key=lambda record: record["modification_date"])[-1]
 
 
 def save_instrument(instrument_model: instrument.Instrument, replace: bool = False) -> None:  # pragma: no cover

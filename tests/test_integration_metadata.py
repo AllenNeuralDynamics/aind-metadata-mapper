@@ -530,13 +530,9 @@ class TestIntegrationMetadata(unittest.TestCase):
                             with patch("logging.info") as mock_log_info:
                                 test_job.run_job()
 
-        mock_build.assert_called_once_with(
-            acquisition_start_time=acq_start_time.isoformat(), subject_id="804670"
-        )
+        mock_build.assert_called_once_with(acquisition_start_time=acq_start_time.isoformat(), subject_id="804670")
         log_calls = [call[0][0] for call in mock_log_info.call_args_list]
-        self.assertTrue(
-            any("No acquisition_start_time found in acquisition metadata" in call for call in log_calls)
-        )
+        self.assertTrue(any("No acquisition_start_time found in acquisition metadata" in call for call in log_calls))
 
     @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_does_file_exist_in_user_defined_dir")
     @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_get_file_from_user_defined_directory")

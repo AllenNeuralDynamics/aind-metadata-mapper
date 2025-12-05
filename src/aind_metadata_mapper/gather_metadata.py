@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import urljoin
 
-import requests
 from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema.core.data_description import DataDescription
 from aind_data_schema.core.instrument import Instrument
@@ -23,38 +22,10 @@ from aind_data_schema_models.data_name_patterns import DataLevel
 from aind_data_schema_models.organizations import Organization
 from pydantic import ValidationError
 
+from aind_metadata_mapper import utils
 from aind_metadata_mapper.base import MapperJobSettings
 from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
-
-
-def _metadata_service_helper(url: str) -> Optional[dict]:
-    """
-    Helper function to get metadata from a service URL
-    Parameters
-    ----------
-    url : str
-        Full URL to fetch metadata from
-
-    Returns
-    -------
-    dict
-        Metadata as a dictionary, or empty dict if error occurs
-    """
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            # valid object
-            return response.json()
-        elif response.status_code == 400:
-            # invalid object, accept here and let validation handle whether to raise an error later
-            return response.json()
-        else:
-            logging.error(f"Failed to retrieve metadata from {url} (status: {response.status_code})")
-            return None
-    except Exception as e:
-        logging.error(f"Error retrieving metadata from {url}: {e}")
-        return None
 
 
 class GatherMetadataJob:
@@ -174,7 +145,7 @@ class GatherMetadataJob:
             return [], []
 
         funding_url = f"{self.settings.metadata_service_url}" f"/api/v2/funding/{self.settings.project_name}"
-        funding_info = _metadata_service_helper(funding_url)
+        funding_info = utils.metadata_service_helper(funding_url)
 
         if not funding_info:
             return [], []
@@ -267,12 +238,11 @@ class GatherMetadataJob:
                 f"{self.settings.subject_id} from "
                 f"{self.settings.metadata_service_url}"
             )
-            subject_url = urljoin(
+            base_url = urljoin(
                 self.settings.metadata_service_url,
-                f"{self.settings.metadata_service_subject_endpoint}{subject_id}",
+                self.settings.metadata_service_subject_endpoint,
             )
-
-            contents = _metadata_service_helper(subject_url)
+            contents = utils.get_subject(subject_id, base_url=base_url)
         else:
             logging.debug(f"Using existing {file_name}.")
             contents = self._get_file_from_user_defined_directory(file_name=file_name)
@@ -299,11 +269,11 @@ class GatherMetadataJob:
                 f"{self.settings.subject_id} from "
                 f"{self.settings.metadata_service_url}"
             )
-            procedures_url = urljoin(
+            base_url = urljoin(
                 self.settings.metadata_service_url,
-                f"{self.settings.metadata_service_procedures_endpoint}{subject_id}",
+                self.settings.metadata_service_procedures_endpoint,
             )
-            contents = _metadata_service_helper(procedures_url)
+            contents = utils.get_procedures(subject_id, base_url=base_url)
         else:
             logging.debug(f"Using existing {file_name}.")
             contents = self._get_file_from_user_defined_directory(file_name=file_name)
