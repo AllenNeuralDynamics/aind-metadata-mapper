@@ -203,7 +203,7 @@ class GatherMetadataJob:
             funding_source=funding_source,
             investigators=investigators,
             data_level=DataLevel.RAW,
-            subject_id=self.settings.subject_id,
+            subject_id=subject_id,
             tags=self.settings.data_description_settings.tags,
             group=self.settings.data_description_settings.group,
             restrictions=self.settings.data_description_settings.restrictions,
