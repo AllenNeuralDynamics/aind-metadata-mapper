@@ -232,12 +232,15 @@ def get_instrument(
             for record in matching_records:
                 if record.get("modification_date") == modification_date:
                     return record
+
+            # No matching record found
             if not suppress_warning:
                 available_dates = sorted(
                     set(r.get("modification_date") for r in matching_records if r.get("modification_date"))
                 )
                 logger.warning(
-                    f"No record found for instrument_id '{instrument_id}' with modification_date '{modification_date}'. "
+                    f"No record found for instrument_id '{instrument_id}' with "
+                    f"modification_date '{modification_date}'. "
                     f"Available dates: {available_dates}"
                 )
             return None

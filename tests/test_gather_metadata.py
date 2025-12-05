@@ -17,7 +17,6 @@ from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 
-from aind_metadata_mapper import utils
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
 from aind_metadata_mapper.models import JobSettings
 

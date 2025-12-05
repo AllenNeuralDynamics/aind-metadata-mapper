@@ -16,7 +16,14 @@ from unittest.mock import patch
 
 import requests
 
-from aind_metadata_mapper.utils import ensure_timezone, get_intended_measurements, get_procedures, get_protocols_for_modality, get_subject, prompt_for_string 
+from aind_metadata_mapper.utils import (
+    ensure_timezone,
+    get_intended_measurements,
+    get_procedures,
+    get_protocols_for_modality,
+    get_subject,
+    prompt_for_string,
+)
 
 
 class TestUtils(unittest.TestCase):
