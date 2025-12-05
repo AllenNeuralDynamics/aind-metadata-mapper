@@ -1,59 +1,28 @@
-"""Integration test for VR Foraging metadata collection."""
+"""Integration test for VR Foraging FIP metadata collection."""
 
-from datetime import datetime
-import json
 import logging
+import shutil
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, Mock
 
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-from aind_metadata_mapper.models import DataDescriptionSettings, JobSettings
+from aind_metadata_mapper.models import DataDescriptionSettings, InstrumentSettings, JobSettings
 
 logging.basicConfig(level=logging.INFO)
 
 # Set to False to use mock responses from tests/resources/ instead of the metadata service
-USE_METADATA_SERVICE = False
+USE_METADATA_SERVICE = True
 
 source_metadata_path = Path(__file__).parent
-tests_resources_path = Path(__file__).parent.parent.parent / "tests" / "resources"
-
-output_subfolder = Path(tempfile.mkdtemp(prefix="vr_foraging_test_"))
-
-
-def load_mock_response(filename: str):
-    """Load a mock response from tests/resources/metadata_service/"""
-    filepath = tests_resources_path / "metadata_service" / filename
-    with open(filepath, "r") as f:
-        return json.load(f)
-
-
-def mock_requests_get(url):
-    """Mock requests.get to return responses from local files"""
-    mock_response = Mock()
-
-    if "/subject/" in url:
-        mock_response.status_code = 200
-        mock_response.json.return_value = load_mock_response("subject_response.json")
-    elif "/procedures/" in url:
-        mock_response.status_code = 200
-        mock_response.json.return_value = load_mock_response("procedures_response.json")
-    elif "/funding/" in url:
-        mock_response.status_code = 200
-        mock_response.json.return_value = load_mock_response("funding_response.json")
-    else:
-        mock_response.status_code = 404
-        mock_response.json.return_value = {}
-
-    return mock_response
+output_subfolder = Path(tempfile.mkdtemp(prefix="vr_foraging_fip_test_"))
 
 
 def run_test():
     """Run the actual test logic"""
     print("\n" + "=" * 80)
-    print("INTEGRATION TEST: VR Foraging Metadata")
+    print("INTEGRATION TEST: VR Foraging FIP Metadata")
     print("=" * 80)
     print(f"Source metadata: {source_metadata_path}")
     print(f"Output directory: {output_subfolder}")
@@ -63,12 +32,11 @@ def run_test():
     settings = JobSettings(
         metadata_dir=str(source_metadata_path),
         output_dir=str(output_subfolder),
-        subject_id="828422",
         data_description_settings=DataDescriptionSettings(
             project_name="Cognitive flexibility in patch foraging",
-            modalities=[Modality.BEHAVIOR, Modality.BEHAVIOR_VIDEOS],
+            modalities=[Modality.BEHAVIOR, Modality.BEHAVIOR_VIDEOS, Modality.FIB],
         ),
-        acquisition_start_time=datetime.fromisoformat("2025-11-13T17:38:37.079861+00:00"),
+        instrument_settings=InstrumentSettings(instrument_id="13A"),
     )
 
     job = GatherMetadataJob(settings=settings)
@@ -143,17 +111,7 @@ def run_test():
 
 
 if __name__ == "__main__":
-    try:
-        if USE_METADATA_SERVICE:
-            # Run test with actual metadata service
-            run_test()
-        else:
-            # Run test with mocked responses from tests/resources/
-            print("Using mock responses from tests/resources/metadata_service/")
-            with patch("aind_metadata_mapper.gather_metadata.requests.get", side_effect=mock_requests_get):
-                run_test()
-    finally:
-        pass
-        # print(f"Cleaning up output directory: {output_subfolder}")
-        # shutil.rmtree(output_subfolder, ignore_errors=True)
-        # print("✓ Cleanup complete\n")
+    run_test()
+    print(f"Cleaning up output directory: {output_subfolder}")
+    shutil.rmtree(output_subfolder, ignore_errors=True)
+    print("✓ Cleanup complete\n")

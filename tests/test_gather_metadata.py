@@ -18,7 +18,7 @@ from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.models import DataDescriptionSettings, JobSettings
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
 
@@ -33,8 +33,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+            ),
             metadata_service_url="http://test-service.com",
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
@@ -64,8 +66,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir=None,
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         job = GatherMetadataJob(settings=job_settings)
@@ -91,8 +95,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
         job = GatherMetadataJob(settings=test_settings)
@@ -108,8 +114,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
             raise_if_invalid=True,
         )
@@ -129,8 +137,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
             raise_if_invalid=False,
         )
@@ -151,8 +161,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
         job = GatherMetadataJob(settings=test_settings)
@@ -169,8 +181,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
         job = GatherMetadataJob(settings=test_settings)
@@ -186,8 +200,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
         job = GatherMetadataJob(settings=test_settings)
@@ -203,8 +219,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id=None,
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
         job = GatherMetadataJob(settings=test_settings)
@@ -213,7 +231,10 @@ class TestGatherMetadataJob(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             job._validate_and_get_subject_id(acquisition)
 
-        self.assertIn("subject_id is required but not provided", str(context.exception))
+        self.assertIn(
+            "Either provide acquisition.json with subject_id, or provide subject_id in the settings.",
+            str(context.exception),
+        )
 
     @patch("os.makedirs")
     def test_validate_and_get_subject_id_mismatch_raises(self, mock_makedirs):
@@ -222,8 +243,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
             raise_if_invalid=True,
         )
@@ -244,8 +267,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
             raise_if_invalid=False,
         )
@@ -266,8 +291,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
         job = GatherMetadataJob(settings=test_settings)
@@ -285,8 +312,10 @@ class TestGatherMetadataJob(unittest.TestCase):
                 metadata_dir="/test",
                 output_dir="/test/output",
                 subject_id="test_subject",
-                project_name="",
-                modalities=[Modality.ECEPHYS],
+                data_description_settings=DataDescriptionSettings(
+                    project_name="",
+                    modalities=[Modality.ECEPHYS],
+                ),
                 acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
             )
         )
@@ -442,8 +471,10 @@ class TestGatherMetadataJob(unittest.TestCase):
                 metadata_dir="/test",
                 output_dir="/test/output",
                 subject_id="",
-                project_name="Test Project",
-                modalities=[Modality.ECEPHYS],
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Test Project",
+                    modalities=[Modality.ECEPHYS],
+                ),
                 acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
             )
         )
@@ -521,8 +552,10 @@ class TestGatherMetadataJob(unittest.TestCase):
                 metadata_dir="/test",
                 output_dir="/test/output",
                 subject_id="",
-                project_name="Test Project",
-                modalities=[Modality.ECEPHYS],
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Test Project",
+                    modalities=[Modality.ECEPHYS],
+                ),
                 acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
             )
         )
@@ -607,8 +640,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir=None,
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         job = GatherMetadataJob(settings=job_settings)
@@ -696,8 +731,10 @@ class TestGatherMetadataJob(unittest.TestCase):
                 metadata_dir="/test/metadata",
                 output_dir="/test/output",
                 subject_id="123456",
-                project_name="Test Project",
-                modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Test Project",
+                    modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+                ),
                 metadata_service_url="http://test-service.com",
                 raise_if_invalid=True,
                 acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
@@ -806,8 +843,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir=temp_dir,
             output_dir=output_dir,
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         test_job = GatherMetadataJob(settings=test_settings)
@@ -846,8 +885,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir=temp_dir,
             output_dir=output_dir,
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         test_job = GatherMetadataJob(settings=test_settings)
@@ -862,11 +903,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             acquisition1 = base_acquisition.copy()
             acquisition2 = base_acquisition.copy()
 
-            # Place acquisition files in output directory since that's where they're read from
-            with open(os.path.join(output_dir, "acquisition_789.json"), "w") as f:
+            with open(os.path.join(temp_dir, "acquisition_789.json"), "w") as f:
                 json.dump(acquisition1, f)
 
-            with open(os.path.join(output_dir, "acquisition_012.json"), "w") as f:
+            with open(os.path.join(temp_dir, "acquisition_012.json"), "w") as f:
                 json.dump(acquisition2, f)
 
             result = test_job.get_acquisition()
@@ -890,8 +930,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir=temp_dir,
             output_dir=output_dir,
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         test_job = GatherMetadataJob(settings=test_settings)
@@ -930,8 +972,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir=temp_dir,
             output_dir=output_dir,
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         test_job = GatherMetadataJob(settings=test_settings)
@@ -959,8 +1003,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir=temp_dir,
             output_dir=output_dir,
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
         test_job = GatherMetadataJob(settings=test_settings)
@@ -990,8 +1036,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="123456",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
             acquisition_start_time=None,
         )
         job = GatherMetadataJob(settings=job_settings)
