@@ -90,7 +90,7 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
 
     # Metadata settings
     subject_id: Optional[str] = Field(
-        default=...,
+        default=None,
         description=(
             "Subject ID. If acquisition.json is present, this will be overriden by the value"
             " in acquisition.json. If raise_if_invalid is True, the subject_id in both locations must match."
