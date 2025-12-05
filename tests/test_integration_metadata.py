@@ -1,4 +1,7 @@
-"""Integration tests for metadata gathering using real resource files"""
+"""Integration tests for metadata gathering using real resource files
+
+Tests in this file should use run_job()
+"""
 
 import json
 import os
@@ -108,86 +111,6 @@ class TestIntegrationMetadata(unittest.TestCase):
         # Test quality control
         quality_control = self._load_resource_file(V2_METADATA_DIR, "quality_control.json")
         self.assertEqual(quality_control["object_type"], "Quality control")
-
-    @patch("requests.get")
-    def test_get_funding_with_real_response(self, mock_get):
-        """Test get_funding method with real funding response data"""
-        funding_data = self._load_resource_file(METADATA_SERVICE_DIR, "funding_response.json")
-
-        # Mock API response - funding_data is already a list, use it directly
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = funding_data
-        mock_get.return_value = mock_response
-
-        # Call the method
-        funding_source, investigators = self.job.get_funding()
-
-        # Verify the request was made correctly
-        expected_url = f"{self.test_settings.metadata_service_url}/api/v2/funding/" f"{self.test_settings.project_name}"
-        mock_get.assert_called_once_with(expected_url)
-
-        # Verify funding source structure
-        self.assertIsInstance(funding_source, list)
-        self.assertEqual(len(funding_source), 2)  # Based on the test data
-
-        # Verify investigators are extracted and deduplicated
-        self.assertIsInstance(investigators, list)
-        self.assertGreater(len(investigators), 0)
-
-        # Check that investigators are Person objects (dicts)
-        for investigator in investigators:
-            self.assertIsInstance(investigator, dict)
-            self.assertEqual(investigator["object_type"], "Person")
-            self.assertIn("name", investigator)
-
-    @patch("requests.get")
-    def test_get_subject_with_real_response(self, mock_get):
-        """Test get_subject method with real subject response data"""
-        subject_data = self._load_resource_file(METADATA_SERVICE_DIR, "subject_response.json")
-
-        # Mock the API response - subject_data is already the subject object
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = subject_data
-        mock_get.return_value = mock_response
-
-        # Call the method
-        result = self.job.get_subject()
-
-        # Verify the request was made correctly
-        expected_url = f"{self.test_settings.metadata_service_url}/api/v2/subject/" f"{self.test_settings.subject_id}"
-        mock_get.assert_called_once_with(expected_url)
-
-        # Verify the result structure
-        self.assertEqual(result, subject_data)
-        self.assertEqual(result["subject_id"], "804670")
-        self.assertEqual(result["object_type"], "Subject")
-
-    @patch("requests.get")
-    def test_get_procedures_with_real_response(self, mock_get):
-        """Test get_procedures method with real procedures response data"""
-        procedures_data = self._load_resource_file(METADATA_SERVICE_DIR, "procedures_response.json")
-
-        # Mock the API response - procedures_data is already the procedures object
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = procedures_data
-        mock_get.return_value = mock_response
-
-        # Call the method
-        result = self.job.get_procedures()
-
-        # Verify the request was made correctly
-        expected_url = (
-            f"{self.test_settings.metadata_service_url}/api/v2/procedures/" f"{self.test_settings.subject_id}"
-        )
-        mock_get.assert_called_once_with(expected_url)
-
-        # Verify the result structure
-        self.assertEqual(result, procedures_data)
-        self.assertEqual(result["subject_id"], "804670")
-        self.assertEqual(result["object_type"], "Procedures")
 
     def test_validate_data_description_schema(self):
         """Test DataDescription validation"""
@@ -337,13 +260,8 @@ class TestIntegrationMetadata(unittest.TestCase):
     @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_get_file_from_user_defined_directory")
     def test_build_data_description_uses_acquisition_start_time_for_name(self, mock_get_file, mock_file_exists):
         """Test that build_data_description uses acquisition_start_time for DataDescription name formatting"""
+        mock_file_exists.return_value = False
         acquisition_data = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
-
-        def mock_exists(file_name):
-            """Mock file existence check"""
-            return file_name == "acquisition.json"
-
-        mock_file_exists.side_effect = mock_exists
 
         def mock_read_file(file_name):
             """Mock file reading"""
@@ -363,7 +281,10 @@ class TestIntegrationMetadata(unittest.TestCase):
             mock_get.return_value = mock_response
 
             acquisition_start_time = acquisition_data["acquisition_start_time"]
-            result = self.job.build_data_description(acquisition_start_time=acquisition_start_time)
+            subject_id = acquisition_data["subject_id"]
+            result = self.job.build_data_description(
+                acquisition_start_time=acquisition_start_time, subject_id=subject_id
+            )
 
         self.assertIn("name", result)
         self.assertIn("creation_time", result)
@@ -371,13 +292,10 @@ class TestIntegrationMetadata(unittest.TestCase):
         expected_name = "804670_2025-09-17_10-26-00"
         self.assertEqual(result["name"], expected_name)
 
-        # The creation_time should be current time (when metadata was created)
-        # This verifies the metadata creation timestamp, not the acquisition time
         from datetime import datetime
 
         now = datetime.now()
         creation_time_str = result["creation_time"]
-        # Should be today's date in the creation_time
         self.assertIn(str(now.year), creation_time_str)
         self.assertIn(f"{now.month:02d}", creation_time_str)
 
@@ -411,14 +329,10 @@ class TestIntegrationMetadata(unittest.TestCase):
         from unittest.mock import patch
 
         with patch("logging.warning") as mock_warning:
-            # This should trigger the ValidationError path and use create_metadata_json fallback
-            # Default raise_if_invalid=False should not raise an exception
             result = self.job.validate_and_create_metadata(core_metadata)
 
-            # Verify the result is returned (either as dict or Metadata object)
             self.assertIsNotNone(result)
 
-            # Verify error messages were logged
             mock_warning.assert_called()
             warning_calls = [call[0][0] for call in mock_warning.call_args_list]
             self.assertTrue(any("Validation Errors Found:" in call for call in warning_calls))
@@ -462,7 +376,6 @@ class TestIntegrationMetadata(unittest.TestCase):
             },
         }
 
-        # With raise_if_invalid=True, this should raise a ValidationError
         from pydantic import ValidationError
 
         with self.assertRaises(ValidationError):
@@ -517,6 +430,138 @@ class TestIntegrationMetadata(unittest.TestCase):
         metadata = self.job.validate_and_create_metadata(core_metadata)
 
         self.assertIsInstance(metadata, dict)
+
+    def test_validate_and_get_subject_id_from_real_acquisition(self):
+        """Test _validate_and_get_subject_id with real acquisition metadata"""
+        acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
+
+        # Test that it extracts subject_id correctly
+        subject_id = self.job._validate_and_get_subject_id(acquisition)
+        self.assertEqual(subject_id, "804670")
+
+    def test_validate_acquisition_start_time_with_real_data(self):
+        """Test _validate_acquisition_start_time with real acquisition metadata"""
+        acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
+        acq_start_time_str = acquisition["acquisition_start_time"]
+
+        # Test that it validates correctly
+        result = self.job._validate_acquisition_start_time(acq_start_time_str)
+        self.assertIsInstance(result, str)
+        self.assertIn("2025-09-17", result)
+
+    def test_validate_and_get_subject_id_mismatch_with_real_data(self):
+        """Test _validate_and_get_subject_id raises error with mismatched subject_id"""
+        acquisition = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
+        acq_start_time_str = acquisition["acquisition_start_time"].replace("Z", "+00:00")
+        acq_start_time = datetime.fromisoformat(acq_start_time_str)
+
+        with patch("os.makedirs"):
+            test_settings = JobSettings(
+                metadata_dir="/test/metadata",
+                output_dir="/test/output",
+                subject_id="123456",  # Different from acquisition (804670)
+                project_name="Visual Behavior",
+                modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+                metadata_service_url="http://test-service.com",
+                acquisition_start_time=acq_start_time,
+                raise_if_invalid=True,
+            )
+            test_job = GatherMetadataJob(settings=test_settings)
+
+        # Should raise ValueError due to subject_id mismatch
+        with self.assertRaises(ValueError) as context:
+            test_job._validate_and_get_subject_id(acquisition)
+
+        self.assertIn("subject_id from acquisition metadata", str(context.exception))
+        self.assertIn("does not match", str(context.exception))
+
+    def test_run_job_pulls_subject_id_and_acquisition_start_time_from_file(self):
+        """Test that subject_id and acquisition_start_time are pulled from acquisition.json when None in settings"""
+        with patch("os.makedirs"):
+            test_settings = JobSettings(
+                metadata_dir="/test/metadata",
+                output_dir="/test/output",
+                subject_id=None,
+                acquisition_start_time=None,
+                project_name="Visual Behavior",
+                modalities=[Modality.BEHAVIOR],
+            )
+            test_job = GatherMetadataJob(settings=test_settings)
+
+        acquisition_data = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
+
+        with patch.object(test_job, "get_acquisition", return_value=acquisition_data):
+            with patch.object(test_job, "build_data_description", return_value={"name": "test"}) as mock_build:
+                with patch.object(test_job, "add_core_metadata", return_value={}) as mock_add:
+                    with patch.object(test_job, "validate_and_create_metadata"):
+                        with patch.object(test_job, "_write_json_file"):
+                            test_job.run_job()
+
+        mock_build.assert_called_once_with(
+            acquisition_start_time=acquisition_data["acquisition_start_time"], subject_id="804670"
+        )
+        mock_add.assert_called_once()
+        call_args = mock_add.call_args
+        self.assertEqual(call_args.kwargs["subject_id"], "804670")
+
+    def test_run_job_uses_acquisition_start_time_from_settings_when_not_in_acquisition(self):
+        """Test that acquisition_start_time from settings is used when not in acquisition.json"""
+        acq_start_time = datetime(2025, 9, 17, 10, 26, 0, tzinfo=timezone.utc)
+        with patch("os.makedirs"):
+            test_settings = JobSettings(
+                metadata_dir="/test/metadata",
+                output_dir="/test/output",
+                subject_id="804670",
+                acquisition_start_time=acq_start_time,
+                project_name="Visual Behavior",
+                modalities=[Modality.BEHAVIOR],
+            )
+            test_job = GatherMetadataJob(settings=test_settings)
+
+        acquisition_data = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
+        acquisition_without_time = acquisition_data.copy()
+        del acquisition_without_time["acquisition_start_time"]
+
+        with patch.object(test_job, "get_acquisition", return_value=acquisition_without_time):
+            with patch.object(test_job, "build_data_description", return_value={"name": "test"}) as mock_build:
+                with patch.object(test_job, "add_core_metadata", return_value={}):
+                    with patch.object(test_job, "validate_and_create_metadata"):
+                        with patch.object(test_job, "_write_json_file"):
+                            with patch("logging.info") as mock_log_info:
+                                test_job.run_job()
+
+        mock_build.assert_called_once_with(acquisition_start_time=acq_start_time.isoformat(), subject_id="804670")
+        log_calls = [call[0][0] for call in mock_log_info.call_args_list]
+        self.assertTrue(any("No acquisition_start_time found in acquisition metadata" in call for call in log_calls))
+
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_get_file_from_user_defined_directory")
+    def test_add_core_metadata_with_model(self, mock_get_file, mock_file_exists):
+        """Test that add_core_metadata correctly retrieves and writes model metadata"""
+        model_data = self._load_resource_file(V2_METADATA_DIR, "model.json")
+
+        def mock_exists(file_name):
+            """Mock file existence check"""
+            return file_name == "model.json"
+
+        mock_file_exists.side_effect = mock_exists
+
+        def mock_read_file(file_name):
+            """Mock file reading"""
+            if file_name == "model.json":
+                return model_data
+            raise FileNotFoundError(f"File {file_name} not found")
+
+        mock_get_file.side_effect = mock_read_file
+
+        core_metadata = {}
+
+        with patch.object(self.job, "_write_json_file") as mock_write:
+            result = self.job.add_core_metadata(core_metadata=core_metadata, subject_id="804670")
+
+        self.assertIn("model", result)
+        self.assertEqual(result["model"], model_data)
+        mock_write.assert_any_call("model.json", model_data)
 
 
 if __name__ == "__main__":

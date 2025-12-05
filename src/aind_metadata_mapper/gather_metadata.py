@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import urljoin
 
-import requests
 from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema.core.data_description import DataDescription
 from aind_data_schema.core.instrument import Instrument
@@ -26,35 +25,7 @@ from pydantic import ValidationError
 from aind_metadata_mapper.base import MapperJobSettings
 from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
-
-
-def _metadata_service_helper(url: str) -> Optional[dict]:
-    """
-    Helper function to get metadata from a service URL
-    Parameters
-    ----------
-    url : str
-        Full URL to fetch metadata from
-
-    Returns
-    -------
-    dict
-        Metadata as a dictionary, or empty dict if error occurs
-    """
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            # valid object
-            return response.json()
-        elif response.status_code == 400:
-            # invalid object, accept here and let validation handle whether to raise an error later
-            return response.json()
-        else:
-            logging.error(f"Failed to retrieve metadata from {url} (status: {response.status_code})")
-            return None
-    except Exception as e:
-        logging.error(f"Error retrieving metadata from {url}: {e}")
-        return None
+from aind_metadata_mapper.utils import get_procedures, get_subject, metadata_service_helper
 
 
 class GatherMetadataJob:
@@ -174,7 +145,7 @@ class GatherMetadataJob:
             return [], []
 
         funding_url = f"{self.settings.metadata_service_url}" f"/api/v2/funding/{self.settings.project_name}"
-        funding_info = _metadata_service_helper(funding_url)
+        funding_info = metadata_service_helper(funding_url)
 
         if not funding_info:
             return [], []
@@ -203,7 +174,7 @@ class GatherMetadataJob:
 
         return parsed_funding_info, investigators_list
 
-    def build_data_description(self, acquisition_start_time: str) -> dict:
+    def build_data_description(self, acquisition_start_time: str, subject_id: str) -> dict:
         """Build data description metadata"""
         logging.info("Gathering data description metadata.")
         file_name = DataDescription.default_filename()
@@ -232,7 +203,7 @@ class GatherMetadataJob:
             funding_source=funding_source,
             investigators=investigators,
             data_level=DataLevel.RAW,
-            subject_id=self.settings.subject_id,
+            subject_id=subject_id,
             tags=self.settings.tags,
             group=self.settings.group,
             restrictions=self.settings.restrictions,
@@ -244,11 +215,18 @@ class GatherMetadataJob:
 
         return json.loads(new_data_description.model_dump_json())
 
-    def get_subject(self) -> Optional[dict]:
-        """Get subject metadata"""
+    def get_subject(self, subject_id: Optional[str] = None) -> Optional[dict]:
+        """Get subject metadata
+
+        Parameters
+        ----------
+        subject_id : Optional[str]
+            Subject ID to use. If None, uses the subject_id from settings.
+        """
         logging.info("Gathering subject metadata.")
         file_name = Subject.default_filename()
-        subject_id = self.settings.subject_id
+        if subject_id is None:
+            subject_id = self.settings.subject_id
 
         if not subject_id:
             logging.warning("No subject_id provided.")
@@ -260,25 +238,29 @@ class GatherMetadataJob:
                 f"{self.settings.subject_id} from "
                 f"{self.settings.metadata_service_url}"
             )
-            subject_url = urljoin(
+            base_url = urljoin(
                 self.settings.metadata_service_url,
-                f"{self.settings.metadata_service_subject_endpoint}{subject_id}",
+                self.settings.metadata_service_subject_endpoint,
             )
-
-            contents = _metadata_service_helper(subject_url)
+            contents = get_subject(subject_id, base_url=base_url)
         else:
             logging.debug(f"Using existing {file_name}.")
             contents = self._get_file_from_user_defined_directory(file_name=file_name)
         return contents
 
-    def get_procedures(self) -> Optional[dict]:
-        """Get procedures metadata"""
+    def get_procedures(self, subject_id: str) -> Optional[dict]:
+        """Get procedures metadata
+
+        Parameters
+        ----------
+        subject_id : str
+            Subject ID to use for fetching procedures.
+        """
         logging.info("Gathering procedures metadata.")
         file_name = Procedures.default_filename()
-        subject_id = self.settings.subject_id
 
         if not subject_id:
-            logging.warning("No subject_id provided for procedures.")
+            logging.warning("No subject_id provided.")
             return None
 
         if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
@@ -287,11 +269,11 @@ class GatherMetadataJob:
                 f"{self.settings.subject_id} from "
                 f"{self.settings.metadata_service_url}"
             )
-            procedures_url = urljoin(
+            base_url = urljoin(
                 self.settings.metadata_service_url,
-                f"{self.settings.metadata_service_procedures_endpoint}{subject_id}",
+                self.settings.metadata_service_procedures_endpoint,
             )
-            contents = _metadata_service_helper(procedures_url)
+            contents = get_procedures(subject_id, base_url=base_url)
         else:
             logging.debug(f"Using existing {file_name}.")
             contents = self._get_file_from_user_defined_directory(file_name=file_name)
@@ -510,15 +492,104 @@ class GatherMetadataJob:
                 )
                 return metadata
 
-    def add_core_metadata(self, core_metadata: dict) -> Dict[str, Any]:
-        """Get all core metadata as a dictionary"""
+    def _validate_acquisition_start_time(self, acquisition_start_time: str) -> str:
+        """
+        Validate that acquisition_start_time matches settings if both are provided.
 
-        subject = self.get_subject()
+        Parameters
+        ----------
+        acquisition_start_time : str
+            The acquisition start time from acquisition metadata
+
+        Returns
+        -------
+        str
+            The validated acquisition_start_time
+
+        Raises
+        ------
+        ValueError
+            If acquisition_start_time doesn't match settings and raise_if_invalid is True
+        """
+        acquisition_start_time = acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
+        local_acq_start_time = datetime.fromisoformat(acquisition_start_time)
+
+        if self.settings.acquisition_start_time and local_acq_start_time != self.settings.acquisition_start_time:
+            error_msg = (
+                "acquisition_start_time from acquisition metadata does not match "
+                "the acquisition_start_time provided in settings."
+            )
+            if self.settings.raise_if_invalid:
+                raise ValueError(error_msg)
+            else:
+                logging.error(error_msg)
+
+        return acquisition_start_time
+
+    def _validate_and_get_subject_id(self, acquisition: Optional[dict]) -> str:
+        """
+        Get and validate subject_id from acquisition or settings.
+
+        Parameters
+        ----------
+        acquisition : Optional[dict]
+            The acquisition metadata dictionary
+
+        Returns
+        -------
+        str
+            The validated subject_id
+
+        Raises
+        ------
+        ValueError
+            If subject_id is missing or doesn't match between acquisition and settings
+        """
+        subject_id = acquisition.get("subject_id") if acquisition else None
+
+        if not subject_id:
+            if self.settings.subject_id:
+                subject_id = self.settings.subject_id
+                logging.info(
+                    f"No subject_id found in acquisition metadata. " f"Using provided subject_id: {subject_id}"
+                )
+            else:
+                raise ValueError(
+                    "subject_id is required but not provided. "
+                    "Either provide acquisition.json with subject_id, "
+                    "or provide subject_id in the settings."
+                )
+        else:
+            # Validate that subject_id matches if both are provided
+            if self.settings.subject_id and subject_id != self.settings.subject_id:
+                error_msg = (
+                    f"subject_id from acquisition metadata ({subject_id}) does not match "
+                    f"the subject_id provided in settings ({self.settings.subject_id})."
+                )
+                if self.settings.raise_if_invalid:
+                    raise ValueError(error_msg)
+                else:
+                    logging.error(error_msg)
+
+        return subject_id
+
+    def add_core_metadata(self, core_metadata: dict, subject_id: str) -> Dict[str, Any]:
+        """Get all core metadata as a dictionary
+
+        Parameters
+        ----------
+        core_metadata : dict
+            Dictionary to add metadata to
+        subject_id : Optional[str]
+            Subject ID to use for fetching subject and procedures. If None, uses settings.
+        """
+
+        subject = self.get_subject(subject_id=subject_id)
         if subject:
             core_metadata["subject"] = subject
             self._write_json_file(Subject.default_filename(), subject)
 
-        procedures = self.get_procedures()
+        procedures = self.get_procedures(subject_id=subject_id)
         if procedures:
             core_metadata["procedures"] = procedures
             self._write_json_file(Procedures.default_filename(), procedures)
@@ -559,7 +630,7 @@ class GatherMetadataJob:
             core_metadata["acquisition"] = acquisition
             self._write_json_file(Acquisition.default_filename(), acquisition)
 
-        # Try to get the acquisition_start_time
+        # Get and validate acquisition_start_time
         acquisition_start_time = acquisition.get("acquisition_start_time") if acquisition else None
         if not acquisition_start_time:
             if self.settings.acquisition_start_time:
@@ -569,37 +640,30 @@ class GatherMetadataJob:
                     f"Using provided acquisition_start_time: {acquisition_start_time}"
                 )
             else:
-                # Crash if no acquisition_start_time is available
                 raise ValueError(
                     "acquisition_start_time is required but not provided. "
                     "Either provide acquisition.json with acquisition_start_time, "
                     "or provide acquisition_start_time in the settings."
                 )
 
-        # Raise an error if acquisition_start_time does not match what was pulled
-        acquisition_start_time = acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
-        local_acq_start_time = datetime.fromisoformat(acquisition_start_time)
-        if local_acq_start_time != self.settings.acquisition_start_time:
-            if self.settings.raise_if_invalid:
-                raise ValueError(
-                    "acquisition_start_time from acquisition metadata does not match "
-                    "the acquisition_start_time provided in settings."
-                )
-            else:
-                logging.error(
-                    "acquisition_start_time from acquisition metadata does not match "
-                    "the acquisition_start_time provided in settings."
-                )
+        # Validate acquisition_start_time matches settings if both are provided
+        acquisition_start_time = self._validate_acquisition_start_time(acquisition_start_time)
+
+        # Get and validate subject_id
+        subject_id = self._validate_and_get_subject_id(acquisition)
 
         # Always create data description (required)
-        data_description = self.build_data_description(acquisition_start_time=acquisition_start_time)
+        data_description = self.build_data_description(
+            acquisition_start_time=acquisition_start_time,
+            subject_id=subject_id,
+        )
         if data_description:
             core_metadata["data_description"] = data_description
             self._write_json_file(DataDescription.default_filename(), data_description)
 
         # Get other metadata (optional)
         # Adds subject, procedures, instrument, processing, quality_control, model, if available
-        core_metadata = self.add_core_metadata(core_metadata=core_metadata)
+        core_metadata = self.add_core_metadata(core_metadata=core_metadata, subject_id=subject_id)
 
         self.validate_and_create_metadata(core_metadata)
 
