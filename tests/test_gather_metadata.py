@@ -468,7 +468,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get_file.assert_called_once_with(file_name="subject.json")
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("aind_metadata_mapper.utils.get_subject")
+    @patch("aind_metadata_mapper.gather_metadata.get_subject")
     def test_get_subject_api_success(self, mock_get_subject, mock_file_exists):
         """Test get_subject when downloading from API successfully"""
         mock_file_exists.return_value = False
@@ -480,7 +480,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get_subject.assert_called_once_with("123456", base_url="http://test-service.com/api/v2/subject/")
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("aind_metadata_mapper.utils.get_subject")
+    @patch("aind_metadata_mapper.gather_metadata.get_subject")
     def test_get_subject_api_404(self, mock_get_subject, mock_file_exists):
         """Test get_subject when subject not found in API"""
         mock_file_exists.return_value = False
@@ -491,7 +491,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertIsNone(result)
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("aind_metadata_mapper.utils.get_subject")
+    @patch("aind_metadata_mapper.gather_metadata.get_subject")
     def test_get_subject_api_other_error(self, mock_get_subject, mock_file_exists):
         """Test get_subject when API returns other error"""
         mock_file_exists.return_value = False
@@ -502,7 +502,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertIsNone(result)
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("aind_metadata_mapper.utils.get_subject")
+    @patch("aind_metadata_mapper.gather_metadata.get_subject")
     def test_get_subject_api_exception(self, mock_get_subject, mock_file_exists):
         """Test get_subject when API request raises exception"""
         mock_file_exists.return_value = False
@@ -547,7 +547,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get_file.assert_called_once_with(file_name="procedures.json")
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("aind_metadata_mapper.utils.get_procedures")
+    @patch("aind_metadata_mapper.gather_metadata.get_procedures")
     def test_get_procedures_api_success(self, mock_get_procedures, mock_file_exists):
         """Test get_procedures when downloading from API successfully"""
         mock_file_exists.return_value = False
@@ -559,7 +559,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get_procedures.assert_called_once_with("123456", base_url="http://test-service.com/api/v2/procedures/")
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("aind_metadata_mapper.utils.get_procedures")
+    @patch("aind_metadata_mapper.gather_metadata.get_procedures")
     def test_get_procedures_api_404(self, mock_get_procedures, mock_file_exists):
         """Test get_procedures when procedures not found in API"""
         mock_file_exists.return_value = False
@@ -570,7 +570,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertIsNone(result)
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("aind_metadata_mapper.utils.get_procedures")
+    @patch("aind_metadata_mapper.gather_metadata.get_procedures")
     def test_get_procedures_api_other_status(self, mock_get_procedures, mock_file_exists):
         """Test get_procedures when API returns other status code"""
         mock_file_exists.return_value = False
@@ -581,7 +581,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertIsNone(result)
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
-    @patch("aind_metadata_mapper.utils.get_procedures")
+    @patch("aind_metadata_mapper.gather_metadata.get_procedures")
     def test_get_procedures_api_exception(self, mock_get_procedures, mock_file_exists):
         """Test get_procedures when API request raises exception"""
         mock_file_exists.return_value = False
