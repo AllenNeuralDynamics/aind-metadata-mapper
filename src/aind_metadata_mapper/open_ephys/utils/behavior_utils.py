@@ -134,30 +134,45 @@ def get_images_dict(pkl_dict) -> Dict:
 
     # Get image file name;
     # These are encoded case-insensitive in the pickle file :/
-    filename = stim.convert_filepath_caseinsensitive(metadata["image_set"])
+    # filename = stim.convert_filepath_caseinsensitive(metadata["image_set"])
 
-    image_set = pkl.load_img_pkl(open(filename, "rb"))
-    images = []
+    # image_set = pkl.load_img_pkl(open(filename, "rb"))
+    # images = []
     images_meta = []
 
-    for cat, cat_images in image_set.items():
-        for img_index, (img_name, img) in enumerate(cat_images.items()):
+    # for cat, cat_images in image_set.items():
+    #     for img_index, (img_name, img) in enumerate(cat_images.items()):
+    #         meta = {
+    #             "image_category": cat,
+    #             "image_name": img_name,
+    #             "orientation": np.NaN,
+    #             "phase": np.NaN,
+    #             "size": np.NaN,
+    #             "spatial_frequency": np.NaN,
+    #             "image_index": img_index,
+    #         }
+
+    #         images.append(img)
+    #         images_meta.append(meta)
+
+    # fetching this metadata from within our own pkl, not a separate image pkl
+    stim_groups = pkl_stimuli["images"]["stim_groups"]
+    for group, imgs in stim_groups.items():
+        for img_name in imgs:
             meta = {
-                "image_category": cat,
+                "image_category": group,
                 "image_name": img_name,
                 "orientation": np.NaN,
                 "phase": np.NaN,
                 "size": np.NaN,
                 "spatial_frequency": np.NaN,
-                "image_index": img_index,
+                "image_index": imgs.index(img_name),
             }
-
-            images.append(img)
             images_meta.append(meta)
 
     images_dict = dict(
         metadata=metadata,
-        images=images,
+        # images=images,
         image_attributes=images_meta,
     )
 
