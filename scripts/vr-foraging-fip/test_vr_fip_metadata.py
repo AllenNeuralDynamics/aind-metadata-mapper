@@ -36,9 +36,7 @@ def run_test():
             project_name="Cognitive flexibility in patch foraging",
             modalities=[Modality.BEHAVIOR, Modality.BEHAVIOR_VIDEOS, Modality.FIB],
         ),
-        instrument_settings=InstrumentSettings(
-            instrument_id="13A"
-        )
+        instrument_settings=InstrumentSettings(instrument_id="13A"),
     )
 
     job = GatherMetadataJob(settings=settings)
