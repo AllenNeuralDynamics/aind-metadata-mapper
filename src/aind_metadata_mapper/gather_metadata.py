@@ -321,7 +321,7 @@ class GatherMetadataJob:
         else:
             # Run mappers for any matching files
             self._run_mappers_for_acquisition()
-            # then gather all acquisition files with prefixes from output directory
+            # then gather all acquisition files with prefixes from metadata directory
             files = self._get_prefixed_files_from_directory(
                 directory=self.settings.metadata_dir, file_name_prefix="acquisition"
             )

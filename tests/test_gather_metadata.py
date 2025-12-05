@@ -231,7 +231,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             job._validate_and_get_subject_id(acquisition)
 
-        self.assertIn("subject_id is required but not provided", str(context.exception))
+        self.assertIn("Either provide acquisition.json with subject_id, or provide subject_id in the settings.", str(context.exception))
 
     @patch("os.makedirs")
     def test_validate_and_get_subject_id_mismatch_raises(self, mock_makedirs):
@@ -900,11 +900,10 @@ class TestGatherMetadataJob(unittest.TestCase):
             acquisition1 = base_acquisition.copy()
             acquisition2 = base_acquisition.copy()
 
-            # Place acquisition files in output directory since that's where they're read from
-            with open(os.path.join(output_dir, "acquisition_789.json"), "w") as f:
+            with open(os.path.join(temp_dir, "acquisition_789.json"), "w") as f:
                 json.dump(acquisition1, f)
 
-            with open(os.path.join(output_dir, "acquisition_012.json"), "w") as f:
+            with open(os.path.join(temp_dir, "acquisition_012.json"), "w") as f:
                 json.dump(acquisition2, f)
 
             result = test_job.get_acquisition()
