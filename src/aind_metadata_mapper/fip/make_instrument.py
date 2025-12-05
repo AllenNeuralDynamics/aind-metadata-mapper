@@ -6,7 +6,7 @@ automatically loaded from previous instruments for the same rig ID if available.
 
 Usage:
     First-time setup (create conda environment and install dependencies):
-        conda create -n fip-instrument python=3.10 -y
+        conda create -n fip-instrument python=3.11 -y
         conda activate fip-instrument
         cd /path/to/aind-metadata-mapper
         pip install -e .

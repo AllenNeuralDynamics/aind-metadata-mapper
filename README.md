@@ -5,7 +5,7 @@
 [![semantic-release: angular](https://img.shields.io/badge/semantic--release-angular-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
 ![Interrogate](https://img.shields.io/badge/interrogate-100.0%25-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-86%25-yellow?logo=codecov)
-![Python](https://img.shields.io/badge/python->=3.10-blue?logo=python)
+![Python](https://img.shields.io/badge/python->=3.11-blue?logo=python)
 
 Repository to contain code that will parse source files into aind-data-schema models.
 
@@ -15,7 +15,7 @@ The `GatherMetadataJob` is used to create the `data_description.json` and pull t
 
 ### Using the GatherMetadataJob
 
-Install the metadata mapper (requires Python >=3.10).
+Install the metadata mapper (requires Python >=3.11).
 
 Before running the mapper, generate valid `instrument.json` and `acquisition.json` files, plus any optional metadata.
 
