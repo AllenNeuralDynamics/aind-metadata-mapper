@@ -320,7 +320,7 @@ class GatherMetadataJob:
             self._run_mappers_for_acquisition()
             # then gather all acquisition files with prefixes from output directory
             files = self._get_prefixed_files_from_directory(
-                directory=self.settings.output_dir, file_name_prefix="acquisition"
+                directory=self.settings.metadata_dir, file_name_prefix="acquisition"
             )
             if files:
                 return self._merge_models(Acquisition, files)
@@ -361,7 +361,8 @@ class GatherMetadataJob:
                 )
                 if instrument:
                     # Write this instrument using it's modalities
-                    instrument_suffix = "_".join(instrument["modalities"])
+                    modality_abbreviations = [mod["abbreviation"] for mod in instrument.get("modalities", [])]
+                    instrument_suffix = "_".join(modality_abbreviations)
                     self._write_json_file(
                         filename=f"instrument_{instrument_suffix}.json",
                         contents=instrument,
@@ -641,6 +642,10 @@ class GatherMetadataJob:
     def run_job(self) -> None:
         """Run job"""
         logging.info("Starting run_job")
+
+        # Set the metadata_dir to output_dir if not provided
+        if self.settings.metadata_dir is None:
+            self.settings.metadata_dir = self.settings.output_dir
 
         # Gather all core metadata
         core_metadata = {}
