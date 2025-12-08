@@ -23,42 +23,31 @@ from aind_metadata_mapper.utils import (
     get_protocols_for_modality,
     get_subject,
     prompt_for_string,
-    replace_timezone_shorthand
+    replace_timezone_shorthand,
 )
 
 
 class TestUtils(unittest.TestCase):
     """Test cases for utility functions in aind_metadata_mapper."""
 
-
     def test_replace_z_with_offset(self):
         """Test that a trailing 'Z' timezone shorthand is replaced with '+00:00'."""
-        self.assertEqual(
-            replace_timezone_shorthand("2025-11-16T23:00:22Z", "Z", "+00:00"),
-            "2025-11-16T23:00:22+00:00"
-        )
+        self.assertEqual(replace_timezone_shorthand("2025-11-16T23:00:22Z", "Z", "+00:00"), "2025-11-16T23:00:22+00:00")
 
     def test_replace_existing_offset(self):
         """Test replacing an existing offset with a new offset."""
         self.assertEqual(
-            replace_timezone_shorthand("2025-11-16T23:00:22-05:00", "-05:00", "+00:00"),
-            "2025-11-16T23:00:22+00:00"
+            replace_timezone_shorthand("2025-11-16T23:00:22-05:00", "-05:00", "+00:00"), "2025-11-16T23:00:22+00:00"
         )
 
     def test_no_replacement(self):
         """Test that the original string is returned unchanged when 'old' is not found."""
-        self.assertEqual(
-            replace_timezone_shorthand("2025-11-16T23:00:22", "Z", "+00:00"),
-            "2025-11-16T23:00:22"
-        )
+        self.assertEqual(replace_timezone_shorthand("2025-11-16T23:00:22", "Z", "+00:00"), "2025-11-16T23:00:22")
 
     def test_multiple_occurrences(self):
         """Test that all occurrences of the substring are replaced."""
-        self.assertEqual(
-            replace_timezone_shorthand("Z-2025-Z", "Z", "+00:00"),
-            "+00:00-2025-+00:00"
-        )
-        
+        self.assertEqual(replace_timezone_shorthand("Z-2025-Z", "Z", "+00:00"), "+00:00-2025-+00:00")
+
     def test_ensure_timezone_none(self):
         """Test that ensure_timezone handles None input by returning current time with timezone.
 
