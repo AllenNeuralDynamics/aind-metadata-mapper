@@ -57,7 +57,7 @@ from aind_metadata_mapper.utils import (
     get_intended_measurements,
     get_procedures,
     get_protocols_for_modality,
-    replace_timezone_shorthand,
+    normalize_utc_timezone,
 )
 
 logger = logging.getLogger(__name__)
@@ -304,9 +304,9 @@ class FIPMapper(MapperJob):
         # Get timing from all data streams (handle multiple epochs)
         # Find earliest start_time and latest end_time across all epochs
         start_times = [
-            ensure_timezone(replace_timezone_shorthand(ds["start_time"], "Z", "+00:00")) for ds in data_streams
+            ensure_timezone(normalize_utc_timezone(ds["start_time"])) for ds in data_streams
         ]
-        end_times = [ensure_timezone(replace_timezone_shorthand(ds["end_time"], "Z", "+00:00")) for ds in data_streams]
+        end_times = [ensure_timezone(normalize_utc_timezone(ds["end_time"])) for ds in data_streams]
 
         earliest_start = min(start_times)
         latest_end = max(end_times)

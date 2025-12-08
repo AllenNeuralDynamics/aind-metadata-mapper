@@ -20,34 +20,34 @@ PROCEDURES_BASE_URL = "http://aind-metadata-service/api/v2/procedures"
 SUBJECT_BASE_URL = "http://aind-metadata-service/api/v2/subject"
 
 
-def replace_timezone_shorthand(dt: str, old: str, new: str) -> str:
+def normalize_utc_timezone(dt: str) -> str:
     """
-    Replace a substring in a datetime string, typically used to expand
-    timezone shorthand values (e.g., replacing ``"Z"`` with ``"+00:00"``).
-
+    Normalize UTC timezone indicator from 'Z' to '+00:00' offset format.
+    
+    This ensures compatibility with Python 3.10's datetime.fromisoformat(),
+    which doesn't support the 'Z' shorthand for UTC.
+    
     Parameters
     ----------
     dt : str
-        The datetime string to modify.
-    old : str
-        The substring to search for within the datetime string.
-    new : str
-        The substring that will replace ``old``.
-
+        An ISO 8601 datetime string, potentially ending with 'Z'.
+    
     Returns
     -------
     str
-        The updated datetime string with the specified substring replaced.
-
+        The datetime string with 'Z' replaced by '+00:00' if present,
+        otherwise unchanged.
+    
     Examples
     --------
-    >>> replace_timezone_shorthand("2025-11-16T23:00:22Z", "Z", "+00:00")
+    >>> normalize_utc_timezone("2025-11-16T23:00:22Z")
     '2025-11-16T23:00:22+00:00'
-
-    >>> replace_timezone_shorthand("2025-11-16T23:00:22-05:00", "-05:00", "+00:00")
-    '2025-11-16T23:00:22+00:00'
+    >>> normalize_utc_timezone("2025-11-16T23:00:22-05:00")
+    '2025-11-16T23:00:22-05:00'
     """
-    return dt.replace(old, new)
+    if dt.endswith("Z"):
+        return dt[:-1] + "+00:00"
+    return dt
 
 
 def ensure_timezone(dt):
