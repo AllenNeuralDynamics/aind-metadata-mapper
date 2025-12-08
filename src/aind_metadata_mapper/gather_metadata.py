@@ -25,7 +25,7 @@ from pydantic import ValidationError
 from aind_metadata_mapper.base import MapperJobSettings
 from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
-from aind_metadata_mapper.utils import get_procedures, get_subject, metadata_service_helper
+from aind_metadata_mapper.utils import get_procedures, get_subject, metadata_service_helper, normalize_utc_timezone
 
 
 class GatherMetadataJob:
@@ -184,7 +184,9 @@ class GatherMetadataJob:
             logging.debug(f"Using existing {file_name}.")
             return self._get_file_from_user_defined_directory(file_name=file_name)
 
-        acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
+        acquisition_start_time = normalize_utc_timezone(
+            acquisition_start_time
+        )  # remove when we're past Python 3.11
         creation_time = datetime.fromisoformat(acquisition_start_time)
         logging.info(f"Using acquisition start time: {creation_time}")
 
@@ -511,7 +513,9 @@ class GatherMetadataJob:
         ValueError
             If acquisition_start_time doesn't match settings and raise_if_invalid is True
         """
-        acquisition_start_time = acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
+        acquisition_start_time = normalize_utc_timezone(
+            acquisition_start_time
+        )  # remove when we're past Python 3.11
         local_acq_start_time = datetime.fromisoformat(acquisition_start_time)
 
         if self.settings.acquisition_start_time and local_acq_start_time != self.settings.acquisition_start_time:
