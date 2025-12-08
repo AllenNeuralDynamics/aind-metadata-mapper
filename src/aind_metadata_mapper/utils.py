@@ -20,6 +20,38 @@ PROCEDURES_BASE_URL = "http://aind-metadata-service/api/v2/procedures"
 SUBJECT_BASE_URL = "http://aind-metadata-service/api/v2/subject"
 
 
+def replace_timezone_shorthand(dt: str, old: str, new: str) -> str:
+    """
+    Replace a substring in a datetime string, typically used to expand
+    timezone shorthand values (e.g., replacing ``"Z"`` with ``"+00:00"``).
+
+    Parameters
+    ----------
+    dt : str
+        The datetime string to modify.
+    old : str
+        The substring to search for within the datetime string.
+    new : str
+        The substring that will replace ``old``.
+
+    Returns
+    -------
+    str
+        The updated datetime string with the specified substring replaced.
+
+    Examples
+    --------
+    >>> replace_timezone_shorthand("2025-11-16T23:00:22Z", "Z", "+00:00")
+    '2025-11-16T23:00:22+00:00'
+
+    >>> replace_timezone_shorthand("2025-11-16T23:00:22-05:00", "-05:00", "+00:00")
+    '2025-11-16T23:00:22+00:00'
+    """
+    return dt.replace(old, new)
+
+
+
+
 def ensure_timezone(dt):
     """Ensure datetime has timezone info using system local timezone.
 
@@ -126,7 +158,8 @@ def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL) -> Opti
 
 
 def get_intended_measurements(
-    subject_id: str, base_url: str = "http://aind-metadata-service/intended_measurements"
+    subject_id: str,
+    base_url: str = "http://aind-metadata-service/intended_measurements",
 ) -> Optional[dict]:
     """Fetch intended measurements for a subject from the metadata service.
 
@@ -245,7 +278,10 @@ def get_instrument(
                 )
             return None
         else:
-            return sorted(matching_records, key=lambda record: record["modification_date"])[-1]
+            return sorted(
+                matching_records,
+                key=lambda record: record["modification_date"],
+            )[-1]
     except Exception as e:
         logger.warning(f"Unexpected error fetching instrument {instrument_id}: {e}")
         return None
@@ -319,7 +355,11 @@ def check_existing_instrument(
     bool
         True if a record with the same instrument_id and modification_date exists.
     """
-    existing = get_instrument(instrument_id, modification_date=modification_date, suppress_warning=True)
+    existing = get_instrument(
+        instrument_id,
+        modification_date=modification_date,
+        suppress_warning=True,
+    )
     return existing is not None
 
 
