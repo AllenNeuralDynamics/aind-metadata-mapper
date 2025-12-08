@@ -23,21 +23,21 @@ SUBJECT_BASE_URL = "http://aind-metadata-service/api/v2/subject"
 def normalize_utc_timezone(dt: str) -> str:
     """
     Normalize UTC timezone indicator from 'Z' to '+00:00' offset format.
-    
+
     This ensures compatibility with Python 3.10's datetime.fromisoformat(),
     which doesn't support the 'Z' shorthand for UTC.
-    
+
     Parameters
     ----------
     dt : str
         An ISO 8601 datetime string, potentially ending with 'Z'.
-    
+
     Returns
     -------
     str
         The datetime string with 'Z' replaced by '+00:00' if present,
         otherwise unchanged.
-    
+
     Examples
     --------
     >>> normalize_utc_timezone("2025-11-16T23:00:22Z")
