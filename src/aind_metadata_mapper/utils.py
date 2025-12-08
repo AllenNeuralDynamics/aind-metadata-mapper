@@ -50,8 +50,6 @@ def replace_timezone_shorthand(dt: str, old: str, new: str) -> str:
     return dt.replace(old, new)
 
 
-
-
 def ensure_timezone(dt):
     """Ensure datetime has timezone info using system local timezone.
 
