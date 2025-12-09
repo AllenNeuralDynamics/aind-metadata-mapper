@@ -60,9 +60,8 @@ class TestIntegrationMetadata(unittest.TestCase):
         self.assertGreater(len(funding_data), 0)
 
         first_funding = funding_data[0]
-        self.assertEqual(first_funding["object_type"], "Funding information")
+        self.assertEqual(first_funding["object_type"], "Funding")
         self.assertIn("funder", first_funding)
-        self.assertIn("investigators", first_funding)
 
         # Test subject response structure
         subject_data = self._load_resource_file(METADATA_SERVICE_DIR, "subject_response.json")
@@ -273,12 +272,19 @@ class TestIntegrationMetadata(unittest.TestCase):
         mock_get_file.side_effect = mock_read_file
 
         funding_data = self._load_resource_file(METADATA_SERVICE_DIR, "funding_response.json")
+        investigators_data = self._load_resource_file(METADATA_SERVICE_DIR, "investigators_response.json")
 
         with patch("requests.get") as mock_get:
-            mock_response = MagicMock()
-            mock_response.status_code = 200
-            mock_response.json.return_value = funding_data
-            mock_get.return_value = mock_response
+            def mock_response_side_effect(url, *args, **kwargs):
+                mock_response = MagicMock()
+                mock_response.status_code = 200
+                if "funding" in url:
+                    mock_response.json.return_value = funding_data
+                elif "investigators" in url:
+                    mock_response.json.return_value = investigators_data
+                return mock_response
+            
+            mock_get.side_effect = mock_response_side_effect
 
             acquisition_start_time = acquisition_data["acquisition_start_time"]
             subject_id = acquisition_data["subject_id"]

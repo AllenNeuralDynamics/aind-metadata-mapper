@@ -133,46 +133,38 @@ class GatherMetadataJob:
                 contents.append(json.load(f))
         return contents
 
-    def get_funding(self) -> tuple[list, list]:
-        """Get funding and investigators metadata from the V2 endpoint
+    def get_funding(self) -> list:
+        """Get funding metadata from the V2 endpoint
 
         Returns
         -------
-        tuple[list, list]
-            A tuple of (funding_source, investigators)
+        list
+            A list of funding sources
         """
         if not self.settings.project_name:
-            return [], []
+            return []
 
         funding_url = f"{self.settings.metadata_service_url}" f"/api/v2/funding/{self.settings.project_name}"
         funding_info = metadata_service_helper(funding_url)
+        return funding_info if funding_info else []
 
-        if not funding_info:
-            return [], []
+    
+    def get_investigators(self) -> list:
+        """Get investigators metadata from the V2 endpoint
 
-        investigators = []
-        parsed_funding_info = []
+        Returns
+        -------
+        list
+            A list of investigators
+        """
+        if not self.settings.project_name:
+            return []
 
-        for f in funding_info:
-            project_investigators = f.get("investigators", [])
-            investigators.extend(project_investigators)
+        investigators_url = f"{self.settings.metadata_service_url}" f"/api/v2/investigators/{self.settings.project_name}"
+        investigators_info = metadata_service_helper(investigators_url)
+        return investigators_info if investigators_info else []
 
-            funding_info_without_investigators = {k: v for k, v in f.items() if k != "investigators"}
-            parsed_funding_info.append(funding_info_without_investigators)
 
-        # Deduplicate investigators by name and sort
-        seen_names = set()
-        unique_investigators = []
-        for investigator in investigators:
-            name = investigator.get("name", "")
-            if name and name not in seen_names:
-                seen_names.add(name)
-                unique_investigators.append(investigator)
-
-        unique_investigators.sort(key=lambda x: x.get("name", ""))
-        investigators_list = unique_investigators
-
-        return parsed_funding_info, investigators_list
 
     def build_data_description(self, acquisition_start_time: str, subject_id: str) -> dict:
         """Build data description metadata"""
@@ -191,7 +183,8 @@ class GatherMetadataJob:
         logging.info(f"Using acquisition start time: {creation_time}")
 
         # Get funding information
-        funding_source, investigators = self.get_funding()
+        funding_source = self.get_funding()
+        investigators = self.get_investigators()
 
         # Get modalities
         modalities = self.settings.modalities
