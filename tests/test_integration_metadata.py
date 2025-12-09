@@ -277,6 +277,7 @@ class TestIntegrationMetadata(unittest.TestCase):
         with patch("requests.get") as mock_get:
 
             def mock_response_side_effect(url, *args, **kwargs):
+                """Mock requests.get responses based on URL"""
                 mock_response = MagicMock()
                 mock_response.status_code = 200
                 if "funding" in url:
