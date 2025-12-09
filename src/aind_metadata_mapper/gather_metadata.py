@@ -163,7 +163,18 @@ class GatherMetadataJob:
             f"{self.settings.metadata_service_url}" f"/api/v2/investigators/{self.settings.project_name}"
         )
         investigators_info = metadata_service_helper(investigators_url)
-        return investigators_info if investigators_info else []
+        if investigators_info is None:
+            return []
+        # Deduplicate investigators by name and sort
+        seen_names = set()
+        unique_investigators = []
+        for investigator in investigators_info:
+            name = investigator.get("name", "")
+            if name and name not in seen_names:
+                seen_names.add(name)
+                unique_investigators.append(investigator)
+        unique_investigators.sort(key=lambda x: x.get("name", ""))
+        return unique_investigators
 
     def build_data_description(self, acquisition_start_time: str, subject_id: str) -> dict:
         """Build data description metadata"""

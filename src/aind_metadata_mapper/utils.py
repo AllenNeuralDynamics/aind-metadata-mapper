@@ -92,8 +92,7 @@ def metadata_service_helper(url: str, timeout: int = 60) -> Optional[dict]:
     """
     try:
         response = requests.get(url, timeout=timeout)
-        # valid responses can be 200 (OK) or 400 (Bad Request with message)
-        if response.status_code == 400 or response.status_code == 200:
+        if response.status_code == 400:
             return response.json()
         response.raise_for_status()
         return response.json()

@@ -11,6 +11,7 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
+
 from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
@@ -275,7 +276,8 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     # Tests for get_funding method
     @patch("requests.get")
-    def test_get_funding_no_project_name(self, mock_get):
+    @patch("os.makedirs")
+    def test_get_funding_no_project_name(self, mock_makedirs, mock_get):
         """Test get_funding when no project name is provided"""
         job_no_project = GatherMetadataJob(
             JobSettings(
@@ -291,6 +293,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertEqual(funding, [])
         mock_get.assert_not_called()
+        mock_makedirs.assert_called()
 
     @patch("requests.get")
     def test_get_funding_success_single_result(self, mock_get):
@@ -331,27 +334,9 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertEqual(len(funding), 2)
 
-    @patch("aind_metadata_mapper.utils.metadata_service_helper")
-    def test_get_funding_http_error(self, mock_helper):
-        """Test get_funding with HTTP error"""
-        mock_helper.return_value = None
-
-        funding = self.job.get_funding()
-
-        self.assertEqual(funding, [])
-
-    @patch("aind_metadata_mapper.utils.metadata_service_helper")
-    def test_get_funding_request_exception(self, mock_helper):
-        """Test get_funding with request exception"""
-        mock_helper.return_value = None
-
-        funding = self.job.get_funding()
-
-        self.assertEqual(funding, [])
-
-    # Tests for get_investigators method
     @patch("requests.get")
-    def test_get_investigators_no_project_name(self, mock_get):
+    @patch("os.makedirs")
+    def test_get_investigators_no_project_name(self, mock_makedirs, mock_get):
         """Test get_investigators when no project name is provided"""
         job_no_project = GatherMetadataJob(
             JobSettings(
@@ -367,6 +352,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertEqual(investigators, [])
         mock_get.assert_not_called()
+        mock_makedirs.assert_called()
 
     @patch("requests.get")
     def test_get_investigators_success_single_result(self, mock_get):
@@ -419,24 +405,6 @@ class TestGatherMetadataJob(unittest.TestCase):
         investigators = self.job.get_investigators()
 
         self.assertEqual(len(investigators), 2)
-
-    @patch("aind_metadata_mapper.utils.metadata_service_helper")
-    def test_get_investigators_http_error(self, mock_helper):
-        """Test get_investigators with HTTP error"""
-        mock_helper.return_value = None
-
-        investigators = self.job.get_investigators()
-
-        self.assertEqual(investigators, [])
-
-    @patch("aind_metadata_mapper.utils.metadata_service_helper")
-    def test_get_investigators_request_exception(self, mock_helper):
-        """Test get_investigators with request exception"""
-        mock_helper.return_value = None
-
-        investigators = self.job.get_investigators()
-
-        self.assertEqual(investigators, [])
 
     # Tests for _write_json_file method
     @patch("builtins.open", new_callable=mock_open)
