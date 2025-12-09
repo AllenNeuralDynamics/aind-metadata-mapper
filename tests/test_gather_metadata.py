@@ -11,8 +11,6 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
-
-from aind_data_schema.components.identifiers import Person
 from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
@@ -380,7 +378,7 @@ class TestGatherMetadataJob(unittest.TestCase):
                 "object_type": "Person",
                 "name": "Jane Doe",
                 "registry": "Open Researcher and Contributor ID (ORCID)",
-                "registry_identifier": None
+                "registry_identifier": None,
             }
         ]
         mock_get.return_value = mock_response
@@ -392,7 +390,7 @@ class TestGatherMetadataJob(unittest.TestCase):
                 "object_type": "Person",
                 "name": "Jane Doe",
                 "registry": "Open Researcher and Contributor ID (ORCID)",
-                "registry_identifier": None
+                "registry_identifier": None,
             }
         ]
         self.assertEqual(investigators, expected_investigators)
@@ -407,14 +405,14 @@ class TestGatherMetadataJob(unittest.TestCase):
                 "object_type": "Person",
                 "name": "Jane Doe",
                 "registry": "Open Researcher and Contributor ID (ORCID)",
-                "registry_identifier": None
+                "registry_identifier": None,
             },
             {
                 "object_type": "Person",
                 "name": "John Smith",
                 "registry": "Open Researcher and Contributor ID (ORCID)",
-                "registry_identifier": None
-            }
+                "registry_identifier": None,
+            },
         ]
         mock_get.return_value = mock_response
 
@@ -476,25 +474,26 @@ class TestGatherMetadataJob(unittest.TestCase):
     @patch.object(GatherMetadataJob, "get_funding")
     @patch.object(GatherMetadataJob, "get_investigators")
     @patch("aind_metadata_mapper.gather_metadata.datetime")
-    def test_build_data_description_new_file(self, mock_datetime, mock_get_investigators, mock_get_funding, mock_file_exists):
+    def test_build_data_description_new_file(
+        self, mock_datetime, mock_get_investigators, mock_get_funding, mock_file_exists
+    ):
         """Test build_data_description when creating new file"""
         mock_file_exists.return_value = False
-        mock_get_funding.return_value = (
-            [
-                {
-                    "object_type": "Funding",
-                    "funder": Organization.NIMH,
-                    "grant_number": "12345",
-                    "fundee": [
-                        {"object_type": "Person",
-                         "name": "Jane Doe",
-                         "registry": "Addgene (ADDGENE)",
-                         "registry_identifier": None
-                         }
-                    ]
-                }
-            ]
-        )
+        mock_get_funding.return_value = [
+            {
+                "object_type": "Funding",
+                "funder": Organization.NIMH,
+                "grant_number": "12345",
+                "fundee": [
+                    {
+                        "object_type": "Person",
+                        "name": "Jane Doe",
+                        "registry": "Addgene (ADDGENE)",
+                        "registry_identifier": None,
+                    }
+                ],
+            }
+        ]
         mock_get_investigators.return_value = [
             {"object_type": "Person", "name": "Jane Doe", "registry": "Addgene (ADDGENE)", "registry_identifier": None}
         ]
