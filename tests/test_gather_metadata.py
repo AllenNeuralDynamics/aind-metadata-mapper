@@ -354,6 +354,26 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get.assert_not_called()
         mock_makedirs.assert_called()
 
+    @patch("aind_metadata_mapper.gather_metadata.metadata_service_helper")
+    @patch("os.makedirs")
+    def test_get_investigators_helper_issue(self, mock_makedirs, mock_metadata_helper):
+        """Test get_investigators when helper function returns None"""
+        job_no_project = GatherMetadataJob(
+            JobSettings(
+                metadata_dir="/test",
+                output_dir="/test/output",
+                subject_id="test_subject",
+                project_name="Some Project",
+                modalities=[Modality.ECEPHYS],
+                acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+            )
+        )
+        mock_metadata_helper.return_value = None
+        investigators = job_no_project.get_investigators()
+
+        self.assertEqual(investigators, [])
+        mock_makedirs.assert_called()
+
     @patch("requests.get")
     def test_get_investigators_success_single_result(self, mock_get):
         """Test get_investigators with successful single result"""
