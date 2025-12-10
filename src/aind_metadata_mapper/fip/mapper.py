@@ -303,9 +303,7 @@ class FIPMapper(MapperJob):
 
         # Get timing from all data streams (handle multiple epochs)
         # Find earliest start_time and latest end_time across all epochs
-        start_times = [
-            ensure_timezone(normalize_utc_timezone(ds["start_time"])) for ds in data_streams
-        ]
+        start_times = [ensure_timezone(normalize_utc_timezone(ds["start_time"])) for ds in data_streams]
         end_times = [ensure_timezone(normalize_utc_timezone(ds["end_time"])) for ds in data_streams]
 
         earliest_start = min(start_times)

@@ -36,6 +36,7 @@ try:
         subject_id="804670",
         project_name="Learning mFISH-V1omFISH",
         modalities=[Modality.POPHYS, Modality.BEHAVIOR_VIDEOS, Modality.BEHAVIOR],
+        metadata_service_url="http://aind-metadata-service-dev", # DEV metadata service for testing
     )
 
     job = GatherMetadataJob(settings=settings)
@@ -72,7 +73,7 @@ try:
         print("✗ Failed to fetch subject")
 
     print("\nFetching procedures from metadata service...")
-    procedures = job.get_procedures()
+    procedures = job.get_procedures(subject_id="804670")
     if procedures:
         print(f"✓ Procedures fetched for subject: {procedures.get('subject_id')}")
         if procedures.get("subject_procedures"):
@@ -83,7 +84,7 @@ try:
         print("✗ Failed to fetch procedures")
 
     print("\nFetching funding from metadata service...")
-    funding_source, investigators = job.get_funding()
+    funding_source = job.get_funding()
     if funding_source:
         print(f"✓ Funding fetched: {len(funding_source)} funding source(s)")
         for fund in funding_source:
@@ -91,6 +92,8 @@ try:
     else:
         print("✗ No funding information found")
 
+    print("\nFetching investigators from metadata service...")
+    investigators = job.get_investigators()
     if investigators:
         print(f"✓ Investigators fetched: {len(investigators)} investigator(s)")
         for inv in investigators:
