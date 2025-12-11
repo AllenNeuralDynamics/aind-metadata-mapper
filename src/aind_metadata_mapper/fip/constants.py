@@ -1,0 +1,84 @@
+"""Constants for FIP (Fiber Photometry) mapper.
+
+Hardware specifications, device naming conventions, and default configuration values.
+"""
+
+# ==============================================================================
+# LED Excitation Wavelengths (nm)
+# ==============================================================================
+EXCITATION_UV = 415  # UV LED → green emission (isosbestic control)
+EXCITATION_BLUE = 470  # Blue LED → green emission (GFP signal)
+EXCITATION_YELLOW = 565  # Yellow/Lime LED → red emission (RFP signal)
+
+# ==============================================================================
+# Emission Wavelengths (nm)
+# ==============================================================================
+EMISSION_GREEN = 520  # Green emission: center of 490-540nm bandpass, ~510nm GFP peak
+EMISSION_RED = 590  # Red emission: ~590nm RFP peak
+
+# ==============================================================================
+# Camera Exposure Time
+# ==============================================================================
+CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND = 1000
+
+
+# ==============================================================================
+# ROI Keywords
+# ==============================================================================
+ROI_KEYWORD_GREEN = "green"
+ROI_KEYWORD_ISO = "iso"
+ROI_KEYWORD_RED = "red"
+ROI_KEYWORD_ROI = "_roi"
+ROI_KEYWORD_BACKGROUND = "_background"
+
+# ==============================================================================
+# Default Values
+# ==============================================================================
+DEFAULT_OUTPUT_FILENAME = "acquisition.json"
+DEFAULT_LED_POWER = 1.0
+
+
+# ==============================================================================
+# Acquisition Type
+# ==============================================================================
+# Hardcoded acquisition type for VrForaging-FIP experiments
+# NOTE: Ideally this would come from the extracted metadata, but we don't have it yet.
+ACQUISITION_TYPE_AIND_VR_FORAGING = "AindVrForaging"
+
+
+# ==============================================================================
+# Device Name Transformations
+# ==============================================================================
+# Maps rig config keys to historical standard device names
+# These are the keys from the fip.json rig dictionary that get transformed
+# to match historical naming conventions
+DEVICE_NAME_MAP = {
+    "camera_green_iso": "Green CMOS",
+    "camera_red": "Red CMOS",
+    "light_source_uv": "415nm LED",
+    "light_source_blue": "470nm LED",
+    "light_source_lime": "560nm LED",
+}
+
+
+# ==============================================================================
+# Code Repository
+# ==============================================================================
+# URL for the VrForaging-FIP experiment repository used to track code versions
+# NOTE: Ideally this would come from the extracted metadata, but we don't have it yet.
+VR_FORAGING_FIP_REPO_URL = "https://github.com/AllenNeuralDynamics/Aind.Experiment.VrForaging-Fip"
+
+# ==============================================================================
+# Ethics Review ID
+# ==============================================================================
+# Ethics review ID for VrForaging-FIP experiments
+# NOTE: This is temporarily hardcoded. Ideally this would come from the extracted metadata.
+ETHICS_REVIEW_ID = ["2414"]
+
+# ==============================================================================
+# Camera Compression
+# ==============================================================================
+# FIP cameras do not use compression/encoding
+# NOTE: This is explicitly set to None to document that compression is not used.
+# If compression is added in the future, this should be updated with the appropriate Code object.
+FIP_CAMERA_COMPRESSION = None

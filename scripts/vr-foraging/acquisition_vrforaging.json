@@ -1,0 +1,280 @@
+{
+   "object_type": "Acquisition",
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/acquisition.py",
+   "schema_version": "2.2.0",
+   "subject_id": "810761",
+   "specimen_id": null,
+   "acquisition_start_time": "2025-12-06T18:47:24.667358Z",
+   "acquisition_end_time": "2025-12-06T18:49:27.761327Z",
+   "experimenters": [
+      "tiffany.ona"
+   ],
+   "protocol_id": null,
+   "ethics_review_id": null,
+   "instrument_id": "SAKTIMUNA-12D",
+   "acquisition_type": "AindVrForaging",
+   "notes": null,
+   "coordinate_system": null,
+   "calibrations": [
+      {
+         "object_type": "Volume calibration",
+         "device_name": "water_valve_solenoid",
+         "calibration_date": "2025-11-04T18:22:43.760881-08:00",
+         "description": "Volume measured for various solenoid opening times",
+         "measured_at": null,
+         "input": [
+            0.025,
+            0.05,
+            0.075,
+            0.1,
+            0.125,
+            0.175,
+            0.225
+         ],
+         "input_unit": "second",
+         "repeats": null,
+         "output": [
+            0.33999999999999986,
+            0.8200000000000003,
+            1.08,
+            1.3100000000000005,
+            1.6499999999999986,
+            2.3999999999999986,
+            3.030000000000001
+         ],
+         "output_unit": "milliliter",
+         "fit": {
+            "object_type": "Calibration fit",
+            "fit_type": "linear",
+            "fit_parameters": {
+               "interval_average": {
+                  "0.025": 0.33999999999999986,
+                  "0.05": 0.8200000000000003,
+                  "0.075": 1.08,
+                  "0.1": 1.3100000000000005,
+                  "0.125": 1.6499999999999986,
+                  "0.175": 2.3999999999999986,
+                  "0.225": 3.030000000000001
+               },
+               "slope": 0.07562519950248206,
+               "offset": -0.004127981530197736,
+               "r2": 0.9956261294979468,
+               "valid_domain": [
+                  0.025,
+                  0.05,
+                  0.075,
+                  0.1,
+                  0.125,
+                  0.175,
+                  0.225
+               ]
+            }
+         },
+         "notes": null
+      }
+   ],
+   "maintenance": [],
+   "data_streams": [
+      {
+         "object_type": "Data stream",
+         "stream_start_time": "2025-12-06T18:47:24.667358Z",
+         "stream_end_time": "2025-12-06T18:49:27.123799Z",
+         "modalities": [
+            {
+               "name": "Behavior videos",
+               "abbreviation": "behavior-videos"
+            },
+            {
+               "name": "Behavior",
+               "abbreviation": "behavior"
+            }
+         ],
+         "code": [
+            {
+               "object_type": "Code",
+               "url": "https://github.com/AllenNeuralDynamics/Aind.Behavior.VrForaging.git",
+               "name": "Aind.Behavior.VrForaging",
+               "version": "865fcf89dbfefa19366eb900ac24cff4c762342e",
+               "container": null,
+               "run_script": "C:\\git\\Aind.Behavior.VrForaging\\src\\main.bonsai",
+               "language": "Bonsai",
+               "language_version": "2.9.0",
+               "input_data": null,
+               "parameters": null,
+               "core_dependency": null
+            },
+            {
+               "object_type": "Code",
+               "url": "https://github.com/AllenNeuralDynamics/Aind.Behavior.VrForaging.git",
+               "name": "aind-behavior-vr-foraging",
+               "version": "865fcf89dbfefa19366eb900ac24cff4c762342e",
+               "container": null,
+               "run_script": null,
+               "language": "Python",
+               "language_version": "3.13.1",
+               "input_data": null,
+               "parameters": null,
+               "core_dependency": null
+            }
+         ],
+         "notes": "",
+         "active_devices": [
+            "FaceCamera",
+            "SideCamera",
+            "FrontCamera",
+            "harp_behavior",
+            "harp_olfactometer",
+            "harp_lickometer",
+            "harp_clock_generator",
+            "harp_treadmill",
+            "harp_sniff_detector",
+            "harp_environment_sensor",
+            "manipulator"
+         ],
+         "configurations": [
+            {
+               "object_type": "Detector config",
+               "device_name": "FaceCamera",
+               "exposure_time": 1000.0,
+               "exposure_time_unit": "microsecond",
+               "trigger_type": "External",
+               "compression": {
+                  "object_type": "Code",
+                  "url": "https://ffmpeg.org/",
+                  "name": "FFMPEG",
+                  "version": null,
+                  "container": null,
+                  "run_script": null,
+                  "language": null,
+                  "language_version": null,
+                  "input_data": null,
+                  "parameters": {
+                     "video_writer_type": "FFMPEG",
+                     "frame_rate": 240,
+                     "container_extension": "mp4",
+                     "output_arguments": "-vf \"scale=out_color_matrix=bt709:out_range=full,format=bgr24,scale=out_range=full\" -c:v h264_nvenc -pix_fmt yuv420p -color_range full -colorspace bt709 -color_trc linear -tune hq -preset p4 -rc vbr -cq 12 -b:v 0M -metadata author=\"Allen Institute for Neural Dynamics\" -maxrate 700M -bufsize 350M",
+                     "input_arguments": "-colorspace bt709 -color_primaries bt709 -color_range full -color_trc linear"
+                  },
+                  "core_dependency": null
+               }
+            },
+            {
+               "object_type": "Detector config",
+               "device_name": "SideCamera",
+               "exposure_time": 1000.0,
+               "exposure_time_unit": "microsecond",
+               "trigger_type": "External",
+               "compression": {
+                  "object_type": "Code",
+                  "url": "https://ffmpeg.org/",
+                  "name": "FFMPEG",
+                  "version": null,
+                  "container": null,
+                  "run_script": null,
+                  "language": null,
+                  "language_version": null,
+                  "input_data": null,
+                  "parameters": {
+                     "video_writer_type": "FFMPEG",
+                     "frame_rate": 240,
+                     "container_extension": "mp4",
+                     "output_arguments": "-vf \"scale=out_color_matrix=bt709:out_range=full,format=bgr24,scale=out_range=full\" -c:v h264_nvenc -pix_fmt yuv420p -color_range full -colorspace bt709 -color_trc linear -tune hq -preset p4 -rc vbr -cq 12 -b:v 0M -metadata author=\"Allen Institute for Neural Dynamics\" -maxrate 700M -bufsize 350M",
+                     "input_arguments": "-colorspace bt709 -color_primaries bt709 -color_range full -color_trc linear"
+                  },
+                  "core_dependency": null
+               }
+            },
+            {
+               "object_type": "Detector config",
+               "device_name": "FrontCamera",
+               "exposure_time": 1000.0,
+               "exposure_time_unit": "microsecond",
+               "trigger_type": "External",
+               "compression": {
+                  "object_type": "Code",
+                  "url": "https://ffmpeg.org/",
+                  "name": "FFMPEG",
+                  "version": null,
+                  "container": null,
+                  "run_script": null,
+                  "language": null,
+                  "language_version": null,
+                  "input_data": null,
+                  "parameters": {
+                     "video_writer_type": "FFMPEG",
+                     "frame_rate": 240,
+                     "container_extension": "mp4",
+                     "output_arguments": "-vf \"scale=out_color_matrix=bt709:out_range=full,format=bgr24,scale=out_range=full\" -c:v h264_nvenc -pix_fmt yuv420p -color_range full -colorspace bt709 -color_trc linear -tune hq -preset p4 -rc vbr -cq 12 -b:v 0M -metadata author=\"Allen Institute for Neural Dynamics\" -maxrate 700M -bufsize 350M",
+                     "input_arguments": "-colorspace bt709 -color_primaries bt709 -color_range full -color_trc linear"
+                  },
+                  "core_dependency": null
+               }
+            }
+         ],
+         "connections": []
+      }
+   ],
+   "stimulus_epochs": [
+      {
+         "object_type": "Stimulus epoch",
+         "stimulus_start_time": "2025-12-06T18:47:24.667358Z",
+         "stimulus_end_time": "2025-12-06T18:49:27.123799Z",
+         "stimulus_name": "AindVrForaging",
+         "code": {
+            "object_type": "Code",
+            "url": "https://github.com/AllenNeuralDynamics/Aind.Behavior.VrForaging.git",
+            "name": "Aind.Behavior.VrForaging",
+            "version": "865fcf89dbfefa19366eb900ac24cff4c762342e",
+            "container": null,
+            "run_script": "C:\\git\\Aind.Behavior.VrForaging\\src\\main.bonsai",
+            "language": "Bonsai",
+            "language_version": "2.9.0",
+            "input_data": null,
+            "parameters": {
+               "task_logic": "./Behavior/Logs/tasklogic_input.json",
+               "rig": "./Behavior/Logs/rig_input.json",
+               "session": "./Behavior/Logs/session_input.json"
+            },
+            "core_dependency": null
+         },
+         "stimulus_modalities": [
+            "Auditory",
+            "Visual",
+            "Virtual reality",
+            "Wheel friction"
+         ],
+         "performance_metrics": null,
+         "notes": null,
+         "active_devices": [
+            "speaker"
+         ],
+         "configurations": [
+            {
+               "object_type": "Speaker config",
+               "device_name": "speaker",
+               "volume": 60.0,
+               "volume_unit": "decibels"
+            },
+            {
+               "object_type": "Mouse platform config",
+               "device_name": "wheel",
+               "objects_in_arena": null,
+               "active_control": true
+            }
+         ],
+         "training_protocol_name": null,
+         "curriculum_status": "false"
+      }
+   ],
+   "manipulations": [],
+   "subject_details": {
+      "object_type": "Acquisition subject details",
+      "animal_weight_prior": null,
+      "animal_weight_post": null,
+      "weight_unit": "gram",
+      "anaesthesia": null,
+      "mouse_platform_name": "wheel",
+      "reward_consumed_total": "0.015",
+      "reward_consumed_unit": "milliliter"
+   }
+}
