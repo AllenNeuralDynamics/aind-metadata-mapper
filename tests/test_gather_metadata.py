@@ -12,7 +12,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
-from aind_data_schema.components.identifiers import Person
 from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
@@ -319,11 +318,11 @@ class TestGatherMetadataJob(unittest.TestCase):
                 acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
             )
         )
-        funding, investigators = job_no_project.get_funding()
+        funding = job_no_project.get_funding()
 
         self.assertEqual(funding, [])
-        self.assertEqual(investigators, [])
         mock_get.assert_not_called()
+        mock_makedirs.assert_called()
 
     @patch("requests.get")
     def test_get_funding_success_single_result(self, mock_get):
@@ -334,20 +333,14 @@ class TestGatherMetadataJob(unittest.TestCase):
             {
                 "funder": "Test Funder",
                 "award_number": "12345",
-                "investigators": [
-                    Person(name="John Doe").model_dump(),
-                    Person(name="Jane Smith").model_dump(),
-                ],
             }
         ]
         mock_get.return_value = mock_response
 
-        funding, investigators = self.job.get_funding()
+        funding = self.job.get_funding()
 
         expected_funding = [{"funder": "Test Funder", "award_number": "12345"}]
         self.assertEqual(funding, expected_funding)
-        self.assertEqual(len(investigators), 2)
-        self.assertIsInstance(investigators[0], dict)
 
     @patch("requests.get")
     def test_get_funding_success_multiple_results(self, mock_get):
@@ -358,58 +351,109 @@ class TestGatherMetadataJob(unittest.TestCase):
             {
                 "funder": "Funder 1",
                 "award_number": "111",
-                "investigators": [{"name": "Alice"}],
             },
             {
                 "funder": "Funder 2",
                 "award_number": "222",
-                "investigators": [{"name": "Bob"}, {"name": "Charlie"}],
             },
         ]
         mock_get.return_value = mock_response
 
-        funding, investigators = self.job.get_funding()
+        funding = self.job.get_funding()
 
         self.assertEqual(len(funding), 2)
-        self.assertEqual(len(investigators), 3)
 
     @patch("requests.get")
-    def test_get_funding_empty_investigators(self, mock_get):
-        """Test get_funding with empty investigators"""
+    @patch("os.makedirs")
+    def test_get_investigators_no_project_name(self, mock_makedirs, mock_get):
+        """Test get_investigators when no project name is provided"""
+        job_no_project = GatherMetadataJob(
+            JobSettings(
+                metadata_dir="/test",
+                output_dir="/test/output",
+                subject_id="test_subject",
+                project_name="",
+                modalities=[Modality.ECEPHYS],
+                acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+            )
+        )
+        investigators = job_no_project.get_investigators()
+
+        self.assertEqual(investigators, [])
+        mock_get.assert_not_called()
+        mock_makedirs.assert_called()
+
+    @patch("aind_metadata_mapper.gather_metadata.metadata_service_helper")
+    @patch("os.makedirs")
+    def test_get_investigators_helper_issue(self, mock_makedirs, mock_metadata_helper):
+        """Test get_investigators when helper function returns None"""
+        job_no_project = GatherMetadataJob(
+            JobSettings(
+                metadata_dir="/test",
+                output_dir="/test/output",
+                subject_id="test_subject",
+                project_name="Some Project",
+                modalities=[Modality.ECEPHYS],
+                acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+            )
+        )
+        mock_metadata_helper.return_value = None
+        investigators = job_no_project.get_investigators()
+
+        self.assertEqual(investigators, [])
+        mock_makedirs.assert_called()
+
+    @patch("requests.get")
+    def test_get_investigators_success_single_result(self, mock_get):
+        """Test get_investigators with successful single result"""
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = [
             {
-                "funder": "Test Funder",
-                "award_number": "12345",
-                "investigators": [],
+                "object_type": "Person",
+                "name": "Jane Doe",
+                "registry": "Open Researcher and Contributor ID (ORCID)",
+                "registry_identifier": None,
             }
         ]
         mock_get.return_value = mock_response
 
-        funding, investigators = self.job.get_funding()
+        investigators = self.job.get_investigators()
 
-        self.assertEqual(len(investigators), 0)
+        expected_investigators = [
+            {
+                "object_type": "Person",
+                "name": "Jane Doe",
+                "registry": "Open Researcher and Contributor ID (ORCID)",
+                "registry_identifier": None,
+            }
+        ]
+        self.assertEqual(investigators, expected_investigators)
 
-    @patch("aind_metadata_mapper.utils.metadata_service_helper")
-    def test_get_funding_http_error(self, mock_helper):
-        """Test get_funding with HTTP error"""
-        mock_helper.return_value = None
+    @patch("requests.get")
+    def test_get_investigators_success_multiple_results(self, mock_get):
+        """Test get_investigators with successful multiple results"""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [
+            {
+                "object_type": "Person",
+                "name": "Jane Doe",
+                "registry": "Open Researcher and Contributor ID (ORCID)",
+                "registry_identifier": None,
+            },
+            {
+                "object_type": "Person",
+                "name": "John Smith",
+                "registry": "Open Researcher and Contributor ID (ORCID)",
+                "registry_identifier": None,
+            },
+        ]
+        mock_get.return_value = mock_response
 
-        funding, investigators = self.job.get_funding()
+        investigators = self.job.get_investigators()
 
-        self.assertEqual(funding, [])
-        self.assertEqual(investigators, [])
-
-    @patch("aind_metadata_mapper.utils.metadata_service_helper")
-    def test_get_funding_request_exception(self, mock_helper):
-        """Test get_funding with request exception"""
-        mock_helper.return_value = None
-
-        funding, investigators = self.job.get_funding()
-
-        self.assertEqual(funding, [])
-        self.assertEqual(investigators, [])
+        self.assertEqual(len(investigators), 2)
 
     # Tests for _write_json_file method
     @patch("builtins.open", new_callable=mock_open)
@@ -445,14 +489,31 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
     @patch.object(GatherMetadataJob, "get_funding")
+    @patch.object(GatherMetadataJob, "get_investigators")
     @patch("aind_metadata_mapper.gather_metadata.datetime")
-    def test_build_data_description_new_file(self, mock_datetime, mock_get_funding, mock_file_exists):
+    def test_build_data_description_new_file(
+        self, mock_datetime, mock_get_investigators, mock_get_funding, mock_file_exists
+    ):
         """Test build_data_description when creating new file"""
         mock_file_exists.return_value = False
-        mock_get_funding.return_value = (
-            [{"funder": Organization.NIMH, "grant_number": "12345"}],
-            [{"name": "Test Investigator"}],
-        )
+        mock_get_funding.return_value = [
+            {
+                "object_type": "Funding",
+                "funder": Organization.NIMH,
+                "grant_number": "12345",
+                "fundee": [
+                    {
+                        "object_type": "Person",
+                        "name": "Jane Doe",
+                        "registry": "Addgene (ADDGENE)",
+                        "registry_identifier": None,
+                    }
+                ],
+            }
+        ]
+        mock_get_investigators.return_value = [
+            {"object_type": "Person", "name": "Jane Doe", "registry": "Addgene (ADDGENE)", "registry_identifier": None}
+        ]
         mock_datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)
 
         result = self.job.build_data_description(acquisition_start_time="2023-01-01T12:00:00", subject_id="123456")

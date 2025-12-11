@@ -25,7 +25,7 @@ from pydantic import ValidationError
 from aind_metadata_mapper.base import MapperJobSettings
 from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
-from aind_metadata_mapper.utils import get_instrument, get_procedures, get_subject, metadata_service_helper
+from aind_metadata_mapper.utils import get_instrument, get_procedures, get_subject, metadata_service_helper, normalize_utc_timezone
 
 
 class GatherMetadataJob:
@@ -133,49 +133,51 @@ class GatherMetadataJob:
                 contents.append(json.load(f))
         return contents
 
-    def get_funding(self) -> tuple[list, list]:
-        """Get funding and investigators metadata from the V2 endpoint
+    def get_funding(self) -> list:
+        """Get funding metadata from the V2 endpoint
 
         Returns
         -------
-        tuple[list, list]
-            A tuple of (funding_source, investigators)
+        list
+            A list of funding sources
         """
         if not self.settings.data_description_settings.project_name:
-            return [], []
+            return []
 
         funding_url = (
             f"{self.settings.metadata_service_url}"
             f"/api/v2/funding/{self.settings.data_description_settings.project_name}"
         )
         funding_info = metadata_service_helper(funding_url)
+        return funding_info if funding_info else []
 
-        if not funding_info:
-            return [], []
+    def get_investigators(self) -> list:
+        """Get investigators metadata from the V2 endpoint
 
-        investigators = []
-        parsed_funding_info = []
+        Returns
+        -------
+        list
+            A list of investigators
+        """
+        if not self.settings.project_name:
+            return []
 
-        for f in funding_info:
-            project_investigators = f.get("investigators", [])
-            investigators.extend(project_investigators)
-
-            funding_info_without_investigators = {k: v for k, v in f.items() if k != "investigators"}
-            parsed_funding_info.append(funding_info_without_investigators)
-
+        investigators_url = (
+            f"{self.settings.metadata_service_url}" f"/api/v2/investigators/{self.settings.project_name}"
+        )
+        investigators_info = metadata_service_helper(investigators_url)
+        if investigators_info is None:
+            return []
         # Deduplicate investigators by name and sort
         seen_names = set()
         unique_investigators = []
-        for investigator in investigators:
+        for investigator in investigators_info:
             name = investigator.get("name", "")
             if name and name not in seen_names:
                 seen_names.add(name)
                 unique_investigators.append(investigator)
-
         unique_investigators.sort(key=lambda x: x.get("name", ""))
-        investigators_list = unique_investigators
-
-        return parsed_funding_info, investigators_list
+        return unique_investigators
 
     def build_data_description(self, acquisition_start_time: str, subject_id: str) -> dict:
         """Build data description metadata"""
@@ -187,12 +189,13 @@ class GatherMetadataJob:
             logging.debug(f"Using existing {file_name}.")
             return self._get_file_from_user_defined_directory(file_name=file_name)
 
-        acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
+        acquisition_start_time = normalize_utc_timezone(acquisition_start_time)  # remove when we're past Python 3.11
         creation_time = datetime.fromisoformat(acquisition_start_time)
         logging.info(f"Using acquisition start time: {creation_time}")
 
         # Get funding information
-        funding_source, investigators = self.get_funding()
+        funding_source = self.get_funding()
+        investigators = self.get_investigators()
 
         # Get modalities
         modalities = self.settings.data_description_settings.modalities
@@ -543,7 +546,7 @@ class GatherMetadataJob:
         ValueError
             If acquisition_start_time doesn't match settings and raise_if_invalid is True
         """
-        acquisition_start_time = acquisition_start_time.replace("Z", "+00:00")  # remove when we're past Python 3.11
+        acquisition_start_time = normalize_utc_timezone(acquisition_start_time)  # remove when we're past Python 3.11
         local_acq_start_time = datetime.fromisoformat(acquisition_start_time)
 
         if self.settings.acquisition_start_time and local_acq_start_time != self.settings.acquisition_start_time:

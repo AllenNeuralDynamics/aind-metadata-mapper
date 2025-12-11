@@ -20,6 +20,36 @@ PROCEDURES_BASE_URL = "http://aind-metadata-service/api/v2/procedures"
 SUBJECT_BASE_URL = "http://aind-metadata-service/api/v2/subject"
 
 
+def normalize_utc_timezone(dt: str) -> str:
+    """
+    Normalize UTC timezone indicator from 'Z' to '+00:00' offset format.
+
+    This ensures compatibility with Python 3.10's datetime.fromisoformat(),
+    which doesn't support the 'Z' shorthand for UTC.
+
+    Parameters
+    ----------
+    dt : str
+        An ISO 8601 datetime string, potentially ending with 'Z'.
+
+    Returns
+    -------
+    str
+        The datetime string with 'Z' replaced by '+00:00' if present,
+        otherwise unchanged.
+
+    Examples
+    --------
+    >>> normalize_utc_timezone("2025-11-16T23:00:22Z")
+    '2025-11-16T23:00:22+00:00'
+    >>> normalize_utc_timezone("2025-11-16T23:00:22-05:00")
+    '2025-11-16T23:00:22-05:00'
+    """
+    if dt.endswith("Z"):
+        return dt[:-1] + "+00:00"
+    return dt
+
+
 def ensure_timezone(dt):
     """Ensure datetime has timezone info using system local timezone.
 
@@ -126,7 +156,8 @@ def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL) -> Opti
 
 
 def get_intended_measurements(
-    subject_id: str, base_url: str = "http://aind-metadata-service/intended_measurements"
+    subject_id: str,
+    base_url: str = "http://aind-metadata-service/intended_measurements",
 ) -> Optional[dict]:
     """Fetch intended measurements for a subject from the metadata service.
 
@@ -245,7 +276,10 @@ def get_instrument(
                 )
             return None
         else:
-            return sorted(matching_records, key=lambda record: record["modification_date"])[-1]
+            return sorted(
+                matching_records,
+                key=lambda record: record["modification_date"],
+            )[-1]
     except Exception as e:
         logger.warning(f"Unexpected error fetching instrument {instrument_id}: {e}")
         return None
@@ -319,7 +353,11 @@ def check_existing_instrument(
     bool
         True if a record with the same instrument_id and modification_date exists.
     """
-    existing = get_instrument(instrument_id, modification_date=modification_date, suppress_warning=True)
+    existing = get_instrument(
+        instrument_id,
+        modification_date=modification_date,
+        suppress_warning=True,
+    )
     return existing is not None
 
 

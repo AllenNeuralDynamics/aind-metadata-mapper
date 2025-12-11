@@ -24,6 +24,7 @@ from aind_metadata_mapper.utils import (
     get_subject,
     get_intended_measurements,
     get_protocols_for_modality,
+    normalize_utc_timezone,
 )
 
 
@@ -67,6 +68,14 @@ class TestGetInstrument(unittest.TestCase):
 
 class TestUtils(unittest.TestCase):
     """Test cases for utility functions in aind_metadata_mapper."""
+
+    def test_replace_z_with_offset(self):
+        """Test that a trailing 'Z' timezone shorthand is replaced with '+00:00'."""
+        self.assertEqual(normalize_utc_timezone("2025-11-16T23:00:22Z"), "2025-11-16T23:00:22+00:00")
+
+    def test_no_replacement(self):
+        """Test that the original string is returned unchanged when 'old' is not found."""
+        self.assertEqual(normalize_utc_timezone("2025-11-16T23:00:22"), "2025-11-16T23:00:22")
 
     def test_ensure_timezone_none(self):
         """Test that ensure_timezone handles None input by returning current time with timezone.
