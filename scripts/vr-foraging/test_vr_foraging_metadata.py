@@ -1,11 +1,8 @@
 """Integration test for VR Foraging metadata collection."""
 
-from datetime import datetime
-import json
 import logging
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, Mock
 
 from aind_data_schema_models.modalities import Modality
 
