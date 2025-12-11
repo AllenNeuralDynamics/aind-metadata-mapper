@@ -13,7 +13,8 @@ class MapperJobSettings(BaseModel):
     """
 
     input_filepath: Path
-    output_filepath: Path
+    output_directory: Path
+    output_filename_suffix: str
 
 
 class MapperJob:
