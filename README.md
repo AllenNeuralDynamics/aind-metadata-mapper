@@ -72,7 +72,7 @@ When mappers are developed from the `BaseMapper` class and registered in `mapper
 - **`acquisition_start_time`** (datetime, optional): Acquisition start time in ISO 8601 format. This setting should only be used when an `acquisition.json` is not available.
 
 - **`instrument_settings`**:
-  - **`instrument_id`** (str): ID for the instrument used in data collection. When set, the instrument.json will attempt to be fetched from the metadata-service and saved as `instrument_<modality-abbreviation(s)>.json`. If multiple instrument.json files exist after fetching they will be merged.
+  - **`instrument_id`** (str): ID for the instrument used in data collection. When set, the instrument.json will attempt to be fetched from the metadata-service and saved as `instrument_<modality-abbreviation(s)>.json`. If multiple `instrument*.json` files exist after fetching they will be merged.
 
 - **`data_description_settings`**: See [DataDescription](https://aind-data-schema.readthedocs.io/en/latest/data_description.html#datadescription) for details.
   - **`tags`** (list[str], optional)
