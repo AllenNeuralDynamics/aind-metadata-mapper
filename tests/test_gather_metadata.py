@@ -372,8 +372,10 @@ class TestGatherMetadataJob(unittest.TestCase):
                 metadata_dir="/test",
                 output_dir="/test/output",
                 subject_id="test_subject",
-                project_name="",
-                modalities=[Modality.ECEPHYS],
+                data_description_settings=DataDescriptionSettings(
+                    project_name="",
+                    modalities=[Modality.ECEPHYS],
+                ),
                 acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
             )
         )
@@ -392,8 +394,10 @@ class TestGatherMetadataJob(unittest.TestCase):
                 metadata_dir="/test",
                 output_dir="/test/output",
                 subject_id="test_subject",
-                project_name="Some Project",
-                modalities=[Modality.ECEPHYS],
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Some Project",
+                    modalities=[Modality.ECEPHYS],
+                ),
                 acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
             )
         )
