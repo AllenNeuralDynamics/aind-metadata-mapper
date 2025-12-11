@@ -310,7 +310,11 @@ class GatherMetadataJob:
             if os.path.isfile(input_path) and not os.path.isfile(output_path):
                 mapper_cls = registry[mapper_name]
                 # Create job settings for the mapper
-                job_settings = MapperJobSettings(input_filepath=Path(input_path), output_filepath=Path(output_path))
+                job_settings = MapperJobSettings(
+                    input_filepath=Path(input_path),
+                    output_directory=Path(input_dir),
+                    output_filename_suffix=mapper_name
+                )
                 try:
                     mapper = mapper_cls()
                     mapper.run_job(job_settings)

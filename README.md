@@ -138,4 +138,14 @@ You probably shouldn't be modifying these.
 
 Each MapperJob class should inherit from `BaseMapper` in `base.py`. The only parameter should be the `MapperJobSettings` from `base.py`. You cannot add additional parameters to your job or it will not be possible for it to be run automatically on the data-transfer-service. GatherMetadataJob will then run your mappers automatically when it detects the extracted metadata output.
 
-#### Individual mappers [todo]
+#### Writing the output file
+
+In your `run_job()` function the final step should be to use the `write_standard_file()` function and pass it the parameters from the job settings. This ensures that any changes we make to how writing files happens in the future will be preserved in your mapper.
+
+```
+acquisition.write_standard_file(output_directory=job_settings.output_directory, filename_suffix=filename_suffix)
+```
+
+#### Individual mappers
+
+[FIP](src/aind_metadata_mapper/fip/README.md)

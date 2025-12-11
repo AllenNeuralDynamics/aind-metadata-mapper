@@ -506,13 +506,11 @@ class TestFIPMapper(unittest.TestCase):
             with open(input_file, "w") as f:
                 json.dump(test_data, f)
 
-            # Create output file path
-            output_file = Path(tmpdir) / "acquisition_fip.json"
-
             # Create job settings
             job_settings = MapperJobSettings(
                 input_filepath=input_file,
-                output_filepath=output_file,
+                output_directory=Path(tmpdir),
+                output_filename_suffix="fip",
             )
 
             # Mock the metadata service calls to avoid network requests

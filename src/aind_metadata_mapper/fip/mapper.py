@@ -784,10 +784,6 @@ class FIPMapper(MapperJob):
         # Transform to acquisition
         acquisition = self.transform(metadata)
 
-        # Extract suffix from output filepath
-        # Filename format is always "acquisition_{mapper_name}.json"
-        # Example: "acquisition_fip.json" -> stem is "acquisition_fip" -> suffix is "fip"
-        output_path = job_settings.output_filepath
-        filename_suffix = output_path.stem.split("_", 1)[1]  # Extract "fip" from "acquisition_fip"
+        filename_suffix = job_settings.output_filename_suffix
 
-        acquisition.write_standard_file(output_directory=output_path.parent, filename_suffix=filename_suffix)
+        acquisition.write_standard_file(output_directory=job_settings.output_directory, filename_suffix=filename_suffix)

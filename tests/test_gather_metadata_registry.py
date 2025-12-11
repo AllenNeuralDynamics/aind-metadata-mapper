@@ -73,7 +73,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         args, kwargs = mock_run_job.call_args
         # The job_settings argument should have correct input/output paths
         self.assertEqual(str(args[1].input_filepath), str(self.input_path))
-        self.assertTrue(str(args[1].output_filepath).endswith(f"acquisition_{self.mapper_name}.json"))
+        self.assertEqual(str(args[1].output_directory), str(self.metadata_dir))
+        self.assertEqual(args[1].output_filename_suffix, self.mapper_name)
 
     @mock.patch("os.listdir")
     @mock.patch("os.path.exists", return_value=True)
