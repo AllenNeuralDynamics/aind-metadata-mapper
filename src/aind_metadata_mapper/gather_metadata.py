@@ -25,7 +25,13 @@ from pydantic import ValidationError
 from aind_metadata_mapper.base import MapperJobSettings
 from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
-from aind_metadata_mapper.utils import get_instrument, get_procedures, get_subject, metadata_service_helper, normalize_utc_timezone
+from aind_metadata_mapper.utils import (
+    get_instrument,
+    get_procedures,
+    get_subject,
+    metadata_service_helper,
+    normalize_utc_timezone,
+)
 
 
 class GatherMetadataJob:
@@ -163,7 +169,8 @@ class GatherMetadataJob:
             return []
 
         investigators_url = (
-            f"{self.settings.metadata_service_url}" f"/api/v2/investigators/{self.settings.data_description_settings.project_name}"
+            f"{self.settings.metadata_service_url}"
+            f"/api/v2/investigators/{self.settings.data_description_settings.project_name}"
         )
         investigators_info = metadata_service_helper(investigators_url)
         if investigators_info is None:
