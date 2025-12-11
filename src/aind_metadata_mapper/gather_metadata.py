@@ -159,11 +159,11 @@ class GatherMetadataJob:
         list
             A list of investigators
         """
-        if not self.settings.project_name:
+        if not self.settings.data_description_settings.project_name:
             return []
 
         investigators_url = (
-            f"{self.settings.metadata_service_url}" f"/api/v2/investigators/{self.settings.project_name}"
+            f"{self.settings.metadata_service_url}" f"/api/v2/investigators/{self.settings.data_description_settings.project_name}"
         )
         investigators_info = metadata_service_helper(investigators_url)
         if investigators_info is None:
