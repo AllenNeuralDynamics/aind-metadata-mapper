@@ -25,7 +25,13 @@ from pydantic import ValidationError
 from aind_metadata_mapper.base import MapperJobSettings
 from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
-from aind_metadata_mapper.utils import get_procedures, get_subject, metadata_service_helper, normalize_utc_timezone
+from aind_metadata_mapper.utils import (
+    get_instrument,
+    get_procedures,
+    get_subject,
+    metadata_service_helper,
+    normalize_utc_timezone,
+)
 
 
 class GatherMetadataJob:
@@ -141,10 +147,13 @@ class GatherMetadataJob:
         list
             A list of funding sources
         """
-        if not self.settings.project_name:
+        if not self.settings.data_description_settings.project_name:
             return []
 
-        funding_url = f"{self.settings.metadata_service_url}" f"/api/v2/funding/{self.settings.project_name}"
+        funding_url = (
+            f"{self.settings.metadata_service_url}"
+            f"/api/v2/funding/{self.settings.data_description_settings.project_name}"
+        )
         funding_info = metadata_service_helper(funding_url)
         return funding_info if funding_info else []
 
@@ -156,11 +165,12 @@ class GatherMetadataJob:
         list
             A list of investigators
         """
-        if not self.settings.project_name:
+        if not self.settings.data_description_settings.project_name:
             return []
 
         investigators_url = (
-            f"{self.settings.metadata_service_url}" f"/api/v2/investigators/{self.settings.project_name}"
+            f"{self.settings.metadata_service_url}"
+            f"/api/v2/investigators/{self.settings.data_description_settings.project_name}"
         )
         investigators_info = metadata_service_helper(investigators_url)
         if investigators_info is None:
@@ -195,22 +205,22 @@ class GatherMetadataJob:
         investigators = self.get_investigators()
 
         # Get modalities
-        modalities = self.settings.modalities
+        modalities = self.settings.data_description_settings.modalities
 
         # Create new data description
         new_data_description = DataDescription(
             creation_time=creation_time,
             institution=Organization.AIND,
-            project_name=self.settings.project_name,
+            project_name=self.settings.data_description_settings.project_name,
             modalities=modalities,
             funding_source=funding_source,
             investigators=investigators,
             data_level=DataLevel.RAW,
             subject_id=subject_id,
-            tags=self.settings.tags,
-            group=self.settings.group,
-            restrictions=self.settings.restrictions,
-            data_summary=self.settings.data_summary,
+            tags=self.settings.data_description_settings.tags,
+            group=self.settings.data_description_settings.group,
+            restrictions=self.settings.data_description_settings.restrictions,
+            data_summary=self.settings.data_description_settings.data_summary,
         )
 
         # Over-write creation_time now that the .name field has been populated
@@ -290,13 +300,12 @@ class GatherMetadataJob:
         if self.settings.metadata_dir is None:
             return
         input_dir = self.settings.metadata_dir
-        output_dir = self.settings.output_dir
         # For each registry key, check if <key>.json exists
         for mapper_name in registry.keys():
             input_filename = f"{mapper_name}.json"
             input_path = os.path.join(input_dir, input_filename)
             output_filename = f"acquisition_{mapper_name}.json"
-            output_path = os.path.join(output_dir, output_filename)
+            output_path = os.path.join(input_dir, output_filename)
             # Only run if input exists and output does not already exist
             if os.path.isfile(input_path) and not os.path.isfile(output_path):
                 mapper_cls = registry[mapper_name]
@@ -322,9 +331,9 @@ class GatherMetadataJob:
         else:
             # Run mappers for any matching files
             self._run_mappers_for_acquisition()
-            # then gather all acquisition files with prefixes from output directory
+            # then gather all acquisition files with prefixes from metadata directory
             files = self._get_prefixed_files_from_directory(
-                directory=self.settings.output_dir, file_name_prefix="acquisition"
+                directory=self.settings.metadata_dir, file_name_prefix="acquisition"
             )
             if files:
                 return self._merge_models(Acquisition, files)
@@ -343,6 +352,27 @@ class GatherMetadataJob:
 
         return merged_model.model_dump(mode="json")
 
+    def get_instrument_from_service(self) -> Optional[dict]:
+        """Get instrument metadata from service and write to the metadata directory"""
+        if self.settings.instrument_settings and self.settings.instrument_settings.instrument_id:
+            base_url = urljoin(
+                self.settings.metadata_service_url,
+                self.settings.metadata_service_instrument_endpoint,
+            )
+            instrument = get_instrument(
+                instrument_id=self.settings.instrument_settings.instrument_id,
+                base_url=base_url,
+            )
+            if instrument:
+                # Write this instrument using it's modalities
+                modality_abbreviations = [mod["abbreviation"] for mod in instrument.get("modalities", [])]
+                instrument_suffix = "_".join(modality_abbreviations)
+                self._write_json_file(
+                    filename=f"instrument_{instrument_suffix}.json",
+                    contents=instrument,
+                    output_dir=False,
+                )
+
     def get_instrument(self) -> Optional[dict]:
         """Get instrument metadata"""
         logging.info("Gathering instrument metadata.")
@@ -352,9 +382,14 @@ class GatherMetadataJob:
             logging.debug(f"Using existing {file_name}.")
             return self._get_file_from_user_defined_directory(file_name=file_name)
         else:
+            # Attempt to get instrument from service
+            # This may write a second instrument_*.json file!
+            self.get_instrument_from_service()
+
             files = self._get_prefixed_files_from_user_defined_directory(file_name_prefix="instrument")
             if files:
                 return self._merge_models(Instrument, files)
+
             else:
                 logging.debug("No instrument metadata file found.")
                 return None
@@ -399,7 +434,7 @@ class GatherMetadataJob:
             logging.debug("No model metadata file found.")
             return None
 
-    def _write_json_file(self, filename: str, contents: dict) -> None:
+    def _write_json_file(self, filename: str, contents: dict, output_dir: bool = True) -> None:
         """
         Write a json file to the output directory
         Parameters
@@ -409,7 +444,11 @@ class GatherMetadataJob:
         contents : dict
           Contents to write to the json file
         """
-        output_file = os.path.join(self.settings.output_dir, filename)
+        if output_dir or self.settings.metadata_dir is None:
+            output_file = os.path.join(self.settings.output_dir, filename)
+        else:
+            output_file = os.path.join(self.settings.metadata_dir, filename)
+
         with open(output_file, "w") as f:
             json.dump(contents, f, indent=3, ensure_ascii=False, sort_keys=True)
 
@@ -558,9 +597,7 @@ class GatherMetadataJob:
                 )
             else:
                 raise ValueError(
-                    "subject_id is required but not provided. "
-                    "Either provide acquisition.json with subject_id, "
-                    "or provide subject_id in the settings."
+                    "Either provide acquisition.json with subject_id, or provide subject_id in the settings."
                 )
         else:
             # Validate that subject_id matches if both are provided
@@ -622,6 +659,10 @@ class GatherMetadataJob:
     def run_job(self) -> None:
         """Run job"""
         logging.info("Starting run_job")
+
+        # Set the metadata_dir to output_dir if not provided
+        if self.settings.metadata_dir is None:
+            self.settings.metadata_dir = self.settings.output_dir
 
         # Gather all core metadata
         core_metadata = {}

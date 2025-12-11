@@ -11,6 +11,7 @@ from aind_data_schema_models.modalities import Modality
 from aind_metadata_mapper.base import MapperJob, MapperJobSettings
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob, JobSettings
 from aind_metadata_mapper.mapper_registry import registry
+from aind_metadata_mapper.models import DataDescriptionSettings
 
 
 class TestMapperJob(MapperJob):
@@ -55,12 +56,15 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_listdir.return_value = [self.input_filename]
 
         # Provide all required JobSettings fields
+        data_desc_settings = DataDescriptionSettings(
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
         settings = JobSettings(
             metadata_dir=self.metadata_dir,
             output_dir=self.metadata_dir,
             subject_id="test_subject",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=data_desc_settings,
         )
         job = GatherMetadataJob(settings=settings)
         job._run_mappers_for_acquisition()
@@ -79,12 +83,15 @@ class TestGatherMetadataJob(unittest.TestCase):
         # Patch os.listdir to return our test file
         mock_listdir.return_value = [self.input_filename]
 
+        data_desc_settings = DataDescriptionSettings(
+            project_name="Test Project",
+            modalities=[Modality.ECEPHYS],
+        )
         settings = JobSettings(
             metadata_dir=self.metadata_dir,
             output_dir=self.metadata_dir,
             subject_id="test_subject",
-            project_name="Test Project",
-            modalities=[Modality.ECEPHYS],
+            data_description_settings=data_desc_settings,
             raise_if_mapper_errors=True,
         )
         job = GatherMetadataJob(settings=settings)

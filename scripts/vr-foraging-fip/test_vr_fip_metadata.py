@@ -1,13 +1,14 @@
-"""Integration test for VR Foraging metadata collection."""
+"""Integration test for VR Foraging FIP metadata collection."""
 
 import logging
+import shutil
 import tempfile
 from pathlib import Path
 
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-from aind_metadata_mapper.models import DataDescriptionSettings, JobSettings
+from aind_metadata_mapper.models import DataDescriptionSettings, InstrumentSettings, JobSettings
 
 logging.basicConfig(level=logging.INFO)
 
@@ -15,14 +16,13 @@ logging.basicConfig(level=logging.INFO)
 USE_METADATA_SERVICE = True
 
 source_metadata_path = Path(__file__).parent
-
-output_subfolder = Path(tempfile.mkdtemp(prefix="vr_foraging_test_"))
+output_subfolder = Path(tempfile.mkdtemp(prefix="vr_foraging_fip_test_"))
 
 
 def run_test():
     """Run the actual test logic"""
     print("\n" + "=" * 80)
-    print("INTEGRATION TEST: VR Foraging Metadata")
+    print("INTEGRATION TEST: VR Foraging FIP Metadata")
     print("=" * 80)
     print(f"Source metadata: {source_metadata_path}")
     print(f"Output directory: {output_subfolder}")
@@ -34,8 +34,9 @@ def run_test():
         output_dir=str(output_subfolder),
         data_description_settings=DataDescriptionSettings(
             project_name="Cognitive flexibility in patch foraging",
-            modalities=[Modality.BEHAVIOR, Modality.BEHAVIOR_VIDEOS],
+            modalities=[Modality.BEHAVIOR, Modality.BEHAVIOR_VIDEOS, Modality.FIB],
         ),
+        instrument_settings=InstrumentSettings(instrument_id="13A"),
     )
 
     job = GatherMetadataJob(settings=settings)
@@ -110,11 +111,7 @@ def run_test():
 
 
 if __name__ == "__main__":
-    try:
-        # Run test with actual metadata service
-        run_test()
-    finally:
-        pass
-        # print(f"Cleaning up output directory: {output_subfolder}")
-        # shutil.rmtree(output_subfolder, ignore_errors=True)
-        # print("✓ Cleanup complete\n")
+    run_test()
+    print(f"Cleaning up output directory: {output_subfolder}")
+    shutil.rmtree(output_subfolder, ignore_errors=True)
+    print("✓ Cleanup complete\n")

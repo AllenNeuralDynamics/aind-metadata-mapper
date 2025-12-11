@@ -22,7 +22,7 @@ from aind_data_schema.core.subject import Subject
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.models import DataDescriptionSettings, InstrumentSettings, JobSettings
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
 METADATA_SERVICE_DIR = TEST_DIR / "resources" / "metadata_service"
@@ -39,8 +39,10 @@ class TestIntegrationMetadata(unittest.TestCase):
             metadata_dir="/test/metadata",
             output_dir="/test/output",
             subject_id="804670",
-            project_name="Visual Behavior",
-            modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+            data_description_settings=DataDescriptionSettings(
+                project_name="Visual Behavior",
+                modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+            ),
             metadata_service_url="http://test-service.com",
             acquisition_start_time=datetime(2025, 9, 17, 10, 26, 0, tzinfo=timezone.utc),
         )
@@ -352,8 +354,10 @@ class TestIntegrationMetadata(unittest.TestCase):
                 metadata_dir="/test/metadata",
                 output_dir="/test/output",
                 subject_id="804670",
-                project_name="Visual Behavior",
-                modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Visual Behavior",
+                    modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+                ),
                 metadata_service_url="http://test-service.com",
                 raise_if_invalid=True,
                 acquisition_start_time=datetime(2025, 9, 17, 10, 26, 0),
@@ -468,8 +472,10 @@ class TestIntegrationMetadata(unittest.TestCase):
                 metadata_dir="/test/metadata",
                 output_dir="/test/output",
                 subject_id="123456",  # Different from acquisition (804670)
-                project_name="Visual Behavior",
-                modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Visual Behavior",
+                    modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+                ),
                 metadata_service_url="http://test-service.com",
                 acquisition_start_time=acq_start_time,
                 raise_if_invalid=True,
@@ -491,8 +497,10 @@ class TestIntegrationMetadata(unittest.TestCase):
                 output_dir="/test/output",
                 subject_id=None,
                 acquisition_start_time=None,
-                project_name="Visual Behavior",
-                modalities=[Modality.BEHAVIOR],
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Visual Behavior",
+                    modalities=[Modality.BEHAVIOR],
+                ),
             )
             test_job = GatherMetadataJob(settings=test_settings)
 
@@ -521,8 +529,10 @@ class TestIntegrationMetadata(unittest.TestCase):
                 output_dir="/test/output",
                 subject_id="804670",
                 acquisition_start_time=acq_start_time,
-                project_name="Visual Behavior",
-                modalities=[Modality.BEHAVIOR],
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Visual Behavior",
+                    modalities=[Modality.BEHAVIOR],
+                ),
             )
             test_job = GatherMetadataJob(settings=test_settings)
 
@@ -570,6 +580,72 @@ class TestIntegrationMetadata(unittest.TestCase):
         self.assertIn("model", result)
         self.assertEqual(result["model"], model_data)
         mock_write.assert_any_call("model.json", model_data)
+
+    @patch("aind_metadata_mapper.gather_metadata.get_instrument")
+    def test_get_instrument_from_service(self, mock_get_instrument):
+        """Test get_instrument_from_service retrieves and writes instrument metadata"""
+        instrument_data = self._load_resource_file(METADATA_SERVICE_DIR, "instrument_response.json")
+        mock_get_instrument.return_value = instrument_data
+
+        with patch("os.makedirs"):
+            test_job = GatherMetadataJob(
+                settings=JobSettings(
+                    metadata_dir="/test/metadata",
+                    output_dir="/test/output",
+                    subject_id="804670",
+                    data_description_settings=DataDescriptionSettings(
+                        project_name="Visual Behavior",
+                        modalities=[Modality.FIB],
+                    ),
+                    instrument_settings=InstrumentSettings(instrument_id="13A"),
+                )
+            )
+
+        with patch.object(test_job, "_write_json_file") as mock_write:
+            test_job.get_instrument_from_service()
+
+        mock_get_instrument.assert_called_once()
+        mock_write.assert_called_once_with(filename="instrument_fib.json", contents=instrument_data, output_dir=False)
+
+    @patch("builtins.open", new_callable=unittest.mock.mock_open)
+    @patch("os.makedirs")
+    def test_write_json_file_to_metadata_dir(self, mock_makedirs, mock_open):
+        """Test _write_json_file writes to metadata_dir when output_dir=False"""
+        test_job = GatherMetadataJob(
+            settings=JobSettings(
+                metadata_dir="/test/metadata",
+                output_dir="/test/output",
+                subject_id="804670",
+                data_description_settings=DataDescriptionSettings(project_name="Test", modalities=[Modality.FIB]),
+            )
+        )
+        test_job._write_json_file("test.json", {"key": "value"}, output_dir=False)
+        mock_open.assert_called_once_with("/test/metadata/test.json", "w")
+
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob.get_acquisition")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob.build_data_description")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob.add_core_metadata")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob.validate_and_create_metadata")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob._write_json_file")
+    @patch("os.makedirs")
+    def test_run_job_sets_metadata_dir_from_output_dir(
+        self, mock_makedirs, mock_write, mock_validate, mock_add, mock_build, mock_get_acq
+    ):
+        """Test run_job sets metadata_dir from output_dir when None"""
+        mock_get_acq.return_value = {"subject_id": "804670", "acquisition_start_time": "2025-09-17T10:26:00+00:00"}
+        mock_build.return_value = {"name": "test"}
+        mock_add.return_value = {}
+
+        test_job = GatherMetadataJob(
+            settings=JobSettings(
+                metadata_dir=None,
+                output_dir="/test/output",
+                subject_id="804670",
+                data_description_settings=DataDescriptionSettings(project_name="Test", modalities=[Modality.FIB]),
+            )
+        )
+        test_job.run_job()
+        self.assertEqual(test_job.settings.metadata_dir, "/test/output")
 
 
 if __name__ == "__main__":
