@@ -148,4 +148,4 @@ acquisition.write_standard_file(output_directory=job_settings.output_directory, 
 
 #### Individual mappers
 
-[FIP](src/aind_metadata_mapper/fip/README.md)
+[FIP (Fiber photometry)](src/aind_metadata_mapper/fip/README.md)
