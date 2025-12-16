@@ -88,7 +88,7 @@ class TestGatherProcessingJob(unittest.TestCase):
 
         with self.assertRaises(Exception):
             job.load_existing_processing()
-        
+
         mock_log_error.assert_called_once()
 
     @patch("builtins.open", new_callable=mock_open)
@@ -131,8 +131,11 @@ class TestGatherProcessingJob(unittest.TestCase):
     @patch("json.dump")
     @patch("logging.error")
     def test_run_job_merge_fails_raises_error(
-        self, mock_log_error: MagicMock, mock_json_dump: MagicMock, 
-        mock_file_open: MagicMock, mock_load_existing: MagicMock
+        self,
+        mock_log_error: MagicMock,
+        mock_json_dump: MagicMock,
+        mock_file_open: MagicMock,
+        mock_load_existing: MagicMock,
     ):
         """Tests run_job raises exception when merge fails."""
         existing_processing = Processing(
@@ -148,7 +151,7 @@ class TestGatherProcessingJob(unittest.TestCase):
             ]
         )
         mock_load_existing.return_value = existing_processing
-        with patch.object(Processing, '__add__', side_effect=Exception("Merge failed")):
+        with patch.object(Processing, "__add__", side_effect=Exception("Merge failed")):
             new_processing = Processing(
                 data_processes=[
                     DataProcess(
@@ -164,10 +167,9 @@ class TestGatherProcessingJob(unittest.TestCase):
             example_settings = JobSettings(output_directory="example", processing=new_processing)
             job = GatherProcessingJob(settings=example_settings)
 
-
             with self.assertRaises(Exception) as context:
                 job.run_job()
-            
+
             self.assertIn("Merge failed", str(context.exception))
             mock_log_error.assert_called_once()
             self.assertIn("Failed to merge existing processing.json", str(mock_log_error.call_args))
