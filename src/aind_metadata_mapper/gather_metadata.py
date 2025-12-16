@@ -313,7 +313,7 @@ class GatherMetadataJob:
                 job_settings = MapperJobSettings(
                     input_filepath=Path(input_path),
                     output_directory=Path(input_dir),
-                    output_filename_suffix=mapper_name
+                    output_filename_suffix=mapper_name,
                 )
                 try:
                     mapper = mapper_cls()

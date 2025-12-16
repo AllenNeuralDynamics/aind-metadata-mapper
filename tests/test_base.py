@@ -26,9 +26,7 @@ class TestBaseModule(unittest.TestCase):
         output_dir = Path("/tmp")
         output_suffix = "_test"
         settings = MapperJobSettings(
-            input_filepath=input_fp,
-            output_directory=output_dir,
-            output_filename_suffix=output_suffix
+            input_filepath=input_fp, output_directory=output_dir, output_filename_suffix=output_suffix
         )
         self.assertEqual(settings.input_filepath, input_fp)
         self.assertEqual(settings.output_directory, output_dir)
@@ -37,9 +35,7 @@ class TestBaseModule(unittest.TestCase):
     def test_mapperjob_not_implemented(self):
         """Test that MapperJob raises NotImplementedError"""
         settings = MapperJobSettings(
-            input_filepath=Path("/tmp/in.json"),
-            output_directory=Path("/tmp"),
-            output_filename_suffix="_test"
+            input_filepath=Path("/tmp/in.json"), output_directory=Path("/tmp"), output_filename_suffix="_test"
         )
         mapper = MapperJob()
         with self.assertRaises(NotImplementedError):
@@ -51,9 +47,7 @@ class TestBaseModule(unittest.TestCase):
         output_dir = Path("/tmp")
         output_suffix = "_test"
         settings = MapperJobSettings(
-            input_filepath=input_fp,
-            output_directory=output_dir,
-            output_filename_suffix=output_suffix
+            input_filepath=input_fp, output_directory=output_dir, output_filename_suffix=output_suffix
         )
         mapper = DummyMapper()
         mapper.was_run = False
