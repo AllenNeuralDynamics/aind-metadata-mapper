@@ -41,9 +41,9 @@ class GatherProcessingJob:
                     existing_data = json.load(f)
                 return Processing(**existing_data)
             except Exception as e:
-                error_msg = ("Failed to load existing processing.json: {e}. ")
-            logging.error(error_msg)
-            raise e
+                error_msg = "Failed to load existing processing.json: {e}. "
+                logging.error(error_msg)
+                raise e
         return None
 
     def run_job(self):
