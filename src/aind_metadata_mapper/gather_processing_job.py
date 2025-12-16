@@ -41,8 +41,9 @@ class GatherProcessingJob:
                     existing_data = json.load(f)
                 return Processing(**existing_data)
             except Exception as e:
-                logging.warning(f"Failed to load existing processing.json: {e}. Creating new file.")
-                return None
+                error_msg = ("Failed to load existing processing.json: {e}. ")
+            logging.error(error_msg)
+            raise e
         return None
 
     def run_job(self):
@@ -53,8 +54,13 @@ class GatherProcessingJob:
             try:
                 merged_processing = existing_processing + self.settings.processing
             except Exception as e:
-                logging.warning(f"Failed to merge existing processing.json: {e}. Using new processing data.")
-                merged_processing = self.settings.processing
+                error_msg = (
+                    f"Failed to merge existing processing.json with new processing data: {e}. "
+                    "Cannot proceed without risking data loss. Please verify the existing processing.json "
+                    "file is valid and compatible with the new processing data."
+                )
+                logging.error(error_msg)
+                raise e
         else:
             merged_processing = self.settings.processing
 

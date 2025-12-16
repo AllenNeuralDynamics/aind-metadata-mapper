@@ -74,23 +74,22 @@ class TestGatherProcessingJob(unittest.TestCase):
     @patch("pathlib.Path.exists")
     @patch("builtins.open", new_callable=mock_open)
     @patch("json.load")
-    @patch("logging.warning")
-    def test_load_existing_processing_invalid_json(
-        self, mock_warning: MagicMock, mock_json_load: MagicMock, mock_file_open: MagicMock, mock_exists: MagicMock
+    @patch("logging.error")
+    def test_load_existing_processing_invalid_schema(
+        self, mock_log_error: MagicMock, mock_json_load: MagicMock, mock_file_open: MagicMock, mock_exists: MagicMock
     ):
-        """Tests load_existing_processing when file exists but contains invalid JSON."""
+        """Tests load_existing_processing when file exists but doesn't match Processing schema."""
         mock_exists.return_value = True
-        mock_json_load.side_effect = Exception("Invalid JSON")
+        mock_json_load.return_value = {"invalid_field": "value"}
 
         example_processing = Processing(data_processes=[])
         example_settings = JobSettings(output_directory="example", processing=example_processing)
         job = GatherProcessingJob(settings=example_settings)
 
-        result = job.load_existing_processing()
-
-        self.assertIsNone(result)
-        mock_warning.assert_called_once()
-        self.assertIn("Failed to load existing processing.json", str(mock_warning.call_args))
+        with self.assertRaises(Exception):
+            job.load_existing_processing()
+        
+        mock_log_error.assert_called_once()
 
     @patch("builtins.open", new_callable=mock_open)
     @patch("json.dump")
@@ -130,11 +129,12 @@ class TestGatherProcessingJob(unittest.TestCase):
     @patch("aind_metadata_mapper.gather_processing_job.GatherProcessingJob.load_existing_processing")
     @patch("builtins.open", new_callable=mock_open)
     @patch("json.dump")
-    def test_run_job_with_existing_processing(
-        self, mock_json_dump: MagicMock, mock_file_open: MagicMock, mock_load_existing: MagicMock
+    @patch("logging.error")
+    def test_run_job_merge_fails_raises_error(
+        self, mock_log_error: MagicMock, mock_json_dump: MagicMock, 
+        mock_file_open: MagicMock, mock_load_existing: MagicMock
     ):
-        """Tests run_job method when existing processing.json exists and is merged."""
-        # Existing processing file content
+        """Tests run_job raises exception when merge fails."""
         existing_processing = Processing(
             data_processes=[
                 DataProcess(
@@ -145,65 +145,33 @@ class TestGatherProcessingJob(unittest.TestCase):
                     stage=ProcessStage.PROCESSING,
                     code=Code(url="www.example.com/existing_process"),
                 )
-            ],
-            dependency_graph={"Image atlas alignment": []},
-        )
-
-        # New processing to add
-        new_processing = Processing(
-            data_processes=[
-                DataProcess(
-                    start_date_time=datetime(2024, 10, 10, 1, 2, 3),
-                    end_date_time=datetime(2024, 10, 11, 1, 2, 3),
-                    process_type=ProcessName.COMPRESSION,
-                    experimenters=["AIND Scientific Computing"],
-                    stage=ProcessStage.PROCESSING,
-                    code=Code(
-                        url="www.example.com/ephys_compression",
-                        parameters=GenericModel(),
-                    ),
-                )
-            ],
-            dependency_graph={"Compression": []},
+            ]
         )
         mock_load_existing.return_value = existing_processing
-        example_settings = JobSettings(output_directory="example", processing=new_processing)
-        job = GatherProcessingJob(settings=example_settings)
-        job.run_job()
-
-        mock_load_existing.assert_called_once()
-        mock_json_dump.assert_called_once()
-
-        # Verify the merged processing has both data processes
-        written_data = mock_json_dump.call_args[0][0]
-        self.assertEqual(len(written_data["data_processes"]), 2)
-
-    def test_run_job_with_existing_processing_merge_failure(self):
-        """Tests run_job method when merging existing processing fails."""
-        existing_processing = Processing(
-            data_processes=[],
-        )
-
-        new_processing = Processing(
-            data_processes=[],
-        )
-
-        with (
-            patch.object(GatherProcessingJob, "load_existing_processing", return_value=existing_processing),
-            patch("builtins.open", new_callable=mock_open),
-            patch("json.dump") as mock_json_dump,
-            patch("logging.warning") as mock_warning,
-        ):
+        with patch.object(Processing, '__add__', side_effect=Exception("Merge failed")):
+            new_processing = Processing(
+                data_processes=[
+                    DataProcess(
+                        start_date_time=datetime(2024, 10, 10, 1, 2, 3),
+                        end_date_time=datetime(2024, 10, 11, 1, 2, 3),
+                        process_type=ProcessName.COMPRESSION,
+                        experimenters=["AIND Scientific Computing"],
+                        stage=ProcessStage.PROCESSING,
+                        code=Code(url="www.example.com/ephys_compression"),
+                    )
+                ]
+            )
             example_settings = JobSettings(output_directory="example", processing=new_processing)
             job = GatherProcessingJob(settings=example_settings)
 
-            # Force an exception during merging
-            with patch.object(Processing, "__add__", side_effect=Exception("Merge failed")):
-                job.run_job()
 
-                mock_warning.assert_called_once()
-                self.assertIn("Failed to merge existing processing.json", str(mock_warning.call_args))
-                mock_json_dump.assert_called_once()
+            with self.assertRaises(Exception) as context:
+                job.run_job()
+            
+            self.assertIn("Merge failed", str(context.exception))
+            mock_log_error.assert_called_once()
+            self.assertIn("Failed to merge existing processing.json", str(mock_log_error.call_args))
+            mock_json_dump.assert_not_called()
 
 
 if __name__ == "__main__":
