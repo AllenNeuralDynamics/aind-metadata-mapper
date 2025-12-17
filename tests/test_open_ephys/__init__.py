@@ -1,1 +1,0 @@
-"""Tests open ephys package"""
