@@ -516,7 +516,7 @@ class CamstimEphysSessionEtl(
             names.append(condition["name"])
         optotagging_table["stop_time"] = stop_times
         optotagging_table["condition"] = conditions
-        optotagging_table["name"] = names
+        optotagging_table["stim_name"] = names
         optotagging_table["duration"] = (
             optotagging_table["stop_time"] - optotagging_table["start_time"]
         )
