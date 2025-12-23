@@ -44,6 +44,7 @@ default_column_renames = {
     "Image": "frame",
     "Pos_x": "x_position",
     "Pos_y": "y_position",
+    "name": "stim_name"
 }
 
 
