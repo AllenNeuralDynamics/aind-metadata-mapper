@@ -106,13 +106,6 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
         ),
     )
 
-    metadata_service_timeout_seconds: int = Field(
-        default=300,
-        description=(
-            "Timeout (seconds) used for requests to aind-metadata-service. "
-        ),
-    )
-
     # Core metadata settings
     data_description_settings: DataDescriptionSettings = Field(
         ...,
