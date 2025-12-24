@@ -75,7 +75,7 @@ def ensure_timezone(dt):
     return dt
 
 
-def metadata_service_helper(url: str, timeout: int = 60) -> Optional[dict]:
+def metadata_service_helper(url: str, timeout: int = 300) -> Optional[dict]:
     """Fetch metadata from a service URL.
 
     Parameters
@@ -90,15 +90,21 @@ def metadata_service_helper(url: str, timeout: int = 60) -> Optional[dict]:
     Optional[dict]
         Metadata as a dictionary, or None if error occurs.
     """
-    try:
-        response = requests.get(url, timeout=timeout)
-        if response.status_code == 400:
+    max_attempts = 3
+    backoff_seconds = 2
+    for attempt in range(1, max_attempts + 1):
+        try:
+            response = requests.get(url, timeout=timeout)
+            if response.status_code == 400:
+                return response.json()
+            response.raise_for_status()
             return response.json()
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error retrieving metadata from {url}: {e}")
-        return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error retrieving metadata from {url}: {e}")
+            if attempt < max_attempts:
+                time.sleep(backoff_seconds ** attempt)
+                continue
+            return None
 
 
 def get_subject(subject_id: str, base_url: str = SUBJECT_BASE_URL) -> Optional[dict]:
@@ -128,7 +134,7 @@ def get_subject(subject_id: str, base_url: str = SUBJECT_BASE_URL) -> Optional[d
         return None
 
 
-def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL) -> Optional[dict]:
+def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL, timeout_seconds: int = 300) -> Optional[dict]:
     """Fetch procedures data for a subject from the metadata service.
 
     Parameters
@@ -137,7 +143,8 @@ def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL) -> Opti
         The subject ID to query.
     base_url : str
         Base URL for the procedures endpoint. Defaults to PROCEDURES_BASE_URL.
-
+    timeout_seconds : int
+        Request timeout in seconds. Default is 300.
     Returns
     -------
     Optional[dict]
@@ -146,7 +153,7 @@ def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL) -> Opti
     try:
         url_base = base_url.rstrip("/") + "/"
         url = urljoin(url_base, subject_id.lstrip("/"))
-        result = metadata_service_helper(url)
+        result = metadata_service_helper(url, timeout=timeout_seconds)
         if result is None:
             logger.warning(f"Could not fetch procedures for subject {subject_id}")
         return result
