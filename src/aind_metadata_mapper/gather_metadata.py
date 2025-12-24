@@ -154,7 +154,9 @@ class GatherMetadataJob:
             f"{self.settings.metadata_service_url}"
             f"/api/v2/funding/{self.settings.data_description_settings.project_name}"
         )
-        funding_info = metadata_service_helper(funding_url)
+        funding_info = metadata_service_helper(
+            funding_url,
+        )
         return funding_info if funding_info else []
 
     def get_investigators(self) -> list:
@@ -172,7 +174,9 @@ class GatherMetadataJob:
             f"{self.settings.metadata_service_url}"
             f"/api/v2/investigators/{self.settings.data_description_settings.project_name}"
         )
-        investigators_info = metadata_service_helper(investigators_url)
+        investigators_info = metadata_service_helper(
+            investigators_url,
+        )
         if investigators_info is None:
             return []
         # Deduplicate investigators by name and sort
@@ -286,7 +290,10 @@ class GatherMetadataJob:
                 self.settings.metadata_service_url,
                 self.settings.metadata_service_procedures_endpoint,
             )
-            contents = get_procedures(subject_id, base_url=base_url)
+            contents = get_procedures(
+                subject_id,
+                base_url=base_url,
+            )
         else:
             logging.debug(f"Using existing {file_name}.")
             contents = self._get_file_from_user_defined_directory(file_name=file_name)
