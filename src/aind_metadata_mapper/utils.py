@@ -3,6 +3,7 @@
 import json
 import logging
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -75,7 +76,7 @@ def ensure_timezone(dt):
     return dt
 
 
-def metadata_service_helper(url: str, timeout: int = 300) -> Optional[dict]:
+def metadata_service_helper(url: str, timeout: int = 60) -> Optional[dict]:
     """Fetch metadata from a service URL.
 
     Parameters

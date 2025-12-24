@@ -156,7 +156,6 @@ class GatherMetadataJob:
         )
         funding_info = metadata_service_helper(
             funding_url,
-            timeout_seconds=self.settings.metadata_service_timeout,
         )
         return funding_info if funding_info else []
 
@@ -177,7 +176,6 @@ class GatherMetadataJob:
         )
         investigators_info = metadata_service_helper(
             investigators_url,
-            timeout_seconds=self.settings.metadata_service_timeout,
         )
         if investigators_info is None:
             return []
@@ -295,7 +293,6 @@ class GatherMetadataJob:
             contents = get_procedures(
                 subject_id,
                 base_url=base_url,
-                timeout_seconds=self.settings.metadata_service_timeout
             )
         else:
             logging.debug(f"Using existing {file_name}.")
