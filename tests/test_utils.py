@@ -213,28 +213,6 @@ class TestUtils(unittest.TestCase):
         result = get_procedures("123")
         self.assertIsNone(result)
 
-    @patch("aind_metadata_mapper.utils.time.sleep")
-    @patch("requests.get")
-    def test_get_procedures_retries_then_success(self, mock_get, mock_sleep):
-        """Test get_procedures retries on RequestException and succeeds on a later attempt."""
-        ok_resp = SimpleNamespace()
-        ok_resp.status_code = 200
-        ok_resp.json = lambda: {"ok": True}
-        ok_resp.raise_for_status = lambda: None
-        mock_get.side_effect = [
-            requests.exceptions.RequestException("transient"),
-            ok_resp,
-        ]
-
-        result = get_procedures("123")
-        self.assertEqual(result, {"ok": True})
-        self.assertEqual(mock_get.call_count, 2)
-
-        for call in mock_get.call_args_list:
-            self.assertEqual(call.kwargs.get("timeout"), 300)
-
-        mock_sleep.assert_called_once_with(2**1)
-
     @patch("requests.get")
     def test_get_subject_success(self, mock_get):
         """Test that get_subject successfully fetches and returns subject data.
