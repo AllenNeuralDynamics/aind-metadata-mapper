@@ -405,9 +405,9 @@ class TestFIPMapper(unittest.TestCase):
         """
         schema_compliant_data = self.example_intermediate_data.copy()
 
-        # Mock _parse_implanted_fibers to return None (simulating service failure)
+        # Mock _parse_implanted_fibers to return (None, False) (simulating service failure)
         original_method = self.mapper._parse_implanted_fibers
-        self.mapper._parse_implanted_fibers = lambda subject_id, data=None: None
+        self.mapper._parse_implanted_fibers = lambda subject_id, data=None: (None, False)
 
         try:
             with self.assertRaises(ValueError) as cm:
@@ -417,7 +417,7 @@ class TestFIPMapper(unittest.TestCase):
                     intended_measurements=self.test_intended_measurements,
                     implanted_fibers=None,  # Will trigger fetch, returns None
                 )
-            self.assertIn("No implanted fibers found", str(cm.exception))
+            self.assertIn("Failed to retrieve procedures data", str(cm.exception))
         finally:
             # Restore original method
             self.mapper._parse_implanted_fibers = original_method
@@ -431,6 +431,31 @@ class TestFIPMapper(unittest.TestCase):
                 implanted_fibers=[],  # Empty list should also fail
             )
         self.assertIn("No implanted fibers found", str(cm.exception))
+
+    def test_transform_missing_implanted_fibers_in_procedures(self):
+        """Test that transform provides a distinct error when procedures are fetched but no implanted fibers are found.
+
+        This ensures we distinguish between "service failed" and "no fibers in procedures data".
+        """
+        schema_compliant_data = self.example_intermediate_data.copy()
+
+        # Mock _parse_implanted_fibers to return (None, True) (procedures fetched, but no fibers found)
+        original_method = self.mapper._parse_implanted_fibers
+        self.mapper._parse_implanted_fibers = lambda subject_id, data=None: (None, True)
+
+        try:
+            with self.assertRaises(ValueError) as cm:
+                self.mapper.transform(
+                    schema_compliant_data,
+                    skip_validation=True,
+                    intended_measurements=self.test_intended_measurements,
+                    implanted_fibers=None,  # Will trigger fetch, returns (None, True)
+                )
+            self.assertIn("No implanted fibers found in procedures data", str(cm.exception))
+            self.assertNotIn("Failed to retrieve procedures data", str(cm.exception))
+        finally:
+            # Restore original method
+            self.mapper._parse_implanted_fibers = original_method
 
     def test_validate_fip_metadata_error(self):
         """Test that _validate_fip_metadata raises ValueError on validation failure.
@@ -520,7 +545,9 @@ class TestFIPMapper(unittest.TestCase):
                 unittest.mock.patch.object(
                     mapper, "_parse_intended_measurements", return_value=self.test_intended_measurements
                 ),
-                unittest.mock.patch.object(mapper, "_parse_implanted_fibers", return_value=self.test_implanted_fibers),
+                unittest.mock.patch.object(
+                    mapper, "_parse_implanted_fibers", return_value=(self.test_implanted_fibers, True)
+                ),
                 unittest.mock.patch.object(mapper, "_validate_fip_metadata"),
             ):
                 mapper.run_job(job_settings)
@@ -588,31 +615,34 @@ class TestFIPMapperEdgeCases(unittest.TestCase):
         """Test that implanted fibers parsing handles cases where no procedures data is returned from the service.
 
         When the metadata service returns None (due to network issues, service unavailable, etc.),
-        _parse_implanted_fibers should return None.
+        _parse_implanted_fibers should return (None, False).
         """
         mapper = FIPMapper()
-        result = mapper._parse_implanted_fibers("123", data=None)
+        result, procedures_fetched = mapper._parse_implanted_fibers("123", data=None)
         self.assertIsNone(result)
+        self.assertFalse(procedures_fetched)
 
     def test_parse_implanted_fibers_no_fibers_found(self):
-        """Test that implanted fibers parsing returns None when no fiber probes are found.
+        """Test that implanted fibers parsing returns (None, True) when no fiber probes are found.
 
         This covers cases where procedures data is empty, has no surgery, or surgery has no probe implants.
         """
         mapper = FIPMapper()
 
         # No procedures
-        result = mapper._parse_implanted_fibers("123", data={"subject_procedures": []})
+        result, procedures_fetched = mapper._parse_implanted_fibers("123", data={"subject_procedures": []})
         self.assertIsNone(result)
+        self.assertTrue(procedures_fetched)
 
         # Surgery but no probe implants
-        result = mapper._parse_implanted_fibers(
+        result, procedures_fetched = mapper._parse_implanted_fibers(
             "123",
             data={
                 "subject_procedures": [{"object_type": "Surgery", "procedures": [{"object_type": "Other procedure"}]}]
             },
         )
         self.assertIsNone(result)
+        self.assertTrue(procedures_fetched)
 
     def test_parse_implanted_fibers_with_fiber_probe(self):
         """Test that implanted fibers parsing correctly identifies fiber probes from procedures data.
@@ -622,7 +652,7 @@ class TestFIPMapperEdgeCases(unittest.TestCase):
         This tests the happy path where fiber implants are properly documented in the procedures.
         """
         mapper = FIPMapper()
-        result = mapper._parse_implanted_fibers(
+        result, procedures_fetched = mapper._parse_implanted_fibers(
             "123",
             data={
                 "subject_procedures": [
@@ -639,6 +669,7 @@ class TestFIPMapperEdgeCases(unittest.TestCase):
             },
         )
         self.assertEqual(result, [2])
+        self.assertTrue(procedures_fetched)
 
     def test_parse_implanted_fibers_invalid_fiber_name(self):
         """Test that implanted fibers parsing raises ValueError for invalid fiber names.

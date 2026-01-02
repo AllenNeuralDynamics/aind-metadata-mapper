@@ -25,6 +25,7 @@ from aind_metadata_mapper.utils import (
     get_intended_measurements,
     get_protocols_for_modality,
     normalize_utc_timezone,
+    metadata_service_helper,
 )
 
 
@@ -213,6 +214,71 @@ class TestUtils(unittest.TestCase):
         result = get_procedures("123")
         self.assertIsNone(result)
 
+    @patch("aind_metadata_mapper.utils.time.sleep")
+    @patch("requests.get")
+    def test_metadata_service_helper_retry_on_exception(self, mock_get, mock_sleep):
+        """Test that metadata_service_helper retries when exceptions occur.
+
+        When requests raises an exception, metadata_service_helper should
+        retry up to max_retries times before giving up.
+        """
+        from aind_metadata_mapper.utils import metadata_service_helper
+
+        # First 2 calls raise exception, third succeeds
+        mock_resp_success = SimpleNamespace()
+        mock_resp_success.status_code = 200
+        mock_resp_success.json = lambda: {"test": "data"}
+        mock_resp_success.raise_for_status = lambda: None
+
+        mock_get.side_effect = [
+            requests.exceptions.RequestException("network error"),
+            requests.exceptions.RequestException("network error"),
+            mock_resp_success,
+        ]
+
+        result = metadata_service_helper("http://test.com")
+        self.assertEqual(result, {"test": "data"})
+        self.assertEqual(mock_get.call_count, 3)
+        self.assertEqual(mock_sleep.call_count, 2)
+
+    @patch("aind_metadata_mapper.utils.time.sleep")
+    @patch("requests.get")
+    def test_metadata_service_helper_max_retries_exceeded(self, mock_get, mock_sleep):
+        """Test that metadata_service_helper gives up after max_retries.
+
+        When the metadata service consistently fails, metadata_service_helper should
+        retry max_retries times and then return None.
+        """
+        from aind_metadata_mapper.utils import metadata_service_helper
+
+        mock_get.side_effect = requests.exceptions.RequestException("persistent error")
+
+        result = metadata_service_helper("http://test.com", max_retries=3)
+        self.assertIsNone(result)
+        self.assertEqual(mock_get.call_count, 3)
+        self.assertEqual(mock_sleep.call_count, 2)
+
+    @patch("aind_metadata_mapper.utils.time.sleep")
+    @patch("requests.get")
+    def test_metadata_service_helper_custom_retry_delay(self, mock_get, mock_sleep):
+        """Test that metadata_service_helper respects custom retry_delay.
+
+        When a custom retry_delay is provided, metadata_service_helper should
+        use that delay between retries.
+        """
+        from aind_metadata_mapper.utils import metadata_service_helper
+
+        mock_get.side_effect = [
+            requests.exceptions.RequestException("error"),
+            requests.exceptions.RequestException("error"),
+        ]
+
+        result = metadata_service_helper("http://test.com", max_retries=2, retry_delay=0.5)
+        self.assertIsNone(result)
+        self.assertEqual(mock_get.call_count, 2)
+        self.assertEqual(mock_sleep.call_count, 1)
+        mock_sleep.assert_called_with(0.5)
+
     @patch("requests.get")
     def test_get_subject_success(self, mock_get):
         """Test that get_subject successfully fetches and returns subject data.
@@ -349,6 +415,31 @@ class TestUtils(unittest.TestCase):
         result = get_protocols_for_modality("fip")
         # Should return a list (may be empty if protocols.yaml doesn't have fip, but should not error)
         self.assertIsInstance(result, list)
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_get_subject_returns_none_after_retries(self, mock_helper):
+        """Test get_subject when metadata_service_helper returns None after retries."""
+        mock_helper.return_value = None
+        with self.assertLogs("aind_metadata_mapper.utils", level="WARNING") as log:
+            result = get_subject("test_subject")
+        self.assertIsNone(result)
+        self.assertTrue(any("Could not fetch subject test_subject" in msg for msg in log.output))
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_get_intended_measurements_returns_none_after_retries(self, mock_helper):
+        """Test get_intended_measurements when metadata_service_helper returns None after retries."""
+        mock_helper.return_value = None
+        with self.assertLogs("aind_metadata_mapper.utils", level="WARNING") as log:
+            result = get_intended_measurements("test_subject")
+        self.assertIsNone(result)
+        self.assertTrue(
+            any("Could not fetch intended measurements for subject test_subject" in msg for msg in log.output)
+        )
+
+    def test_metadata_service_helper_zero_retries(self):
+        """Test metadata_service_helper with max_retries=0."""
+        result = metadata_service_helper("http://test.com", max_retries=0)
+        self.assertIsNone(result)
 
 
 class TestPromptFunctions(unittest.TestCase):

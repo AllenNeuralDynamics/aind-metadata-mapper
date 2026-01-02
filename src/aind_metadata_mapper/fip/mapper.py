@@ -209,7 +209,7 @@ class FIPMapper(MapperJob):
                 f"Expected format: 'Fiber_<integer>' (e.g., 'Fiber_0')"
             ) from e
 
-    def _parse_implanted_fibers(self, subject_id: str, data: Optional[dict] = None) -> Optional[List[int]]:
+    def _parse_implanted_fibers(self, subject_id: str, data: Optional[dict] = None) -> tuple[Optional[List[int]], bool]:
         """Parse implanted fiber indices from procedures data.
 
         Determines which fibers were actually implanted during surgery.
@@ -224,14 +224,16 @@ class FIPMapper(MapperJob):
 
         Returns
         -------
-        Optional[List[int]]
-            List of implanted fiber indices (e.g., [0, 1, 2] for Fiber_0, Fiber_1, Fiber_2).
-            Returns None if procedures data cannot be retrieved or no implanted fibers found.
+        tuple[Optional[List[int]], bool]
+            Tuple of (implanted_fiber_indices, procedures_fetched) where:
+            - implanted_fiber_indices: List of implanted fiber indices
+              (e.g., [0, 1, 2] for Fiber_0, Fiber_1, Fiber_2), or None if no implanted fibers found.
+            - procedures_fetched: False if procedures data could not be retrieved, True otherwise.
         """
         if data is None:
             data = get_procedures(subject_id)
         if not data:
-            return None
+            return None, False
 
         implanted_indices = set()
 
@@ -246,9 +248,9 @@ class FIPMapper(MapperJob):
                             implanted_indices.add(fiber_idx)
 
         if not implanted_indices:
-            return None
+            return None, True
 
-        return sorted(implanted_indices)
+        return sorted(implanted_indices), True
 
     def transform(
         self,
@@ -318,14 +320,29 @@ class FIPMapper(MapperJob):
         if intended_measurements is None:
             intended_measurements = self._parse_intended_measurements(subject_id)
         if implanted_fibers is None:
-            implanted_fibers = self._parse_implanted_fibers(subject_id)
+            # Fetch implanted fibers from metadata service
+            implanted_fibers, procedures_fetched = self._parse_implanted_fibers(subject_id)
 
-        # Hard fail if no implanted fibers found
-        if not implanted_fibers:
-            raise ValueError(
-                f"No implanted fibers found for subject_id={subject_id}. "
-                "Implanted fiber information is required to create FIP acquisition metadata."
-            )
+            # Check if procedures service call failed (distinct from finding no fibers)
+            if not procedures_fetched:
+                raise ValueError(
+                    f"Failed to retrieve procedures data from metadata service for subject_id={subject_id}. "
+                    "Cannot create FIP acquisition metadata without procedures information."
+                )
+
+            # Procedures were successfully retrieved, but no implanted fibers found in the data
+            if not implanted_fibers:
+                raise ValueError(
+                    f"No implanted fibers found in procedures data for subject_id={subject_id}. "
+                    "Implanted fiber information is required to create FIP acquisition metadata."
+                )
+        else:
+            # implanted_fibers were provided by caller - validate they're not empty
+            if not implanted_fibers:
+                raise ValueError(
+                    f"No implanted fibers found for subject_id={subject_id}. "
+                    "Implanted fiber information is required to create FIP acquisition metadata."
+                )
 
         # Get protocol URLs for FIP modality
         protocol_id = get_protocols_for_modality("fip") or None
