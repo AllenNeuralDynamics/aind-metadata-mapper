@@ -25,6 +25,7 @@ from aind_metadata_mapper.utils import (
     get_intended_measurements,
     get_protocols_for_modality,
     normalize_utc_timezone,
+    metadata_service_helper,
 )
 
 
@@ -414,6 +415,31 @@ class TestUtils(unittest.TestCase):
         result = get_protocols_for_modality("fip")
         # Should return a list (may be empty if protocols.yaml doesn't have fip, but should not error)
         self.assertIsInstance(result, list)
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_get_subject_returns_none_after_retries(self, mock_helper):
+        """Test get_subject when metadata_service_helper returns None after retries."""
+        mock_helper.return_value = None
+        with self.assertLogs("aind_metadata_mapper.utils", level="WARNING") as log:
+            result = get_subject("test_subject")
+        self.assertIsNone(result)
+        self.assertTrue(any("Could not fetch subject test_subject" in msg for msg in log.output))
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_get_intended_measurements_returns_none_after_retries(self, mock_helper):
+        """Test get_intended_measurements when metadata_service_helper returns None after retries."""
+        mock_helper.return_value = None
+        with self.assertLogs("aind_metadata_mapper.utils", level="WARNING") as log:
+            result = get_intended_measurements("test_subject")
+        self.assertIsNone(result)
+        self.assertTrue(
+            any("Could not fetch intended measurements for subject test_subject" in msg for msg in log.output)
+        )
+
+    def test_metadata_service_helper_zero_retries(self):
+        """Test metadata_service_helper with max_retries=0."""
+        result = metadata_service_helper("http://test.com", max_retries=0)
+        self.assertIsNone(result)
 
 
 class TestPromptFunctions(unittest.TestCase):
