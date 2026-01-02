@@ -3,7 +3,6 @@
 import json
 import logging
 import sys
-import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -91,21 +90,15 @@ def metadata_service_helper(url: str, timeout: int = 60) -> Optional[dict]:
     Optional[dict]
         Metadata as a dictionary, or None if error occurs.
     """
-    max_attempts = 3
-    backoff_seconds = 2
-    for attempt in range(1, max_attempts + 1):
-        try:
-            response = requests.get(url, timeout=timeout)
-            if response.status_code == 400:
-                return response.json()
-            response.raise_for_status()
+    try:
+        response = requests.get(url, timeout=timeout)
+        if response.status_code == 400:
             return response.json()
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error retrieving metadata from {url}: {e}")
-            if attempt < max_attempts:
-                time.sleep(backoff_seconds ** attempt)
-                continue
-            return None
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error retrieving metadata from {url}: {e}")
+        return None
 
 
 def get_subject(subject_id: str, base_url: str = SUBJECT_BASE_URL) -> Optional[dict]:
