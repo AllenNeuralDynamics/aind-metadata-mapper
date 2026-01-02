@@ -128,7 +128,7 @@ def get_subject(subject_id: str, base_url: str = SUBJECT_BASE_URL) -> Optional[d
         return None
 
 
-def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL) -> Optional[dict]:
+def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL, timeout_seconds: int = 300) -> Optional[dict]:
     """Fetch procedures data for a subject from the metadata service.
 
     Parameters
@@ -137,7 +137,8 @@ def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL) -> Opti
         The subject ID to query.
     base_url : str
         Base URL for the procedures endpoint. Defaults to PROCEDURES_BASE_URL.
-
+    timeout_seconds : int
+        Request timeout in seconds. Default is 300.
     Returns
     -------
     Optional[dict]
@@ -146,7 +147,7 @@ def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL) -> Opti
     try:
         url_base = base_url.rstrip("/") + "/"
         url = urljoin(url_base, subject_id.lstrip("/"))
-        result = metadata_service_helper(url)
+        result = metadata_service_helper(url, timeout=timeout_seconds)
         if result is None:
             logger.warning(f"Could not fetch procedures for subject {subject_id}")
         return result
