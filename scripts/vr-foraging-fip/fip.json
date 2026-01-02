@@ -1,0 +1,253 @@
+{
+  "data_stream_metadata": [
+    {
+      "id": "fip_2025-11-13T170614",
+      "start_time": "2025-11-14T01:06:15.634496Z",
+      "end_time": "2025-11-14T01:38:08.526963Z"
+    },
+    {
+      "id": "fip_2025-11-13T170614",
+      "start_time": "2025-11-14T01:06:15.663193Z",
+      "end_time": "2025-11-14T01:38:08.543564Z"
+    }
+  ],
+  "session": {
+    "aind_behavior_services_pkg_version": "0.12.4",
+    "version": "0.12.4",
+    "experiment": null,
+    "experimenter": [
+      "jason.lee"
+    ],
+    "date": "2025-11-14T01:02:41.034814Z",
+    "root_path": "C:\\Data\\804434",
+    "session_name": "804434_2025-11-14T010241Z",
+    "subject": "804434",
+    "experiment_version": "",
+    "notes": "",
+    "commit_hash": "77925112b73f0b3939171a0de111ff2c89ddddc3",
+    "allow_dirty_repo": true,
+    "skip_hardware_validation": false
+  },
+  "rig": {
+    "aind_behavior_services_pkg_version": "0.12.4",
+    "version": "0.2.0",
+    "computer_name": "DT300043",
+    "rig_name": "13A",
+    "camera_green_iso": {
+      "device_type": "FipCamera",
+      "name": "FipCamera",
+      "additional_settings": null,
+      "calibration": null,
+      "serial_number": "24521418",
+      "gain": 0.0,
+      "offset": {
+        "x": 104.0,
+        "y": 56.0
+      }
+    },
+    "camera_red": {
+      "device_type": "FipCamera",
+      "name": "FipCamera",
+      "additional_settings": null,
+      "calibration": null,
+      "serial_number": "24521421",
+      "gain": 0.0,
+      "offset": {
+        "x": 76.0,
+        "y": 56.0
+      }
+    },
+    "light_source_uv": {
+      "device_type": "LightSource",
+      "name": "FIP_13A",
+      "additional_settings": null,
+      "calibration": {
+        "device_name": "FIP_13A",
+        "input": null,
+        "output": {
+          "power_lut": {
+            "0.0": 0.0,
+            "0.05": 4.5,
+            "0.2": 16.2,
+            "0.4": 40.0
+          }
+        },
+        "date": null,
+        "description": null,
+        "notes": null
+      },
+      "power": 20.0,
+      "task": {
+        "delta_1": 15650,
+        "delta_2": 666,
+        "delta_3": 300,
+        "delta_4": 50,
+        "light_source_port": 8,
+        "camera_port": 1,
+        "events_enabled": true,
+        "mute_output": false,
+        "pwm_frequency": 10000.0
+      }
+    },
+    "light_source_blue": {
+      "device_type": "LightSource",
+      "name": "FIP_13A",
+      "additional_settings": null,
+      "calibration": {
+        "device_name": "FIP_13A",
+        "input": null,
+        "output": {
+          "power_lut": {
+            "0.0": 0.0,
+            "0.05": 11.0,
+            "0.1": 18.0,
+            "0.15": 26.0,
+            "0.2": 34.0
+          }
+        },
+        "date": null,
+        "description": null,
+        "notes": null
+      },
+      "power": 20.0,
+      "task": {
+        "delta_1": 15650,
+        "delta_2": 666,
+        "delta_3": 300,
+        "delta_4": 50,
+        "light_source_port": 4,
+        "camera_port": 1,
+        "events_enabled": true,
+        "mute_output": false,
+        "pwm_frequency": 10000.0
+      }
+    },
+    "light_source_lime": {
+      "device_type": "LightSource",
+      "name": "FIP_13A",
+      "additional_settings": null,
+      "calibration": {
+        "device_name": "FIP_13A",
+        "input": null,
+        "output": {
+          "power_lut": {
+            "0.0": 0.0,
+            "0.1": 6.3,
+            "0.4": 20.5,
+            "0.6": 39.0
+          }
+        },
+        "date": null,
+        "description": null,
+        "notes": null
+      },
+      "power": 20.0,
+      "task": {
+        "delta_1": 15650,
+        "delta_2": 666,
+        "delta_3": 300,
+        "delta_4": 50,
+        "light_source_port": 16,
+        "camera_port": 2,
+        "events_enabled": true,
+        "mute_output": false,
+        "pwm_frequency": 10000.0
+      }
+    },
+    "roi_settings": {
+      "camera_green_iso_background": {
+        "center": {
+          "x": 10.0,
+          "y": 10.0
+        },
+        "radius": 10.0
+      },
+      "camera_red_background": {
+        "center": {
+          "x": 10.0,
+          "y": 10.0
+        },
+        "radius": 10.0
+      },
+      "camera_green_iso_roi": [
+        {
+          "center": {
+            "x": 50.0,
+            "y": 50.0
+          },
+          "radius": 20.0
+        },
+        {
+          "center": {
+            "x": 50.0,
+            "y": 150.0
+          },
+          "radius": 20.0
+        },
+        {
+          "center": {
+            "x": 150.0,
+            "y": 50.0
+          },
+          "radius": 20.0
+        },
+        {
+          "center": {
+            "x": 150.0,
+            "y": 150.0
+          },
+          "radius": 20.0
+        }
+      ],
+      "camera_red_roi": [
+        {
+          "center": {
+            "x": 50.0,
+            "y": 50.0
+          },
+          "radius": 20.0
+        },
+        {
+          "center": {
+            "x": 50.0,
+            "y": 150.0
+          },
+          "radius": 20.0
+        },
+        {
+          "center": {
+            "x": 150.0,
+            "y": 50.0
+          },
+          "radius": 20.0
+        },
+        {
+          "center": {
+            "x": 150.0,
+            "y": 150.0
+          },
+          "radius": 20.0
+        }
+      ]
+    },
+    "cuttlefish_fip": {
+      "device_type": "cuTTLefishFip",
+      "name": "cuTTLefishFip",
+      "additional_settings": null,
+      "calibration": null,
+      "who_am_i": 1407,
+      "serial_number": null,
+      "port_name": "COM14"
+    },
+    "networking": {
+      "zmq_publisher": {
+        "connection_string": "@tcp://localhost:5556",
+        "topic": "fip"
+      },
+      "zmq_subscriber": {
+        "connection_string": "@tcp://localhost:5557",
+        "topic": "fip"
+      }
+    }
+  }
+}

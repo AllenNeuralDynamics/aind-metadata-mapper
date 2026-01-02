@@ -1,1343 +1,1118 @@
-"""Tests gather_metadata module"""
+"""Tests gather_metadata module
+
+Tests in this file ONLY test helper functions.
+
+Do not test run_job() inside this file, use the integration tests.
+"""
 
 import json
 import os
 import unittest
-import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
-import requests
-from aind_data_schema.core.metadata import Metadata, MetadataStatus
-from aind_data_schema.core.processing import DataProcess, PipelineProcess
+from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
-from aind_data_schema_models.process_names import ProcessName
-from pydantic import ValidationError
-from requests import Response
 
-from aind_metadata_mapper.bergamo.models import (
-    JobSettings as BergamoSessionJobSettings,
-)
-from aind_metadata_mapper.bruker.models import (
-    JobSettings as BrukerSessionJobSettings,
-)
-from aind_metadata_mapper.core_models import JobResponse
-from aind_metadata_mapper.fip.models import (
-    JobSettings as FipSessionJobSettings,
-)
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-from aind_metadata_mapper.mesoscope.models import (
-    JobSettings as MesoscopeSessionJobSettings,
-)
-from aind_metadata_mapper.models import (
-    AcquisitionSettings,
-    InstrumentSettings,
-    JobSettings,
-    MetadataSettings,
-    ProceduresSettings,
-    ProcessingSettings,
-    RawDataDescriptionSettings,
-    RigSettings,
-    SessionSettings,
-    SubjectSettings,
-)
-from aind_metadata_mapper.smartspim.acquisition import (
-    JobSettings as SmartSpimAcquisitionJobSettings,
-)
+from aind_metadata_mapper.models import DataDescriptionSettings, JobSettings
 
-RESOURCES_DIR = (
-    Path(os.path.dirname(os.path.realpath(__file__)))
-    / "resources"
-    / "gather_metadata_job"
-)
-METADATA_DIR = RESOURCES_DIR / "metadata_files"
-METADATA_DIR_WITH_RIG_ISSUE = RESOURCES_DIR / "schema_files_with_issues"
-EXAMPLE_BERGAMO_CONFIGS = RESOURCES_DIR / "test_bergamo_configs.json"
+TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
 
 
 class TestGatherMetadataJob(unittest.TestCase):
     """Tests methods in GatherMetadataJob class"""
 
-    @classmethod
-    def setUpClass(cls):
-        """Load json files."""
-        with open(RESOURCES_DIR / "example_subject_response.json", "r") as f:
-            example_subject_response = json.load(f)
-        with open(
-            RESOURCES_DIR / "example_procedures_response.json", "r"
-        ) as f:
-            example_procedures_response = json.load(f)
-        with open(RESOURCES_DIR / "example_funding_response.json", "r") as f:
-            example_funding_response = json.load(f)
-        with open(
-            RESOURCES_DIR / "example_funding_multiple_response.json", "r"
-        ) as f:
-            example_funding_multi_response = json.load(f)
-        with open(RESOURCES_DIR / "example_rig_response.json", "r") as f:
-            example_rig_response = json.load(f)
-        with open(
-            RESOURCES_DIR / "example_instrument_response.json", "r"
-        ) as f:
-            example_instrument_response = json.load(f)
-        cls.example_subject_response = example_subject_response
-        cls.example_procedures_response = example_procedures_response
-        cls.example_funding_response = example_funding_response
-        cls.example_funding_multi_response = example_funding_multi_response
-        cls.example_rig_response = example_rig_response
-        cls.example_instrument_response = example_instrument_response
+    @patch("os.makedirs")
+    def setUp(self, mock_makedirs):
+        """Set up test fixtures"""
+        self.test_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+            ),
+            metadata_service_url="http://test-service.com",
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+        )
+        self.job = GatherMetadataJob(settings=self.test_settings)
 
-    def test_class_constructor(self):
-        """Tests class is constructed properly"""
-        job_settings = JobSettings(directory_to_write_to=RESOURCES_DIR)
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        self.assertIsNotNone(metadata_job)
+    # Tests for file system helper methods
+    @patch("os.path.isfile")
+    def test_does_file_exist_in_user_defined_dir_true(self, mock_isfile):
+        """Test _does_file_exist_in_user_defined_dir when file exists"""
+        mock_isfile.return_value = True
+        result = self.job._does_file_exist_in_user_defined_dir("test_file.json")
+        self.assertTrue(result)
+        mock_isfile.assert_called_once_with("/test/metadata/test_file.json")
 
-    @patch("pathlib.Path.is_file")
-    def test_does_file_exist_in_user_defined_dir_path_true(
-        self, mock_is_file: MagicMock
-    ):
-        """Tests _does_file_exist_in_user_defined_dir method returns true
-        when path exists"""
+    @patch("os.path.isfile")
+    def test_does_file_exist_in_user_defined_dir_false(self, mock_isfile):
+        """Test _does_file_exist_in_user_defined_dir when file doesn't exist"""
+        mock_isfile.return_value = False
+        result = self.job._does_file_exist_in_user_defined_dir("missing_file.json")
+        self.assertFalse(result)
+        mock_isfile.assert_called_once_with("/test/metadata/missing_file.json")
 
-        mock_is_file.return_value = True
+    @patch("os.makedirs")
+    def test_does_file_exist_in_user_defined_dir_no_metadata_dir(self, mock_makedirs):
+        """Test _does_file_exist_in_user_defined_dir when metadata_dir is None"""
         job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR, metadata_dir="some_path"
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        self.assertTrue(
-            metadata_job._does_file_exist_in_user_defined_dir("subject.json")
-        )
-
-    @patch("pathlib.Path.is_file")
-    def test_does_file_exist_in_user_defined_dir_path_false(
-        self, mock_is_file: MagicMock
-    ):
-        """Tests _does_file_exist_in_user_defined_dir method when path does
-        not exist"""
-
-        mock_is_file.return_value = False
-        job_settings1 = JobSettings(directory_to_write_to=RESOURCES_DIR)
-        metadata_job = GatherMetadataJob(settings=job_settings1)
-        job_settings2 = JobSettings(
-            directory_to_write_to=RESOURCES_DIR, metadata_dir="some_path"
-        )
-        metadata_job2 = GatherMetadataJob(settings=job_settings2)
-        self.assertFalse(
-            metadata_job._does_file_exist_in_user_defined_dir("subject.json")
-        )
-        self.assertFalse(
-            metadata_job2._does_file_exist_in_user_defined_dir("subject.json")
-        )
-
-    def test_get_file_from_user_defined_directory(self):
-        """Tests json contents are pulled correctly"""
-        metadata_dir = RESOURCES_DIR / "metadata_files"
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR, metadata_dir=metadata_dir
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job._get_file_from_user_defined_directory(
-            "subject.json"
-        )
-        self.assertIsNotNone(contents)
-
-    @patch("requests.Session.get")
-    def test_get_subject(self, mock_get: MagicMock):
-        """Tests get_subject method when use service is true"""
-        mock_response = Response()
-        mock_response.status_code = 200
-        body = json.dumps(self.example_subject_response)
-        mock_response._content = body.encode("utf-8")
-        mock_get.return_value = mock_response
-        service_session = requests.Session()
-
-        job_settings = JobSettings(
-            metadata_service_domain="http://example.com",
-            directory_to_write_to=RESOURCES_DIR,
-            subject_settings=SubjectSettings(
-                subject_id="632269",
+            metadata_dir=None,
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
             ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_subject(service_session)
-        self.assertEqual("632269", contents["subject_id"])
-        mock_get.assert_called_once_with("http://example.com/subject/632269")
+        job = GatherMetadataJob(settings=job_settings)
+        result = job._does_file_exist_in_user_defined_dir("test_file.json")
+        self.assertFalse(result)
 
-    @patch("requests.Session.get")
-    def test_get_subject_from_dir(self, mock_get: MagicMock):
-        """Tests get_subject method when use service is false"""
-        mock_response = Response()
-        mock_response.status_code = 200
-        body = json.dumps(self.example_subject_response)
-        mock_response._content = body.encode("utf-8")
-        mock_get.return_value = mock_response
+    @patch("builtins.open", new_callable=mock_open, read_data='{"test": "data"}')
+    @patch("json.load")
+    def test_get_file_from_user_defined_directory(self, mock_json_load, mock_file):
+        """Test _get_file_from_user_defined_directory"""
+        mock_json_load.return_value = {"test": "data"}
+        result = self.job._get_file_from_user_defined_directory("test_file.json")
 
-        metadata_dir = RESOURCES_DIR / "metadata_files"
-        job_settings = JobSettings(
-            metadata_service_domain="http://example.com",
-            directory_to_write_to=RESOURCES_DIR,
-            subject_settings=SubjectSettings(
-                subject_id="632269",
+        mock_file.assert_called_once_with("/test/metadata/test_file.json", "r")
+        mock_json_load.assert_called_once()
+        self.assertEqual(result, {"test": "data"})
+
+    # Tests for _validate_acquisition_start_time method
+    @patch("os.makedirs")
+    def test_validate_acquisition_start_time_match(self, mock_makedirs):
+        """Test _validate_acquisition_start_time when times match"""
+        test_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
             ),
-            metadata_dir=metadata_dir,
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        service_session = requests.Session()
-        contents = metadata_job.get_subject(service_session)
-        self.assertEqual("632269", contents["subject_id"])
-        mock_get.assert_not_called()
+        job = GatherMetadataJob(settings=test_settings)
 
-    @patch("requests.Session.get")
-    def test_get_subject_error(self, mock_get: MagicMock):
-        """Tests get_subject when an error is raised"""
-        mock_response = Response()
-        mock_response.status_code = 500
-        body = json.dumps({"message": "Internal Server Error"})
-        mock_response._content = body.encode("utf-8")
-        mock_get.return_value = mock_response
+        # Test with matching time
+        result = job._validate_acquisition_start_time("2023-01-01T12:00:00+00:00")
+        self.assertEqual(result, "2023-01-01T12:00:00+00:00")
 
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
-            subject_settings=SubjectSettings(
-                subject_id="632269",
+    @patch("os.makedirs")
+    def test_validate_acquisition_start_time_mismatch_raises(self, mock_makedirs):
+        """Test _validate_acquisition_start_time raises when times don't match and raise_if_invalid is True"""
+        test_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
             ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+            raise_if_invalid=True,
         )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        service_session = requests.Session()
-        with self.assertRaises(AssertionError) as e:
-            metadata_job.get_subject(service_session)
-        expected_error_message = (
-            "Subject metadata is not valid! "
-            "{'message': 'Internal Server Error'}"
-        )
-        self.assertTrue(expected_error_message in str(e.exception))
+        job = GatherMetadataJob(settings=test_settings)
 
-    @patch("requests.Session.get")
-    def test_get_procedures(self, mock_get: MagicMock):
-        """Tests get_procedures method"""
-        mock_response = Response()
-        mock_response.status_code = 406
-        body = json.dumps(self.example_procedures_response)
-        mock_response._content = body.encode("utf-8")
-        mock_get.return_value = mock_response
+        # Test with mismatched time
+        with self.assertRaises(ValueError) as context:
+            job._validate_acquisition_start_time("2023-01-01T14:00:00+00:00")
 
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
-            procedures_settings=ProceduresSettings(
-                subject_id="632269",
+        self.assertIn("acquisition_start_time from acquisition metadata does not match", str(context.exception))
+
+    @patch("logging.error")
+    @patch("os.makedirs")
+    def test_validate_acquisition_start_time_mismatch_logs(self, mock_makedirs, mock_log_error):
+        """Test _validate_acquisition_start_time logs error when times don't match and raise_if_invalid is False"""
+        test_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
             ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+            raise_if_invalid=False,
         )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        service_session = requests.Session()
-        contents = metadata_job.get_procedures(service_session)
-        self.assertEqual("632269", contents["subject_id"])
-        mock_get.assert_called_once_with(
-            "http://example.com/procedures/632269"
-        )
+        job = GatherMetadataJob(settings=test_settings)
 
-    @patch("requests.Session.get")
-    def test_get_procedures_from_dir(self, mock_get: MagicMock):
-        """Tests get_procedures method from dir"""
-        mock_response = Response()
-        mock_response.status_code = 406
-        body = json.dumps(self.example_procedures_response)
-        mock_response._content = body.encode("utf-8")
-        mock_get.return_value = mock_response
-        metadata_dir = RESOURCES_DIR / "metadata_files"
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
-            procedures_settings=ProceduresSettings(
-                subject_id="632269",
+        # Test with mismatched time
+        result = job._validate_acquisition_start_time("2023-01-01T14:00:00+00:00")
+
+        # Should return the time and log an error
+        self.assertEqual(result, "2023-01-01T14:00:00+00:00")
+        mock_log_error.assert_called_once()
+        self.assertIn("acquisition_start_time from acquisition metadata does not match", str(mock_log_error.call_args))
+
+    @patch("os.makedirs")
+    def test_validate_acquisition_start_time_with_z_suffix(self, mock_makedirs):
+        """Test _validate_acquisition_start_time handles Z suffix correctly"""
+        test_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
             ),
-            metadata_dir=metadata_dir,
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        service_session = requests.Session()
-        contents = metadata_job.get_procedures(service_session)
-        self.assertEqual("632269", contents["subject_id"])
-        mock_get.assert_not_called()
+        job = GatherMetadataJob(settings=test_settings)
 
-    @patch("requests.Session.get")
-    def test_get_procedures_error(self, mock_get: MagicMock):
-        """Tests get_procedures when an error is raised"""
-        mock_response = Response()
-        mock_response.status_code = 500
-        body = json.dumps({"message": "Internal Server Error"})
-        mock_response._content = body.encode("utf-8")
-        mock_get.return_value = mock_response
+        # Test with Z suffix
+        result = job._validate_acquisition_start_time("2023-01-01T12:00:00Z")
+        self.assertEqual(result, "2023-01-01T12:00:00+00:00")
 
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
-            procedures_settings=ProceduresSettings(
-                subject_id="632269",
+    # Tests for _validate_and_get_subject_id method
+    @patch("os.makedirs")
+    def test_validate_and_get_subject_id_from_acquisition(self, mock_makedirs):
+        """Test _validate_and_get_subject_id gets subject_id from acquisition"""
+        test_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
             ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        service_session = requests.Session()
-        with self.assertRaises(AssertionError) as e:
-            metadata_job.get_procedures(service_session)
-        expected_error_message = (
-            "Procedures metadata is not valid! "
-            "{'message': 'Internal Server Error'}"
-        )
-        self.assertTrue(expected_error_message in str(e.exception))
+        job = GatherMetadataJob(settings=test_settings)
 
-    @patch("requests.Session.get")
-    def test_get_raw_data_description(self, mock_get: MagicMock):
-        """Tests get_raw_data_description method with valid model"""
+        acquisition = {"subject_id": "123456"}
+        result = job._validate_and_get_subject_id(acquisition)
+        self.assertEqual(result, "123456")
 
-        mock_response = Response()
-        mock_response.status_code = 200
-        body = json.dumps(self.example_funding_response)
-        mock_response._content = body.encode("utf-8")
-        mock_get.return_value = mock_response
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
-            raw_data_description_settings=RawDataDescriptionSettings(
-                project_name="Ephys Platform",
-                name="ecephys_632269_2023-10-10_10-10-10",
-                modality=[Modality.ECEPHYS, Modality.BEHAVIOR_VIDEOS],
+    @patch("os.makedirs")
+    def test_validate_and_get_subject_id_from_settings(self, mock_makedirs):
+        """Test _validate_and_get_subject_id gets subject_id from settings when not in acquisition"""
+        test_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
             ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        service_session = requests.Session()
-        contents = metadata_job.get_raw_data_description(service_session)
-        expected_investigators = ["Anna Apple"]
-        actual_investigators = [i["name"] for i in contents["investigators"]]
-        self.assertEqual(expected_investigators, actual_investigators)
-        self.assertEqual("ecephys", contents["platform"]["abbreviation"])
-        self.assertEqual("632269", contents["subject_id"])
-        self.assertEqual(
-            "ecephys_632269_2023-10-10_10-10-10", contents["name"]
-        )
-        mock_get.assert_called_once_with(
-            "http://example.com/funding/Ephys Platform"
-        )
+        job = GatherMetadataJob(settings=test_settings)
 
-    @patch("requests.Session.get")
-    def test_get_raw_data_description_from_dir(self, mock_get: MagicMock):
-        """Tests get_raw_data_description method from dir"""
+        acquisition = {}
+        result = job._validate_and_get_subject_id(acquisition)
+        self.assertEqual(result, "123456")
 
-        mock_response = Response()
-        mock_response.status_code = 200
-        body = json.dumps(self.example_funding_response)
-        mock_response._content = body.encode("utf-8")
-        mock_get.return_value = mock_response
-
-        metadata_dir = RESOURCES_DIR / "metadata_files"
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
-            raw_data_description_settings=RawDataDescriptionSettings(
-                project_name="Ephys Platform",
-                name="ecephys_632269_2023-10-10_10-10-10",
-                modality=[Modality.ECEPHYS, Modality.BEHAVIOR_VIDEOS],
+    @patch("os.makedirs")
+    def test_validate_and_get_subject_id_missing_raises(self, mock_makedirs):
+        """Test _validate_and_get_subject_id raises when subject_id is missing"""
+        test_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id=None,
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
             ),
-            metadata_dir=metadata_dir,
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        service_session = requests.Session()
-        contents = metadata_job.get_raw_data_description(service_session)
-        expected_investigators = ["Anna Apple", "John Smith"]
-        actual_investigators = [i["name"] for i in contents["investigators"]]
-        self.assertEqual(expected_investigators, actual_investigators)
-        self.assertEqual("ecephys", contents["platform"]["abbreviation"])
-        self.assertEqual("632269", contents["subject_id"])
-        self.assertEqual(
-            "ecephys_632269_2023-10-10_10-10-10", contents["name"]
+        job = GatherMetadataJob(settings=test_settings)
+
+        acquisition = {}
+        with self.assertRaises(ValueError) as context:
+            job._validate_and_get_subject_id(acquisition)
+
+        self.assertIn(
+            "Either provide acquisition.json with subject_id, or provide subject_id in the settings.",
+            str(context.exception),
         )
-        mock_get.assert_not_called()
 
-    @patch("requests.Session.get")
-    def test_get_raw_data_description_multi_response(
-        self, mock_get: MagicMock
-    ):
-        """Tests get_raw_data_description method with valid model and multiple
-        items in funding response"""
-
-        mock_response = Response()
-        mock_response.status_code = 300
-        body = json.dumps(self.example_funding_multi_response)
-        mock_response._content = body.encode("utf-8")
-        mock_get.return_value = mock_response
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
-            raw_data_description_settings=RawDataDescriptionSettings(
-                project_name="Ephys Platform",
-                name="ecephys_632269_2023-10-10_10-10-10",
-                modality=[Modality.ECEPHYS, Modality.BEHAVIOR_VIDEOS],
+    @patch("os.makedirs")
+    def test_validate_and_get_subject_id_mismatch_raises(self, mock_makedirs):
+        """Test _validate_and_get_subject_id raises when subject_ids don't match and raise_if_invalid is True"""
+        test_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
             ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+            raise_if_invalid=True,
         )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        service_session = requests.Session()
-        contents = metadata_job.get_raw_data_description(service_session)
-        expected_investigators = ["Anna Apple"]
-        actual_investigators = [i["name"] for i in contents["investigators"]]
-        self.assertEqual(2, len(contents["funding_source"]))
-        self.assertEqual(expected_investigators, actual_investigators)
-        self.assertEqual("ecephys", contents["platform"]["abbreviation"])
-        self.assertEqual("632269", contents["subject_id"])
-        self.assertEqual(
-            "ecephys_632269_2023-10-10_10-10-10", contents["name"]
-        )
-        mock_get.assert_called_once_with(
-            "http://example.com/funding/Ephys Platform"
-        )
+        job = GatherMetadataJob(settings=test_settings)
 
-    @patch("requests.Session.get")
-    def test_get_raw_data_description_invalid(self, mock_get: MagicMock):
-        """Tests get_raw_data_description method with invalid model"""
-        mock_response = Response()
-        mock_response.status_code = 500
-        body = json.dumps({"message": "Internal Server Error"})
-        mock_response._content = body.encode("utf-8")
-        mock_get.return_value = mock_response
+        acquisition = {"subject_id": "999999"}
+        with self.assertRaises(ValueError) as context:
+            job._validate_and_get_subject_id(acquisition)
 
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
-            raw_data_description_settings=RawDataDescriptionSettings(
-                project_name="foo",
-                name="ecephys_632269_2023-10-10_10-10-10",
-                modality=[Modality.ECEPHYS, Modality.BEHAVIOR_VIDEOS],
+        self.assertIn("subject_id from acquisition metadata", str(context.exception))
+        self.assertIn("does not match", str(context.exception))
+
+    @patch("logging.error")
+    @patch("os.makedirs")
+    def test_validate_and_get_subject_id_mismatch_logs(self, mock_makedirs, mock_log_error):
+        """Test _validate_and_get_subject_id logs error when subject_ids don't match and raise_if_invalid is False"""
+        test_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
             ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+            raise_if_invalid=False,
         )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        service_session = requests.Session()
-        contents = metadata_job.get_raw_data_description(service_session)
-        self.assertEqual("ecephys", contents["platform"]["abbreviation"])
-        self.assertEqual("632269", contents["subject_id"])
-        self.assertEqual(
-            "ecephys_632269_2023-10-10_10-10-10", contents["name"]
-        )
-        self.assertEqual([], contents["investigators"])
+        job = GatherMetadataJob(settings=test_settings)
 
-    def test_get_processing_metadata(self):
-        """Tests get_processing_metadata method"""
-        data_process = DataProcess(
-            name=ProcessName.COMPRESSION,
-            software_version="0.0.15",
-            start_date_time=datetime(
-                2020, 10, 10, 10, 10, 10, tzinfo=timezone.utc
+        acquisition = {"subject_id": "999999"}
+        result = job._validate_and_get_subject_id(acquisition)
+
+        # Should return the acquisition subject_id and log an error
+        self.assertEqual(result, "999999")
+        mock_log_error.assert_called_once()
+        self.assertIn("subject_id from acquisition metadata", str(mock_log_error.call_args))
+
+    @patch("os.makedirs")
+    def test_validate_and_get_subject_id_no_acquisition(self, mock_makedirs):
+        """Test _validate_and_get_subject_id handles None acquisition"""
+        test_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
             ),
-            end_date_time=datetime(
-                2020, 10, 10, 11, 10, 10, tzinfo=timezone.utc
-            ),
-            input_location="/source/open_ephys",
-            output_location="/tmp/stage",
-            code_url=(
-                "https://github.com/AllenNeuralDynamics/"
-                "aind-data-transformation"
-            ),
-            parameters={},
-            outputs={},
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
-        processing_pipeline = PipelineProcess(
-            data_processes=[data_process], processor_full_name="Anna Apple"
-        )
+        job = GatherMetadataJob(settings=test_settings)
 
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            processing_settings=ProcessingSettings(
-                pipeline_process=json.loads(
-                    processing_pipeline.model_dump_json()
-                )
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_processing_metadata()
-        self.assertEqual(
-            "Compression",
-            contents["processing_pipeline"]["data_processes"][0]["name"],
-        )
+        result = job._validate_and_get_subject_id(None)
+        self.assertEqual(result, "123456")
 
-    def test_get_processing_metadata_from_dir(self):
-        """Tests get_processing_metadata method from dir"""
-        data_process = DataProcess(
-            name=ProcessName.COMPRESSION,
-            software_version="0.0.15",
-            start_date_time=datetime(
-                2020, 10, 10, 10, 10, 10, tzinfo=timezone.utc
-            ),
-            end_date_time=datetime(
-                2020, 10, 10, 11, 10, 10, tzinfo=timezone.utc
-            ),
-            input_location="/source/open_ephys",
-            output_location="/tmp/stage",
-            code_url=(
-                "https://github.com/AllenNeuralDynamics/"
-                "aind-data-transformation"
-            ),
-            parameters={},
-            outputs={},
-        )
-        processing_pipeline = PipelineProcess(
-            data_processes=[data_process], processor_full_name="Anna Apple"
-        )
-
-        metadata_dir = RESOURCES_DIR / "metadata_files"
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            processing_settings=ProcessingSettings(
-                pipeline_process=json.loads(
-                    processing_pipeline.model_dump_json()
-                )
-            ),
-            metadata_dir=metadata_dir,
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_processing_metadata()
-        self.assertEqual(
-            "Compression",
-            contents["processing_pipeline"]["data_processes"][0]["name"],
-        )
-
-    def test_get_processing_metadata_invalid(self):
-        """Tests get_processing_metadata method with validation errors"""
-        data_process = DataProcess.model_construct()
-        processing_pipeline = PipelineProcess.model_construct(
-            data_processes=[data_process]
-        )
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            processing_settings=ProcessingSettings(
-                pipeline_process=json.loads(
-                    processing_pipeline.model_dump_json()
-                )
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            contents = metadata_job.get_processing_metadata()
-        self.assertIsNotNone(contents)
-        self.assertEqual(1, len(w))
-
-    def test_get_session_metadata(self):
-        """Tests get_session_metadata"""
-        metadata_dir = RESOURCES_DIR / "metadata_files"
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_dir=metadata_dir,
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_session_metadata()
-        self.assertIsNotNone(contents)
-
-    @patch("aind_metadata_mapper.bergamo.session.BergamoEtl.run_job")
-    def test_get_session_metadata_bergamo_success(
-        self, mock_run_job: MagicMock
-    ):
-        """Tests get_session_metadata bergamo"""
-        mock_run_job.return_value = JobResponse(
-            status_code=200, data=json.dumps({"some_key": "some_value"})
-        )
-        bergamo_session_settings = BergamoSessionJobSettings.model_construct()
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            session_settings=SessionSettings(
-                job_settings=bergamo_session_settings
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_session_metadata()
-        self.assertEqual({"some_key": "some_value"}, contents)
-        mock_run_job.assert_called_once()
-
-    @patch("aind_metadata_mapper.bruker.session.MRIEtl.run_job")
-    def test_get_session_metadata_bruker_success(
-        self, mock_run_job: MagicMock
-    ):
-        """Tests get_session_metadata bruker creates MRIEtl"""
-        mock_run_job.return_value = JobResponse(
-            status_code=200, data=json.dumps({"some_key": "some_value"})
-        )
-        bruker_session_settings = BrukerSessionJobSettings.model_construct()
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            session_settings=SessionSettings(
-                job_settings=bruker_session_settings,
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_session_metadata()
-        self.assertEqual({"some_key": "some_value"}, contents)
-        mock_run_job.assert_called_once()
-
-    @patch("aind_metadata_mapper.fip.session.FIBEtl.run_job")
-    def test_get_session_metadata_fip_success(self, mock_run_job: MagicMock):
-        """Tests ETL"""
-        mock_run_job.return_value = JobResponse(
-            status_code=200, data=json.dumps({"some_key": "some_value"})
-        )
-        fip_session_settings = FipSessionJobSettings.model_construct()
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            session_settings=SessionSettings(
-                job_settings=fip_session_settings,
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_session_metadata()
-        self.assertEqual({"some_key": "some_value"}, contents)
-        mock_run_job.assert_called_once()
-
-    @patch("aind_metadata_mapper.mesoscope.session.MesoscopeEtl.run_job")
-    @patch("aind_metadata_mapper.stimulus.camstim.Camstim.__init__")
-    def test_get_session_metadata_mesoscope_success(
-        self, mock_camstim: MagicMock, mock_run_job: MagicMock
-    ):
-        """Tests get_session_metadata bruker creates MRIEtl"""
-        mock_camstim.return_value = None
-        mock_run_job.return_value = JobResponse(
-            status_code=200, data=json.dumps({"some_key": "some_value"})
-        )
-        mesoscope_session_settings = (
-            MesoscopeSessionJobSettings.model_construct(
-                behavior_source="abc",
-                input_source="some/path",
-                session_id="123",
-                output_directory="some/output",
-                session_start_time=datetime.now(),
-                session_end_time=datetime.now(),
-                subject_id="123",
-                project="some_project",
-                experimenter_full_name=["John Doe"],
-            )
-        )
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            session_settings=SessionSettings(
-                job_settings=mesoscope_session_settings,
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_session_metadata()
-        self.assertEqual({"some_key": "some_value"}, contents)
-        mock_run_job.assert_called_once()
-
-    def test_session_settings_error(self):
-        """Tests SessionSettings raises error if JobSettings is not expected"""
-        session_settings = SmartSpimAcquisitionJobSettings.model_construct()
-        with self.assertRaises(ValidationError):
+    # Tests for get_funding method
+    @patch("requests.get")
+    @patch("os.makedirs")
+    def test_get_funding_no_project_name(self, mock_makedirs, mock_get):
+        """Test get_funding when no project name is provided"""
+        job_no_project = GatherMetadataJob(
             JobSettings(
-                directory_to_write_to=RESOURCES_DIR,
-                session_settings=SessionSettings(
-                    job_settings=session_settings,
+                metadata_dir="/test",
+                output_dir="/test/output",
+                subject_id="test_subject",
+                data_description_settings=DataDescriptionSettings(
+                    project_name="",
+                    modalities=[Modality.ECEPHYS],
                 ),
+                acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
             )
-
-    @patch("aind_metadata_mapper.bergamo.session.BergamoEtl.run_job")
-    def test_get_session_metadata_error(self, mock_run_job: MagicMock):
-        """Tests get_session_metadata returns None when requesting
-        Bergamo metadata and a 500 response is returned."""
-        mock_run_job.return_value = JobResponse(status_code=500, data=None)
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            session_settings=SessionSettings(
-                job_settings=BergamoSessionJobSettings.model_construct()
-            ),
         )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_session_metadata()
-        self.assertIsNone(contents)
+        funding = job_no_project.get_funding()
 
-    def test_get_session_metadata_error_unknown_session(self):
-        """Tests get_session_metadata raises and error"""
+        self.assertEqual(funding, [])
+        mock_get.assert_not_called()
+        mock_makedirs.assert_called()
 
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            session_settings=SessionSettings.model_construct(
-                job_settings={"job_settings_name": "def"}
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        with self.assertRaises(ValueError):
-            metadata_job.get_session_metadata()
-
-    def test_get_session_metadata_none(self):
-        """Tests get_session_metadata returns none"""
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_session_metadata()
-        self.assertIsNone(contents)
-
-    @patch("requests.Session.get")
-    def test_get_rig_metadata(self, mock_get: MagicMock):
-        """Tests get_rig_metadata from metadata service path"""
-        mock_response = Response()
-        mock_response.status_code = 422
-        body = json.dumps(self.example_rig_response)
-        mock_response._content = body.encode("utf-8")
+    @patch("requests.get")
+    def test_get_funding_success_single_result(self, mock_get):
+        """Test get_funding with successful single result"""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [
+            {
+                "funder": "Test Funder",
+                "award_number": "12345",
+            }
+        ]
         mock_get.return_value = mock_response
 
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
-            rig_settings=RigSettings(
-                rig_id="323_EPHYS1",
-                metadata_service_path="rig",
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        service_session = requests.Session()
-        contents = metadata_job.get_rig_metadata(service_session)
-        self.assertEqual("323_EPHYS1", contents["rig_id"])
-        mock_get.assert_called_once_with("http://example.com/rig/323_EPHYS1")
+        funding = self.job.get_funding()
 
-    @patch("requests.Session")
-    def test_get_rig_metadata_from_dir(self, mock_session: MagicMock):
-        """Tests get_rig_metadata from directory"""
-        metadata_dir = RESOURCES_DIR / "metadata_files"
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            rig_settings=RigSettings(
-                rig_id="323_EPHYS1",
-            ),
-            metadata_dir=metadata_dir,
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_rig_metadata(mock_session)
-        self.assertIsNotNone(contents)
-        mock_session.assert_not_called()
+        expected_funding = [{"funder": "Test Funder", "award_number": "12345"}]
+        self.assertEqual(funding, expected_funding)
 
-    @patch("requests.Session")
-    def test_get_rig_metadata_none(self, mock_session: MagicMock):
-        """Tests get_rig_metadata when no file or settings are provided."""
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_rig_metadata(mock_session)
-        self.assertIsNone(contents)
-        mock_session.assert_not_called()
-
-    @patch("requests.Session.get")
-    @patch("logging.warning")
-    def test_get_rig_metadata_warning(
-        self, mock_warn: MagicMock, mock_get: MagicMock
-    ):
-        """Tests get_rig_metadata when an error is raised"""
-        mock_response = Response()
-        mock_response.status_code = 500
-        body = json.dumps({"message": "Internal Server Error"})
-        mock_response._content = body.encode("utf-8")
-        mock_get.return_value = mock_response
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
-            rig_settings=RigSettings(
-                rig_id="323_EPHYS1",
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        service_session = requests.Session()
-        output = metadata_job.get_rig_metadata(service_session)
-        self.assertIsNone(output)
-        mock_warn.assert_called_once_with("Rig metadata is not valid! 500")
-
-    def test_get_quality_control_metadata(self):
-        """Tests get_quality_control_metadata"""
-        metadata_dir = RESOURCES_DIR / "metadata_files"
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_dir=metadata_dir,
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_quality_control_metadata()
-        self.assertIsNotNone(contents)
-
-    def test_get_quality_control_metadata_none(self):
-        """Tests get_quality_control_metadata returns none"""
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_quality_control_metadata()
-        self.assertIsNone(contents)
-
-    @patch("requests.Session")
-    def test_get_problematic_rig_metadata(self, mock_session: MagicMock):
-        """Tests get_rig_metadata when there is a pydantic serialization
-        issue."""
-        metadata_dir = METADATA_DIR_WITH_RIG_ISSUE
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_dir=metadata_dir,
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_rig_metadata(mock_session)
-        self.assertIsNotNone(contents)
-        mock_session.assert_not_called()
-
-    def test_get_acquisition_metadata(self):
-        """Tests get_acquisition_metadata"""
-        metadata_dir = RESOURCES_DIR / "metadata_files"
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_dir=metadata_dir,
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_acquisition_metadata()
-        self.assertIsNotNone(contents)
-
-    def test_get_acquisition_metadata_none(self):
-        """Tests get_acquisition_metadata returns none"""
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_acquisition_metadata()
-        self.assertIsNone(contents)
-
-    @patch("aind_metadata_mapper.smartspim.acquisition.SmartspimETL.run_job")
-    def test_get_acquisition_metadata_smartspim_success(
-        self, mock_run_job: MagicMock
-    ):
-        """Tests get_acquisition_metadata returns something when requesting
-        SmartSPIM metadata"""
-
-        mock_run_job.return_value = JobResponse(
-            status_code=200, data=json.dumps({"some_key": "some_value"})
-        )
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            acquisition_settings=AcquisitionSettings(
-                job_settings=SmartSpimAcquisitionJobSettings(
-                    subject_id="695464",
-                    input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
-                    metadata_service_path="http://example.com/test",
-                )
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_acquisition_metadata()
-        self.assertEqual({"some_key": "some_value"}, contents)
-
-    @patch("aind_metadata_mapper.smartspim.acquisition.SmartspimETL.run_job")
-    def test_get_acquisition_metadata_smartspim_error(
-        self, mock_run_job: MagicMock
-    ):
-        """Tests get_acquisition_metadata returns None when requesting
-        SmartSPIM metadata and a 500 response is returned."""
-
-        mock_run_job.return_value = JobResponse(status_code=500, data=None)
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            acquisition_settings=AcquisitionSettings(
-                job_settings=SmartSpimAcquisitionJobSettings(
-                    subject_id="695464",
-                    input_source=Path("SmartSPIM_695464_2023-10-18_20-30-30"),
-                    metadata_service_path="http://example.com/test",
-                )
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_acquisition_metadata()
-        self.assertIsNone(contents)
-
-    @patch("requests.Session.get")
-    def test_get_instrument_metadata(self, mock_get: MagicMock):
-        """Tests get_instrument_metadata from metadata service path"""
-        mock_response = Response()
-        mock_response.status_code = 422
-        body = json.dumps(self.example_instrument_response)
-        mock_response._content = body.encode("utf-8")
-        mock_get.return_value = mock_response
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
-            instrument_settings=InstrumentSettings(
-                instrument_id="exaSPIM1-1",
-                metadata_service_path="instrument",
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        service_session = requests.Session()
-        contents = metadata_job.get_instrument_metadata(service_session)
-        self.assertEqual("exaSPIM1-1", contents["instrument_id"])
-        mock_get.assert_called_once_with(
-            "http://example.com/instrument/exaSPIM1-1"
-        )
-
-    @patch("requests.Session")
-    def test_get_instrument_metadata_from_dir(self, mock_session: MagicMock):
-        """Tests get_instrument_metadata from directory"""
-        metadata_dir = RESOURCES_DIR / "metadata_files"
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            instrument_settings=InstrumentSettings(
-                instrument_id="exaSPIM1-1",
-                metadata_service_path="instrument",
-            ),
-            metadata_dir=metadata_dir,
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_instrument_metadata(mock_session)
-        self.assertIsNotNone(contents)
-        mock_session.assert_not_called()
-
-    @patch("requests.Session")
-    def test_get_instrument_metadata_none(self, mock_session: MagicMock):
-        """Tests get_instrument_metadata when no file or settings."""
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        contents = metadata_job.get_instrument_metadata(mock_session)
-        self.assertIsNone(contents)
-        mock_session.assert_not_called()
-
-    @patch("requests.Session.get")
-    @patch("logging.warning")
-    def test_get_instrument_metadata_warning(
-        self, mock_warn: MagicMock, mock_get: MagicMock
-    ):
-        """Tests get_instrument_metadata when an error is raised"""
-        mock_response = Response()
-        mock_response.status_code = 500
-        body = json.dumps({"message": "Internal Server Error"})
-        mock_response._content = body.encode("utf-8")
-        mock_get.return_value = mock_response
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
-            instrument_settings=InstrumentSettings(
-                instrument_id="exaSPIM1-1",
-                metadata_service_path="instrument",
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        service_session = requests.Session()
-        output = metadata_job.get_instrument_metadata(service_session)
-        self.assertIsNone(output)
-        mock_warn.assert_called_once_with(
-            "Instrument metadata is not valid! 500"
-        )
-
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob."
-        "_write_json_file"
-    )
-    def test_gather_non_automated_metadata(self, mock_write_file: MagicMock):
-        """Tests _gather_non_automated_metadata method"""
-        metadata_dir = RESOURCES_DIR / "metadata_files"
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_dir=metadata_dir,
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        metadata_job._gather_non_automated_metadata()
-        mock_write_file.assert_called()
-
-    def test_get_location(self):
-        """Tests _get_location method with no location_map"""
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_settings=MetadataSettings(
-                name="asset_name", location="some_bucket"
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        location = metadata_job._get_location(
-            metadata_status=MetadataStatus.VALID
-        )
-        self.assertEqual("some_bucket", location)
-
-    def test_get_location_with_location_map(self):
-        """Tests _get_location method with location_map"""
-
-        job_settings = JobSettings(
-            directory_to_write_to="abc",
-            metadata_settings=MetadataSettings(
-                name="asset_name",
-                location_map={
-                    "Valid": "valid_bucket",
-                    "Invalid": "invalid_bucket",
-                },
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        valid_location = metadata_job._get_location(
-            metadata_status=MetadataStatus.VALID
-        )
-        invalid_location = metadata_job._get_location(
-            metadata_status=MetadataStatus.INVALID
-        )
-        missing_location = metadata_job._get_location(
-            metadata_status=MetadataStatus.MISSING
-        )
-        self.assertEqual("valid_bucket", valid_location)
-        self.assertEqual("invalid_bucket", invalid_location)
-        # Check default falls back to the invalid value
-        self.assertEqual("invalid_bucket", missing_location)
-
-    def test_get_location_with_location_map_error(self):
-        """Tests _get_location method when location_map is corrupt"""
-
-        job_settings = JobSettings(
-            directory_to_write_to="abc",
-            metadata_settings=MetadataSettings(
-                name="asset_name", location_map={"Valid": "valid_bucket"}
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        with self.assertRaises(ValueError) as e:
-            metadata_job._get_location(metadata_status=MetadataStatus.INVALID)
-        self.assertIn("Unable to set location", str(e.exception))
-
-    @patch("logging.warning")
-    def test_get_main_metadata_with_warnings(self, mock_warn: MagicMock):
-        """Tests get_main_metadata method raises validation warnings"""
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_settings=MetadataSettings(
-                name="ecephys_632269_2023-10-10_10-10-10",
-                location="s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
-                subject_filepath=(METADATA_DIR / "subject.json"),
-                data_description_filepath=(
-                    METADATA_DIR / "data_description.json"
-                ),
-                procedures_filepath=(METADATA_DIR / "procedures.json"),
-                session_filepath=None,
-                rig_filepath=None,
-                processing_filepath=(METADATA_DIR / "processing.json"),
-                acquisition_filepath=None,
-                instrument_filepath=None,
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        with self.assertWarns(UserWarning) as w:
-            main_metadata = metadata_job.get_main_metadata()
-        # Issues with incomplete Procedures model raises warnings
-        self.assertIsNotNone(w.warning)
-        self.assertEqual(
-            "s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
-            main_metadata["location"],
-        )
-        self.assertEqual("Missing", main_metadata["metadata_status"])
-        self.assertEqual("632269", main_metadata["subject"]["subject_id"])
-        mock_warn.assert_called_once()
-
-    @patch("logging.warning")
-    def test_get_main_metadata_with_ser_issues(self, mock_log: MagicMock):
-        """Tests get_main_metadata method when rig.json file has
-        serialization issues."""
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_settings=MetadataSettings(
-                name="ecephys_632269_2023-10-10_10-10-10",
-                location="s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
-                subject_filepath=(METADATA_DIR / "subject.json"),
-                data_description_filepath=(
-                    METADATA_DIR / "data_description.json"
-                ),
-                procedures_filepath=(METADATA_DIR / "procedures.json"),
-                session_filepath=None,
-                rig_filepath=(METADATA_DIR_WITH_RIG_ISSUE / "rig.json"),
-                processing_filepath=(METADATA_DIR / "processing.json"),
-                acquisition_filepath=None,
-                instrument_filepath=None,
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        main_metadata = metadata_job.get_main_metadata()
-        mock_log.assert_called_once()
-        self.assertIsNotNone(main_metadata["rig"]["schema_version"])
-
-    @patch("logging.warning")
-    def test_get_main_metadata_with_validation_errors(
-        self, mock_warn: MagicMock
-    ):
-        """Tests get_main_metadata method handles validation errors"""
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_settings=MetadataSettings(
-                name="ecephys_632269_2023-10-10_10-10-10",
-                location="s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
-                subject_filepath=(METADATA_DIR / "subject.json"),
-                data_description_filepath=(
-                    METADATA_DIR / "data_description.json"
-                ),
-                procedures_filepath=(METADATA_DIR / "procedures.json"),
-                session_filepath=(METADATA_DIR / "session.json"),
-                rig_filepath=(METADATA_DIR / "rig.json"),
-                processing_filepath=(METADATA_DIR / "processing.json"),
-                acquisition_filepath=(METADATA_DIR / "acquisition.json"),
-                instrument_filepath=(METADATA_DIR / "instrument.json"),
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        main_metadata = metadata_job.get_main_metadata()
-        self.assertIsNotNone(main_metadata["subject"])
-        self.assertIsNotNone(main_metadata["procedures"])
-        self.assertIsNotNone(main_metadata["data_description"])
-        self.assertIsNotNone(main_metadata["session"])
-        self.assertIsNotNone(main_metadata["rig"])
-        self.assertIsNotNone(main_metadata["processing"])
-        self.assertIsNotNone(main_metadata["acquisition"])
-        self.assertIsNotNone(main_metadata["instrument"])
-        mock_warn.assert_called_once()
-
-    @patch("builtins.open", new_callable=mock_open())
-    @patch("json.dump")
-    def test_write_json_file(
-        self, mock_json_dump: MagicMock, mock_file: MagicMock
-    ):
-        """Tests write_json_file method"""
-        mock_file.return_value.__enter__.return_value = (
-            RESOURCES_DIR / "subject.json"
-        )
-
-        job_settings = JobSettings(directory_to_write_to=RESOURCES_DIR)
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        metadata_job._write_json_file(
-            filename="subject.json", contents={"subject_id": "123456"}
-        )
-
-        mock_json_dump.assert_called_once_with(
-            {"subject_id": "123456"}, RESOURCES_DIR / "subject.json", indent=3
-        )
-
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob.get_subject"
-    )
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob.get_procedures"
-    )
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        ".get_raw_data_description"
-    )
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        ".get_processing_metadata"
-    )
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        ".get_main_metadata"
-    )
-    @patch(
-        "aind_metadata_mapper.gather_metadata.GatherMetadataJob"
-        "._write_json_file"
-    )
-    @patch("builtins.open", new_callable=mock_open())
-    @patch("json.dump")
-    def test_run_job(
-        self,
-        mock_json_dump: MagicMock,
-        mock_open_file: MagicMock,
-        mock_write_json_file: MagicMock,
-        mock_get_main_metadata: MagicMock,
-        mock_get_processing_metadata: MagicMock,
-        mock_get_raw_data_description: MagicMock,
-        mock_get_procedures: MagicMock,
-        mock_get_subject: MagicMock,
-    ):
-        """Tests run_job calls all the sub processes"""
-        data_process = DataProcess(
-            name=ProcessName.COMPRESSION,
-            software_version="0.0.15",
-            start_date_time=datetime(
-                2020, 10, 10, 10, 10, 10, tzinfo=timezone.utc
-            ),
-            end_date_time=datetime(
-                2020, 10, 10, 11, 10, 10, tzinfo=timezone.utc
-            ),
-            input_location="/source/open_ephys",
-            output_location="/tmp/stage",
-            code_url=(
-                "https://github.com/AllenNeuralDynamics/"
-                "aind-data-transformation"
-            ),
-            parameters={},
-            outputs={},
-        )
-        processing_pipeline = PipelineProcess(
-            data_processes=[data_process], processor_full_name="Anna Apple"
-        )
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_service_domain="http://example.com",
-            subject_settings=SubjectSettings(
-                subject_id="632269",
-            ),
-            procedures_settings=ProceduresSettings(
-                subject_id="632269",
-            ),
-            raw_data_description_settings=RawDataDescriptionSettings(
-                project_name="Ephys Platform",
-                name="ecephys_632269_2023-10-10_10-10-10",
-                modality=[Modality.ECEPHYS, Modality.BEHAVIOR_VIDEOS],
-            ),
-            processing_settings=ProcessingSettings(
-                pipeline_process=json.loads(
-                    processing_pipeline.model_dump_json()
-                )
-            ),
-            metadata_settings=MetadataSettings(
-                name="ecephys_632269_2023-10-10_10-10-10",
-                location="s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
-                subject_filepath=(METADATA_DIR / "subject.json"),
-                data_description_filepath=(
-                    METADATA_DIR / "data_description.json"
-                ),
-                procedures_filepath=(METADATA_DIR / "procedures.json"),
-                session_filepath=None,
-                rig_filepath=None,
-                processing_filepath=(METADATA_DIR / "processing.json"),
-                acquisition_filepath=None,
-                instrument_filepath=None,
-            ),
-        )
-
-        # TODO: Add better mocked response
-        mock_get_main_metadata.return_value = Metadata.model_construct()
-
-        metadata_job = GatherMetadataJob(settings=job_settings)
-
-        metadata_job.run_job()
-
-        mock_get_subject.assert_called_once()
-        mock_get_procedures.assert_called_once()
-        mock_get_raw_data_description.assert_called_once()
-        mock_get_processing_metadata.assert_called_once()
-        mock_get_main_metadata.assert_called_once()
-        mock_write_json_file.assert_called()
-        mock_open_file.assert_called()
-        mock_json_dump.assert_called()
-
-    @patch("builtins.open", new_callable=mock_open())
-    @patch("json.dump")
-    def test_run_job_main_metadata(
-        self, mock_json_dump: MagicMock, mock_write_file: MagicMock
-    ):
-        """Tests run job writes metadata json correctly"""
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_settings=MetadataSettings(
-                name="ecephys_632269_2023-10-10_10-10-10",
-                location="s3://some-bucket/ecephys_632269_2023-10-10_10-10-10",
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        metadata_job.run_job()
-        json_contents = mock_json_dump.mock_calls[0].args[0]
-        mock_write_file.assert_called()
-        self.assertIsNotNone(json_contents.get("_id"))
-        self.assertIsNone(json_contents.get("id"))
-
-    @patch("builtins.open", new_callable=mock_open())
-    @patch("json.dump")
-    def test_run_job_main_metadata_with_location_map(
-        self, mock_json_dump: MagicMock, mock_write_file: MagicMock
-    ):
-        """Tests run job writes metadata json correctly when location_map is
-        set"""
-
-        job_settings = JobSettings(
-            directory_to_write_to=RESOURCES_DIR,
-            metadata_settings=MetadataSettings(
-                name="ecephys_632269_2023-10-10_10-10-10",
-                location_map={
-                    "Valid": (
-                        "s3://some-open-bucket/"
-                        "ecephys_632269_2023-10-10_10-10-10"
-                    ),
-                    "Invalid": (
-                        "s3://some-private-bucket/"
-                        "ecephys_632269_2023-10-10_10-10-10"
-                    ),
-                },
-            ),
-        )
-        metadata_job = GatherMetadataJob(settings=job_settings)
-        metadata_job.run_job()
-        json_contents = mock_json_dump.mock_calls[0].args[0]
-        mock_write_file.assert_called()
-        self.assertEqual(
-            "s3://some-private-bucket/ecephys_632269_2023-10-10_10-10-10",
-            json_contents.get("location"),
-        )
-        self.assertIsNotNone(json_contents.get("_id"))
-        self.assertIsNone(json_contents.get("id"))
-
-    def test_from_job_settings_file(self):
-        """Tests that users can set a session config file when requesting
-        GatherMetadataJob"""
-
-        bergamo_settings = BergamoSessionJobSettings(
-            user_settings_config_file=EXAMPLE_BERGAMO_CONFIGS
-        )
-        test_configs = {
-            "directory_to_write_to": RESOURCES_DIR,
-            "session_settings": {
-                "job_settings": bergamo_settings.model_dump(),
+    @patch("requests.get")
+    def test_get_funding_success_multiple_results(self, mock_get):
+        """Test get_funding with successful multiple results"""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [
+            {
+                "funder": "Funder 1",
+                "award_number": "111",
             },
-        }
-        job_settings = JobSettings.model_validate_json(
-            json.dumps(test_configs, default=str)
+            {
+                "funder": "Funder 2",
+                "award_number": "222",
+            },
+        ]
+        mock_get.return_value = mock_response
+
+        funding = self.job.get_funding()
+
+        self.assertEqual(len(funding), 2)
+
+    @patch("requests.get")
+    @patch("os.makedirs")
+    def test_get_investigators_no_project_name(self, mock_makedirs, mock_get):
+        """Test get_investigators when no project name is provided"""
+        job_no_project = GatherMetadataJob(
+            JobSettings(
+                metadata_dir="/test",
+                output_dir="/test/output",
+                subject_id="test_subject",
+                data_description_settings=DataDescriptionSettings(
+                    project_name="",
+                    modalities=[Modality.ECEPHYS],
+                ),
+                acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+            )
         )
-        self.assertEqual(
-            ["John Apple"],
-            job_settings.session_settings.job_settings.experimenter_full_name,
+        investigators = job_no_project.get_investigators()
+
+        self.assertEqual(investigators, [])
+        mock_get.assert_not_called()
+        mock_makedirs.assert_called()
+
+    @patch("aind_metadata_mapper.gather_metadata.metadata_service_helper")
+    @patch("os.makedirs")
+    def test_get_investigators_helper_issue(self, mock_makedirs, mock_metadata_helper):
+        """Test get_investigators when helper function returns None"""
+        job_no_project = GatherMetadataJob(
+            JobSettings(
+                metadata_dir="/test",
+                output_dir="/test/output",
+                subject_id="test_subject",
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Some Project",
+                    modalities=[Modality.ECEPHYS],
+                ),
+                acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+            )
+        )
+        mock_metadata_helper.return_value = None
+        investigators = job_no_project.get_investigators()
+
+        self.assertEqual(investigators, [])
+        mock_makedirs.assert_called()
+
+    @patch("requests.get")
+    def test_get_investigators_success_single_result(self, mock_get):
+        """Test get_investigators with successful single result"""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [
+            {
+                "object_type": "Person",
+                "name": "Jane Doe",
+                "registry": "Open Researcher and Contributor ID (ORCID)",
+                "registry_identifier": None,
+            }
+        ]
+        mock_get.return_value = mock_response
+
+        investigators = self.job.get_investigators()
+
+        expected_investigators = [
+            {
+                "object_type": "Person",
+                "name": "Jane Doe",
+                "registry": "Open Researcher and Contributor ID (ORCID)",
+                "registry_identifier": None,
+            }
+        ]
+        self.assertEqual(investigators, expected_investigators)
+
+    @patch("requests.get")
+    def test_get_investigators_success_multiple_results(self, mock_get):
+        """Test get_investigators with successful multiple results"""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [
+            {
+                "object_type": "Person",
+                "name": "Jane Doe",
+                "registry": "Open Researcher and Contributor ID (ORCID)",
+                "registry_identifier": None,
+            },
+            {
+                "object_type": "Person",
+                "name": "John Smith",
+                "registry": "Open Researcher and Contributor ID (ORCID)",
+                "registry_identifier": None,
+            },
+        ]
+        mock_get.return_value = mock_response
+
+        investigators = self.job.get_investigators()
+
+        self.assertEqual(len(investigators), 2)
+
+    # Tests for _write_json_file method
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("json.dump")
+    def test_write_json_file(self, mock_json_dump, mock_file):
+        """Test _write_json_file method"""
+        test_data = {"key": "value", "number": 123}
+
+        self.job._write_json_file("output.json", test_data)
+
+        mock_file.assert_called_once_with("/test/output/output.json", "w")
+        mock_json_dump.assert_called_once_with(
+            test_data,
+            mock_file().__enter__(),
+            indent=3,
+            ensure_ascii=False,
+            sort_keys=True,
         )
 
-    @patch("requests.Session")
-    def test_project_name_is_set(self, mock_session: MagicMock):
-        """Tests project_name makes it to the data_description file"""
+    # Tests for build_data_description method
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch.object(GatherMetadataJob, "_get_file_from_user_defined_directory")
+    def test_build_data_description_existing_file(self, mock_get_file, mock_file_exists):
+        """Test build_data_description when file already exists"""
+        mock_file_exists.return_value = True
+        mock_get_file.return_value = {"existing": "data"}
 
-        settings = JobSettings(
-            job_settings_name="GatherMetadata",
-            metadata_service_domain="http://example.com",
-            raw_data_description_settings=RawDataDescriptionSettings(
-                name="behavior_123456_2024-10-01_09-00-23",
-                project_name="Cognitive flexibility in patch foraging",
-                modality=[Modality.BEHAVIOR, Modality.BEHAVIOR_VIDEOS],
-                institution=Organization.AIND,
-                metadata_service_path="funding",
+        result = self.job.build_data_description(acquisition_start_time="2023-01-01T12:00:00", subject_id="123456")
+
+        self.assertEqual(result, {"existing": "data"})
+        mock_file_exists.assert_called_once_with(file_name="data_description.json")
+        mock_get_file.assert_called_once_with(file_name="data_description.json")
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch.object(GatherMetadataJob, "get_funding")
+    @patch.object(GatherMetadataJob, "get_investigators")
+    @patch("aind_metadata_mapper.gather_metadata.datetime")
+    def test_build_data_description_new_file(
+        self, mock_datetime, mock_get_investigators, mock_get_funding, mock_file_exists
+    ):
+        """Test build_data_description when creating new file"""
+        mock_file_exists.return_value = False
+        mock_get_funding.return_value = [
+            {
+                "object_type": "Funding",
+                "funder": Organization.NIMH,
+                "grant_number": "12345",
+                "fundee": [
+                    {
+                        "object_type": "Person",
+                        "name": "Jane Doe",
+                        "registry": "Addgene (ADDGENE)",
+                        "registry_identifier": None,
+                    }
+                ],
+            }
+        ]
+        mock_get_investigators.return_value = [
+            {"object_type": "Person", "name": "Jane Doe", "registry": "Addgene (ADDGENE)", "registry_identifier": None}
+        ]
+        mock_datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)
+
+        result = self.job.build_data_description(acquisition_start_time="2023-01-01T12:00:00", subject_id="123456")
+
+        self.assertIn("creation_time", result)
+        self.assertEqual(result["project_name"], "Test Project")
+        self.assertEqual(len(result["modalities"]), 2)
+
+    # Tests for get_subject method
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch("os.makedirs")
+    def test_get_subject_no_subject_id(self, mock_makedirs, mock_file_exists):
+        """Test get_subject when no subject_id is provided"""
+        job_no_subject = GatherMetadataJob(
+            JobSettings(
+                metadata_dir="/test",
+                output_dir="/test/output",
+                subject_id="",
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Test Project",
+                    modalities=[Modality.ECEPHYS],
+                ),
+                acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+            )
+        )
+
+        result = job_no_subject.get_subject()
+
+        self.assertIsNone(result)
+        mock_file_exists.assert_not_called()
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch.object(GatherMetadataJob, "_get_file_from_user_defined_directory")
+    def test_get_subject_existing_file(self, mock_get_file, mock_file_exists):
+        """Test get_subject when file already exists"""
+        mock_file_exists.return_value = True
+        mock_get_file.return_value = {"subject_id": "123456"}
+
+        result = self.job.get_subject()
+
+        self.assertEqual(result, {"subject_id": "123456"})
+        mock_file_exists.assert_called_once_with(file_name="subject.json")
+        mock_get_file.assert_called_once_with(file_name="subject.json")
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.get_subject")
+    def test_get_subject_api_success(self, mock_get_subject, mock_file_exists):
+        """Test get_subject when downloading from API successfully"""
+        mock_file_exists.return_value = False
+        mock_get_subject.return_value = {"subject_id": "123456"}
+
+        result = self.job.get_subject()
+
+        self.assertEqual(result, {"subject_id": "123456"})
+        mock_get_subject.assert_called_once_with("123456", base_url="http://test-service.com/api/v2/subject/")
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.get_subject")
+    def test_get_subject_api_404(self, mock_get_subject, mock_file_exists):
+        """Test get_subject when subject not found in API"""
+        mock_file_exists.return_value = False
+        mock_get_subject.return_value = None
+
+        result = self.job.get_subject()
+
+        self.assertIsNone(result)
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.get_subject")
+    def test_get_subject_api_other_error(self, mock_get_subject, mock_file_exists):
+        """Test get_subject when API returns other error"""
+        mock_file_exists.return_value = False
+        mock_get_subject.return_value = None
+
+        result = self.job.get_subject()
+
+        self.assertIsNone(result)
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.get_subject")
+    def test_get_subject_api_exception(self, mock_get_subject, mock_file_exists):
+        """Test get_subject when API request raises exception"""
+        mock_file_exists.return_value = False
+        mock_get_subject.return_value = None
+
+        result = self.job.get_subject()
+
+        self.assertIsNone(result)
+
+    # Tests for get_procedures method
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch("os.makedirs")
+    def test_get_procedures_no_subject_id(self, mock_makedirs, mock_file_exists):
+        """Test get_procedures when no subject_id is provided"""
+        job_no_subject = GatherMetadataJob(
+            JobSettings(
+                metadata_dir="/test",
+                output_dir="/test/output",
+                subject_id="",
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Test Project",
+                    modalities=[Modality.ECEPHYS],
+                ),
+                acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+            )
+        )
+
+        result = job_no_subject.get_procedures(subject_id="")
+
+        self.assertIsNone(result)
+        mock_file_exists.assert_not_called()
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch.object(GatherMetadataJob, "_get_file_from_user_defined_directory")
+    def test_get_procedures_existing_file(self, mock_get_file, mock_file_exists):
+        """Test get_procedures when file already exists"""
+        mock_file_exists.return_value = True
+        mock_get_file.return_value = {"procedures": "data"}
+
+        result = self.job.get_procedures(subject_id="123456")
+
+        self.assertEqual(result, {"procedures": "data"})
+        mock_file_exists.assert_called_once_with(file_name="procedures.json")
+        mock_get_file.assert_called_once_with(file_name="procedures.json")
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.get_procedures")
+    def test_get_procedures_api_success(self, mock_get_procedures, mock_file_exists):
+        """Test get_procedures when downloading from API successfully"""
+        mock_file_exists.return_value = False
+        mock_get_procedures.return_value = {"procedures": "data"}
+
+        result = self.job.get_procedures(subject_id="123456")
+
+        self.assertEqual(result, {"procedures": "data"})
+        mock_get_procedures.assert_called_once_with("123456", base_url="http://test-service.com/api/v2/procedures/")
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.get_procedures")
+    def test_get_procedures_api_404(self, mock_get_procedures, mock_file_exists):
+        """Test get_procedures when procedures not found in API"""
+        mock_file_exists.return_value = False
+        mock_get_procedures.return_value = None
+
+        result = self.job.get_procedures(subject_id="123456")
+
+        self.assertIsNone(result)
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.get_procedures")
+    def test_get_procedures_api_other_status(self, mock_get_procedures, mock_file_exists):
+        """Test get_procedures when API returns other status code"""
+        mock_file_exists.return_value = False
+        mock_get_procedures.return_value = None
+
+        result = self.job.get_procedures(subject_id="123456")
+
+        self.assertIsNone(result)
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.get_procedures")
+    def test_get_procedures_api_exception(self, mock_get_procedures, mock_file_exists):
+        """Test get_procedures when API request raises exception"""
+        mock_file_exists.return_value = False
+        mock_get_procedures.return_value = None
+
+        result = self.job.get_procedures(subject_id="123456")
+
+        self.assertIsNone(result)
+
+    # Tests for other metadata getter methods
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    def test_get_acquisition_no_file(self, mock_file_exists):
+        """Test get_acquisition when no file exists"""
+        mock_file_exists.return_value = False
+
+        result = self.job.get_acquisition()
+
+        self.assertIsNone(result)
+
+    @patch("os.makedirs")
+    def test_run_mappers_for_acquisition_no_metadata_dir(self, mock_makedirs):
+        """Test _run_mappers_for_acquisition when metadata_dir is None"""
+        job_settings = JobSettings(
+            metadata_dir=None,
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
             ),
-            directory_to_write_to="/some/dir/data_dir",
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
+        job = GatherMetadataJob(settings=job_settings)
 
-        job = GatherMetadataJob(settings=settings)
-        data_description_contents = job.get_raw_data_description(mock_session)
-        self.assertEqual(
-            "Cognitive flexibility in patch foraging",
-            data_description_contents["project_name"],
+        result = job._run_mappers_for_acquisition()
+
+        self.assertIsNone(result)
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    def test_get_instrument_no_file(self, mock_file_exists):
+        """Test get_instrument when no file exists"""
+        mock_file_exists.return_value = False
+
+        result = self.job.get_instrument()
+
+        self.assertIsNone(result)
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    def test_get_processing_no_file(self, mock_file_exists):
+        """Test get_processing when no file exists"""
+        mock_file_exists.return_value = False
+
+        result = self.job.get_processing()
+
+        self.assertIsNone(result)
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    def test_get_quality_control_no_file(self, mock_file_exists):
+        """Test get_quality_control when no file exists"""
+        mock_file_exists.return_value = False
+
+        result = self.job.get_quality_control()
+
+        self.assertIsNone(result)
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    def test_get_model_no_file(self, mock_file_exists):
+        """Test get_model when no file exists"""
+        mock_file_exists.return_value = False
+
+        result = self.job.get_model()
+
+        self.assertIsNone(result)
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch.object(GatherMetadataJob, "_get_file_from_user_defined_directory")
+    def test_get_model_existing_file(self, mock_get_file, mock_file_exists):
+        """Test get_model when file exists"""
+        mock_file_exists.return_value = True
+        mock_get_file.return_value = {"model": "data"}
+
+        result = self.job.get_model()
+
+        self.assertEqual(result, {"model": "data"})
+        mock_file_exists.assert_called_once_with(file_name="model.json")
+        mock_get_file.assert_called_once_with(file_name="model.json")
+
+    # Tests for validate_and_create_metadata method
+    def test_validate_and_create_metadata_success_with_raise_if_invalid_false(self):
+        """Test validate_and_create_metadata when validation succeeds with raise_if_invalid=False (default)"""
+        core_metadata = {
+            "data_description": {
+                "name": "test_dataset",
+                "creation_time": "2023-01-01T12:00:00",
+                "institution": {"name": "Allen Institute for Neural Dynamics"},
+                "data_level": "processed",  # Use processed to avoid subject_id requirement
+                "modalities": ["Behavior videos"],
+                "project_name": "Test Project",
+                "funding_source": [{"funder": "Test Funder"}],
+                "investigators": [{"name": "Test Investigator"}],
+            }
+        }
+
+        # Mock Metadata to avoid actual validation
+        with patch("aind_metadata_mapper.gather_metadata.Metadata") as mock_metadata:
+            mock_instance = MagicMock()
+            mock_metadata.return_value = mock_instance
+            result = self.job.validate_and_create_metadata(core_metadata)
+            self.assertEqual(result, mock_instance)
+
+    def test_validate_and_create_metadata_success_with_raise_if_invalid_true(self):
+        """Test validate_and_create_metadata when validation succeeds with raise_if_invalid=True"""
+        with patch("os.makedirs"):
+            strict_settings = JobSettings(
+                metadata_dir="/test/metadata",
+                output_dir="/test/output",
+                subject_id="123456",
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Test Project",
+                    modalities=[Modality.ECEPHYS, Modality.BEHAVIOR],
+                ),
+                metadata_service_url="http://test-service.com",
+                raise_if_invalid=True,
+                acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+            )
+            strict_job = GatherMetadataJob(settings=strict_settings)
+
+        core_metadata = {
+            "data_description": {
+                "name": "test_dataset",
+                "creation_time": "2023-01-01T12:00:00",
+                "institution": {"name": "Allen Institute for Neural Dynamics"},
+                "data_level": "processed",  # Use processed to avoid subject_id requirement
+                "modalities": ["Behavior videos"],
+                "project_name": "Test Project",
+                "funding_source": [{"funder": "Test Funder"}],
+                "investigators": [{"name": "Test Investigator"}],
+            }
+        }
+
+        # Mock Metadata to avoid actual validation
+        with patch("aind_metadata_mapper.gather_metadata.Metadata") as mock_metadata:
+            mock_instance = MagicMock()
+            mock_metadata.return_value = mock_instance
+            result = strict_job.validate_and_create_metadata(core_metadata)
+            self.assertEqual(result, mock_instance)
+
+    def test_merge_models_instruments(self):
+        """Test _merge_models with instrument objects"""
+        import json
+
+        from aind_data_schema.core.instrument import Instrument
+
+        with open(TEST_DIR / "resources" / "v2_metadata" / "instrument.json") as f:
+            base_instrument = json.load(f)
+
+        instrument1 = base_instrument.copy()
+        instrument2 = base_instrument.copy()
+
+        result = self.job._merge_models(Instrument, [instrument1, instrument2])
+
+        self.assertIsInstance(result, dict)
+        self.assertIn("instrument_id", result)
+
+    def test_merge_models_acquisition(self):
+        """Test _merge_models with acquisition objects"""
+        import json
+
+        from aind_data_schema.core.acquisition import Acquisition
+
+        with open(TEST_DIR / "resources" / "v2_metadata" / "acquisition.json") as f:
+            base_acquisition = json.load(f)
+
+        acquisition1 = base_acquisition.copy()
+        acquisition2 = base_acquisition.copy()
+
+        if "subject_details" in acquisition2:
+            del acquisition2["subject_details"]
+
+        result = self.job._merge_models(Acquisition, [acquisition1, acquisition2])
+
+        self.assertIsInstance(result, dict)
+        self.assertIn("acquisition_start_time", result)
+
+    def test_merge_models_datetime_serialization(self):
+        """Test that merged models can be JSON serialized (datetime objects converted to strings)"""
+        # Create two minimal acquisition models with datetime fields
+        now = datetime.now(timezone.utc)
+
+        acq1_dict = {
+            "subject_id": "test",
+            "acquisition_start_time": now.isoformat(),
+            "acquisition_end_time": now.isoformat(),
+            "instrument_id": "test",
+            "acquisition_type": "test",
+            "data_streams": [],
+        }
+
+        acq2_dict = {
+            "subject_id": "test",
+            "acquisition_start_time": now.isoformat(),
+            "acquisition_end_time": now.isoformat(),
+            "instrument_id": "test",
+            "acquisition_type": "test",
+            "data_streams": [],
+        }
+
+        # Merge the two acquisitions using _merge_models
+        merged_dict = self.job._merge_models(Acquisition, [acq1_dict, acq2_dict])
+
+        # Verify the merged dict can be JSON serialized
+        # This will fail if merged_dict contains datetime objects instead of strings
+        json_str = json.dumps(merged_dict, indent=2)
+        self.assertIsInstance(json_str, str)
+        # Verify datetime fields are strings, not datetime objects
+        self.assertIsInstance(merged_dict.get("acquisition_start_time"), str)
+
+    def test_get_instrument_multiple_files(self):
+        """Test get_instrument with multiple instrument files"""
+        import json
+        import shutil
+        import tempfile
+
+        temp_dir = tempfile.mkdtemp()
+        output_dir = tempfile.mkdtemp()
+        test_settings = JobSettings(
+            metadata_dir=temp_dir,
+            output_dir=output_dir,
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
         )
-        mock_session.assert_not_called()
+        test_job = GatherMetadataJob(settings=test_settings)
+
+        try:
+            with open(TEST_DIR / "resources" / "v2_metadata" / "instrument.json") as f:
+                base_instrument = json.load(f)
+
+            instrument1 = base_instrument.copy()
+            instrument2 = base_instrument.copy()
+
+            with open(os.path.join(temp_dir, "instrument_123.json"), "w") as f:
+                json.dump(instrument1, f)
+
+            with open(os.path.join(temp_dir, "instrument_456.json"), "w") as f:
+                json.dump(instrument2, f)
+
+            result = test_job.get_instrument()
+
+            self.assertIsNotNone(result)
+            self.assertIsInstance(result, dict)
+            self.assertIn("instrument_id", result)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_acquisition_multiple_files(self):
+        """Test get_acquisition with multiple acquisition files"""
+        import json
+        import shutil
+        import tempfile
+
+        temp_dir = tempfile.mkdtemp()
+        output_dir = tempfile.mkdtemp()
+        test_settings = JobSettings(
+            metadata_dir=temp_dir,
+            output_dir=output_dir,
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+        )
+        test_job = GatherMetadataJob(settings=test_settings)
+
+        try:
+            with open(TEST_DIR / "resources" / "v2_metadata" / "acquisition.json") as f:
+                base_acquisition = json.load(f)
+
+            if "subject_details" in base_acquisition:
+                del base_acquisition["subject_details"]
+
+            acquisition1 = base_acquisition.copy()
+            acquisition2 = base_acquisition.copy()
+
+            with open(os.path.join(temp_dir, "acquisition_789.json"), "w") as f:
+                json.dump(acquisition1, f)
+
+            with open(os.path.join(temp_dir, "acquisition_012.json"), "w") as f:
+                json.dump(acquisition2, f)
+
+            result = test_job.get_acquisition()
+
+            self.assertIsNotNone(result)
+            self.assertIsInstance(result, dict)
+            self.assertIn("acquisition_start_time", result)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_quality_control_multiple_files(self):
+        """Test get_quality_control with multiple quality control files"""
+        import json
+        import shutil
+        import tempfile
+
+        temp_dir = tempfile.mkdtemp()
+        output_dir = tempfile.mkdtemp()
+        test_settings = JobSettings(
+            metadata_dir=temp_dir,
+            output_dir=output_dir,
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+        )
+        test_job = GatherMetadataJob(settings=test_settings)
+
+        try:
+            with open(TEST_DIR / "resources" / "v2_metadata" / "quality_control.json") as f:
+                base_qc = json.load(f)
+
+            qc1 = base_qc.copy()
+            qc2 = base_qc.copy()
+
+            with open(os.path.join(temp_dir, "quality_control_345.json"), "w") as f:
+                json.dump(qc1, f)
+
+            with open(os.path.join(temp_dir, "quality_control_678.json"), "w") as f:
+                json.dump(qc2, f)
+
+            result = test_job.get_quality_control()
+
+            self.assertIsNotNone(result)
+            self.assertIsInstance(result, dict)
+            self.assertIn("metrics", result)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_prefixed_files_no_matches(self):
+        """Test _get_prefixed_files_from_user_defined_directory with no matching files"""
+        import json
+        import shutil
+        import tempfile
+
+        temp_dir = tempfile.mkdtemp()
+        output_dir = tempfile.mkdtemp()
+        test_settings = JobSettings(
+            metadata_dir=temp_dir,
+            output_dir=output_dir,
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+        )
+        test_job = GatherMetadataJob(settings=test_settings)
+
+        try:
+            with open(os.path.join(temp_dir, "other_file.json"), "w") as f:
+                json.dump({"data": "test"}, f)
+
+            result = test_job._get_prefixed_files_from_user_defined_directory("instrument")
+
+            self.assertEqual(result, [])
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_prefixed_files_mixed_extensions(self):
+        """Test _get_prefixed_files_from_user_defined_directory ignores non-json files"""
+        import json
+        import shutil
+        import tempfile
+
+        temp_dir = tempfile.mkdtemp()
+        output_dir = tempfile.mkdtemp()
+        test_settings = JobSettings(
+            metadata_dir=temp_dir,
+            output_dir=output_dir,
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+        )
+        test_job = GatherMetadataJob(settings=test_settings)
+
+        try:
+            with open(os.path.join(temp_dir, "instrument_123.json"), "w") as f:
+                json.dump({"instrument_id": "test"}, f)
+
+            with open(os.path.join(temp_dir, "instrument_456.txt"), "w") as f:
+                f.write("not json")
+
+            result = test_job._get_prefixed_files_from_user_defined_directory("instrument")
+
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result[0]["instrument_id"], "test")
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    @patch.object(GatherMetadataJob, "get_acquisition")
+    @patch("os.makedirs")
+    def test_run_job_missing_acquisition_start_time(self, mock_makedirs, mock_acquisition):
+        """Test run_job raises error when acquisition_start_time is not provided and no acquisition file exists"""
+        mock_acquisition.return_value = None
+
+        job_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            acquisition_start_time=None,
+        )
+        job = GatherMetadataJob(settings=job_settings)
+
+        with self.assertRaises(ValueError) as context:
+            job.run_job()
+
+        self.assertIn("acquisition_start_time is required", str(context.exception))
 
 
 if __name__ == "__main__":
