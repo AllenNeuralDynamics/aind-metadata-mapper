@@ -319,20 +319,24 @@ class FIPMapper(MapperJob):
         if intended_measurements is None:
             intended_measurements = self._parse_intended_measurements(subject_id)
         if implanted_fibers is None:
+            # Fetch implanted fibers from metadata service
             implanted_fibers, procedures_fetched = self._parse_implanted_fibers(subject_id)
 
+            # Check if procedures service call failed (distinct from finding no fibers)
             if not procedures_fetched:
                 raise ValueError(
                     f"Failed to retrieve procedures data from metadata service for subject_id={subject_id}. "
                     "Cannot create FIP acquisition metadata without procedures information."
                 )
 
+            # Procedures were successfully retrieved, but no implanted fibers found in the data
             if not implanted_fibers:
                 raise ValueError(
                     f"No implanted fibers found in procedures data for subject_id={subject_id}. "
                     "Implanted fiber information is required to create FIP acquisition metadata."
                 )
         else:
+            # implanted_fibers were provided by caller - validate they're not empty
             if not implanted_fibers:
                 raise ValueError(
                     f"No implanted fibers found for subject_id={subject_id}. "
