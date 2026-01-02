@@ -226,7 +226,8 @@ class FIPMapper(MapperJob):
         -------
         tuple[Optional[List[int]], bool]
             Tuple of (implanted_fiber_indices, procedures_fetched) where:
-            - implanted_fiber_indices: List of implanted fiber indices (e.g., [0, 1, 2] for Fiber_0, Fiber_1, Fiber_2), or None if no implanted fibers found.
+            - implanted_fiber_indices: List of implanted fiber indices
+              (e.g., [0, 1, 2] for Fiber_0, Fiber_1, Fiber_2), or None if no implanted fibers found.
             - procedures_fetched: False if procedures data could not be retrieved, True otherwise.
         """
         if data is None:

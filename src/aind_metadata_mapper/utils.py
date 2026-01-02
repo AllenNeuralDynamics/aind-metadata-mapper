@@ -76,8 +76,10 @@ def ensure_timezone(dt):
     return dt
 
 
-def metadata_service_helper(url: str, timeout: int = 60) -> Optional[dict]:
-    """Fetch metadata from a service URL.
+def metadata_service_helper(
+    url: str, timeout: int = 60, max_retries: int = 3, retry_delay: float = 1.0
+) -> Optional[dict]:
+    """Fetch metadata from a service URL with retry logic.
 
     Parameters
     ----------
@@ -85,21 +87,35 @@ def metadata_service_helper(url: str, timeout: int = 60) -> Optional[dict]:
         Full URL to fetch metadata from.
     timeout : int
         Request timeout in seconds. Default is 60.
+    max_retries : int
+        Maximum number of retry attempts. Defaults to 3.
+    retry_delay : float
+        Delay in seconds between retry attempts. Defaults to 1.0.
 
     Returns
     -------
     Optional[dict]
-        Metadata as a dictionary, or None if error occurs.
+        Metadata as a dictionary, or None if error occurs after all retries.
     """
-    try:
-        response = requests.get(url, timeout=timeout)
-        if response.status_code == 400:
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url, timeout=timeout)
+            if response.status_code == 400:
+                return response.json()
+            response.raise_for_status()
             return response.json()
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error retrieving metadata from {url}: {e}")
-        return None
+        except requests.exceptions.RequestException as e:
+            if attempt < max_retries - 1:
+                logger.warning(
+                    f"Error retrieving metadata from {url} (attempt {attempt + 1}/{max_retries}): {e}. "
+                    f"Retrying in {retry_delay}s..."
+                )
+                time.sleep(retry_delay)
+            else:
+                logger.error(f"Error retrieving metadata from {url} after {max_retries} attempts: {e}")
+                return None
+
+    return None
 
 
 def get_subject(subject_id: str, base_url: str = SUBJECT_BASE_URL) -> Optional[dict]:
@@ -129,12 +145,7 @@ def get_subject(subject_id: str, base_url: str = SUBJECT_BASE_URL) -> Optional[d
         return None
 
 
-def get_procedures(
-    subject_id: str,
-    base_url: str = PROCEDURES_BASE_URL,
-    max_retries: int = 3,
-    retry_delay: float = 1.0,
-) -> Optional[dict]:
+def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL) -> Optional[dict]:
     """Fetch procedures data for a subject from the metadata service.
 
     Parameters
@@ -143,44 +154,22 @@ def get_procedures(
         The subject ID to query.
     base_url : str
         Base URL for the procedures endpoint. Defaults to PROCEDURES_BASE_URL.
-    max_retries : int
-        Maximum number of retry attempts. Defaults to 3.
-    retry_delay : float
-        Delay in seconds between retry attempts. Defaults to 1.0.
 
     Returns
     -------
     Optional[dict]
-        Procedures data dictionary, or None if the request fails after all retries.
+        Procedures data dictionary, or None if the request fails.
     """
-    url_base = base_url.rstrip("/") + "/"
-    url = urljoin(url_base, subject_id.lstrip("/"))
-
-    for attempt in range(max_retries):
-        try:
-            result = metadata_service_helper(url)
-            if result is not None:
-                return result
-
-            if attempt < max_retries - 1:
-                logger.warning(
-                    f"Could not fetch procedures for subject {subject_id} (attempt {attempt + 1}/{max_retries}). Retrying in {retry_delay}s..."
-                )
-                time.sleep(retry_delay)
-            else:
-                logger.warning(f"Could not fetch procedures for subject {subject_id} after {max_retries} attempts")
-        except Exception as e:
-            if attempt < max_retries - 1:
-                logger.warning(
-                    f"Error fetching procedures for subject {subject_id} (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {retry_delay}s..."
-                )
-                time.sleep(retry_delay)
-            else:
-                logger.warning(
-                    f"Unexpected error fetching procedures for subject {subject_id} after {max_retries} attempts: {e}"
-                )
-
-    return None
+    try:
+        url_base = base_url.rstrip("/") + "/"
+        url = urljoin(url_base, subject_id.lstrip("/"))
+        result = metadata_service_helper(url)
+        if result is None:
+            logger.warning(f"Could not fetch procedures for subject {subject_id}")
+        return result
+    except Exception as e:
+        logger.warning(f"Unexpected error fetching procedures for subject {subject_id}: {e}")
+        return None
 
 
 def get_intended_measurements(

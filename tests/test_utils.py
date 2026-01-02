@@ -215,42 +215,18 @@ class TestUtils(unittest.TestCase):
 
     @patch("aind_metadata_mapper.utils.time.sleep")
     @patch("requests.get")
-    def test_get_procedures_retry_on_none(self, mock_get, mock_sleep):
-        """Test that get_procedures retries when service returns None.
+    def test_metadata_service_helper_retry_on_exception(self, mock_get, mock_sleep):
+        """Test that metadata_service_helper retries when exceptions occur.
 
-        When the metadata service helper returns None (indicating a transient failure),
-        get_procedures should retry up to max_retries times before giving up.
-        """
-        # First 2 calls return None, third succeeds
-        mock_resp_success = SimpleNamespace()
-        mock_resp_success.status_code = 200
-        mock_resp_success.json = lambda: {"subject_procedures": []}
-        mock_resp_success.raise_for_status = lambda: None
-
-        mock_resp_none = SimpleNamespace()
-        mock_resp_none.status_code = 404
-        mock_resp_none.json = lambda: None
-        mock_resp_none.raise_for_status = lambda: None
-
-        mock_get.side_effect = [mock_resp_none, mock_resp_none, mock_resp_success]
-
-        result = get_procedures("123")
-        self.assertEqual(result, {"subject_procedures": []})
-        self.assertEqual(mock_get.call_count, 3)
-        self.assertEqual(mock_sleep.call_count, 2)
-
-    @patch("aind_metadata_mapper.utils.time.sleep")
-    @patch("requests.get")
-    def test_get_procedures_retry_on_exception(self, mock_get, mock_sleep):
-        """Test that get_procedures retries when exceptions occur.
-
-        When the metadata service raises an exception, get_procedures should
+        When requests raises an exception, metadata_service_helper should
         retry up to max_retries times before giving up.
         """
+        from aind_metadata_mapper.utils import metadata_service_helper
+
         # First 2 calls raise exception, third succeeds
         mock_resp_success = SimpleNamespace()
         mock_resp_success.status_code = 200
-        mock_resp_success.json = lambda: {"subject_procedures": [{"test": "data"}]}
+        mock_resp_success.json = lambda: {"test": "data"}
         mock_resp_success.raise_for_status = lambda: None
 
         mock_get.side_effect = [
@@ -259,25 +235,48 @@ class TestUtils(unittest.TestCase):
             mock_resp_success,
         ]
 
-        result = get_procedures("123")
-        self.assertEqual(result, {"subject_procedures": [{"test": "data"}]})
+        result = metadata_service_helper("http://test.com")
+        self.assertEqual(result, {"test": "data"})
         self.assertEqual(mock_get.call_count, 3)
         self.assertEqual(mock_sleep.call_count, 2)
 
     @patch("aind_metadata_mapper.utils.time.sleep")
     @patch("requests.get")
-    def test_get_procedures_max_retries_exceeded(self, mock_get, mock_sleep):
-        """Test that get_procedures gives up after max_retries.
+    def test_metadata_service_helper_max_retries_exceeded(self, mock_get, mock_sleep):
+        """Test that metadata_service_helper gives up after max_retries.
 
-        When the metadata service consistently fails, get_procedures should
+        When the metadata service consistently fails, metadata_service_helper should
         retry max_retries times and then return None.
         """
+        from aind_metadata_mapper.utils import metadata_service_helper
+
         mock_get.side_effect = requests.exceptions.RequestException("persistent error")
 
-        result = get_procedures("123", max_retries=3)
+        result = metadata_service_helper("http://test.com", max_retries=3)
         self.assertIsNone(result)
         self.assertEqual(mock_get.call_count, 3)
         self.assertEqual(mock_sleep.call_count, 2)
+
+    @patch("aind_metadata_mapper.utils.time.sleep")
+    @patch("requests.get")
+    def test_metadata_service_helper_custom_retry_delay(self, mock_get, mock_sleep):
+        """Test that metadata_service_helper respects custom retry_delay.
+
+        When a custom retry_delay is provided, metadata_service_helper should
+        use that delay between retries.
+        """
+        from aind_metadata_mapper.utils import metadata_service_helper
+
+        mock_get.side_effect = [
+            requests.exceptions.RequestException("error"),
+            requests.exceptions.RequestException("error"),
+        ]
+
+        result = metadata_service_helper("http://test.com", max_retries=2, retry_delay=0.5)
+        self.assertIsNone(result)
+        self.assertEqual(mock_get.call_count, 2)
+        self.assertEqual(mock_sleep.call_count, 1)
+        mock_sleep.assert_called_with(0.5)
 
     @patch("requests.get")
     def test_get_subject_success(self, mock_get):

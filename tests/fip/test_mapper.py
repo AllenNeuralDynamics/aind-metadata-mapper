@@ -545,7 +545,9 @@ class TestFIPMapper(unittest.TestCase):
                 unittest.mock.patch.object(
                     mapper, "_parse_intended_measurements", return_value=self.test_intended_measurements
                 ),
-                unittest.mock.patch.object(mapper, "_parse_implanted_fibers", return_value=(self.test_implanted_fibers, True)),
+                unittest.mock.patch.object(
+                    mapper, "_parse_implanted_fibers", return_value=(self.test_implanted_fibers, True)
+                ),
                 unittest.mock.patch.object(mapper, "_validate_fip_metadata"),
             ):
                 mapper.run_job(job_settings)
