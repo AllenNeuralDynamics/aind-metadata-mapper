@@ -3,6 +3,7 @@
 import json
 import logging
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -128,7 +129,12 @@ def get_subject(subject_id: str, base_url: str = SUBJECT_BASE_URL) -> Optional[d
         return None
 
 
-def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL) -> Optional[dict]:
+def get_procedures(
+    subject_id: str,
+    base_url: str = PROCEDURES_BASE_URL,
+    max_retries: int = 3,
+    retry_delay: float = 1.0,
+) -> Optional[dict]:
     """Fetch procedures data for a subject from the metadata service.
 
     Parameters
@@ -137,22 +143,44 @@ def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL) -> Opti
         The subject ID to query.
     base_url : str
         Base URL for the procedures endpoint. Defaults to PROCEDURES_BASE_URL.
+    max_retries : int
+        Maximum number of retry attempts. Defaults to 3.
+    retry_delay : float
+        Delay in seconds between retry attempts. Defaults to 1.0.
 
     Returns
     -------
     Optional[dict]
-        Procedures data dictionary, or None if the request fails.
+        Procedures data dictionary, or None if the request fails after all retries.
     """
-    try:
-        url_base = base_url.rstrip("/") + "/"
-        url = urljoin(url_base, subject_id.lstrip("/"))
-        result = metadata_service_helper(url)
-        if result is None:
-            logger.warning(f"Could not fetch procedures for subject {subject_id}")
-        return result
-    except Exception as e:
-        logger.warning(f"Unexpected error fetching procedures for subject {subject_id}: {e}")
-        return None
+    url_base = base_url.rstrip("/") + "/"
+    url = urljoin(url_base, subject_id.lstrip("/"))
+
+    for attempt in range(max_retries):
+        try:
+            result = metadata_service_helper(url)
+            if result is not None:
+                return result
+
+            if attempt < max_retries - 1:
+                logger.warning(
+                    f"Could not fetch procedures for subject {subject_id} (attempt {attempt + 1}/{max_retries}). Retrying in {retry_delay}s..."
+                )
+                time.sleep(retry_delay)
+            else:
+                logger.warning(f"Could not fetch procedures for subject {subject_id} after {max_retries} attempts")
+        except Exception as e:
+            if attempt < max_retries - 1:
+                logger.warning(
+                    f"Error fetching procedures for subject {subject_id} (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {retry_delay}s..."
+                )
+                time.sleep(retry_delay)
+            else:
+                logger.warning(
+                    f"Unexpected error fetching procedures for subject {subject_id} after {max_retries} attempts: {e}"
+                )
+
+    return None
 
 
 def get_intended_measurements(
