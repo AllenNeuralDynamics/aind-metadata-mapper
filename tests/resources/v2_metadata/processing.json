@@ -1,0 +1,111 @@
+{
+    "object_type": "Processing",
+    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/processing.py",
+    "schema_version": "2.1.1",
+    "data_processes": [
+    {
+        "object_type": "Data process",
+        "process_type": "Other",
+        "name": "Other_1",
+        "stage": "Processing",
+        "code": {
+        "object_type": "Code",
+        "url": "",
+        "name": "Other",
+        "version": null,
+        "container": null,
+        "run_script": null,
+        "language": null,
+        "language_version": null,
+        "input_data": null,
+        "parameters": {
+            "input_source": "//allen/aind/stage/2p-working-group/data-uploads/multiplane-ophys_804670_2025-09-17_10-26-00/pophys"
+        },
+        "core_dependency": null
+        },
+        "experimenters": [
+        "AIND Scientific Computing"
+        ],
+        "pipeline_name": null,
+        "start_date_time": "2025-09-18 11:21:09.094661+00:00",
+        "end_date_time": "2025-09-18 11:23:10.271350+00:00",
+        "output_path": ".",
+        "output_parameters": {},
+        "notes": "Data was copied",
+        "resources": null
+    },
+    {
+        "object_type": "Data process",
+        "process_type": "Other",
+        "name": "Other_2",
+        "stage": "Processing",
+        "code": {
+        "object_type": "Code",
+        "url": "",
+        "name": "Other",
+        "version": null,
+        "container": null,
+        "run_script": null,
+        "language": null,
+        "language_version": null,
+        "input_data": null,
+        "parameters": {
+            "input_source": "//allen/aind/stage/2p-working-group/data-uploads/multiplane-ophys_804670_2025-09-17_10-26-00/behavior"
+        },
+        "core_dependency": null
+        },
+        "experimenters": [
+        "AIND Scientific Computing"
+        ],
+        "pipeline_name": null,
+        "start_date_time": "2025-09-18 11:21:09.322865+00:00",
+        "end_date_time": "2025-09-18 11:23:10.576550+00:00",
+        "output_path": ".",
+        "output_parameters": {},
+        "notes": "Data was copied",
+        "resources": null
+    },
+    {
+        "object_type": "Data process",
+        "process_type": "Other",
+        "name": "Other_3",
+        "stage": "Processing",
+        "code": {
+        "object_type": "Code",
+        "url": "",
+        "name": "Other",
+        "version": null,
+        "container": null,
+        "run_script": null,
+        "language": null,
+        "language_version": null,
+        "input_data": null,
+        "parameters": {
+            "input_source": "//allen/aind/stage/2p-working-group/data-uploads/multiplane-ophys_804670_2025-09-17_10-26-00/behavior-videos"
+        },
+        "core_dependency": null
+        },
+        "experimenters": [
+        "AIND Scientific Computing"
+        ],
+        "pipeline_name": null,
+        "start_date_time": "2025-09-18 11:21:11.001878+00:00",
+        "end_date_time": "2025-09-18 11:23:12.115403+00:00",
+        "output_path": ".",
+        "output_parameters": {},
+        "notes": "Data was copied",
+        "resources": null
+    }
+    ],
+    "pipelines": null,
+    "notes": null,
+    "dependency_graph": {
+    "Other_1": [],
+    "Other_2": [
+        "Other_1"
+    ],
+    "Other_3": [
+        "Other_2"
+    ]
+    }
+}
