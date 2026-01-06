@@ -512,14 +512,15 @@ class GatherMetadataJob:
                 logging.info("Metadata validation successful!")
                 return metadata
 
-            except ValidationError as e:
+            except Exception as e:
                 logging.warning(f"Metadata validation failed: {e}")
                 logging.info("Creating metadata object with validation bypass")
 
                 # Display validation errors to user
-                logging.warning("Validation Errors Found:")
-                for error in e.errors():
-                    logging.warning(f"  - {error['loc']}: {error['msg']}")
+                if isinstance(e, ValidationError):
+                    logging.warning("Validation Errors Found:")
+                    for error in e.errors():
+                        logging.warning(f"  - {error['loc']}: {error['msg']}")
 
                 # Use create_metadata_json to construct metadata object
                 metadata = create_metadata_json(
