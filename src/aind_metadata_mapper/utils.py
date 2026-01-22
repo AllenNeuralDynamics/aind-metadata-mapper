@@ -303,7 +303,7 @@ def get_instrument(
         return None
 
 
-def save_instrument(instrument_model: instrument.Instrument, replace: bool = False) -> None:  # pragma: no cover
+def save_instrument(instrument_model: instrument.Instrument | dict, replace: bool = False) -> None:  # pragma: no cover
     """Save instrument and validate round-trip.
 
     Saves the instrument, then retrieves it back and verifies that what we get back
@@ -311,8 +311,9 @@ def save_instrument(instrument_model: instrument.Instrument, replace: bool = Fal
 
     Parameters
     ----------
-    instrument_model : instrument.Instrument
-        Instrument to POST.
+    instrument_model : instrument.Instrument | dict
+        Instrument to POST. Can be an Instrument object or a dictionary.
+        If a dictionary is provided, it will be validated and converted to an Instrument object.
     replace : bool
         If True, overwrite existing record with same instrument_id and modification_date.
 
@@ -323,6 +324,10 @@ def save_instrument(instrument_model: instrument.Instrument, replace: bool = Fal
     requests.HTTPError
         If server error occurs (500+).
     """
+    # Convert dict to Instrument object if needed (also validates the data)
+    if isinstance(instrument_model, dict):
+        instrument_model = instrument.Instrument.model_validate(instrument_model)
+
     # Use model_dump_json() and parse to ensure dates are properly serialized
     source_dict = json.loads(instrument_model.model_dump_json())
     logger.info(f"POSTing instrument to {INSTRUMENT_BASE_URL}")
