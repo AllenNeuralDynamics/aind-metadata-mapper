@@ -70,7 +70,7 @@ def get_fps(pkl):
     """
     if not pkl.get("fps"):
         fps = round(
-            1 / np.mean(pkl["items"]["behavior"]["intervalsms"]) * 0.001, 2
+            1 / (np.mean(pkl["items"]["behavior"]["intervalsms"]) * 0.001), 2
         )
     else:
         fps = pkl["fps"]
