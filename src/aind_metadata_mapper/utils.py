@@ -240,6 +240,10 @@ def get_instrument(
     modification_date: Optional[str] = None,
     suppress_warning: bool = False,
     base_url: str = INSTRUMENT_BASE_URL,
+    output_directory: Optional[str | Path] = None,
+    prefix: Optional[str] = None,
+    filename_suffix: Optional[str] = None,
+    suffix: Optional[str] = None,
 ) -> Optional[dict]:  # pragma: no cover
     """Get instrument.
 
@@ -255,6 +259,15 @@ def get_instrument(
         If True, suppress warning when modification_date not found.
     base_url : str
         Base URL for the instrument endpoint. Defaults to INSTRUMENT_BASE_URL.
+    output_directory : Optional[str | Path]
+        If provided, save the instrument using write_standard_file(). Passed through
+        to Instrument.write_standard_file().
+    prefix : Optional[str]
+        Filename prefix for write_standard_file (e.g. "ephys" -> ephys_instrument.json).
+    filename_suffix : Optional[str]
+        Filename suffix for write_standard_file.
+    suffix : Optional[str]
+        File extension override for write_standard_file.
 
     Returns
     -------
@@ -278,12 +291,11 @@ def get_instrument(
             return None
 
         if modification_date:
-            for record in matching_records:
-                if record.get("modification_date") == modification_date:
-                    return record
-
-            # No matching record found
-            if not suppress_warning:
+            record = next(
+                (r for r in matching_records if r.get("modification_date") == modification_date),
+                None,
+            )
+            if record is None and not suppress_warning:
                 available_dates = sorted(
                     set(r.get("modification_date") for r in matching_records if r.get("modification_date"))
                 )
@@ -292,18 +304,49 @@ def get_instrument(
                     f"modification_date '{modification_date}'. "
                     f"Available dates: {available_dates}"
                 )
-            return None
         else:
-            return sorted(
+            record = sorted(
                 matching_records,
-                key=lambda record: record["modification_date"],
+                key=lambda r: r["modification_date"],
             )[-1]
+
+        if record is not None and output_directory is not None:
+            _write_instrument_to_path(
+                record,
+                output_directory=output_directory,
+                prefix=prefix,
+                filename_suffix=filename_suffix,
+                suffix=suffix,
+            )
+        return record
     except Exception as e:
         logger.warning(f"Unexpected error fetching instrument {instrument_id}: {e}")
         return None
 
 
-def save_instrument(instrument_model: instrument.Instrument | dict, replace: bool = False) -> None:  # pragma: no cover
+def _write_instrument_to_path(
+    record: dict,
+    output_directory: str | Path,
+    prefix: Optional[str] = None,
+    filename_suffix: Optional[str] = None,
+    suffix: Optional[str] = None,
+) -> None:
+    """Save instrument record using write_standard_file."""
+    inst = instrument.Instrument.model_validate(record)
+    path = Path(output_directory)
+    path.mkdir(parents=True, exist_ok=True)
+    inst.write_standard_file(
+        output_directory=path,
+        prefix=prefix,
+        filename_suffix=filename_suffix,
+        suffix=suffix,
+    )
+
+
+def save_instrument(
+    instrument_model: instrument.Instrument | dict | str | Path,
+    replace: bool = False,
+) -> None:  # pragma: no cover
     """Save instrument and validate round-trip.
 
     Saves the instrument, then retrieves it back and verifies that what we get back
@@ -311,9 +354,9 @@ def save_instrument(instrument_model: instrument.Instrument | dict, replace: boo
 
     Parameters
     ----------
-    instrument_model : instrument.Instrument | dict
-        Instrument to POST. Can be an Instrument object or a dictionary.
-        If a dictionary is provided, it will be validated and converted to an Instrument object.
+    instrument_model : instrument.Instrument | dict | str | Path
+        Instrument to POST. Can be an Instrument object, a dictionary, or a path to
+        a JSON file. If a path (str or Path) is provided, the file is loaded and validated.
     replace : bool
         If True, overwrite existing record with same instrument_id and modification_date.
 
@@ -324,6 +367,10 @@ def save_instrument(instrument_model: instrument.Instrument | dict, replace: boo
     requests.HTTPError
         If server error occurs (500+).
     """
+    # Load from file if path provided
+    if isinstance(instrument_model, (str, Path)):
+        with open(instrument_model) as f:
+            instrument_model = json.load(f)
     # Convert dict to Instrument object if needed (also validates the data)
     if isinstance(instrument_model, dict):
         instrument_model = instrument.Instrument.model_validate(instrument_model)

@@ -7,9 +7,11 @@ Strategy:
 - Keep tests fast by avoiding real network or filesystem side effects outside temp dirs.
 """
 
+import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import shutil
+import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch, MagicMock
@@ -26,6 +28,7 @@ from aind_metadata_mapper.utils import (
     get_protocols_for_modality,
     normalize_utc_timezone,
     metadata_service_helper,
+    save_instrument,
 )
 
 
@@ -65,6 +68,66 @@ class TestGetInstrument(unittest.TestCase):
         mock_get.return_value = mock_response
         result = get_instrument("test_id", modification_date="2024-01-01")
         self.assertEqual(result["modification_date"], "2024-01-01")
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_get_instrument_saves_to_directory_when_output_directory_provided(self, mock_helper):
+        """Test get_instrument writes instrument.json when output_directory is provided."""
+        test_dir = Path(__file__).parent / "resources" / "v2_metadata"
+        with open(test_dir / "instrument.json") as f:
+            instrument_data = json.load(f)
+        instrument_data["schema_version"] = "2.2.1"
+        mock_helper.return_value = [instrument_data]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = get_instrument("422_MESO2_20241017", output_directory=tmpdir)
+            self.assertIsNotNone(result)
+            out_file = Path(tmpdir) / "instrument.json"
+            self.assertTrue(out_file.exists())
+            written = json.load(open(out_file))
+            self.assertEqual(written["instrument_id"], "422_MESO2_20241017")
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_get_instrument_saves_with_prefix(self, mock_helper):
+        """Test get_instrument uses prefix for filename (e.g. ephys_instrument.json)."""
+        test_dir = Path(__file__).parent / "resources" / "v2_metadata"
+        with open(test_dir / "instrument.json") as f:
+            instrument_data = json.load(f)
+        instrument_data["schema_version"] = "2.2.1"
+        mock_helper.return_value = [instrument_data]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = get_instrument(
+                "422_MESO2_20241017",
+                output_directory=tmpdir,
+                prefix="ephys",
+            )
+            self.assertIsNotNone(result)
+            out_file = Path(tmpdir) / "ephys_instrument.json"
+            self.assertTrue(out_file.exists())
+            written = json.load(open(out_file))
+            self.assertEqual(written["instrument_id"], "422_MESO2_20241017")
+
+
+class TestSaveInstrument(unittest.TestCase):
+    """Tests for save_instrument function."""
+
+    @patch("aind_metadata_mapper.utils.get_instrument")
+    @patch("aind_metadata_mapper.utils.requests.post")
+    def test_save_instrument_loads_from_filepath(self, mock_post, mock_get):
+        """Test save_instrument loads from file when given a path."""
+        test_dir = Path(__file__).parent / "resources" / "v2_metadata"
+        instrument_path = test_dir / "instrument.json"
+        with open(instrument_path) as f:
+            instrument_data = json.load(f)
+        instrument_data["schema_version"] = "2.2.1"
+
+        mock_post.return_value = MagicMock(status_code=201)
+        mock_get.return_value = instrument_data
+
+        save_instrument(str(instrument_path))
+        mock_post.assert_called_once()
+        call_args = mock_post.call_args
+        self.assertEqual(call_args[1]["json"]["instrument_id"], "422_MESO2_20241017")
 
 
 class TestUtils(unittest.TestCase):
