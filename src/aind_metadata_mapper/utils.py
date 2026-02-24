@@ -4,7 +4,7 @@ import json
 import logging
 import sys
 import time
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urljoin
@@ -348,6 +348,7 @@ def _write_instrument_to_path(
 def save_instrument(
     instrument_model: instrument.Instrument | dict | str | Path,
     replace: bool = False,
+    update_modification_date: bool = True,
 ) -> None:
     """Save instrument and validate round-trip.
 
@@ -361,6 +362,9 @@ def save_instrument(
         a JSON file. If a path (str or Path) is provided, the file is loaded and validated.
     replace : bool
         If True, overwrite existing record with same instrument_id and modification_date.
+    update_modification_date : bool
+        If True (default), set modification_date to today (YYYY-MM-DD). If False,
+        keep the modification date as passed in the instrument.
 
     Raises
     ------
@@ -376,6 +380,9 @@ def save_instrument(
     # Convert dict to Instrument object if needed (also validates the data)
     if isinstance(instrument_model, dict):
         instrument_model = instrument.Instrument.model_validate(instrument_model)
+
+    if update_modification_date:
+        instrument_model = instrument_model.model_copy(update={"modification_date": date.today()})
 
     # Use model_dump_json() and parse to ensure dates are properly serialized
     source_dict = json.loads(instrument_model.model_dump_json())
