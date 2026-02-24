@@ -585,7 +585,9 @@ class TestIntegrationMetadata(unittest.TestCase):
     def test_get_instrument_from_service(self, mock_get_instrument):
         """Test get_instrument_from_service retrieves and writes instrument metadata"""
         instrument_data = self._load_resource_file(METADATA_SERVICE_DIR, "instrument_response.json")
-        mock_get_instrument.return_value = instrument_data
+        from aind_data_schema.core.instrument import Instrument
+
+        mock_get_instrument.return_value = Instrument.model_validate(instrument_data)
 
         with patch("os.makedirs"):
             test_job = GatherMetadataJob(
@@ -605,7 +607,11 @@ class TestIntegrationMetadata(unittest.TestCase):
             test_job.get_instrument_from_service()
 
         mock_get_instrument.assert_called_once()
-        mock_write.assert_called_once_with(filename="instrument_fib.json", contents=instrument_data, output_dir=False)
+        mock_write.assert_called_once()
+        call_kwargs = mock_write.call_args[1]
+        self.assertEqual(call_kwargs["filename"], "instrument_fib.json")
+        self.assertIn("instrument_id", call_kwargs["contents"])
+        self.assertEqual(call_kwargs["output_dir"], False)
 
     @patch("builtins.open", new_callable=unittest.mock.mock_open)
     @patch("os.makedirs")

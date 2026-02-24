@@ -368,12 +368,11 @@ class GatherMetadataJob:
                 base_url=base_url,
             )
             if instrument:
-                # Write this instrument using it's modalities
-                modality_abbreviations = [mod["abbreviation"] for mod in instrument.get("modalities", [])]
+                modality_abbreviations = [mod.abbreviation for mod in instrument.modalities]
                 instrument_suffix = "_".join(modality_abbreviations)
                 self._write_json_file(
                     filename=f"instrument_{instrument_suffix}.json",
-                    contents=instrument,
+                    contents=instrument.model_dump(mode="json"),
                     output_dir=False,
                 )
 

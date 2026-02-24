@@ -18,6 +18,7 @@ from unittest.mock import MagicMock, patch
 
 import requests
 
+import aind_data_schema.core.instrument as instrument
 from aind_metadata_mapper.utils import (
     check_existing_instrument,
     check_instrument_id,
@@ -47,32 +48,30 @@ class TestGetInstrument(unittest.TestCase):
         result = get_instrument("nonexistent_id")
         self.assertIsNone(result)
 
-    @patch("aind_metadata_mapper.utils.requests.get")
-    def test_get_instrument_returns_latest(self, mock_get):
-        """Test get_instrument returns latest record."""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = [
-            {"instrument_id": "test_id", "modification_date": "2024-01-01"},
-            {"instrument_id": "test_id", "modification_date": "2024-01-03"},
-            {"instrument_id": "test_id", "modification_date": "2024-01-02"},
-        ]
-        mock_get.return_value = mock_response
-        result = get_instrument("test_id")
-        self.assertEqual(result["modification_date"], "2024-01-03")
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_get_instrument_returns_latest(self, mock_helper):
+        """Test get_instrument returns latest record as Instrument."""
+        with open(INSTRUMENT_JSON) as f:
+            data = json.load(f)
+        data["modification_date"] = "2024-01-03"
+        mock_helper.return_value = [data]
+        result = get_instrument("422_MESO2_20241017")
+        self.assertIsNotNone(result)
+        self.assertEqual(str(result.modification_date), "2024-01-03")
 
-    @patch("aind_metadata_mapper.utils.requests.get")
-    def test_get_instrument_by_date(self, mock_get):
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_get_instrument_by_date(self, mock_helper):
         """Test get_instrument returns specific date if provided."""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = [
-            {"instrument_id": "test_id", "modification_date": "2024-01-01"},
-            {"instrument_id": "test_id", "modification_date": "2024-01-02"},
+        with open(INSTRUMENT_JSON) as f:
+            data = json.load(f)
+        records = [
+            {**data, "modification_date": "2024-01-01"},
+            {**data, "modification_date": "2024-01-02"},
         ]
-        mock_get.return_value = mock_response
-        result = get_instrument("test_id", modification_date="2024-01-01")
-        self.assertEqual(result["modification_date"], "2024-01-01")
+        mock_helper.return_value = records
+        result = get_instrument("422_MESO2_20241017", modification_date="2024-01-01")
+        self.assertIsNotNone(result)
+        self.assertEqual(str(result.modification_date), "2024-01-01")
 
     @patch("aind_metadata_mapper.utils.metadata_service_helper")
     def test_get_instrument_writes_to_file_when_output_directory_given(self, mock_helper):
@@ -89,7 +88,7 @@ class TestGetInstrument(unittest.TestCase):
     def test_save_instrument_loads_from_filepath(self, mock_post, mock_get):
         """save_instrument loads from file when given a path."""
         with open(INSTRUMENT_JSON) as f:
-            mock_get.return_value = json.load(f)
+            mock_get.return_value = instrument.Instrument.model_validate(json.load(f))
         mock_post.return_value = MagicMock(status_code=201)
         save_instrument(str(INSTRUMENT_JSON))
         mock_post.assert_called_once()
@@ -97,17 +96,20 @@ class TestGetInstrument(unittest.TestCase):
     @patch("aind_metadata_mapper.utils.get_instrument")
     def test_check_existing_instrument(self, mock_get):
         """check_existing_instrument returns True when instrument exists."""
-        mock_get.return_value = {"instrument_id": "test_instrument", "modification_date": "2024-01-01"}
-        self.assertTrue(check_existing_instrument("test_instrument", "2024-01-01"))
+        with open(INSTRUMENT_JSON) as f:
+            mock_get.return_value = instrument.Instrument.model_validate(json.load(f))
+        self.assertTrue(check_existing_instrument("422_MESO2_20241017", "2024-10-28"))
         mock_get.return_value = None
         self.assertFalse(check_existing_instrument("test_instrument", "2024-01-01"))
 
     @patch("aind_metadata_mapper.utils.get_instrument")
     def test_check_instrument_id(self, mock_get):
         """check_instrument_id returns existing instrument or None."""
-        mock_get.return_value = {"instrument_id": "test_instrument"}
-        expected = {"instrument_id": "test_instrument"}
-        self.assertEqual(check_instrument_id("test_instrument", skip_confirmation=True), expected)
+        with open(INSTRUMENT_JSON) as f:
+            mock_get.return_value = instrument.Instrument.model_validate(json.load(f))
+        result = check_instrument_id("422_MESO2_20241017", skip_confirmation=True)
+        self.assertIsNotNone(result)
+        self.assertEqual(result.instrument_id, "422_MESO2_20241017")
         mock_get.return_value = None
         self.assertIsNone(check_instrument_id("test_instrument_new", skip_confirmation=True))
 
@@ -122,6 +124,15 @@ class TestGetInstrument(unittest.TestCase):
 
         with self.assertRaises(SystemExit):
             check_instrument_id("test_instrument_new", skip_confirmation=False, input_func=user_declines)
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_get_instrument_returns_instrument_model(self, mock_helper):
+        """get_instrument returns Instrument model."""
+        with open(INSTRUMENT_JSON) as f:
+            mock_helper.return_value = [json.load(f)]
+        result = get_instrument("422_MESO2_20241017")
+        self.assertIsNotNone(result)
+        self.assertEqual(result.instrument_id, "422_MESO2_20241017")
 
     @patch("aind_metadata_mapper.utils.metadata_service_helper")
     def test_get_instrument_returns_none_when_helper_fails(self, mock_helper):
@@ -145,9 +156,10 @@ class TestGetInstrument(unittest.TestCase):
         """save_instrument raises on 400, 500, not found, and round-trip failure."""
         with open(INSTRUMENT_JSON) as f:
             instrument_data = json.load(f)
+        instrument_model = instrument.Instrument.model_validate(instrument_data)
 
         for status_code, get_return, expected_msg in [
-            (400, instrument_data, "exists"),
+            (400, instrument_model, "exists"),
             (201, None, "not found"),
         ]:
             with self.subTest(status_code=status_code, expected=expected_msg):
@@ -159,7 +171,7 @@ class TestGetInstrument(unittest.TestCase):
 
         instrument_data["location"] = "different"
         mock_post.return_value = MagicMock(status_code=201)
-        mock_get.return_value = instrument_data
+        mock_get.return_value = instrument.Instrument.model_validate(instrument_data)
         with self.assertRaises(ValueError) as cm:
             save_instrument(str(INSTRUMENT_JSON))
         self.assertIn("Round-trip", str(cm.exception))
