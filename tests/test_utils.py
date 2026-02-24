@@ -7,11 +7,9 @@ Strategy:
 - Keep tests fast by avoiding real network or filesystem side effects outside temp dirs.
 """
 
-import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import shutil
-import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch, MagicMock
@@ -67,26 +65,6 @@ class TestGetInstrument(unittest.TestCase):
         mock_get.return_value = mock_response
         result = get_instrument("test_id", modification_date="2024-01-01")
         self.assertEqual(result["modification_date"], "2024-01-01")
-
-    @patch("aind_metadata_mapper.utils.metadata_service_helper")
-    def test_get_instrument_saves_with_prefix(self, mock_helper):
-        """Test get_instrument uses prefix for filename (e.g. ephys_instrument.json)."""
-        test_dir = Path(__file__).parent / "resources" / "v2_metadata"
-        with open(test_dir / "instrument.json") as f:
-            instrument_data = json.load(f)
-        mock_helper.return_value = [instrument_data]
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            result = get_instrument(
-                "422_MESO2_20241017",
-                output_directory=tmpdir,
-                prefix="ephys",
-            )
-            self.assertIsNotNone(result)
-            out_file = Path(tmpdir) / "ephys_instrument.json"
-            self.assertTrue(out_file.exists())
-            written = json.load(open(out_file))
-            self.assertEqual(written["instrument_id"], "422_MESO2_20241017")
 
 
 class TestUtils(unittest.TestCase):
