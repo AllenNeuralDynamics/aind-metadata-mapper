@@ -1,1 +1,0 @@
-"""Tests bergamo package"""

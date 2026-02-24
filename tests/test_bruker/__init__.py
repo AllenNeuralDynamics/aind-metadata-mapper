@@ -1,1 +1,0 @@
-"""Tests bruker package"""
