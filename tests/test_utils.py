@@ -7,16 +7,22 @@ Strategy:
 - Keep tests fast by avoiding real network or filesystem side effects outside temp dirs.
 """
 
+import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import shutil
+import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch, MagicMock
 
 import requests
 
+INSTRUMENT_JSON = Path(__file__).parent / "resources" / "v2_metadata" / "instrument.json"
+
 from aind_metadata_mapper.utils import (
+    check_existing_instrument,
+    check_instrument_id,
     get_instrument,
     prompt_for_string,
     ensure_timezone,
@@ -26,6 +32,7 @@ from aind_metadata_mapper.utils import (
     get_protocols_for_modality,
     normalize_utc_timezone,
     metadata_service_helper,
+    save_instrument,
 )
 
 
@@ -65,6 +72,110 @@ class TestGetInstrument(unittest.TestCase):
         mock_get.return_value = mock_response
         result = get_instrument("test_id", modification_date="2024-01-01")
         self.assertEqual(result["modification_date"], "2024-01-01")
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_get_instrument_writes_to_file_when_output_directory_given(self, mock_helper):
+        """get_instrument saves to file when output_directory is provided."""
+        with open(INSTRUMENT_JSON) as f:
+            mock_helper.return_value = [json.load(f)]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = get_instrument("422_MESO2_20241017", output_directory=tmpdir)
+            self.assertIsNotNone(result)
+            self.assertTrue((Path(tmpdir) / "instrument.json").exists())
+
+    @patch("aind_metadata_mapper.utils.get_instrument")
+    @patch("aind_metadata_mapper.utils.requests.post")
+    def test_save_instrument_loads_from_filepath(self, mock_post, mock_get):
+        """save_instrument loads from file when given a path."""
+        with open(INSTRUMENT_JSON) as f:
+            mock_get.return_value = json.load(f)
+        mock_post.return_value = MagicMock(status_code=201)
+        save_instrument(str(INSTRUMENT_JSON))
+        mock_post.assert_called_once()
+
+    @patch("aind_metadata_mapper.utils.get_instrument")
+    def test_check_existing_instrument(self, mock_get):
+        """check_existing_instrument returns True when instrument exists."""
+        mock_get.return_value = {"instrument_id": "test_instrument", "modification_date": "2024-01-01"}
+        self.assertTrue(check_existing_instrument("test_instrument", "2024-01-01"))
+        mock_get.return_value = None
+        self.assertFalse(check_existing_instrument("test_instrument", "2024-01-01"))
+
+    @patch("aind_metadata_mapper.utils.get_instrument")
+    def test_check_instrument_id(self, mock_get):
+        """check_instrument_id returns existing instrument or None."""
+        mock_get.return_value = {"instrument_id": "test_instrument"}
+        self.assertEqual(check_instrument_id("test_instrument", skip_confirmation=True), {"instrument_id": "test_instrument"})
+        mock_get.return_value = None
+        self.assertIsNone(check_instrument_id("test_instrument_new", skip_confirmation=True))
+
+    @patch("aind_metadata_mapper.utils.get_instrument")
+    def test_check_instrument_id_exits_when_user_declines(self, mock_get):
+        """check_instrument_id exits when user declines new instrument."""
+        mock_get.return_value = None
+
+        def user_declines(prompt):
+            return "n"
+
+        with self.assertRaises(SystemExit):
+            check_instrument_id("test_instrument_new", skip_confirmation=False, input_func=user_declines)
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_get_instrument_returns_none_when_helper_fails(self, mock_helper):
+        """get_instrument returns None when metadata_service_helper returns None."""
+        mock_helper.return_value = None
+        self.assertIsNone(get_instrument("test_instrument"))
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_get_instrument_warns_when_modification_date_not_found(self, mock_helper):
+        """get_instrument logs warning when modification_date not in records."""
+        mock_helper.return_value = [
+            {"instrument_id": "test_instrument", "modification_date": "2024-01-01"},
+        ]
+        with self.assertLogs("aind_metadata_mapper.utils", level="WARNING"):
+            result = get_instrument("test_instrument", modification_date="2024-01-02")
+        self.assertIsNone(result)
+
+    @patch("aind_metadata_mapper.utils.get_instrument")
+    @patch("aind_metadata_mapper.utils.requests.post")
+    def test_save_instrument_error_paths(self, mock_post, mock_get):
+        """save_instrument raises on 400, 500, not found, and round-trip failure."""
+        with open(INSTRUMENT_JSON) as f:
+            instrument_data = json.load(f)
+
+        for status_code, get_return, expected_msg in [
+            (400, instrument_data, "exists"),
+            (201, None, "not found"),
+        ]:
+            with self.subTest(status_code=status_code, expected=expected_msg):
+                mock_post.return_value = MagicMock(status_code=status_code, json=lambda: {"message": "exists"})
+                mock_get.return_value = get_return
+                with self.assertRaises(ValueError) as cm:
+                    save_instrument(str(INSTRUMENT_JSON))
+                self.assertIn(expected_msg, str(cm.exception))
+
+        instrument_data["location"] = "different"
+        mock_post.return_value = MagicMock(status_code=201)
+        mock_get.return_value = instrument_data
+        with self.assertRaises(ValueError) as cm:
+            save_instrument(str(INSTRUMENT_JSON))
+        self.assertIn("Round-trip", str(cm.exception))
+
+        mock_post.return_value = MagicMock(status_code=500)
+        mock_post.return_value.raise_for_status.side_effect = requests.exceptions.HTTPError()
+        with self.assertRaises(requests.exceptions.HTTPError):
+            save_instrument(str(INSTRUMENT_JSON))
+
+    @patch("aind_metadata_mapper.utils._write_instrument_to_path")
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_get_instrument_returns_none_on_exception(self, mock_helper, mock_write):
+        """get_instrument returns None when an exception occurs."""
+        with open(INSTRUMENT_JSON) as f:
+            mock_helper.return_value = [json.load(f)]
+        mock_write.side_effect = ValueError("write failed")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = get_instrument("422_MESO2_20241017", output_directory=tmpdir)
+        self.assertIsNone(result)
 
 
 class TestUtils(unittest.TestCase):

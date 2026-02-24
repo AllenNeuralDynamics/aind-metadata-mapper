@@ -244,7 +244,7 @@ def get_instrument(
     prefix: Optional[str] = None,
     filename_suffix: Optional[str] = None,
     suffix: Optional[str] = None,
-) -> Optional[dict]:  # pragma: no cover
+) -> Optional[dict]:
     """Get instrument.
 
     Gets the latest record by default, or a specific record if modification_date is provided.
@@ -346,7 +346,7 @@ def _write_instrument_to_path(
 def save_instrument(
     instrument_model: instrument.Instrument | dict | str | Path,
     replace: bool = False,
-) -> None:  # pragma: no cover
+) -> None:
     """Save instrument and validate round-trip.
 
     Saves the instrument, then retrieves it back and verifies that what we get back
@@ -408,7 +408,7 @@ def save_instrument(
 def check_existing_instrument(
     instrument_id: str,
     modification_date: str,
-) -> bool:  # pragma: no cover
+) -> bool:
     """Check if an instrument with the same ID and modification_date already exists.
 
     Parameters
@@ -435,7 +435,7 @@ def check_instrument_id(
     instrument_id: str,
     skip_confirmation: bool = False,
     input_func=input,
-) -> Optional[dict]:  # pragma: no cover
+) -> Optional[dict]:
     """Check if instrument exists and get previous instrument data.
 
     Checks if records exist for the given instrument_id and returns the
