@@ -11,13 +11,14 @@ import json
 import shutil
 import tempfile
 import unittest
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import requests
 
+import aind_data_schema.core.instrument as instrument
 from aind_metadata_mapper.utils import (
     check_existing_instrument,
     check_instrument_id,
@@ -89,10 +90,39 @@ class TestGetInstrument(unittest.TestCase):
     def test_save_instrument_loads_from_filepath(self, mock_post, mock_get):
         """save_instrument loads from file when given a path."""
         with open(INSTRUMENT_JSON) as f:
-            mock_get.return_value = json.load(f)
+            instrument_data = json.load(f)
+        instrument_data["modification_date"] = date.today().isoformat()
+        mock_get.return_value = instrument_data
         mock_post.return_value = MagicMock(status_code=201)
         save_instrument(str(INSTRUMENT_JSON))
         mock_post.assert_called_once()
+
+    @patch("aind_metadata_mapper.utils.get_instrument")
+    @patch("aind_metadata_mapper.utils.requests.post")
+    def test_save_instrument_updates_modification_date_by_default(self, mock_post, mock_get):
+        """save_instrument sets modification_date to today when update_modification_date=True."""
+        with open(INSTRUMENT_JSON) as f:
+            instrument_data = json.load(f)
+        instrument_data["modification_date"] = date.today().isoformat()
+        mock_get.return_value = instrument_data
+        mock_post.return_value = MagicMock(status_code=201)
+        save_instrument(str(INSTRUMENT_JSON))
+        posted_json = mock_post.call_args[1]["json"]
+        today = date.today().isoformat()
+        self.assertEqual(posted_json["modification_date"], today)
+
+    @patch("aind_metadata_mapper.utils.get_instrument")
+    @patch("aind_metadata_mapper.utils.requests.post")
+    def test_save_instrument_preserves_modification_date_when_false(self, mock_post, mock_get):
+        """save_instrument keeps original modification_date when update_modification_date=False."""
+        with open(INSTRUMENT_JSON) as f:
+            instrument_data = json.load(f)
+        original_date = instrument_data["modification_date"]
+        mock_get.return_value = instrument.Instrument.model_validate(instrument_data)
+        mock_post.return_value = MagicMock(status_code=201)
+        save_instrument(str(INSTRUMENT_JSON), update_modification_date=False)
+        posted_json = mock_post.call_args[1]["json"]
+        self.assertEqual(posted_json["modification_date"], original_date)
 
     @patch("aind_metadata_mapper.utils.get_instrument")
     def test_check_existing_instrument(self, mock_get):
