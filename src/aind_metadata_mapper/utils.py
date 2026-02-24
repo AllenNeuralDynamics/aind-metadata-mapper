@@ -244,7 +244,7 @@ def get_instrument(
     prefix: Optional[str] = None,
     filename_suffix: Optional[str] = None,
     suffix: Optional[str] = None,
-) -> Optional[dict]:
+) -> Optional[instrument.Instrument]:
     """Get instrument.
 
     Gets the latest record by default, or a specific record if modification_date is provided.
@@ -271,8 +271,8 @@ def get_instrument(
 
     Returns
     -------
-    Optional[dict]
-        Instrument data as dict, or None if not found.
+    Optional[Instrument]
+        Instrument model, or None if not found.
     """
     try:
         url_base = base_url.rstrip("/") + "/"
@@ -318,7 +318,9 @@ def get_instrument(
                 filename_suffix=filename_suffix,
                 suffix=suffix,
             )
-        return record
+        if record is not None:
+            return instrument.Instrument.model_validate(record)
+        return None
     except Exception as e:
         logger.warning(f"Unexpected error fetching instrument {instrument_id}: {e}")
         return None
@@ -392,12 +394,11 @@ def save_instrument(
         f"GETting instrument from {INSTRUMENT_BASE_URL}/{instrument_model.instrument_id} "
         "to verify that save was successful"
     )
-    latest_record = get_instrument(instrument_model.instrument_id)
-    if latest_record is None:
+    read_back_instrument = get_instrument(instrument_model.instrument_id)
+    if read_back_instrument is None:
         raise ValueError(f"Instrument '{instrument_model.instrument_id}' not found in database")
 
     # Validate round-trip
-    read_back_instrument = instrument.Instrument.model_validate(latest_record)
     read_back_dict = json.loads(read_back_instrument.model_dump_json())
     if source_dict == read_back_dict:
         logger.info("Instrument.json successfully stored in the db")
@@ -435,7 +436,7 @@ def check_instrument_id(
     instrument_id: str,
     skip_confirmation: bool = False,
     input_func=input,
-) -> Optional[dict]:
+) -> Optional[instrument.Instrument]:
     """Check if instrument exists and get previous instrument data.
 
     Checks if records exist for the given instrument_id and returns the
@@ -452,8 +453,8 @@ def check_instrument_id(
 
     Returns
     -------
-    Optional[dict]
-        Previous instrument data as dict, or None if not found.
+    Optional[Instrument]
+        Previous instrument, or None if not found.
 
     Raises
     ------

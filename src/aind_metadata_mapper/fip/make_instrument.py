@@ -53,7 +53,7 @@ def create_instrument(
     detector_1_serial: Optional[str] = None,
     detector_2_serial: Optional[str] = None,
     objective_serial: Optional[str] = None,
-    previous_instrument: Optional[dict] = None,
+    previous_instrument: Optional[instrument.Instrument] = None,
     input_func=input,
 ) -> instrument.Instrument:
     """Create an FIP instrument interactively.
@@ -72,8 +72,8 @@ def create_instrument(
         Red CMOS serial number. If None, will prompt (required if no previous instrument).
     objective_serial : Optional[str]
         Objective serial number. If None, will prompt (required if no previous instrument).
-    previous_instrument : Optional[dict]
-        Optional previous instrument data as dict. Used for defaults.
+    previous_instrument : Optional[Instrument]
+        Optional previous instrument. Used for defaults.
 
     Returns
     -------
@@ -98,21 +98,17 @@ def create_instrument(
         - modification_date (date.today())
     """
     # Get previous instrument components for defaults
-    previous_instrument_obj = None
-    if previous_instrument:
-        previous_instrument_obj = instrument.Instrument.model_validate(previous_instrument)
-
     components_by_name = {}
-    if previous_instrument_obj:
+    if previous_instrument:
         components_by_name = {
             getattr(component, "name", ""): component
-            for component in previous_instrument_obj.components
+            for component in previous_instrument.components
             if getattr(component, "name", None)
         }
 
     # Get defaults from previous instrument or system
     defaults = {
-        "location": previous_instrument_obj.location if previous_instrument_obj else None,
+        "location": previous_instrument.location if previous_instrument else None,
         "computer_name": socket.gethostname(),
         "detector_1_serial": getattr(components_by_name.get("Green CMOS"), "serial_number", None),
         "detector_2_serial": getattr(components_by_name.get("Red CMOS"), "serial_number", None),
