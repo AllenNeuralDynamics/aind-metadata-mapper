@@ -8,32 +8,33 @@ Strategy:
 """
 
 import json
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
 import shutil
 import tempfile
-from types import SimpleNamespace
 import unittest
-from unittest.mock import patch, MagicMock
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import requests
-
-INSTRUMENT_JSON = Path(__file__).parent / "resources" / "v2_metadata" / "instrument.json"
 
 from aind_metadata_mapper.utils import (
     check_existing_instrument,
     check_instrument_id,
-    get_instrument,
-    prompt_for_string,
     ensure_timezone,
-    get_procedures,
-    get_subject,
+    get_instrument,
     get_intended_measurements,
+    get_procedures,
     get_protocols_for_modality,
-    normalize_utc_timezone,
+    get_subject,
     metadata_service_helper,
+    normalize_utc_timezone,
+    prompt_for_string,
     save_instrument,
 )
+
+# Path to instrument fixture used by get_instrument/save_instrument tests.
+INSTRUMENT_JSON = Path(__file__).parent / "resources" / "v2_metadata" / "instrument.json"
 
 
 class TestGetInstrument(unittest.TestCase):
@@ -105,7 +106,8 @@ class TestGetInstrument(unittest.TestCase):
     def test_check_instrument_id(self, mock_get):
         """check_instrument_id returns existing instrument or None."""
         mock_get.return_value = {"instrument_id": "test_instrument"}
-        self.assertEqual(check_instrument_id("test_instrument", skip_confirmation=True), {"instrument_id": "test_instrument"})
+        expected = {"instrument_id": "test_instrument"}
+        self.assertEqual(check_instrument_id("test_instrument", skip_confirmation=True), expected)
         mock_get.return_value = None
         self.assertIsNone(check_instrument_id("test_instrument_new", skip_confirmation=True))
 
@@ -115,6 +117,7 @@ class TestGetInstrument(unittest.TestCase):
         mock_get.return_value = None
 
         def user_declines(prompt):
+            """Mock input that returns no to decline."""
             return "n"
 
         with self.assertRaises(SystemExit):
