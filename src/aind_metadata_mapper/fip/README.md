@@ -1,120 +1,94 @@
-# Fiber Photometry Session Metadata Generator
+# FIP (Fiber Photometry) Mapper
 
-This module generates standardized session metadata for fiber photometry experiments using a simple ETL (Extract, Transform, Load) pattern.
+Transforms FIP metadata extracted from acquisition systems into AIND Data Schema 2.0 Acquisition format.
 
 ## Overview
-- `models.py`: Defines the required input settings via `JobSettings` class
-- `session.py`: Contains the ETL logic to generate a valid session.json file
-- `utils.py`: Contains utility functions for handling timestamps and file operations
-- `example_create_session.py`: Provides a simplified interface for creating session metadata
 
-The ETL process takes experiment settings and produces standardized session metadata that conforms to the AIND data schema.
+The FIP mapper transforms extracted metadata from fiber photometry acquisition systems into AIND Data Schema compliant format. It:
+
+1. **Rearranges keys** from the extracted metadata structure to match the schema
+2. **Enriches metadata** by fetching protocols and intended measurements from the metadata service
+3. **Filters devices** to include only patch cords connected to implanted fibers (assumes 1-to-1 mapping between patch cords and implanted fibers from subject procedures)
+4. **Generates channels** - three per fiber (Green, Isosbestic, Red) based on the rig's temporal multiplexing configuration
+
+Input is validated against the FIP schema (defined in `aind-metadata-extractor`). Some fields are currently hard-coded as constants (see `constants.py`) because they're not yet available in the extracted metadata. As upstream extraction improves, these hard-coded values can be replaced with extracted data.
+
+## Installation
+
+```bash
+pip install aind-metadata-mapper
+```
+
+For development with the FIP schema:
+```bash
+cd /path/to/aind-metadata-extractor
+git checkout feat-add-fip-json-schema-model
+pip install -e .
+
+cd /path/to/aind-metadata-mapper
+git checkout add-fip-mapper
+pip install -e .
+```
 
 ## Usage
 
-### Simplified Usage with Example Script
-The easiest way to generate session metadata is using the example script:
-
 ```python
-from pathlib import Path
-from aind_metadata_mapper.fip.example_create_session import create_metadata
+import json
+from aind_metadata_mapper.fip.mapper import FIPMapper
 
-create_metadata(
-    subject_id="000000",
-    data_directory=Path("/path/to/data"),
-    # Optional parameters with defaults:
-    output_directory=None,  # defaults to data_directory if not specified
-    output_filename="session_fip.json",  # default filename
-    experimenter_full_name=["test_experimenter_1", "test_experimenter_2"],
-    rig_id="428_9_A_20240617",
-    task_version="1.0.0",
-    iacuc_protocol="2115",
-    mouse_platform_name="mouse_tube_foraging",
-    active_mouse_platform=False,
-    session_type="Foraging_Photometry",
-    task_name="Fiber Photometry",
-    notes="Example configuration for fiber photometry rig"
-)
+# Load extracted metadata (must conform to fip.json schema)
+with open("fip_metadata.json") as f:
+    metadata = json.load(f)
+
+# Create mapper and transform
+mapper = FIPMapper()
+acquisition = mapper.transform(metadata)
+
+# Write output
+acquisition.write_standard_file(output_directory=Path("/output/path"), suffix=None)
 ```
 
-Or from the command line:
-```bash
-python -m aind_metadata_mapper.fip.example_create_session \
-    --subject-id 000000 \
-    --data-directory /path/to/data \
-    --output-directory /path/to/output  # optional, defaults to data directory
-    --output-filename session_fip.json  # optional, this is the default
-```
+The mapper expects input JSON with this structure:
+- `session` - experiment metadata (subject, experimenters, notes, etc.)
+- `rig` - hardware configuration (cameras, LEDs, ROI settings, etc.)
+- `data_stream_metadata` - timing information
 
-### Direct ETL Usage
-For more control over the metadata generation, you can use the FIBEtl class directly:
+## What Gets Mapped
 
-```python
-from aind_metadata_mapper.fip.session import FIBEtl
-from aind_metadata_mapper.fip.models import JobSettings
+### Core Fields
+- `session.subject` → `subject_id`
+- `session.experiment` → `acquisition_type`
+- `session.experimenter` → `experimenters`
+- `session.notes` → `notes`
+- `rig.rig_name` → `instrument_id`
+- `data_stream_metadata[0].start_time` → `acquisition_start_time`
+- `data_stream_metadata[0].end_time` → `acquisition_end_time`
 
-# Create settings with required fields
-settings = JobSettings(
-    subject_id="000000",
-    data_directory="/path/to/data",
-    # output_directory and output_filename are optional:
-    output_directory="/path/to/output",  # defaults to data_directory if not specified
-    output_filename="session_fip.json",  # this is the default
-    experimenter_full_name=["Test User"],
-    rig_id="fiber_rig_01",
-    mouse_platform_name="mouse_tube_foraging",
-    active_mouse_platform=False,
-    data_streams=[{
-        "detectors": [{
-            "exposure_time": "5230.42765",
-            "exposure_time_unit": "millisecond",
-            "name": "Green CMOS",
-            "trigger_type": "Internal",
-        }],
-        "fiber_connections": [{
-            "fiber_name": "Fiber 0",
-            "output_power_unit": "microwatt",
-            "patch_cord_name": "Patch Cord A",
-            "patch_cord_output_power": "20",
-        }],
-        "light_sources": [{
-            "device_type": "Light emitting diode",
-            "excitation_power": None,
-            "excitation_power_unit": "milliwatt",
-            "name": "470nm LED",
-        }]
-    }],
-    notes="Test session",
-    iacuc_protocol="2115",
-)
+### Hardware Devices
+- `rig.light_source_*` → LED configurations with wavelengths (415nm, 470nm, 565nm)
+- `rig.camera_green_iso` → Green/Isosbestic detector
+- `rig.camera_red` → Red detector
+- `rig.cuttlefish_fip` → Controller device
+- `rig.roi_settings` → Determines fiber count and creates patch cord configurations
 
-# Generate session metadata
-etl = FIBEtl(settings)
-response = etl.run_job()
-```
+### Channels
+Each fiber gets three channels:
+- Green (470nm excitation, 520nm emission)
+- Isosbestic (415nm excitation, 520nm emission)
+- Red (565nm excitation, 590nm emission)
 
-## Automatic Time Extraction
-The ETL process will automatically extract session start and end times from the data files if they are not explicitly provided. It looks for:
-- Session start time from filenames matching pattern: `FIP_DataG_YYYY-MM-DDThh_mm_ss.csv`
-- Session end time from the timestamps in the CSV data files
+Camera exposure times are extracted from `light_source_*.task.delta_1` (in microseconds).
 
-## Job Settings Structure
-The `JobSettings` class requires:
-- `subject_id`: Subject identifier
-- `data_directory`: Path to the data files
-- `experimenter_full_name`: List of experimenter names
-- `rig_id`: Identifier for the experimental rig
-- `mouse_platform_name`: Name of the mouse platform used
-- `active_mouse_platform`: Whether the platform was active
-- `data_streams`: List of stream configurations including:
-  - Light sources (LEDs)
-  - Detectors (cameras)
-  - Fiber connections
-- `notes`: Additional session notes
-- `iacuc_protocol`: Protocol identifier
+## Example
 
-Optional settings with defaults:
-- `output_directory`: Where to save the session.json file (defaults to data_directory)
-- `output_filename`: Name of the output file (defaults to "session_fip.json")
+See `examples/example_fip_mapper.py` for a working example.
 
-Session start and end times will be automatically extracted from the data files if not provided.
+## Validation
+
+Input JSON is validated against the FIP schema (`fip.json` in aind-metadata-extractor). The mapper will raise a `ValueError` if validation fails.
+
+## Requirements
+
+- `aind-data-schema>=2.0.0`
+- `aind-metadata-extractor` (with FIP schema support)
+- `jsonschema`

@@ -1,1 +1,1 @@
-"""Maps Fiber photometry metadata into a session model"""
+"""FIP (Fiber Photometry) mapper module."""

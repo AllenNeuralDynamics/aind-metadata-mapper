@@ -1,0 +1,145 @@
+{
+   "object_type": "Model",
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/model.py",
+   "schema_version": "2.0.0",
+   "name": "2024_01_01_ResNet18_SmartSPIM",
+   "version": "0.1",
+   "example_run_code": {
+      "object_type": "Code",
+      "url": "url for model code repo",
+      "name": null,
+      "version": null,
+      "container": null,
+      "run_script": "predict.py",
+      "language": null,
+      "language_version": null,
+      "input_data": null,
+      "parameters": null,
+      "core_dependency": null
+   },
+   "architecture": "ResNet",
+   "software_framework": {
+      "object_type": "Software",
+      "name": "tensorflow",
+      "version": "2.11.0"
+   },
+   "architecture_parameters": {
+      "layers": 18,
+      "input_shape": [
+         14,
+         14,
+         26
+      ]
+   },
+   "intended_use": "Cell counting for 488 channel of SmartSPIM data",
+   "limitations": "Only trained on 488 channel",
+   "training": [
+      {
+         "object_type": "Model training",
+         "process_type": "Model training",
+         "name": "Model training",
+         "stage": "Processing",
+         "code": {
+            "object_type": "Code",
+            "url": "url for model code repo",
+            "name": null,
+            "version": null,
+            "container": null,
+            "run_script": "train.py",
+            "language": null,
+            "language_version": null,
+            "input_data": [
+               {
+                  "object_type": "Data asset",
+                  "url": "s3 path to training data"
+               }
+            ],
+            "parameters": {
+               "learning_rate": 0.0001,
+               "batch_size": 32,
+               "augmentation": true
+            },
+            "core_dependency": null
+         },
+         "experimenters": [
+            "Dr. Dan"
+         ],
+         "pipeline_name": null,
+         "start_date_time": "2025-12-04T09:27:30.354897-08:00",
+         "end_date_time": "2025-12-04T09:27:30.354897-08:00",
+         "output_path": "trained_model.h5",
+         "output_parameters": {},
+         "notes": "note on training data selection",
+         "resources": null,
+         "train_performance": [
+            {
+               "object_type": "Performance metric",
+               "name": "precision",
+               "value": 0.9
+            },
+            {
+               "object_type": "Performance metric",
+               "name": "recall",
+               "value": 0.85
+            }
+         ],
+         "test_performance": [
+            {
+               "object_type": "Performance metric",
+               "name": "precision",
+               "value": 0.8
+            },
+            {
+               "object_type": "Performance metric",
+               "name": "recall",
+               "value": 0.8
+            }
+         ],
+         "test_evaluation_method": "random 4:1 train/test split"
+      }
+   ],
+   "evaluations": [
+      {
+         "object_type": "Model evaluation",
+         "process_type": "Model evaluation",
+         "name": "Model evaluation",
+         "stage": "Processing",
+         "code": {
+            "object_type": "Code",
+            "url": "url for model code repo",
+            "name": null,
+            "version": null,
+            "container": null,
+            "run_script": "eval.py",
+            "language": null,
+            "language_version": null,
+            "input_data": [
+               {
+                  "object_type": "Data asset",
+                  "url": "s3 path to eval data"
+               }
+            ],
+            "parameters": null,
+            "core_dependency": null
+         },
+         "experimenters": [
+            "Dr. Dan"
+         ],
+         "pipeline_name": null,
+         "start_date_time": "2025-12-04T09:27:30.354897-08:00",
+         "end_date_time": "2025-12-04T09:27:30.354897-08:00",
+         "output_path": null,
+         "output_parameters": {},
+         "notes": null,
+         "resources": null,
+         "performance": [
+            {
+               "object_type": "Performance metric",
+               "name": "precision",
+               "value": 0.8
+            }
+         ]
+      }
+   ],
+   "notes": null
+}

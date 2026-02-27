@@ -23,19 +23,6 @@ pip install -e .[dev]
 to set up your environment. Once these steps are complete, you can get developing🚀. 
 
 
-### Project Organization
-This codebase is organized by acquisition machine, so if you're adding a new machine, create a new directory. Otherwise, put your code in its corresponding directory. Your package should abide to the following structure:
-
-```bash
-acquisition_machine/
-|
-├──__init__.py
-├──{desired_model_type}.py (ex: session.py)
-├──models.py
-```
-
-Please define a JobSettings class in the models module which will be used by your ETL to produce the desired model. The JobSettings in the bergamo dir can be used as reference.  
-
 ### Unit Testing
 
 Testing is required to open a PR in this repository to ensure robustness and reliability of our codebase. 
