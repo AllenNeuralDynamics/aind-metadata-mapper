@@ -21,9 +21,14 @@ from typing import Optional
 from pydantic import BaseModel, Field
 from pydantic_settings import CliApp, CliPositionalArg, CliSubCommand
 
-from aind_metadata_mapper.utils import get_instrument, save_instrument
+from aind_metadata_mapper.utils import INSTRUMENT_BASE_URL, get_instrument, save_instrument
 
 logger = logging.getLogger(__name__)
+
+BASE_URL_FIELD = Field(
+    default=INSTRUMENT_BASE_URL,
+    description="Base URL for the instrument metadata service.",
+)
 
 
 class Upload(BaseModel):
@@ -43,6 +48,7 @@ class Upload(BaseModel):
             " Use --no-update-modification-date to keep the date from the file."
         ),
     )
+    base_url: str = BASE_URL_FIELD
 
     def cli_cmd(self) -> None:
         """Upload an instrument JSON to the database."""
@@ -51,6 +57,7 @@ class Upload(BaseModel):
                 self.file,
                 replace=self.replace,
                 update_modification_date=self.update_modification_date,
+                base_url=self.base_url,
             )
         except Exception as e:
             logger.error(f"Upload failed: {e}")
@@ -71,6 +78,7 @@ class Get(BaseModel):
         default=None,
         description=("Directory to save the instrument JSON file. " "If omitted, prints the JSON to stdout."),
     )
+    base_url: str = BASE_URL_FIELD
 
     def cli_cmd(self) -> None:
         """Get an instrument record and display or save it."""
@@ -78,6 +86,7 @@ class Get(BaseModel):
             self.instrument_id,
             modification_date=self.modification_date,
             output_directory=self.output_directory,
+            base_url=self.base_url,
         )
         if result is None:
             logger.error(f"Instrument '{self.instrument_id}' not found.")

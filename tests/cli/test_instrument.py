@@ -9,6 +9,7 @@ from unittest.mock import patch
 import aind_data_schema.core.instrument as instrument
 
 from aind_metadata_mapper.cli.instrument import Get, Upload
+from aind_metadata_mapper.utils import INSTRUMENT_BASE_URL
 
 INSTRUMENT_JSON = Path(__file__).parent.parent / "resources" / "v2_metadata" / "instrument.json"
 
@@ -25,6 +26,7 @@ class TestUploadCmd(unittest.TestCase):
             INSTRUMENT_JSON,
             replace=False,
             update_modification_date=True,
+            base_url=INSTRUMENT_BASE_URL,
         )
 
     @patch("aind_metadata_mapper.cli.instrument.save_instrument")
@@ -36,6 +38,7 @@ class TestUploadCmd(unittest.TestCase):
             INSTRUMENT_JSON,
             replace=True,
             update_modification_date=True,
+            base_url=INSTRUMENT_BASE_URL,
         )
 
     @patch("aind_metadata_mapper.cli.instrument.save_instrument")
@@ -47,6 +50,7 @@ class TestUploadCmd(unittest.TestCase):
             INSTRUMENT_JSON,
             replace=False,
             update_modification_date=False,
+            base_url=INSTRUMENT_BASE_URL,
         )
 
     @patch("aind_metadata_mapper.cli.instrument.save_instrument")
@@ -75,6 +79,7 @@ class TestGetCmd(unittest.TestCase):
             "422_MESO2_20241017",
             modification_date=None,
             output_directory=None,
+            base_url=INSTRUMENT_BASE_URL,
         )
         mock_print.assert_called_once()
         # Verify it's valid JSON
@@ -93,6 +98,7 @@ class TestGetCmd(unittest.TestCase):
             "422_MESO2_20241017",
             modification_date="2024-10-28",
             output_directory=None,
+            base_url=INSTRUMENT_BASE_URL,
         )
 
     @patch("aind_metadata_mapper.cli.instrument.get_instrument")
@@ -109,6 +115,7 @@ class TestGetCmd(unittest.TestCase):
                 "422_MESO2_20241017",
                 modification_date=None,
                 output_directory=Path(tmpdir),
+                base_url=INSTRUMENT_BASE_URL,
             )
             mock_print.assert_not_called()
 
