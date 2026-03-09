@@ -29,7 +29,7 @@
     "version": "0.3.0",
     "computer_name": "DT300043",
     "rig_name": "test_rig",
-    "data_directory": "c://",
+    "data_directory": "C:\\data",
     "camera_green_iso": {
       "device_type": "FipCamera",
       "name": "FipCamera",
