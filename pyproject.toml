@@ -21,7 +21,7 @@ dependencies = [
     "pyyaml",
     "pydantic-settings>=2.8.0",
     "jsonschema",
-    "aind-data-schema>=2.2.0",
+    "aind-data-schema>=2.6.0,<3",
     "aind-metadata-extractor>=0.3.6",
 ]
 
