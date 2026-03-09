@@ -22,7 +22,7 @@ dependencies = [
     "pydantic-settings>=2.8.0",
     "jsonschema",
     "aind-data-schema>=2.6.0,<3",
-    "aind-metadata-extractor==0.3.7",
+    "aind-metadata-extractor==0.3.9",
 ]
 
 [project.optional-dependencies]

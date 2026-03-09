@@ -25,10 +25,11 @@
     "skip_hardware_validation": false
   },
   "rig": {
-    "aind_behavior_services_pkg_version": "0.12.2",
-    "version": "0.1.0",
+    "aind_behavior_services_pkg_version": "0.13.0",
+    "version": "0.3.0",
     "computer_name": "DT300043",
     "rig_name": "test_rig",
+    "data_directory": "c://",
     "camera_green_iso": {
       "device_type": "FipCamera",
       "name": "FipCamera",
