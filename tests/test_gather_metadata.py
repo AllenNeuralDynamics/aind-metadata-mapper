@@ -48,7 +48,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_isfile.return_value = True
         result = self.job._does_file_exist_in_user_defined_dir("test_file.json")
         self.assertTrue(result)
-        mock_isfile.assert_called_once_with("/test/metadata/test_file.json")
+        mock_isfile.assert_called_once_with(os.path.join("/test/metadata", "test_file.json"))
 
     @patch("os.path.isfile")
     def test_does_file_exist_in_user_defined_dir_false(self, mock_isfile):
@@ -56,7 +56,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_isfile.return_value = False
         result = self.job._does_file_exist_in_user_defined_dir("missing_file.json")
         self.assertFalse(result)
-        mock_isfile.assert_called_once_with("/test/metadata/missing_file.json")
+        mock_isfile.assert_called_once_with(os.path.join("/test/metadata", "missing_file.json"))
 
     @patch("os.makedirs")
     def test_does_file_exist_in_user_defined_dir_no_metadata_dir(self, mock_makedirs):
@@ -82,7 +82,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_json_load.return_value = {"test": "data"}
         result = self.job._get_file_from_user_defined_directory("test_file.json")
 
-        mock_file.assert_called_once_with("/test/metadata/test_file.json", "r")
+        mock_file.assert_called_once_with(os.path.join("/test/metadata", "test_file.json"), "r")
         mock_json_load.assert_called_once()
         self.assertEqual(result, {"test": "data"})
 
@@ -468,7 +468,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.job._write_json_file("output.json", test_data)
 
-        mock_file.assert_called_once_with("/test/output/output.json", "w")
+        mock_file.assert_called_once_with(os.path.join("/test/output", "output.json"), "w")
         mock_json_dump.assert_called_once_with(
             test_data,
             mock_file().__enter__(),
@@ -1113,6 +1113,64 @@ class TestGatherMetadataJob(unittest.TestCase):
             job.run_job()
 
         self.assertIn("acquisition_start_time is required", str(context.exception))
+
+    @patch("os.makedirs")
+    def test_copy_original_metadata_files_no_metadata_dir(self, mock_makedirs):
+        """Test copy_original_metadata_files when metadata_dir is None"""
+        job_settings = JobSettings(
+            metadata_dir=None,
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+        )
+        job = GatherMetadataJob(settings=job_settings)
+
+        with patch("logging.debug") as mock_debug:
+            job.copy_original_metadata_files()
+            mock_debug.assert_called_once_with("No metadata directory to copy original files from.")
+
+    @patch("os.listdir")
+    @patch("os.path.exists")
+    @patch("os.makedirs")
+    @patch("shutil.copy2")
+    def test_copy_original_metadata_files_multiple_instrument_files(
+        self, mock_copy, mock_makedirs, mock_exists, mock_listdir
+    ):
+        """Test copy_original_metadata_files copies multiple instrument files correctly"""
+        mock_exists.return_value = True
+        mock_listdir.return_value = [
+            "instrument_ecephys.json",
+            "instrument_ophys.json",
+            "subject.json",
+            "other_file.json",
+        ]
+
+        with patch("logging.info"):
+            self.job.copy_original_metadata_files()
+
+            # Should copy all three matching files
+            self.assertEqual(mock_copy.call_count, 3)
+            # Should create backup directory
+            expected_backup_dir = os.path.join("/test/output", "original_metadata", "uploaded_json")
+            mock_makedirs.assert_called_with(expected_backup_dir, exist_ok=True)
+
+    @patch("os.listdir")
+    @patch("os.path.exists")
+    @patch("os.makedirs")
+    @patch("shutil.copy2")
+    def test_copy_original_metadata_files_copy_error(self, mock_copy, mock_makedirs, mock_exists, mock_listdir):
+        """Test copy_original_metadata_files handles copy errors gracefully"""
+        mock_exists.return_value = True
+        mock_listdir.return_value = ["subject.json"]
+        mock_copy.side_effect = PermissionError("Permission denied")
+
+        with patch("logging.warning") as mock_warning:
+            self.job.copy_original_metadata_files()
+            mock_warning.assert_called_once_with("Failed to copy subject.json: Permission denied")
 
 
 if __name__ == "__main__":
