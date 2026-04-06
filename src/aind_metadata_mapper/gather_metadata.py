@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -455,6 +456,52 @@ class GatherMetadataJob:
         with open(output_file, "w") as f:
             json.dump(contents, f, indent=3, ensure_ascii=False, sort_keys=True)
 
+    def copy_original_metadata_files(self) -> None:
+        """
+        Copy original core metadata files to a backup directory.
+        """
+        if self.settings.metadata_dir is None or not os.path.exists(self.settings.metadata_dir):
+            logging.debug("No metadata directory to copy original files from.")
+            return
+
+        # Define core file patterns to look for
+        core_patterns = [
+            "subject",
+            "data_description",
+            "procedures",
+            "acquisition",
+            "instrument",
+            "processing",
+            "quality_control",
+            "model",
+        ]
+
+        # Create backup directory
+        backup_dir = os.path.join(self.settings.output_dir, "original_metadata", "uploaded_json")
+        os.makedirs(backup_dir, exist_ok=True)
+
+        # Find and copy matching files
+        copied_files = []
+        if os.path.exists(self.settings.metadata_dir):
+            for filename in os.listdir(self.settings.metadata_dir):
+                if filename.endswith(".json"):
+                    for pattern in core_patterns:
+                        if pattern in filename:
+                            source_path = os.path.join(self.settings.metadata_dir, filename)
+                            dest_path = os.path.join(backup_dir, filename)
+                            try:
+                                shutil.copy2(source_path, dest_path)
+                                copied_files.append(filename)
+                                logging.info(f"Copied original metadata file: {filename}")
+                            except Exception as e:
+                                logging.warning(f"Failed to copy {filename}: {e}")
+                            break
+
+        if copied_files:
+            logging.info(f"Backed up {len(copied_files)} original metadata files to {backup_dir}")
+        else:
+            logging.debug("No original metadata files found to backup.")
+
     def _construct_metadata(self, core_metadata: Dict[str, Any]) -> Metadata:
         """
         Construct Metadata object from core metadata dictionary
@@ -667,6 +714,9 @@ class GatherMetadataJob:
         # Set the metadata_dir to output_dir if not provided
         if self.settings.metadata_dir is None:
             self.settings.metadata_dir = self.settings.output_dir
+
+        # Copy original metadata files before processing begins
+        self.copy_original_metadata_files()
 
         # Gather all core metadata
         core_metadata = {}
