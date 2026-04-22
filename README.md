@@ -134,6 +134,30 @@ You probably shouldn't be modifying these.
   - `metadata_service_procedures_endpoint` (default="/api/v2/procedures/")
   - `metadata_service_instrument_endpoint` (default="/api/v2/instrument/")
 
+### Instrument CLI
+
+The `aind-instrument` command lets you upload and retrieve instruments from the metadata service without writing code.
+
+```bash
+# Upload an instrument
+aind-instrument upload instrument.json
+
+# Upload and overwrite an existing record
+aind-instrument upload instrument.json --replace
+
+# Keep the modification date from the file instead of updating to today
+aind-instrument upload instrument.json --no-update-modification-date
+
+# Get the latest record for an instrument
+aind-instrument get 422_MESO2_20241017
+
+# Get a specific version by modification date
+aind-instrument get 422_MESO2_20241017 --modification-date 2024-10-28
+
+# Save to a file instead of printing to stdout
+aind-instrument get 422_MESO2_20241017 --output-directory ./output
+```
+
 ### Developing Mappers
 
 Each MapperJob class should inherit from `BaseMapper` in `base.py`. The only parameter should be the `MapperJobSettings` from `base.py`. You cannot add additional parameters to your job or it will not be possible for it to be run automatically on the data-transfer-service. GatherMetadataJob will then run your mappers automatically when it detects the extracted metadata output.

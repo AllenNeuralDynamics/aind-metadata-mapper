@@ -40,6 +40,9 @@ doc = [
     "furo"
 ]
 
+[project.scripts]
+aind-instrument = "aind_metadata_mapper.cli.instrument:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

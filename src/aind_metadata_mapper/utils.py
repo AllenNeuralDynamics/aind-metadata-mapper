@@ -349,6 +349,7 @@ def save_instrument(
     instrument_model: instrument.Instrument | dict | str | Path,
     replace: bool = False,
     update_modification_date: bool = True,
+    base_url: str = INSTRUMENT_BASE_URL,
 ) -> None:
     """Save instrument and validate round-trip.
 
@@ -365,6 +366,8 @@ def save_instrument(
     update_modification_date : bool
         If True (default), set modification_date to today (YYYY-MM-DD). If False,
         keep the modification date as passed in the instrument.
+    base_url : str
+        Base URL for the instrument endpoint. Defaults to INSTRUMENT_BASE_URL.
 
     Raises
     ------
@@ -386,9 +389,9 @@ def save_instrument(
 
     # Use model_dump_json() and parse to ensure dates are properly serialized
     source_dict = json.loads(instrument_model.model_dump_json())
-    logger.info(f"POSTing instrument to {INSTRUMENT_BASE_URL}")
+    logger.info(f"POSTing instrument to {base_url}")
     params = {"replace": "true"} if replace else {}
-    response = requests.post(INSTRUMENT_BASE_URL, json=source_dict, params=params)
+    response = requests.post(base_url, json=source_dict, params=params)
     # POST 400 is always an error (e.g., "Record already exists")
     if response.status_code == 400:
         error_msg = response.json().get("message", response.text)
@@ -398,10 +401,9 @@ def save_instrument(
 
     # GET back and validate round-trip
     logger.info(
-        f"GETting instrument from {INSTRUMENT_BASE_URL}/{instrument_model.instrument_id} "
-        "to verify that save was successful"
+        f"GETting instrument from {base_url}/{instrument_model.instrument_id} " "to verify that save was successful"
     )
-    read_back_instrument = get_instrument(instrument_model.instrument_id)
+    read_back_instrument = get_instrument(instrument_model.instrument_id, base_url=base_url)
     if read_back_instrument is None:
         raise ValueError(f"Instrument '{instrument_model.instrument_id}' not found in database")
 
