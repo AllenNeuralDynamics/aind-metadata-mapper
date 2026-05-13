@@ -23,6 +23,8 @@ dependencies = [
     "jsonschema",
     "aind-data-schema>=2.6.0,<3",
     "aind-metadata-extractor==0.3.11",
+    "aind-metadata-upgrader>=0.13.4,<1",
+    "packaging>=21.0",
 ]
 
 [project.optional-dependencies]

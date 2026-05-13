@@ -3,8 +3,10 @@
 Each JobClass must inherit from MapperJob in base.py and accept a JobSettings subclass
 """
 
+from aind_metadata_mapper.exaspim.mapper import ExaSPIMMapper
 from aind_metadata_mapper.fip.mapper import FIPMapper
 
 registry = {
     "fip": FIPMapper,
+    "exaspim": ExaSPIMMapper,
 }

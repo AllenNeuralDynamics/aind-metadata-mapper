@@ -30,3 +30,4 @@ class MapperJob:
         within the metadata_directory.
         """
         raise NotImplementedError("Subclasses should implement this method.")
+        raise NotImplementedError
