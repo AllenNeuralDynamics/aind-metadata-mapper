@@ -277,21 +277,29 @@ class GatherMetadataJob:
             logging.warning("No subject_id provided.")
             return None
 
-        if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
-            logging.debug(
-                f"No procedures file found in directory. Downloading "
-                f"{self.settings.subject_id} from "
-                f"{self.settings.metadata_service_url}"
-            )
-            base_url = urljoin(
-                self.settings.metadata_service_url,
-                self.settings.metadata_service_procedures_endpoint,
-            )
-            contents = get_procedures(subject_id, base_url=base_url)
+        base_url = urljoin(
+            self.settings.metadata_service_url,
+            self.settings.metadata_service_procedures_endpoint,
+        )
+        service_procedures = get_procedures(subject_id, base_url=base_url)
+
+        user_procedures = None
+        if self._does_file_exist_in_user_defined_dir(file_name=file_name):
+            logging.debug(f"Found user-provided {file_name}.")
+            user_procedures = self._get_file_from_user_defined_directory(file_name=file_name)
+
+        if user_procedures and service_procedures:
+            logging.info("Merging user-provided and service procedures.")
+            return self._merge_procedures(user_procedures, service_procedures)
+        elif user_procedures:
+            logging.debug(f"Using user-provided {file_name}.")
+            return user_procedures
+        elif service_procedures:
+            logging.debug(f"Using procedures from metadata service.")
+            return service_procedures
         else:
-            logging.debug(f"Using existing {file_name}.")
-            contents = self._get_file_from_user_defined_directory(file_name=file_name)
-        return contents
+            logging.debug("No procedures metadata found.")
+            return None
 
     def _run_mappers_for_acquisition(self):
         """
@@ -356,6 +364,83 @@ class GatherMetadataJob:
             merged_model = merged_model + model
 
         return merged_model.model_dump(mode="json")
+
+    def _merge_procedures(self, user_procedures: dict, service_procedures: dict) -> dict:
+        """Merge user and service procedures, checking for duplicates.
+
+        If duplicates are found, either raises an error or defaults to user procedures
+        based on raise_if_invalid setting.
+
+        Parameters
+        ----------
+        user_procedures : dict
+            User-provided procedures
+        service_procedures : dict
+            Service-fetched procedures
+
+        Returns
+        -------
+        dict
+            Merged procedures using the __add__ operator
+        """
+        logging.info("Merging user and service procedures.")
+        user_proc_obj = Procedures.model_validate(user_procedures)
+        service_proc_obj = Procedures.model_validate(service_procedures)
+
+        # Check for duplicate subject procedures
+        duplicate_subject_procs = self._find_duplicate_procedures(
+            user_proc_obj.subject_procedures or [],
+            service_proc_obj.subject_procedures or [],
+        )
+
+        # Check for duplicate specimen procedures
+        duplicate_specimen_procs = self._find_duplicate_procedures(
+            user_proc_obj.specimen_procedures or [],
+            service_proc_obj.specimen_procedures or [],
+        )
+
+        if duplicate_subject_procs or duplicate_specimen_procs:
+            error_msg = "Found duplicate procedures between user-provided and service procedures"
+            if duplicate_subject_procs:
+                error_msg += f"\n  Duplicate subject procedures: {len(duplicate_subject_procs)}"
+            if duplicate_specimen_procs:
+                error_msg += f"\n  Duplicate specimen procedures: {len(duplicate_specimen_procs)}"
+
+            if self.settings.raise_if_invalid:
+                raise ValueError(error_msg)
+            else:
+                logging.warning(error_msg)
+                logging.info("Defaulting to user-provided procedures")
+                return user_procedures
+
+        # No duplicates, merge using the __add__ operator
+        merged_procedures = user_proc_obj + service_proc_obj
+        return merged_procedures.model_dump(mode="json")
+
+    def _find_duplicate_procedures(self, procedures_1: list, procedures_2: list) -> list:
+        """Find procedures that appear in both lists by comparing objects.
+
+        Parameters
+        ----------
+        procedures_1 : list
+            First list of procedures
+        procedures_2 : list
+            Second list of procedures
+
+        Returns
+        -------
+        list
+            List of procedures that appear in both lists
+        """
+        duplicates = []
+        for proc_1 in procedures_1:
+            proc_1_dict = proc_1.model_dump(mode="json")
+            for proc_2 in procedures_2:
+                proc_2_dict = proc_2.model_dump(mode="json")
+                if proc_1_dict == proc_2_dict:
+                    duplicates.append(proc_1)
+                    break
+        return duplicates
 
     def get_instrument_from_service(self) -> Optional[dict]:
         """Get instrument metadata from service and write to the metadata directory"""

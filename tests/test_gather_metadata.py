@@ -1172,6 +1172,173 @@ class TestGatherMetadataJob(unittest.TestCase):
             self.job.copy_original_metadata_files()
             mock_warning.assert_called_once_with("Failed to copy subject.json: Permission denied")
 
+    # Tests for procedures merging
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.get_procedures")
+    def test_get_procedures_from_service_only(self, mock_get_procedures, mock_file_exists):
+        """Test get_procedures when only service procedures are available"""
+        mock_file_exists.return_value = False
+        mock_get_procedures.return_value = {"subject_id": "123456", "subject_procedures": []}
+
+        result = self.job.get_procedures(subject_id="123456")
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result["subject_id"], "123456")
+        mock_get_procedures.assert_called_once_with("123456", base_url="http://test-service.com/api/v2/procedures/")
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch.object(GatherMetadataJob, "_get_file_from_user_defined_directory")
+    @patch("aind_metadata_mapper.gather_metadata.get_procedures")
+    def test_get_procedures_from_user_only(self, mock_get_procedures, mock_get_file, mock_file_exists):
+        """Test get_procedures when only user procedures are available"""
+        mock_file_exists.return_value = True
+        mock_get_file.return_value = {"subject_id": "123456", "subject_procedures": []}
+        mock_get_procedures.return_value = None
+
+        result = self.job.get_procedures(subject_id="123456")
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result["subject_id"], "123456")
+        mock_file_exists.assert_called_once_with(file_name="procedures.json")
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch.object(GatherMetadataJob, "_get_file_from_user_defined_directory")
+    @patch("aind_metadata_mapper.gather_metadata.get_procedures")
+    @patch.object(GatherMetadataJob, "_merge_procedures")
+    def test_get_procedures_merge_both_available(
+        self, mock_merge, mock_get_procedures, mock_get_file, mock_file_exists
+    ):
+        """Test get_procedures when both user and service procedures are available"""
+        mock_file_exists.return_value = True
+        user_procs = {"subject_id": "123456", "subject_procedures": []}
+        service_procs = {"subject_id": "123456", "subject_procedures": []}
+        mock_get_file.return_value = user_procs
+        mock_get_procedures.return_value = service_procs
+        mock_merge.return_value = user_procs
+
+        result = self.job.get_procedures(subject_id="123456")
+
+        self.assertIsNotNone(result)
+        mock_merge.assert_called_once_with(user_procs, service_procs)
+
+    def test_find_duplicate_procedures_no_duplicates(self):
+        """Test _find_duplicate_procedures when no duplicates exist"""
+        import json
+
+        with open(TEST_DIR / "resources" / "v2_metadata" / "procedures.json") as f:
+            base_procedures = json.load(f)
+
+        # Create two different procedure lists
+        proc1 = base_procedures.get("subject_procedures", [])[0] if base_procedures.get("subject_procedures") else None
+        proc2 = base_procedures.get("subject_procedures", [])[1] if len(base_procedures.get("subject_procedures", [])) > 1 else None
+
+        if proc1 and proc2:
+            from aind_data_schema.core.procedures import Procedures as ProceduresModel
+
+            procedures_list_1 = [ProceduresModel.model_validate_json(json.dumps(proc1))]
+            procedures_list_2 = [ProceduresModel.model_validate_json(json.dumps(proc2))]
+
+            duplicates = self.job._find_duplicate_procedures(procedures_list_1, procedures_list_2)
+            self.assertEqual(len(duplicates), 0)
+
+    def test_find_duplicate_procedures_with_duplicates(self):
+        """Test _find_duplicate_procedures when duplicates exist"""
+        import json
+
+        with open(TEST_DIR / "resources" / "v2_metadata" / "procedures.json") as f:
+            base_procedures = json.load(f)
+
+        if base_procedures.get("subject_procedures"):
+            from aind_data_schema.core.procedures import Procedures as ProceduresModel
+
+            proc = base_procedures["subject_procedures"][0]
+            procedures_list_1 = [ProceduresModel.model_validate_json(json.dumps(proc))]
+            procedures_list_2 = [ProceduresModel.model_validate_json(json.dumps(proc))]
+
+            duplicates = self.job._find_duplicate_procedures(procedures_list_1, procedures_list_2)
+            self.assertEqual(len(duplicates), 1)
+
+    @patch("os.makedirs")
+    def test_merge_procedures_no_duplicates(self, mock_makedirs):
+        """Test _merge_procedures with no duplicates merges successfully"""
+        import json
+
+        with open(TEST_DIR / "resources" / "v2_metadata" / "procedures.json") as f:
+            base_procedures = json.load(f)
+
+        user_procedures = base_procedures.copy()
+        service_procedures = base_procedures.copy()
+
+        # Remove all procedures from service to avoid duplicates
+        if service_procedures.get("subject_procedures"):
+            service_procedures["subject_procedures"] = []
+        if service_procedures.get("specimen_procedures"):
+            service_procedures["specimen_procedures"] = []
+
+        result = self.job._merge_procedures(user_procedures, service_procedures)
+
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, dict)
+
+    @patch("os.makedirs")
+    def test_merge_procedures_with_duplicates_raises(self, mock_makedirs):
+        """Test _merge_procedures with duplicates raises error when raise_if_invalid is True"""
+        import json
+
+        strict_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+            raise_if_invalid=True,
+        )
+        strict_job = GatherMetadataJob(settings=strict_settings)
+
+        with open(TEST_DIR / "resources" / "v2_metadata" / "procedures.json") as f:
+            base_procedures = json.load(f)
+
+        user_procedures = base_procedures.copy()
+        service_procedures = base_procedures.copy()
+
+        with self.assertRaises(ValueError) as context:
+            strict_job._merge_procedures(user_procedures, service_procedures)
+
+        self.assertIn("duplicate procedures", str(context.exception).lower())
+
+    @patch("os.makedirs")
+    def test_merge_procedures_with_duplicates_defaults_to_user(self, mock_makedirs):
+        """Test _merge_procedures with duplicates defaults to user procedures when raise_if_invalid is False"""
+        import json
+
+        lenient_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+            raise_if_invalid=False,
+        )
+        lenient_job = GatherMetadataJob(settings=lenient_settings)
+
+        with open(TEST_DIR / "resources" / "v2_metadata" / "procedures.json") as f:
+            base_procedures = json.load(f)
+
+        user_procedures = base_procedures.copy()
+        service_procedures = base_procedures.copy()
+
+        with patch("logging.warning"):
+            result = lenient_job._merge_procedures(user_procedures, service_procedures)
+
+        # Should return user procedures
+        self.assertEqual(result, user_procedures)
+
 
 if __name__ == "__main__":
     unittest.main()
