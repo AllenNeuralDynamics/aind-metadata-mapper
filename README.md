@@ -11,7 +11,7 @@ Repository to contain code that will parse source files into aind-data-schema mo
 
 ## Usage
 
-The `GatherMetadataJob` is used to create the `data_description.json` and pull the `subject.json` and `procedures.json` from `aind-metadata-service`. Users are expected to provide the `instrument.json` and the `acquisition.json` as well as optional `processing.json`, `quality_control.json` and `model.json`. The job will attempt to validate all of the metadata files, displaying errors, and then will save all metadata fields into the selected folder.
+The `GatherMetadataJob` is used to create the `data_description.json` and pull the `subject.json` and `procedures.json` from `aind-metadata-service`. Users are expected to provide the `instrument.json` and the `acquisition.json` as well as optional `processing.json`, `quality_control.json` and `model.json`. If a user provides `procedures.json`, it will be merged with the procedures fetched from the service (subject and specimen procedures are deduplicated). The job will attempt to validate all of the metadata files, displaying errors, and then will save all metadata fields into the selected folder.
 
 ### Using the GatherMetadataJob
 
@@ -52,7 +52,7 @@ If no exact match exists, it will construct, fetch, merge or run mappers to gene
 |------|----------|----------|----------|
 | data_description.json | Exact match in input directory | Construct from settings / fetch from metadata-service |  |
 | subject.json | Exact match in input directory | Fetch from metadata-service (requires subject_id) |  |
-| procedures.json | Exact match in input directory | Fetch from metadata-service (requires subject_id) |  |
+| procedures.json | Fetch from metadata-service (required) | Merge with user procedures if duplicates are absent | Default to user procedures if duplicates detected |
 | acquisition.json | Exact match in input directory | Run mappers on `<mapper>.json` files (and merge) | Merge all `acquisition*.json` files |
 | instrument.json | Exact match in input directory | Fetch from metadata-service (requires instrument_id) | Merge all `instrument*.json` files |
 | processing.json | Exact match in input directory |  |  |
