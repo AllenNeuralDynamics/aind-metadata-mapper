@@ -3,6 +3,7 @@
 from typing import List, Optional
 
 from aind_data_schema.base import AwareDatetimeWithDefault
+from aind_data_schema.components.subjects import CalibrationObject
 from aind_data_schema_models.data_name_patterns import Group
 from aind_data_schema_models.modalities import Modality
 from pydantic import Field, field_validator
@@ -45,6 +46,18 @@ class DataDescriptionSettings(BaseSettings):
         elif isinstance(v, list):
             return [Modality.from_abbreviation(mod) if isinstance(mod, str) else mod for mod in v]
         return v
+
+
+class SubjectSettings(BaseSettings):
+    """Settings specific to subject metadata"""
+
+    calibration_object: Optional[CalibrationObject] = Field(
+        default=None,
+        description=(
+            "Optional calibration object. Used when subject_id is 'calibration' to construct "
+            "a Subject without contacting the metadata service."
+        ),
+    )
 
 
 class InstrumentSettings(BaseSettings):
@@ -110,6 +123,10 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
     data_description_settings: DataDescriptionSettings = Field(
         ...,
         description="Settings specific to data description metadata.",
+    )
+    subject_settings: Optional[SubjectSettings] = Field(
+        default=None,
+        description="Settings specific to subject metadata.",
     )
     instrument_settings: Optional[InstrumentSettings] = Field(
         default=None,

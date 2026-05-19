@@ -51,8 +51,8 @@ If no exact match exists, it will construct, fetch, merge or run mappers to gene
 | File | Method 1 | Method 2 | Method 3 |
 |------|----------|----------|----------|
 | data_description.json | Exact match in input directory | Construct from settings / fetch from metadata-service |  |
-| subject.json | Exact match in input directory | Fetch from metadata-service (requires subject_id) |  |
-| procedures.json | Exact match in input directory | Fetch from metadata-service (requires subject_id) |  |
+| subject.json | Exact match in input directory | Fetch from metadata-service (requires subject_id) | Constructed locally when subject_id is "calibration" |
+| procedures.json | Exact match in input directory | Fetch from metadata-service (requires subject_id) | Constructed locally (empty) when subject_id is "calibration" |
 | acquisition.json | Exact match in input directory | Run mappers on `<mapper>.json` files (and merge) | Merge all `acquisition*.json` files |
 | instrument.json | Exact match in input directory | Fetch from metadata-service (requires instrument_id) | Merge all `instrument*.json` files |
 | processing.json | Exact match in input directory |  |  |
@@ -70,6 +70,9 @@ When mappers are developed from the `BaseMapper` class and registered in `mapper
 - **`subject_id`** (str): Subject ID used to fetch metadata from the service (subject.json, procedures.json). This setting should only be used when an `acquisition.json` is not available.
 
 - **`acquisition_start_time`** (datetime, optional): Acquisition start time in ISO 8601 format. This setting should only be used when an `acquisition.json` is not available.
+
+- **`subject_settings`** (optional): Settings for subject metadata. Only used when `subject_id` is `"calibration"`.
+  - **`calibration_object`** ([CalibrationObject](https://aind-data-schema.readthedocs.io/en/latest/), optional): A `CalibrationObject` from `aind_data_schema.components.subjects`. When `subject_id` is `"calibration"`, the metadata service is not contacted — instead a `Subject` is constructed locally using this object and an empty `Procedures` (no subject or specimen procedures). If omitted, a default empty `CalibrationObject` is used.
 
 - **`instrument_settings`**:
   - **`instrument_id`** (str): ID for the instrument used in data collection. When set, the instrument.json will attempt to be fetched from the metadata-service and saved as `instrument_<modality-abbreviation(s)>.json`. If multiple `instrument*.json` files exist after fetching they will be merged.
@@ -107,6 +110,35 @@ job_settings = JobSettings(
     raise_if_invalid=True,
     raise_if_mapper_errors=True,
     metadata_service_url="http://aind-metadata-service",
+)
+
+job = GatherMetadataJob(job_settings=job_settings)
+job.run_job()
+```
+
+#### Calibration sessions
+
+When collecting data with a calibration object rather than a live subject, set `subject_id` to `"calibration"`. The job will skip the metadata service entirely and construct `subject.json` and `procedures.json` locally.
+
+```python
+from aind_data_schema.components.subjects import CalibrationObject
+from aind_data_schema_models.modalities import Modality
+from aind_metadata_mapper.gather_metadata import GatherMetadataJob
+from aind_metadata_mapper.models import JobSettings, DataDescriptionSettings, SubjectSettings
+
+job_settings = JobSettings(
+    output_dir="/path/to/output",
+    subject_id="calibration",
+    data_description_settings=DataDescriptionSettings(
+        project_name="<project-name>",
+        modalities=[Modality.ECEPHYS],
+    ),
+    subject_settings=SubjectSettings(
+        calibration_object=CalibrationObject(
+            description="Neuropixels dummy probe",
+            empty=False,
+        )
+    ),
 )
 
 job = GatherMetadataJob(job_settings=job_settings)

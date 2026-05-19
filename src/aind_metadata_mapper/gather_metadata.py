@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import urljoin
 
+from aind_data_schema.components.subjects import CalibrationObject
 from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema.core.data_description import DataDescription
 from aind_data_schema.core.instrument import Instrument
@@ -246,6 +247,16 @@ class GatherMetadataJob:
             logging.warning("No subject_id provided.")
             return None
 
+        if subject_id == "calibration":
+            logging.info("subject_id is 'calibration'; constructing Subject locally.")
+            calibration_object = (
+                self.settings.subject_settings.calibration_object
+                if self.settings.subject_settings and self.settings.subject_settings.calibration_object
+                else CalibrationObject(description="", empty=True)
+            )
+            subject = Subject(subject_id=subject_id, subject_details=calibration_object)
+            return json.loads(subject.model_dump_json())
+
         if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
             logging.debug(
                 f"No subject file found in directory. Downloading "
@@ -276,6 +287,11 @@ class GatherMetadataJob:
         if not subject_id:
             logging.warning("No subject_id provided.")
             return None
+
+        if subject_id == "calibration":
+            logging.info("subject_id is 'calibration'; constructing empty Procedures locally.")
+            procedures = Procedures(subject_id=subject_id)
+            return json.loads(procedures.model_dump_json())
 
         if not self._does_file_exist_in_user_defined_dir(file_name=file_name):
             logging.debug(
