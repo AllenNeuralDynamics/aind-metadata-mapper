@@ -7,12 +7,17 @@ Do not test run_job() inside this file, use the integration tests.
 
 import json
 import os
+import shutil
+import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
 from aind_data_schema.core.acquisition import Acquisition
+from aind_data_schema.core.instrument import Instrument
+from aind_data_schema.core.procedures import Procedures
+from aind_data_schema.core.quality_control import QualityControl
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 
@@ -1223,37 +1228,37 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     def test_find_duplicate_procedures_no_duplicates(self):
         """Test _find_duplicate_procedures when no duplicates exist"""
-        import json
-
         with open(TEST_DIR / "resources" / "v2_metadata" / "procedures.json") as f:
             base_procedures = json.load(f)
 
-        # Create two different procedure lists
-        proc1 = base_procedures.get("subject_procedures", [])[0] if base_procedures.get("subject_procedures") else None
-        proc2 = base_procedures.get("subject_procedures", [])[1] if len(base_procedures.get("subject_procedures", [])) > 1 else None
+        # Validate to get Procedures object with parsed procedures
+        procedures_obj = Procedures.model_validate(base_procedures)
 
-        if proc1 and proc2:
-            from aind_data_schema.core.procedures import Procedures as ProceduresModel
+        if procedures_obj.subject_procedures and len(procedures_obj.subject_procedures) > 1:
+            # Use first two procedures as separate lists (no duplicates between them)
+            procedures_list_1 = [procedures_obj.subject_procedures[0]]
+            procedures_list_2 = [procedures_obj.subject_procedures[1]]
+        else:
+            # If only one procedure, use empty list for no duplicates
+            procedures_list_1 = procedures_obj.subject_procedures or []
+            procedures_list_2 = []
 
-            procedures_list_1 = [ProceduresModel.model_validate_json(json.dumps(proc1))]
-            procedures_list_2 = [ProceduresModel.model_validate_json(json.dumps(proc2))]
-
-            duplicates = self.job._find_duplicate_procedures(procedures_list_1, procedures_list_2)
-            self.assertEqual(len(duplicates), 0)
+        duplicates = self.job._find_duplicate_procedures(procedures_list_1, procedures_list_2)
+        self.assertEqual(len(duplicates), 0)
 
     def test_find_duplicate_procedures_with_duplicates(self):
         """Test _find_duplicate_procedures when duplicates exist"""
-        import json
-
         with open(TEST_DIR / "resources" / "v2_metadata" / "procedures.json") as f:
             base_procedures = json.load(f)
 
-        if base_procedures.get("subject_procedures"):
-            from aind_data_schema.core.procedures import Procedures as ProceduresModel
+        # Validate to get Procedures object with parsed procedures
+        procedures_obj = Procedures.model_validate(base_procedures)
 
-            proc = base_procedures["subject_procedures"][0]
-            procedures_list_1 = [ProceduresModel.model_validate_json(json.dumps(proc))]
-            procedures_list_2 = [ProceduresModel.model_validate_json(json.dumps(proc))]
+        if procedures_obj.subject_procedures:
+            # Use same procedure in both lists to create a duplicate
+            proc = procedures_obj.subject_procedures[0]
+            procedures_list_1 = [proc]
+            procedures_list_2 = [proc]
 
             duplicates = self.job._find_duplicate_procedures(procedures_list_1, procedures_list_2)
             self.assertEqual(len(duplicates), 1)
@@ -1261,8 +1266,6 @@ class TestGatherMetadataJob(unittest.TestCase):
     @patch("os.makedirs")
     def test_merge_procedures_no_duplicates(self, mock_makedirs):
         """Test _merge_procedures with no duplicates merges successfully"""
-        import json
-
         with open(TEST_DIR / "resources" / "v2_metadata" / "procedures.json") as f:
             base_procedures = json.load(f)
 
@@ -1283,8 +1286,6 @@ class TestGatherMetadataJob(unittest.TestCase):
     @patch("os.makedirs")
     def test_merge_procedures_with_duplicates_raises(self, mock_makedirs):
         """Test _merge_procedures with duplicates raises error when raise_if_invalid is True"""
-        import json
-
         strict_settings = JobSettings(
             metadata_dir="/test/metadata",
             output_dir="/test/output",
@@ -1312,8 +1313,6 @@ class TestGatherMetadataJob(unittest.TestCase):
     @patch("os.makedirs")
     def test_merge_procedures_with_duplicates_defaults_to_user(self, mock_makedirs):
         """Test _merge_procedures with duplicates defaults to user procedures when raise_if_invalid is False"""
-        import json
-
         lenient_settings = JobSettings(
             metadata_dir="/test/metadata",
             output_dir="/test/output",
