@@ -1296,19 +1296,15 @@ class TestGatherMetadataJob(unittest.TestCase):
         with open(TEST_DIR / "resources" / "v2_metadata" / "procedures.json") as f:
             base_procedures = json.load(f)
 
-        # Validate to get Procedures object with parsed procedures
         procedures_obj = Procedures.model_validate(base_procedures)
+        # Always test with two different procedures
+        proc1 = procedures_obj.subject_procedures[0] if procedures_obj.subject_procedures else None
+        proc2 = procedures_obj.subject_procedures[1] if procedures_obj.subject_procedures and len(procedures_obj.subject_procedures) > 1 else None
 
-        if procedures_obj.subject_procedures and len(procedures_obj.subject_procedures) > 1:
-            # Use first two procedures as separate lists (no duplicates between them)
-            procedures_list_1 = [procedures_obj.subject_procedures[0]]
-            procedures_list_2 = [procedures_obj.subject_procedures[1]]
-        else:
-            # If only one procedure, use empty list for no duplicates
-            procedures_list_1 = procedures_obj.subject_procedures or []
-            procedures_list_2 = []
+        self.assertIsNotNone(proc1, "Test fixture must have at least one procedure")
+        self.assertIsNotNone(proc2, "Test fixture must have at least two procedures")
 
-        duplicates = self.job._find_duplicate_procedures(procedures_list_1, procedures_list_2)
+        duplicates = self.job._find_duplicate_procedures([proc1], [proc2])
         self.assertEqual(len(duplicates), 0)
 
     def test_find_duplicate_procedures_with_duplicates(self):
@@ -1316,17 +1312,13 @@ class TestGatherMetadataJob(unittest.TestCase):
         with open(TEST_DIR / "resources" / "v2_metadata" / "procedures.json") as f:
             base_procedures = json.load(f)
 
-        # Validate to get Procedures object with parsed procedures
         procedures_obj = Procedures.model_validate(base_procedures)
+        self.assertTrue(procedures_obj.subject_procedures, "Test fixture must have at least one procedure")
 
-        if procedures_obj.subject_procedures:
-            # Use same procedure in both lists to create a duplicate
-            proc = procedures_obj.subject_procedures[0]
-            procedures_list_1 = [proc]
-            procedures_list_2 = [proc]
-
-            duplicates = self.job._find_duplicate_procedures(procedures_list_1, procedures_list_2)
-            self.assertEqual(len(duplicates), 1)
+        # Use same procedure in both lists to create a duplicate
+        proc = procedures_obj.subject_procedures[0]
+        duplicates = self.job._find_duplicate_procedures([proc], [proc])
+        self.assertEqual(len(duplicates), 1)
 
     @patch("os.makedirs")
     def test_merge_procedures_no_duplicates(self, mock_makedirs):
