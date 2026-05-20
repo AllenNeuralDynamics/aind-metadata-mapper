@@ -311,7 +311,7 @@ class GatherMetadataJob:
             logging.debug(f"Using user-provided {file_name}.")
             return user_procedures
         elif service_procedures:
-            logging.debug(f"Using procedures from metadata service.")
+            logging.debug("Using procedures from metadata service.")
             return service_procedures
         else:
             logging.debug("No procedures metadata found.")

@@ -7,8 +7,6 @@ Do not test run_job() inside this file, use the integration tests.
 
 import json
 import os
-import shutil
-import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,9 +14,7 @@ from unittest.mock import MagicMock, mock_open, patch
 
 from aind_data_schema.components.subjects import CalibrationObject
 from aind_data_schema.core.acquisition import Acquisition
-from aind_data_schema.core.instrument import Instrument
 from aind_data_schema.core.procedures import Procedures
-from aind_data_schema.core.quality_control import QualityControl
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 
