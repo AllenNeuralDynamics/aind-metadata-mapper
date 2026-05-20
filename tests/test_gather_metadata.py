@@ -1331,10 +1331,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         service_procedures = base_procedures.copy()
 
         # Remove all procedures from service to avoid duplicates
-        if service_procedures.get("subject_procedures"):
-            service_procedures["subject_procedures"] = []
-        if service_procedures.get("specimen_procedures"):
-            service_procedures["specimen_procedures"] = []
+        service_procedures["subject_procedures"] = []
+        service_procedures["specimen_procedures"] = []
 
         result = self.job._merge_procedures(user_procedures, service_procedures)
 
