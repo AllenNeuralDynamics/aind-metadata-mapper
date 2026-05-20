@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
+from aind_data_schema.components.subjects import CalibrationObject
 from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema.core.instrument import Instrument
 from aind_data_schema.core.procedures import Procedures
@@ -22,7 +23,7 @@ from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-from aind_metadata_mapper.models import DataDescriptionSettings, JobSettings
+from aind_metadata_mapper.models import DataDescriptionSettings, JobSettings, SubjectSettings
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
 
@@ -612,6 +613,52 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertIsNone(result)
 
+    @patch("os.makedirs")
+    def test_get_subject_calibration_with_object(self, mock_makedirs):
+        """Test get_subject when subject_id is 'calibration' with CalibrationObject"""
+        calibration_obj = CalibrationObject(description="Test calibration", empty=False)
+        job_settings = JobSettings(
+            metadata_dir="/test",
+            output_dir="/test/output",
+            subject_id="calibration",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            subject_settings=SubjectSettings(calibration_object=calibration_obj),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+        )
+        job = GatherMetadataJob(settings=job_settings)
+
+        result = job.get_subject(subject_id="calibration")
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result["subject_id"], "calibration")
+        self.assertEqual(result["subject_details"]["description"], "Test calibration")
+        self.assertEqual(result["subject_details"]["empty"], False)
+
+    @patch("os.makedirs")
+    def test_get_subject_calibration_without_object(self, mock_makedirs):
+        """Test get_subject when subject_id is 'calibration' without CalibrationObject"""
+        job_settings = JobSettings(
+            metadata_dir="/test",
+            output_dir="/test/output",
+            subject_id="calibration",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+        )
+        job = GatherMetadataJob(settings=job_settings)
+
+        result = job.get_subject(subject_id="calibration")
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result["subject_id"], "calibration")
+        self.assertEqual(result["subject_details"]["empty"], True)
+        self.assertEqual(result["subject_details"]["description"], "")
+
     # Tests for get_procedures method
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
     @patch("os.makedirs")
@@ -692,6 +739,28 @@ class TestGatherMetadataJob(unittest.TestCase):
         result = self.job.get_procedures(subject_id="123456")
 
         self.assertIsNone(result)
+
+    @patch("os.makedirs")
+    def test_get_procedures_calibration(self, mock_makedirs):
+        """Test get_procedures when subject_id is 'calibration'"""
+        job_settings = JobSettings(
+            metadata_dir="/test",
+            output_dir="/test/output",
+            subject_id="calibration",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+        )
+        job = GatherMetadataJob(settings=job_settings)
+
+        result = job.get_procedures(subject_id="calibration")
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result["subject_id"], "calibration")
+        self.assertEqual(result["subject_procedures"], [])
+        self.assertEqual(result["specimen_procedures"], [])
 
     # Tests for other metadata getter methods
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
