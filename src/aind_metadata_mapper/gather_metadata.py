@@ -417,10 +417,8 @@ class GatherMetadataJob:
 
         if duplicate_subject_procs or duplicate_specimen_procs:
             error_msg = "Found duplicate procedures between user-provided and service procedures"
-            if duplicate_subject_procs:
-                error_msg += f"\n  Duplicate subject procedures: {len(duplicate_subject_procs)}"
-            if duplicate_specimen_procs:
-                error_msg += f"\n  Duplicate specimen procedures: {len(duplicate_specimen_procs)}"
+            if duplicate_subject_procs or duplicate_specimen_procs:
+                error_msg += f"\n  Duplicate procedures: {len(duplicate_subject_procs) + len(duplicate_specimen_procs)}"
 
             if self.settings.raise_if_invalid:
                 raise ValueError(error_msg)
