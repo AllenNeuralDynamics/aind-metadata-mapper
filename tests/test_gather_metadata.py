@@ -1297,12 +1297,13 @@ class TestGatherMetadataJob(unittest.TestCase):
             base_procedures = json.load(f)
 
         procedures_obj = Procedures.model_validate(base_procedures)
-        # Always test with two different procedures
-        proc1 = procedures_obj.subject_procedures[0] if procedures_obj.subject_procedures else None
-        proc2 = procedures_obj.subject_procedures[1] if procedures_obj.subject_procedures and len(procedures_obj.subject_procedures) > 1 else None
+        self.assertTrue(procedures_obj.subject_procedures, "Test fixture must have at least one procedure")
 
-        self.assertIsNotNone(proc1, "Test fixture must have at least one procedure")
-        self.assertIsNotNone(proc2, "Test fixture must have at least two procedures")
+        proc1 = procedures_obj.subject_procedures[0]
+        # Create a second different procedure by copying and modifying the first
+        proc2_dict = json.loads(proc1.model_dump_json())
+        proc2_dict["start_date"] = "2025-07-11"  # Make it different from proc1
+        proc2 = type(proc1).model_validate(proc2_dict)
 
         duplicates = self.job._find_duplicate_procedures([proc1], [proc2])
         self.assertEqual(len(duplicates), 0)
