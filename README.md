@@ -11,7 +11,7 @@ Repository to contain code that will parse source files into aind-data-schema mo
 
 ## Usage
 
-The `GatherMetadataJob` is used to create the `data_description.json` and pull the `subject.json` and `procedures.json` from `aind-metadata-service`. Users are expected to provide the `instrument.json` and the `acquisition.json` as well as optional `processing.json`, `quality_control.json` and `model.json`. The job will attempt to validate all of the metadata files, displaying errors, and then will save all metadata fields into the selected folder.
+The `GatherMetadataJob` is used to create the `data_description.json` and pull the `subject.json` and `procedures.json` from `aind-metadata-service`. Users are expected to provide the `instrument.json` and the `acquisition.json` as well as optional `processing.json`, `quality_control.json` and `model.json`. If a user provides `procedures.json`, it will be merged with the procedures fetched from the service (subject and specimen procedures are deduplicated). The job will attempt to validate all of the metadata files, displaying errors, and then will save all metadata fields into the selected folder.
 
 ### Using the GatherMetadataJob
 
@@ -51,8 +51,8 @@ If no exact match exists, it will construct, fetch, merge or run mappers to gene
 | File | Method 1 | Method 2 | Method 3 |
 |------|----------|----------|----------|
 | data_description.json | Exact match in input directory | Construct from settings / fetch from metadata-service |  |
-| subject.json | Exact match in input directory | Fetch from metadata-service (requires subject_id) |  |
-| procedures.json | Exact match in input directory | Fetch from metadata-service (requires subject_id) |  |
+| subject.json | Exact match in input directory | Fetch from metadata-service (requires subject_id) | Constructed locally when subject_id is "calibration" |
+| procedures.json | Fetch from metadata-service (requires subject_id) | Merge with user-provided procedures but default to user-provided if there are any duplicates | Constructed locally (empty) when subject_id is "calibration" |
 | acquisition.json | Exact match in input directory | Run mappers on `<mapper>.json` files (and merge) | Merge all `acquisition*.json` files |
 | instrument.json | Exact match in input directory | Fetch from metadata-service (requires instrument_id) | Merge all `instrument*.json` files |
 | processing.json | Exact match in input directory |  |  |
@@ -70,6 +70,9 @@ When mappers are developed from the `BaseMapper` class and registered in `mapper
 - **`subject_id`** (str): Subject ID used to fetch metadata from the service (subject.json, procedures.json). This setting should only be used when an `acquisition.json` is not available.
 
 - **`acquisition_start_time`** (datetime, optional): Acquisition start time in ISO 8601 format. This setting should only be used when an `acquisition.json` is not available.
+
+- **`subject_settings`** (optional): Settings for subject metadata. Only used when `subject_id` is `"calibration"`.
+  - **`calibration_object`** ([CalibrationObject](https://aind-data-schema.readthedocs.io/en/latest/), optional): A `CalibrationObject` from `aind_data_schema.components.subjects`. When `subject_id` is `"calibration"`, the metadata service is not contacted — instead a `Subject` is constructed locally using this object and an empty `Procedures` (no subject or specimen procedures). If omitted, a default empty `CalibrationObject` is used.
 
 - **`instrument_settings`**:
   - **`instrument_id`** (str): ID for the instrument used in data collection. When set, the instrument.json will attempt to be fetched from the metadata-service and saved as `instrument_<modality-abbreviation(s)>.json`. If multiple `instrument*.json` files exist after fetching they will be merged.
@@ -113,6 +116,35 @@ job = GatherMetadataJob(job_settings=job_settings)
 job.run_job()
 ```
 
+#### Calibration sessions
+
+When collecting data with a calibration object rather than a live subject, set `subject_id` to `"calibration"`. The job will skip the metadata service entirely and construct `subject.json` and `procedures.json` locally.
+
+```python
+from aind_data_schema.components.subjects import CalibrationObject
+from aind_data_schema_models.modalities import Modality
+from aind_metadata_mapper.gather_metadata import GatherMetadataJob
+from aind_metadata_mapper.models import JobSettings, DataDescriptionSettings, SubjectSettings
+
+job_settings = JobSettings(
+    output_dir="/path/to/output",
+    subject_id="calibration",
+    data_description_settings=DataDescriptionSettings(
+        project_name="<project-name>",
+        modalities=[Modality.ECEPHYS],
+    ),
+    subject_settings=SubjectSettings(
+        calibration_object=CalibrationObject(
+            description="Neuropixels dummy probe",
+            empty=False,
+        )
+    ),
+)
+
+job = GatherMetadataJob(job_settings=job_settings)
+job.run_job()
+```
+
 #### Validation settings
 
 - **`raise_if_invalid`** (bool, default=False): Controls validation behavior:
@@ -133,6 +165,30 @@ You probably shouldn't be modifying these.
   - `metadata_service_subject_endpoint` (default="/api/v2/subject/")
   - `metadata_service_procedures_endpoint` (default="/api/v2/procedures/")
   - `metadata_service_instrument_endpoint` (default="/api/v2/instrument/")
+
+### Instrument CLI
+
+The `aind-instrument` command lets you upload and retrieve instruments from the metadata service without writing code.
+
+```bash
+# Upload an instrument
+aind-instrument upload instrument.json
+
+# Upload and overwrite an existing record
+aind-instrument upload instrument.json --replace
+
+# Keep the modification date from the file instead of updating to today
+aind-instrument upload instrument.json --no-update-modification-date
+
+# Get the latest record for an instrument
+aind-instrument get 422_MESO2_20241017
+
+# Get a specific version by modification date
+aind-instrument get 422_MESO2_20241017 --modification-date 2024-10-28
+
+# Save to a file instead of printing to stdout
+aind-instrument get 422_MESO2_20241017 --output-directory ./output
+```
 
 ### Developing Mappers
 

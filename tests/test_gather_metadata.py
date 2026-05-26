@@ -12,12 +12,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
+from aind_data_schema.components.subjects import CalibrationObject
 from aind_data_schema.core.acquisition import Acquisition
+from aind_data_schema.core.procedures import Procedures
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.organizations import Organization
 
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-from aind_metadata_mapper.models import DataDescriptionSettings, JobSettings
+from aind_metadata_mapper.models import DataDescriptionSettings, JobSettings, SubjectSettings
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
 
@@ -607,6 +609,52 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertIsNone(result)
 
+    @patch("os.makedirs")
+    def test_get_subject_calibration_with_object(self, mock_makedirs):
+        """Test get_subject when subject_id is 'calibration' with CalibrationObject"""
+        calibration_obj = CalibrationObject(description="Test calibration", empty=False)
+        job_settings = JobSettings(
+            metadata_dir="/test",
+            output_dir="/test/output",
+            subject_id="calibration",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            subject_settings=SubjectSettings(calibration_object=calibration_obj),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+        )
+        job = GatherMetadataJob(settings=job_settings)
+
+        result = job.get_subject(subject_id="calibration")
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result["subject_id"], "calibration")
+        self.assertEqual(result["subject_details"]["description"], "Test calibration")
+        self.assertEqual(result["subject_details"]["empty"], False)
+
+    @patch("os.makedirs")
+    def test_get_subject_calibration_without_object(self, mock_makedirs):
+        """Test get_subject when subject_id is 'calibration' without CalibrationObject"""
+        job_settings = JobSettings(
+            metadata_dir="/test",
+            output_dir="/test/output",
+            subject_id="calibration",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+        )
+        job = GatherMetadataJob(settings=job_settings)
+
+        result = job.get_subject(subject_id="calibration")
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result["subject_id"], "calibration")
+        self.assertEqual(result["subject_details"]["empty"], True)
+        self.assertEqual(result["subject_details"]["description"], "")
+
     # Tests for get_procedures method
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
     @patch("os.makedirs")
@@ -687,6 +735,28 @@ class TestGatherMetadataJob(unittest.TestCase):
         result = self.job.get_procedures(subject_id="123456")
 
         self.assertIsNone(result)
+
+    @patch("os.makedirs")
+    def test_get_procedures_calibration(self, mock_makedirs):
+        """Test get_procedures when subject_id is 'calibration'"""
+        job_settings = JobSettings(
+            metadata_dir="/test",
+            output_dir="/test/output",
+            subject_id="calibration",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+        )
+        job = GatherMetadataJob(settings=job_settings)
+
+        result = job.get_procedures(subject_id="calibration")
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result["subject_id"], "calibration")
+        self.assertEqual(result["subject_procedures"], [])
+        self.assertEqual(result["specimen_procedures"], [])
 
     # Tests for other metadata getter methods
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
@@ -1171,6 +1241,158 @@ class TestGatherMetadataJob(unittest.TestCase):
         with patch("logging.warning") as mock_warning:
             self.job.copy_original_metadata_files()
             mock_warning.assert_called_once_with("Failed to copy subject.json: Permission denied")
+
+    # Tests for procedures merging
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.get_procedures")
+    def test_get_procedures_from_service_only(self, mock_get_procedures, mock_file_exists):
+        """Test get_procedures when only service procedures are available"""
+        mock_file_exists.return_value = False
+        mock_get_procedures.return_value = {"subject_id": "123456", "subject_procedures": []}
+
+        result = self.job.get_procedures(subject_id="123456")
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result["subject_id"], "123456")
+        mock_get_procedures.assert_called_once_with("123456", base_url="http://test-service.com/api/v2/procedures/")
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch.object(GatherMetadataJob, "_get_file_from_user_defined_directory")
+    @patch("aind_metadata_mapper.gather_metadata.get_procedures")
+    def test_get_procedures_from_user_only(self, mock_get_procedures, mock_get_file, mock_file_exists):
+        """Test get_procedures when only user procedures are available"""
+        mock_file_exists.return_value = True
+        mock_get_file.return_value = {"subject_id": "123456", "subject_procedures": []}
+        mock_get_procedures.return_value = None
+
+        result = self.job.get_procedures(subject_id="123456")
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result["subject_id"], "123456")
+        mock_file_exists.assert_called_once_with(file_name="procedures.json")
+
+    @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
+    @patch.object(GatherMetadataJob, "_get_file_from_user_defined_directory")
+    @patch("aind_metadata_mapper.gather_metadata.get_procedures")
+    @patch.object(GatherMetadataJob, "_merge_procedures")
+    def test_get_procedures_merge_both_available(
+        self, mock_merge, mock_get_procedures, mock_get_file, mock_file_exists
+    ):
+        """Test get_procedures when both user and service procedures are available"""
+        mock_file_exists.return_value = True
+        user_procs = {"subject_id": "123456", "subject_procedures": []}
+        service_procs = {"subject_id": "123456", "subject_procedures": []}
+        mock_get_file.return_value = user_procs
+        mock_get_procedures.return_value = service_procs
+        mock_merge.return_value = user_procs
+
+        result = self.job.get_procedures(subject_id="123456")
+
+        self.assertIsNotNone(result)
+        mock_merge.assert_called_once_with(user_procs, service_procs)
+
+    def test_find_duplicate_procedures_no_duplicates(self):
+        """Test _find_duplicate_procedures when no duplicates exist"""
+        with open(TEST_DIR / "resources" / "v2_metadata" / "procedures.json") as f:
+            base_procedures = json.load(f)
+
+        procedures_obj = Procedures.model_validate(base_procedures)
+        self.assertTrue(procedures_obj.subject_procedures, "Test fixture must have at least one procedure")
+
+        proc1 = procedures_obj.subject_procedures[0]
+        # Create a second different procedure by copying and modifying the first
+        proc2_dict = json.loads(proc1.model_dump_json())
+        proc2_dict["start_date"] = "2025-07-11"  # Make it different from proc1
+        proc2 = type(proc1).model_validate(proc2_dict)
+
+        duplicates = self.job._find_duplicate_procedures([proc1], [proc2])
+        self.assertEqual(len(duplicates), 0)
+
+    def test_find_duplicate_procedures_with_duplicates(self):
+        """Test _find_duplicate_procedures when duplicates exist"""
+        with open(TEST_DIR / "resources" / "v2_metadata" / "procedures.json") as f:
+            base_procedures = json.load(f)
+
+        procedures_obj = Procedures.model_validate(base_procedures)
+        self.assertTrue(procedures_obj.subject_procedures, "Test fixture must have at least one procedure")
+
+        # Use same procedure in both lists to create a duplicate
+        proc = procedures_obj.subject_procedures[0]
+        duplicates = self.job._find_duplicate_procedures([proc], [proc])
+        self.assertEqual(len(duplicates), 1)
+
+    @patch("os.makedirs")
+    def test_merge_procedures_no_duplicates(self, mock_makedirs):
+        """Test _merge_procedures with no duplicates merges successfully"""
+        with open(TEST_DIR / "resources" / "v2_metadata" / "procedures.json") as f:
+            base_procedures = json.load(f)
+
+        user_procedures = base_procedures.copy()
+        service_procedures = base_procedures.copy()
+
+        # Remove all procedures from service to avoid duplicates
+        service_procedures["subject_procedures"] = []
+        service_procedures["specimen_procedures"] = []
+
+        result = self.job._merge_procedures(user_procedures, service_procedures)
+
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, dict)
+
+    @patch("os.makedirs")
+    def test_merge_procedures_with_duplicates_raises(self, mock_makedirs):
+        """Test _merge_procedures with duplicates raises error when raise_if_invalid is True"""
+        strict_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+            raise_if_invalid=True,
+        )
+        strict_job = GatherMetadataJob(settings=strict_settings)
+
+        with open(TEST_DIR / "resources" / "v2_metadata" / "procedures.json") as f:
+            base_procedures = json.load(f)
+
+        user_procedures = base_procedures.copy()
+        service_procedures = base_procedures.copy()
+
+        with self.assertRaises(ValueError) as context:
+            strict_job._merge_procedures(user_procedures, service_procedures)
+
+        self.assertIn("duplicate procedures", str(context.exception).lower())
+
+    @patch("os.makedirs")
+    def test_merge_procedures_with_duplicates_defaults_to_user(self, mock_makedirs):
+        """Test _merge_procedures with duplicates defaults to user procedures when raise_if_invalid is False"""
+        lenient_settings = JobSettings(
+            metadata_dir="/test/metadata",
+            output_dir="/test/output",
+            subject_id="123456",
+            data_description_settings=DataDescriptionSettings(
+                project_name="Test Project",
+                modalities=[Modality.ECEPHYS],
+            ),
+            acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0),
+            raise_if_invalid=False,
+        )
+        lenient_job = GatherMetadataJob(settings=lenient_settings)
+
+        with open(TEST_DIR / "resources" / "v2_metadata" / "procedures.json") as f:
+            base_procedures = json.load(f)
+
+        user_procedures = base_procedures.copy()
+        service_procedures = base_procedures.copy()
+
+        with patch("logging.warning"):
+            result = lenient_job._merge_procedures(user_procedures, service_procedures)
+
+        # Should return user procedures
+        self.assertEqual(result, user_procedures)
 
 
 if __name__ == "__main__":
