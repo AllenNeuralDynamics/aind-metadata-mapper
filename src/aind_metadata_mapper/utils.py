@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 INSTRUMENT_BASE_URL = "http://aind-metadata-service/api/v2/instrument"
 PROCEDURES_BASE_URL = "http://aind-metadata-service/api/v2/procedures"
 SUBJECT_BASE_URL = "http://aind-metadata-service/api/v2/subject"
+LABTRACKS_SUBJECT_BASE_URL = "http://aind-metadata-service/api/v2/labtracks/subject"
 
 
 def normalize_utc_timezone(dt: str) -> str:
@@ -170,6 +171,47 @@ def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL, timeout
         return result
     except Exception as e:
         logger.warning(f"Unexpected error fetching procedures for subject {subject_id}: {e}")
+        return None
+
+
+def get_iacuc_protocol(subject_id: str, base_url: str = LABTRACKS_SUBJECT_BASE_URL) -> Optional[str]:
+    """Fetch a subject's current IACUC protocol number from LabTracks.
+
+    LabTracks is the regulatory source of truth for which protocol a mouse is on. The
+    metadata service exposes the LabTracks subject record, whose current group name encodes
+    the protocol as its trailing dash-delimited number (e.g. "Exp-ND-01-001-2414" -> "2414").
+    A trailing site tag such as " AIND" is dropped, and groups with no protocol number (e.g.
+    "Practice Mice") or subjects not in LabTracks yield None.
+
+    Parameters
+    ----------
+    subject_id : str
+        The subject ID to query.
+    base_url : str
+        Base URL for the LabTracks subject endpoint. Defaults to LABTRACKS_SUBJECT_BASE_URL.
+
+    Returns
+    -------
+    Optional[str]
+        The bare IACUC protocol number (e.g. "2414"), or None if the subject is not in
+        LabTracks, its group carries no protocol number, or the request fails.
+    """
+    try:
+        # This endpoint takes subject_id as a query parameter, not a path segment.
+        url = f"{base_url}?subject_id={subject_id}"
+        records = metadata_service_helper(url)
+        if not records:
+            logger.warning(f"Could not fetch LabTracks subject {subject_id}")
+            return None
+        records = records if isinstance(records, list) else [records]
+        group_name = records[0].get("group_name") or ""
+        # Protocol is the last dash-delimited chunk; drop any trailing site tag and keep
+        # it only if it is numeric (so "Practice Mice" and the like yield None).
+        tokens = group_name.split("-")[-1].split()
+        protocol = tokens[0] if tokens else ""
+        return protocol if protocol.isdigit() else None
+    except Exception as e:
+        logger.warning(f"Unexpected error fetching IACUC protocol for subject {subject_id}: {e}")
         return None
 
 
