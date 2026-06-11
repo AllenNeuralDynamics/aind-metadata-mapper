@@ -650,6 +650,12 @@ class TestGetIacucProtocol(unittest.TestCase):
         self.assertEqual(get_iacuc_protocol("818908"), "2414")
 
     @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_accepts_int_subject_id(self, mock_helper):
+        """An int subject_id is cast to str and handled."""
+        mock_helper.return_value = [{"group_name": "Exp-ND-01-001-2414"}]
+        self.assertEqual(get_iacuc_protocol(818908), "2414")
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
     def test_drops_trailing_site_tag(self, mock_helper):
         """A trailing site tag (e.g. ' AIND') is ignored."""
         mock_helper.return_value = [{"group_name": "Exp-ND-01-020-2414 AIND"}]

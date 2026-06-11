@@ -174,7 +174,7 @@ def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL, timeout
         return None
 
 
-def get_iacuc_protocol(subject_id: str, base_url: str = LABTRACKS_SUBJECT_BASE_URL) -> Optional[str]:
+def get_iacuc_protocol(subject_id: str | int, base_url: str = LABTRACKS_SUBJECT_BASE_URL) -> Optional[str]:
     """Fetch a subject's current IACUC protocol number from LabTracks.
 
     LabTracks is the regulatory source of truth for which protocol a mouse is on. The
@@ -188,8 +188,8 @@ def get_iacuc_protocol(subject_id: str, base_url: str = LABTRACKS_SUBJECT_BASE_U
 
     Parameters
     ----------
-    subject_id : str
-        The subject ID to query.
+    subject_id : str or int
+        The subject ID to query. An int is cast to str automatically.
     base_url : str
         Base URL for the LabTracks subject endpoint. Defaults to LABTRACKS_SUBJECT_BASE_URL.
 
@@ -200,6 +200,7 @@ def get_iacuc_protocol(subject_id: str, base_url: str = LABTRACKS_SUBJECT_BASE_U
         LabTracks, its group carries no protocol number, or the request fails.
     """
     try:
+        subject_id = str(subject_id)
         # This endpoint takes subject_id as a query parameter, not a path segment.
         url = f"{base_url}?subject_id={subject_id}"
         records = metadata_service_helper(url)
