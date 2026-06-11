@@ -183,6 +183,9 @@ def get_iacuc_protocol(subject_id: str, base_url: str = LABTRACKS_SUBJECT_BASE_U
     A trailing site tag such as " AIND" is dropped, and groups with no protocol number (e.g.
     "Practice Mice") or subjects not in LabTracks yield None.
 
+    Note that, in the future, this information will also be tracked in DataVerse.
+    This function could be updated to pull from there in the future if desired.
+
     Parameters
     ----------
     subject_id : str
