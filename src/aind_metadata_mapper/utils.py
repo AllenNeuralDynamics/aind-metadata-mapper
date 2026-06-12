@@ -179,9 +179,8 @@ def get_iacuc_protocol(subject_id: str | int, base_url: str = LABTRACKS_SUBJECT_
 
     LabTracks is the regulatory source of truth for which protocol a mouse is on. The
     metadata service exposes the LabTracks subject record, which includes a
-    ``protocol_number`` field joined directly from the LabTracks ``IacucProtocol`` table
-    (e.g. "2414"). This is more reliable than parsing the group name, which does not
-    consistently encode the protocol (e.g. breeding mice have genotype-based group names).
+    ``protocol_number`` field (e.g. "2414") joined directly from the LabTracks
+    ``IacucProtocol`` table.
 
     Note that, in the future, this information will also be tracked in DataVerse.
     This function could be updated to pull from there in the future if desired.
