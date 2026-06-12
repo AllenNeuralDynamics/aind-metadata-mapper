@@ -686,8 +686,8 @@ class TestGetIacucProtocol(unittest.TestCase):
         self.assertIsNone(get_iacuc_protocol("x"))
 
     @patch("aind_metadata_mapper.utils.metadata_service_helper")
-    def test_dict_response_is_normalized(self, mock_helper):
-        """A non-list (dict) response is normalized and handled gracefully."""
+    def test_dict_error_body_returns_none(self, mock_helper):
+        """A non-list error body (e.g. {"detail": "Not Found"}) yields None."""
         mock_helper.return_value = {"detail": "Not Found"}
         self.assertIsNone(get_iacuc_protocol("x"))
 
