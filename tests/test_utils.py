@@ -644,32 +644,38 @@ class TestGetIacucProtocol(unittest.TestCase):
     """Tests for get_iacuc_protocol function."""
 
     @patch("aind_metadata_mapper.utils.metadata_service_helper")
-    def test_returns_protocol_from_group_name(self, mock_helper):
-        """Trailing dash-delimited number of the group name is returned."""
-        mock_helper.return_value = [{"group_name": "Exp-ND-01-001-2414"}]
+    def test_returns_protocol_number_field(self, mock_helper):
+        """The protocol_number field (joined from the IacucProtocol table) is returned."""
+        mock_helper.return_value = [{"group_name": "Exp-ND-01-001-2414", "protocol_number": "2414"}]
         self.assertEqual(get_iacuc_protocol("818908"), "2414")
 
     @patch("aind_metadata_mapper.utils.metadata_service_helper")
     def test_accepts_int_subject_id(self, mock_helper):
         """An int subject_id is cast to str and handled."""
-        mock_helper.return_value = [{"group_name": "Exp-ND-01-001-2414"}]
+        mock_helper.return_value = [{"protocol_number": "2414"}]
         self.assertEqual(get_iacuc_protocol(818908), "2414")
 
     @patch("aind_metadata_mapper.utils.metadata_service_helper")
-    def test_drops_trailing_site_tag(self, mock_helper):
-        """A trailing site tag (e.g. ' AIND') is ignored."""
-        mock_helper.return_value = [{"group_name": "Exp-ND-01-020-2414 AIND"}]
+    def test_returns_protocol_when_group_name_lacks_number(self, mock_helper):
+        """A breeding-group name with no trailing number still resolves via protocol_number."""
+        mock_helper.return_value = [{"group_name": "Pdyn-IRES-Cre;Oi9(ND)", "protocol_number": "2453"}]
+        self.assertEqual(get_iacuc_protocol("x"), "2453")
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_numeric_protocol_number_is_coerced_to_str(self, mock_helper):
+        """A non-string protocol_number is coerced to str."""
+        mock_helper.return_value = [{"protocol_number": 2414}]
         self.assertEqual(get_iacuc_protocol("x"), "2414")
 
     @patch("aind_metadata_mapper.utils.metadata_service_helper")
-    def test_non_numeric_group_returns_none(self, mock_helper):
-        """A group with no protocol number (e.g. 'Practice Mice') yields None."""
-        mock_helper.return_value = [{"group_name": "Practice Mice"}]
+    def test_null_protocol_number_returns_none(self, mock_helper):
+        """A record with a null protocol_number yields None."""
+        mock_helper.return_value = [{"group_name": "Practice Mice", "protocol_number": None}]
         self.assertIsNone(get_iacuc_protocol("x"))
 
     @patch("aind_metadata_mapper.utils.metadata_service_helper")
-    def test_missing_group_name_returns_none(self, mock_helper):
-        """A record without a group_name yields None."""
+    def test_missing_protocol_number_returns_none(self, mock_helper):
+        """A record without a protocol_number yields None."""
         mock_helper.return_value = [{}]
         self.assertIsNone(get_iacuc_protocol("x"))
 

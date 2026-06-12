@@ -178,10 +178,10 @@ def get_iacuc_protocol(subject_id: str | int, base_url: str = LABTRACKS_SUBJECT_
     """Fetch a subject's current IACUC protocol number from LabTracks.
 
     LabTracks is the regulatory source of truth for which protocol a mouse is on. The
-    metadata service exposes the LabTracks subject record, whose current group name encodes
-    the protocol as its trailing dash-delimited number (e.g. "Exp-ND-01-001-2414" -> "2414").
-    A trailing site tag such as " AIND" is dropped, and groups with no protocol number (e.g.
-    "Practice Mice") or subjects not in LabTracks yield None.
+    metadata service exposes the LabTracks subject record, which includes a
+    ``protocol_number`` field joined directly from the LabTracks ``IacucProtocol`` table
+    (e.g. "2414"). This is more reliable than parsing the group name, which does not
+    consistently encode the protocol (e.g. breeding mice have genotype-based group names).
 
     Note that, in the future, this information will also be tracked in DataVerse.
     This function could be updated to pull from there in the future if desired.
@@ -196,8 +196,8 @@ def get_iacuc_protocol(subject_id: str | int, base_url: str = LABTRACKS_SUBJECT_
     Returns
     -------
     Optional[str]
-        The bare IACUC protocol number (e.g. "2414"), or None if the subject is not in
-        LabTracks, its group carries no protocol number, or the request fails.
+        The IACUC protocol number (e.g. "2414"), or None if the subject is not in
+        LabTracks, has no associated protocol, or the request fails.
     """
     try:
         subject_id = str(subject_id)
@@ -208,12 +208,8 @@ def get_iacuc_protocol(subject_id: str | int, base_url: str = LABTRACKS_SUBJECT_
             logger.warning(f"Could not fetch LabTracks subject {subject_id}")
             return None
         records = records if isinstance(records, list) else [records]
-        group_name = records[0].get("group_name") or ""
-        # Protocol is the last dash-delimited chunk; drop any trailing site tag and keep
-        # it only if it is numeric (so "Practice Mice" and the like yield None).
-        tokens = group_name.split("-")[-1].split()
-        protocol = tokens[0] if tokens else ""
-        return protocol if protocol.isdigit() else None
+        protocol_number = records[0].get("protocol_number")
+        return str(protocol_number) if protocol_number else None
     except Exception as e:
         logger.warning(f"Unexpected error fetching IACUC protocol for subject {subject_id}: {e}")
         return None
