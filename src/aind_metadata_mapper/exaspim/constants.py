@@ -69,3 +69,11 @@ FILTER_TYPE_MAP: dict[str, str] = {
 VALID_STAGE_AXIS_NAMES: set[str] = {
     "X", "Y", "Z", "AP", "ML", "SI", "Depth",
 }
+
+# Maps ``instrument.id`` from ``instrument_config.yaml`` to the
+# corresponding reference instrument JSON filename bundled in
+# ``src/aind_metadata_mapper/exaspim/instruments/``.
+INSTRUMENT_ID_MAP: dict[str, str] = {
+    "exaspim-01": "beta02_instrument.json",
+    "exaspim-1x": "1x_instrument.json",
+}

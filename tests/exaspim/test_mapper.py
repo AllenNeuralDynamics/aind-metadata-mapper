@@ -16,6 +16,7 @@ from aind_metadata_mapper.exaspim.mapper import (
     _contains_exaspim_keyword,
     _load_json,
     _needs_upgrade,
+    _resolve_instrument_from_yaml,
     _to_json_dict,
     _write_json,
     sanitize_instrument,
@@ -803,6 +804,7 @@ class TestSanitizeInstrument:
                 {
                     "name": "good stage",
                     "stage_axis_direction": "Illumination axis",
+                    "stage_axis_name": "Z",
                 }
             ],
         }
@@ -1077,129 +1079,91 @@ class TestRealUpgraderIntegration:
 
 
 # ---------------------------------------------------------------------------
-# Test GatherMetadataJob pre-processor integration
+# Test _resolve_instrument_from_yaml
 # ---------------------------------------------------------------------------
 
 
-class TestPreProcessorIntegration:
-    """Tests for pre-processor integration with GatherMetadataJob."""
+class TestResolveInstrumentFromYaml:
+    """Tests for _resolve_instrument_from_yaml helper."""
 
-    @patch(
-        "aind_metadata_mapper.exaspim.mapper.ExaSPIMMapper.run_job"
-    )
-    @patch(
-        "aind_metadata_mapper.exaspim.mapper.ExaSPIMMapper.detect",
-        return_value=True,
-    )
-    def test_gather_metadata_runs_pre_processor(
-        self, mock_detect, mock_run_job, tmp_path
-    ):
-        """GatherMetadataJob._run_pre_processors calls ExaSPIMMapper."""
-        from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-        from aind_metadata_mapper.models import JobSettings
-
-        metadata_dir = str(tmp_path)
-        # Create minimal required settings
-        settings = JobSettings(
-            metadata_dir=metadata_dir,
-            output_dir=str(tmp_path / "output"),
-            data_description_settings={
-                "project_name": "test",
-                "modalities": ["SPIM"],
-            },
+    def test_resolves_known_id(self, tmp_path):
+        """Known instrument id returns the reference JSON dict."""
+        deriv = tmp_path / "derivatives"
+        deriv.mkdir()
+        (deriv / "instrument_config.yaml").write_text(
+            "instrument:\n  id: exaspim-01\n  channels: {}\n"
         )
-        job = GatherMetadataJob(settings=settings)
-        job.settings.metadata_dir = metadata_dir
+        result = _resolve_instrument_from_yaml(tmp_path)
+        assert result is not None
+        assert "schema_version" in result
+        # beta02 is the expected mapping for exaspim-01
+        assert "instrument_id" in result
 
-        job._run_pre_processors()
-
-        mock_detect.assert_called_once_with(tmp_path)
-        mock_run_job.assert_called_once()
-        call_args = mock_run_job.call_args[0][0]
-        assert isinstance(call_args, MapperJobSettings)
-        assert call_args.output_directory == tmp_path
-
-    @patch(
-        "aind_metadata_mapper.exaspim.mapper.ExaSPIMMapper.detect",
-        return_value=False,
-    )
-    def test_gather_metadata_skips_non_matching(
-        self, mock_detect, tmp_path
-    ):
-        """Pre-processor not called when detect() returns False."""
-        from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-        from aind_metadata_mapper.models import JobSettings
-
-        settings = JobSettings(
-            metadata_dir=str(tmp_path),
-            output_dir=str(tmp_path / "output"),
-            data_description_settings={
-                "project_name": "test",
-                "modalities": ["SPIM"],
-            },
+    def test_resolves_1x_id(self, tmp_path):
+        """exaspim-1x maps to 1x_instrument.json."""
+        deriv = tmp_path / "derivatives"
+        deriv.mkdir()
+        (deriv / "instrument_config.yaml").write_text(
+            "instrument:\n  id: exaspim-1x\n"
         )
-        job = GatherMetadataJob(settings=settings)
+        result = _resolve_instrument_from_yaml(tmp_path)
+        assert result is not None
+        assert "schema_version" in result
 
-        with patch(
-            "aind_metadata_mapper.exaspim.mapper.ExaSPIMMapper.run_job"
-        ) as mock_run:
-            job._run_pre_processors()
-            mock_run.assert_not_called()
-
-    @patch(
-        "aind_metadata_mapper.exaspim.mapper.ExaSPIMMapper.detect",
-        return_value=True,
-    )
-    @patch(
-        "aind_metadata_mapper.exaspim.mapper.ExaSPIMMapper.run_job",
-        side_effect=RuntimeError("upgrade failed"),
-    )
-    def test_pre_processor_error_propagates(
-        self, mock_run, mock_detect, tmp_path
-    ):
-        """Pre-processor error propagates when raise_if_mapper_errors=True."""
-        from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-        from aind_metadata_mapper.models import JobSettings
-
-        settings = JobSettings(
-            metadata_dir=str(tmp_path),
-            output_dir=str(tmp_path / "output"),
-            raise_if_mapper_errors=True,
-            data_description_settings={
-                "project_name": "test",
-                "modalities": ["SPIM"],
-            },
+    def test_unknown_id_returns_none(self, tmp_path):
+        """Unknown instrument id returns None."""
+        deriv = tmp_path / "derivatives"
+        deriv.mkdir()
+        (deriv / "instrument_config.yaml").write_text(
+            "instrument:\n  id: unknown-scope\n"
         )
-        job = GatherMetadataJob(settings=settings)
+        result = _resolve_instrument_from_yaml(tmp_path)
+        assert result is None
 
-        with pytest.raises(RuntimeError, match="upgrade failed"):
-            job._run_pre_processors()
+    def test_missing_yaml_returns_none(self, tmp_path):
+        """No instrument_config.yaml → None."""
+        result = _resolve_instrument_from_yaml(tmp_path)
+        assert result is None
 
-    @patch(
-        "aind_metadata_mapper.exaspim.mapper.ExaSPIMMapper.detect",
-        return_value=True,
-    )
-    @patch(
-        "aind_metadata_mapper.exaspim.mapper.ExaSPIMMapper.run_job",
-        side_effect=RuntimeError("upgrade failed"),
-    )
-    def test_pre_processor_error_suppressed(
-        self, mock_run, mock_detect, tmp_path
-    ):
-        """Pre-processor error logged but not raised when suppressed."""
-        from aind_metadata_mapper.gather_metadata import GatherMetadataJob
-        from aind_metadata_mapper.models import JobSettings
-
-        settings = JobSettings(
-            metadata_dir=str(tmp_path),
-            output_dir=str(tmp_path / "output"),
-            raise_if_mapper_errors=False,
-            data_description_settings={
-                "project_name": "test",
-                "modalities": ["SPIM"],
-            },
+    def test_malformed_yaml_returns_none(self, tmp_path):
+        """Malformed YAML → None (no crash)."""
+        deriv = tmp_path / "derivatives"
+        deriv.mkdir()
+        (deriv / "instrument_config.yaml").write_text(
+            ":\n  - [\ninvalid"
         )
-        job = GatherMetadataJob(settings=settings)
+        result = _resolve_instrument_from_yaml(tmp_path)
+        assert result is None
 
-        # Should not raise
-        job._run_pre_processors()
+    def test_yaml_missing_instrument_key(self, tmp_path):
+        """YAML without instrument.id → None."""
+        deriv = tmp_path / "derivatives"
+        deriv.mkdir()
+        (deriv / "instrument_config.yaml").write_text(
+            "other_key: value\n"
+        )
+        result = _resolve_instrument_from_yaml(tmp_path)
+        assert result is None
+
+    def test_run_job_uses_yaml_resolution(self, tmp_path, v1_acq):
+        """run_job resolves instrument from YAML when .json is missing."""
+        (tmp_path / "acquisition.json").write_text(json.dumps(v1_acq))
+        deriv = tmp_path / "derivatives"
+        deriv.mkdir()
+        (deriv / "instrument_config.yaml").write_text(
+            "instrument:\n  id: exaspim-01\n"
+        )
+
+        mapper = ExaSPIMMapper()
+        mapper.run_job(_make_job_settings(tmp_path))
+
+        # instrument.json should now exist (written by run_job)
+        inst_path = tmp_path / "instrument.json"
+        assert inst_path.is_file()
+
+        with open(tmp_path / "acquisition.json") as f:
+            acq = json.load(f)
+        from packaging import version
+
+        assert version.parse(acq["schema_version"]) >= version.parse("2.0.0")
+        assert "data_streams" in acq

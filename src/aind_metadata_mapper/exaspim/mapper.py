@@ -23,6 +23,7 @@ from aind_metadata_mapper.exaspim.constants import (
     DEVICE_LISTS,
     EXASPIM_INSTRUMENT_KEYWORDS,
     FILTER_TYPE_MAP,
+    INSTRUMENT_ID_MAP,
     V2_THRESHOLD,
     VALID_AXIS_DIRECTIONS,
     VALID_STAGE_AXIS_NAMES,
@@ -75,6 +76,71 @@ def _contains_exaspim_keyword(text: str) -> bool:
     """Case-insensitive check for any exaSPIM keyword in *text*."""
     lower = text.lower()
     return any(kw in lower for kw in EXASPIM_INSTRUMENT_KEYWORDS)
+
+
+def _resolve_instrument_from_yaml(metadata_dir: Path) -> Optional[dict]:
+    """Resolve a reference instrument JSON from ``instrument_config.yaml``.
+
+    Reads ``derivatives/instrument_config.yaml``, extracts the
+    ``instrument.id`` field, maps it via :data:`INSTRUMENT_ID_MAP`,
+    and loads the corresponding bundled reference JSON.
+
+    Parameters
+    ----------
+    metadata_dir : Path
+        Directory containing the dataset (with a ``derivatives/``
+        subdirectory).
+
+    Returns
+    -------
+    dict or None
+        Parsed instrument dict if resolved, else ``None``.
+    """
+    yaml_path = metadata_dir / "derivatives" / "instrument_config.yaml"
+    if not yaml_path.is_file():
+        return None
+
+    try:
+        with open(yaml_path, "r") as fh:
+            content = yaml.safe_load(fh)
+    except Exception:
+        logger.warning(
+            "Could not parse %s for instrument resolution",
+            yaml_path,
+        )
+        return None
+
+    if not isinstance(content, dict):
+        return None
+
+    instrument_id = (
+        content.get("instrument", {}).get("id", "")
+    )
+    if not instrument_id:
+        logger.debug(
+            "No instrument.id found in %s", yaml_path
+        )
+        return None
+
+    filename = INSTRUMENT_ID_MAP.get(instrument_id)
+    if filename is None:
+        logger.warning(
+            "Unknown instrument id %r in %s — no reference "
+            "instrument available.",
+            instrument_id,
+            yaml_path,
+        )
+        return None
+
+    instruments_dir = Path(__file__).parent / "instruments"
+    ref_path = instruments_dir / filename
+    if not ref_path.is_file():
+        logger.error(
+            "Reference instrument file missing: %s", ref_path
+        )
+        return None
+
+    return _load_json(ref_path)
 
 
 # ---------------------------------------------------------------------------
@@ -230,7 +296,20 @@ def sanitize_instrument(inst_data: dict) -> dict:
             stage["travel_unit"] = "millimeter"
 
         sad = stage.get("stage_axis_direction", "")
-        if sad and sad not in VALID_AXIS_DIRECTIONS:
+        if not sad:
+            logger.warning(
+                "Scanning stage %r: missing "
+                "stage_axis_direction — defaulting to "
+                "'Detection axis'",
+                stage.get("name", "?"),
+            )
+            _append_note(
+                stage,
+                "stage_axis_direction was missing, "
+                "defaulted to 'Detection axis'",
+            )
+            stage["stage_axis_direction"] = "Detection axis"
+        elif sad not in VALID_AXIS_DIRECTIONS:
             mapped = None
             sad_lower = sad.lower()
             for keyword, canonical in AXIS_DIRECTION_MAP.items():
@@ -263,7 +342,18 @@ def sanitize_instrument(inst_data: dict) -> dict:
     # 5b. Normalise scanning-stage axis name
     for stage in inst.get("scanning_stages") or []:
         san = stage.get("stage_axis_name", "")
-        if san and san not in VALID_STAGE_AXIS_NAMES:
+        if not san:
+            logger.warning(
+                "Scanning stage %r: missing stage_axis_name "
+                "— defaulting to 'X'",
+                stage.get("name", "?"),
+            )
+            _append_note(
+                stage,
+                "stage_axis_name was missing, defaulted to 'X'",
+            )
+            stage["stage_axis_name"] = "X"
+        elif san not in VALID_STAGE_AXIS_NAMES:
             logger.warning(
                 "Scanning stage %r: invalid stage_axis_name %r "
                 "— defaulting to 'X'",
@@ -465,9 +555,21 @@ class ExaSPIMMapper(MapperJob):
         inst_data = _load_json(inst_path)
 
         if inst_data is None:
+            inst_data = _resolve_instrument_from_yaml(metadata_dir)
+            if inst_data is not None:
+                logger.info(
+                    "Resolved instrument from "
+                    "instrument_config.yaml → writing %s",
+                    inst_path,
+                )
+                _write_json(inst_path, inst_data)
+
+        if inst_data is None:
             logger.warning(
-                "No instrument.json at %s — upgrading acquisition "
-                "with empty fluorescence_filters / light_sources.",
+                "No instrument.json at %s and could not resolve "
+                "from instrument_config.yaml — upgrading "
+                "acquisition with empty fluorescence_filters / "
+                "light_sources.",
                 inst_path,
             )
 

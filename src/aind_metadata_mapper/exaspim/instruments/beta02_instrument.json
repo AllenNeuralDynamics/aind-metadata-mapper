@@ -1,0 +1,818 @@
+{
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/imaging/instrument.py",
+   "schema_version": "0.9.1",
+   "instrument_id": "exaSPIM-beta-02",
+   "modification_date": "2025-06-12",
+   "instrument_type": "exaSPIM",
+   "manufacturer": {
+      "name": "Custom",
+      "abbreviation": null,
+      "registry": null,
+      "registry_identifier": null
+   },
+   "temperature_control": false,
+   "humidity_control": false,
+   "optical_tables": [
+      {
+         "device_type": "OpticalTable",
+         "name": null,
+         "manufacturer": {
+            "name": "MKS Newport",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "00k17f049"
+         },
+         "model": "VIS3648-PG2-325A",
+         "notes": null,
+         "length": 36,
+         "width": 48,
+         "table_size_unit": "inch",
+         "vibration_control": true
+      }
+   ],
+   "objectives": [
+      {
+         "device_type": "Objective",
+         "name": "Detection objective",
+         "manufacturer": {
+            "name": "Vieworks",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "JM_DIAMOND 5.0X/1.3",
+         "notes": "detection objective. manufacturer collaboration between Schneider-Kreuznach and Vieworks",
+         "numerical_aperture": 0.305,
+         "magnification": 5.0,
+         "immersion": "air"
+      },
+      {
+         "device_type": "Objective",
+         "name": "Excitation objective",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "PhotonGear",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "19700",
+         "notes": "Custom excitation objective. 61 mm focal length, 47.07 mm working distance in water.",
+         "numerical_aperture": 0.13,
+         "immersion": "air"
+      }
+   ],
+   "detectors": [
+      {
+         "device_type": "Detector",
+         "name": null,
+         "serial_number": "MP151BDX023",
+         "manufacturer": {
+            "name": "Vieworks",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "VP-151MX-M6H0",
+         "notes": null,
+         "detector_type": "Camera",
+         "data_interface": "Coax",
+         "cooling": "air",
+         "immersion": null,
+         "chroma": null,
+         "sensor_width": null,
+         "sensor_height": null,
+         "size_unit": "pixel",
+         "bit_depth": null,
+         "bin_mode": "none",
+         "bin_width": null,
+         "bin_height": null,
+         "bin_unit": "pixel",
+         "gain": null,
+         "crop_width": null,
+         "crop_height": null,
+         "crop_unit": "pixel"
+      }
+   ],
+   "light_sources": [
+      {
+         "device_type": "Laser",
+         "name": "488 nm laser",
+         "serial_number": "A718584EP214",
+         "manufacturer": {
+            "name": "Coherent Scientific",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "031tysd23"
+         },
+         "model": "Genesis MX488-1000 STM OPSLaser-Diode System",
+         "notes": "Housed in custom laser combiner. Water cooled.",
+         "wavelength": 488,
+         "wavelength_unit": "nanometer",
+         "maximum_power": 1000,
+         "power_unit": "milliwatt",
+         "coupling": "Free-space",
+         "coupling_efficiency": null,
+         "coupling_efficiency_unit": "percent",
+         "item_number": null
+      },
+      {
+         "device_type": "Laser",
+         "name": "561 nm laser",
+         "serial_number": "J678978BP933",
+         "manufacturer": {
+            "name": "Coherent Scientific",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "031tysd23"
+         },
+         "model": "Genesis MX561-1000 STM OPSLaser-Diode System",
+         "notes": "Housed in custom laser combiner. Water cooled.",
+         "wavelength": 561,
+         "wavelength_unit": "nanometer",
+         "maximum_power": 1000,
+         "power_unit": "milliwatt",
+         "coupling": "Free-space",
+         "coupling_efficiency": null,
+         "coupling_efficiency_unit": "percent",
+         "item_number": null
+      },
+      {
+         "device_type": "Laser",
+         "name": "639 nm laser",
+         "serial_number": "R751968DG041",
+         "manufacturer": {
+            "name": "Coherent Scientific",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "031tysd23"
+         },
+         "model": "Genesis MX639-1000 STM OPSLaser-Diode System",
+         "notes": "Housed in custom laser combiner. Water cooled.",
+         "wavelength": 639,
+         "wavelength_unit": "nanometer",
+         "maximum_power": 1000,
+         "power_unit": "milliwatt",
+         "coupling": "Free-space",
+         "coupling_efficiency": null,
+         "coupling_efficiency_unit": "percent",
+         "item_number": null
+      }
+   ],
+   "lenses": null,
+   "fluorescence_filters": [
+      {
+         "device_type": "Filter",
+         "name": "Emission filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Chroma",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "ZET405/488/561/620m",
+         "notes": "Custom made filter. No filter wheel.",
+         "filter_type": "Multiband",
+         "diameter": 50.0,
+         "width": null,
+         "height": null,
+         "size_unit": "millimeter",
+         "thickness": 1.0,
+         "thickness_unit": "millimeter",
+         "filter_wheel_index": null,
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": null,
+         "wavelength_unit": "nanometer",
+         "description": null
+      },
+      {
+         "device_type": "Filter",
+         "name": "Emission filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Chroma",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "ET500lp",
+         "notes": "Custom made filter. No filter wheel.",
+         "filter_type": "Multiband",
+         "diameter": 50.0,
+         "width": null,
+         "height": null,
+         "size_unit": "millimeter",
+         "thickness": 1.0,
+         "thickness_unit": "millimeter",
+         "filter_wheel_index": null,
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": null,
+         "wavelength_unit": "nanometer",
+         "description": null
+      },
+      {
+         "device_type": "Filter",
+         "name": "Emission filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Chroma",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "ET535/70m",
+         "notes": "Custom made filter. No filter wheel.",
+         "filter_type": "Multiband",
+         "diameter": 50.0,
+         "width": null,
+         "height": null,
+         "size_unit": "millimeter",
+         "thickness": 1.0,
+         "thickness_unit": "millimeter",
+         "filter_wheel_index": null,
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": null,
+         "wavelength_unit": "nanometer",
+         "description": null
+      },
+      {
+         "device_type": "Filter",
+         "name": "Emission filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Chroma",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "ET575lp",
+         "notes": "Custom made filter. No filter wheel.",
+         "filter_type": "Multiband",
+         "diameter": 50.0,
+         "width": null,
+         "height": null,
+         "size_unit": "millimeter",
+         "thickness": 1.0,
+         "thickness_unit": "millimeter",
+         "filter_wheel_index": null,
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": null,
+         "wavelength_unit": "nanometer",
+         "description": null
+      },
+      {
+         "device_type": "Filter",
+         "name": "Emission filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Chroma",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "ET620/60m",
+         "notes": "Custom made filter. No filter wheel.",
+         "filter_type": "Multiband",
+         "diameter": 50.0,
+         "width": null,
+         "height": null,
+         "size_unit": "millimeter",
+         "thickness": 1.0,
+         "thickness_unit": "millimeter",
+         "filter_wheel_index": null,
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": null,
+         "wavelength_unit": "nanometer",
+         "description": null
+      },
+      {
+         "device_type": "Filter",
+         "name": "Emission filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Chroma",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "ET655lp",
+         "notes": "Custom made filter. No filter wheel.",
+         "filter_type": "Multiband",
+         "diameter": 50.0,
+         "width": null,
+         "height": null,
+         "size_unit": "millimeter",
+         "thickness": 1.0,
+         "thickness_unit": "millimeter",
+         "filter_wheel_index": null,
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": null,
+         "wavelength_unit": "nanometer",
+         "description": null
+      }
+   ],
+   "motorized_stages": [
+      {
+         "device_type": "MotorizedStage",
+         "name": "Detection objective stage",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "LS-50",
+         "notes": "Translates detection objective along detection Z axis. Tiger M axis.",
+         "travel": 50,
+         "travel_unit": "millimeter",
+         "firmware": null
+      },
+      {
+         "device_type": "MotorizedStage",
+         "name": "Left illumiunation objective stage",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "MA-25",
+         "notes": "Translates illumination objective along detection Z axis. Tiger A axis.",
+         "travel": 25,
+         "travel_unit": "millimeter",
+         "firmware": null
+      },
+      {
+         "device_type": "MotorizedStage",
+         "name": "Right illumiunation objective stage",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "MA-25",
+         "notes": "Translates illumination objective perpendicular to detection Z axis. Tiger B axis.",
+         "travel": 25,
+         "travel_unit": "millimeter",
+         "firmware": null
+      }
+   ],
+   "scanning_stages": [
+      {
+         "device_type": "MotorizedStage",
+         "name": "X scanning stage",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "LS-50",
+         "notes": null,
+         "travel": 50,
+         "travel_unit": "millimeter",
+         "firmware": null,
+         "stage_axis_direction": "Detection X axis. Tiger X axis.",
+         "stage_axis_name": "X"
+      },
+      {
+         "device_type": "MotorizedStage",
+         "name": "Y scanning stage",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "LS-200",
+         "notes": null,
+         "travel": 200,
+         "travel_unit": "millimeter",
+         "firmware": null,
+         "stage_axis_direction": "Deteciton Y Axis. Tiger V and W axes.",
+         "stage_axis_name": "Y"
+      },
+      {
+         "device_type": "MotorizedStage",
+         "name": "Z scanning stage",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "LS-50",
+         "notes": null,
+         "travel": 50,
+         "travel_unit": "millimeter",
+         "firmware": null,
+         "stage_axis_direction": "Detection Z axis. Tiger Z axis.",
+         "stage_axis_name": "Z"
+      },
+      {
+         "device_type": "MotorizedStage",
+         "name": "Rotation stage",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "C60-ROT",
+         "notes": "Rotates specimen. Tiger T axis.",
+         "travel": 360,
+         "travel_unit": "degree",
+         "firmware": null
+      },
+      {
+         "device_type": "MotorizedStage",
+         "name": "Left right illumination selection stage",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "LS-50",
+         "notes": "Switches illuminatin between left and right sides. Tiger N axis.",
+         "travel": 50,
+         "travel_unit": "millimeter",
+         "firmware": null
+      }
+   ],
+   "daqs": [
+      {
+         "device_type": "DAQDevice",
+         "name": "NIDAQ",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "National Instruments",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "026exqw73"
+         },
+         "model": "PCIe-6738",
+         "notes": "Dev2",
+         "data_interface": "PCIe",
+         "computer_name": "DT500224",
+         "channels": [
+            {
+               "channel_name": "AO1",
+               "device_name": "Left ETL",
+               "channel_type": "Analog Output",
+               "port": null,
+               "channel_index": null,
+               "sample_rate": 10000,
+               "sample_rate_unit": "hertz",
+               "event_based_sampling": false
+            },
+            {
+               "channel_name": "AO3",
+               "device_name": "Right ETL",
+               "channel_type": "Analog Output",
+               "port": null,
+               "channel_index": null,
+               "sample_rate": 10000,
+               "sample_rate_unit": "hertz",
+               "event_based_sampling": false
+            },
+            {
+               "channel_name": "AO21",
+               "device_name": "Imaging camera",
+               "channel_type": "Analog Output",
+               "port": null,
+               "channel_index": null,
+               "sample_rate": 10000,
+               "sample_rate_unit": "hertz",
+               "event_based_sampling": false
+            },
+            {
+               "channel_name": "AO5",
+               "device_name": "Z scanning stage",
+               "channel_type": "Analog Output",
+               "port": null,
+               "channel_index": null,
+               "sample_rate": 10000,
+               "sample_rate_unit": "hertz",
+               "event_based_sampling": false
+            },
+            {
+               "channel_name": "AO17",
+               "device_name": "AOTF RF driver, 488 nm",
+               "channel_type": "Analog Output",
+               "port": null,
+               "channel_index": null,
+               "sample_rate": 10000,
+               "sample_rate_unit": "hertz",
+               "event_based_sampling": false
+            },
+            {
+               "channel_name": "AO13",
+               "device_name": "AOTF RF driver, 561 nm",
+               "channel_type": "Analog Output",
+               "port": null,
+               "channel_index": null,
+               "sample_rate": 10000,
+               "sample_rate_unit": "hertz",
+               "event_based_sampling": false
+            },
+            {
+               "channel_name": "AO9",
+               "device_name": "AOTF RF driver, 639 nm",
+               "channel_type": "Analog Output",
+               "port": null,
+               "channel_index": null,
+               "sample_rate": 10000,
+               "sample_rate_unit": "hertz",
+               "event_based_sampling": false
+            }
+         ]
+      }
+   ],
+   "additional_devices": [
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "ETL Controller",
+         "serial_number": "CDAC0323",
+         "manufacturer": {
+            "name": "Optotune",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "ICC4C-500",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "Left ETL",
+         "serial_number": "ANAD5235",
+         "manufacturer": {
+            "name": "Optotune",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "EL-16-40-TC-5D",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "Right ETL",
+         "serial_number": "ANAD6588",
+         "manufacturer": {
+            "name": "Optotune",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "EL-16-40-TC-5D",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "AOTF",
+         "serial_number": "1001-Q230105",
+         "manufacturer": {
+            "name": "Other",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "AOTFnC-400.650-TN",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "AOTF RF driver",
+         "serial_number": "2001-Q241746",
+         "manufacturer": {
+            "name": "Other",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "MPDS8C-D65-22-74.158-RS",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "Tiger Controller",
+         "serial_number": "2404-2519-6498-6522-6501-6499-6502-6503",
+         "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "TG16-X:5A/T:SRS-FTP-Z:5A:H-M:5A-V/W:20A:FTP",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "NIDAQ breakout board",
+         "manufacturer": {
+            "name": "National Instruments",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "026exqw73"
+         },
+         "model": "SCB-68A",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "488 nm laser Thermoelectric Chiller with Coherent Logo",
+         "serial_number": "BZ-1108",
+         "manufacturer": {
+            "name": "Coherent Scientific",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "031tysd23"
+         },
+         "model": "HECR006-A5NE",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "560 nm laser Thermoelectric Chiller with Coherent Logo",
+         "serial_number": "BZ-1109",
+         "manufacturer": {
+            "name": "Coherent Scientific",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "031tysd23"
+         },
+         "model": "HECR006-A5NE",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "639 nm laser Thermoelectric Chiller with Coherent Logo",
+         "serial_number": "BZ-1107",
+         "manufacturer": {
+            "name": "Coherent Scientific",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "031tysd23"
+         },
+         "model": "HECR006-A5NE",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "488 nm Power Supply",
+         "serial_number": "6410314",
+         "manufacturer": {
+            "name": "Coherent Scientific",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "031tysd23"
+         },
+         "model": "1183641",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "561 nm Power Supply",
+         "serial_number": "6410314",
+         "manufacturer": {
+            "name": "Coherent Scientific",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "031tysd23"
+         },
+         "model": "1183641",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "639 nm Power Supply",
+         "serial_number": "6410273",
+         "manufacturer": {
+            "name": "Coherent Scientific",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "031tysd23"
+         },
+         "model": "1162986",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "Left Powell lens flip mount",
+         "serial_number": "37008110",
+         "manufacturer": {
+            "name": "Thorlabs",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "04gsnvb07"
+         },
+         "model": "MFF101",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "Right Powell lens flip mount",
+         "serial_number": "37008108",
+         "manufacturer": {
+            "name": "Thorlabs",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "04gsnvb07"
+         },
+         "model": "MFF101",
+         "notes": null,
+         "type": "Other"
+      }
+   ],
+   "calibration_date": null,
+   "calibration_data": null,
+   "com_ports": [
+      {
+         "hardware_name": "AOTF RF driver",
+         "com_port": "COM20"
+      },
+      {
+         "hardware_name": "Tiger Controller",
+         "com_port": "COM6"
+      },
+      {
+         "hardware_name": "ETL controller",
+         "com_port": "COM19"
+      }
+   ],
+   "notes": null
+}

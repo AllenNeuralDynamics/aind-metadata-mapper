@@ -1,0 +1,648 @@
+{
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/imaging/instrument.py",
+   "schema_version": "0.9.1",
+   "instrument_id": "superSPIM-01",
+   "modification_date": "2025-06-23",
+   "instrument_type": "superSPIM",
+   "manufacturer": {
+      "name": "Custom",
+      "abbreviation": null,
+      "registry": null,
+      "registry_identifier": null
+   },
+   "temperature_control": false,
+   "humidity_control": false,
+   "optical_tables": [
+      {
+         "device_type": "OpticalTable",
+         "name": null,
+         "manufacturer": {
+            "name": "MKS Newport",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "00k17f049"
+         },
+         "model": "VIS3648-PG2-325A",
+         "notes": null,
+         "length": 36,
+         "width": 48,
+         "table_size_unit": "inch",
+         "vibration_control": true
+      }
+   ],
+   "objectives": [
+      {
+         "device_type": "Objective",
+         "name": "Detection objective",
+         "manufacturer": {
+            "name": "Nikon",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "01bvqg661"
+         },
+         "model": "L-OVM20118MN-BS",
+         "notes": "detection objective. Rayfact RF1-2X Prism Type",
+         "numerical_aperture": 0.100,
+         "magnification": 1.0,
+         "immersion": "air"
+      },
+      {
+         "device_type": "Objective",
+         "name": "Excitation objective",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "PhotonGear",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "19700",
+         "notes": "Custom excitation objective. 61 mm focal length, 47.07 mm working distance in water.",
+         "numerical_aperture": 0.13,
+         "immersion": "air"
+      }
+   ],
+   "detectors": [
+      {
+         "device_type": "Detector",
+         "name": null,
+         "serial_number": "MB151BAY001",
+         "manufacturer": {
+            "name": "Vieworks",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "VNP-604MX-M6H0",
+         "notes": null,
+         "detector_type": "Camera",
+         "data_interface": "Coax",
+         "cooling": "air",
+         "immersion": null,
+         "chroma": null,
+         "sensor_width": null,
+         "sensor_height": null,
+         "size_unit": "pixel",
+         "bit_depth": null,
+         "bin_mode": "none",
+         "bin_width": null,
+         "bin_height": null,
+         "bin_unit": "pixel",
+         "gain": null,
+         "crop_width": null,
+         "crop_height": null,
+         "crop_unit": "pixel"
+      }
+   ],
+   "light_sources": [
+      {
+         "device_type": "Laser",
+         "name": "405 nm laser",
+         "serial_number": "LAS-08307",
+         "manufacturer": {
+            "name": "Oxxius",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "LBX-405-200",
+         "notes": null,
+         "wavelength": 405,
+         "wavelength_unit": "nanometer",
+         "maximum_power": 200,
+         "power_unit": "milliwatt",
+         "coupling": "Free-space",
+         "coupling_efficiency": null,
+         "coupling_efficiency_unit": "percent",
+         "item_number": null
+      },
+      {
+         "device_type": "Laser",
+         "name": "488 nm laser",
+         "serial_number": "LAS-08308",
+         "manufacturer": {
+            "name": "Oxxius",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "LBX-405-200",
+         "notes": null,
+         "wavelength": 488,
+         "wavelength_unit": "nanometer",
+         "maximum_power": 200,
+         "power_unit": "milliwatt",
+         "coupling": "Free-space",
+         "coupling_efficiency": null,
+         "coupling_efficiency_unit": "percent",
+         "item_number": null
+      },
+      {
+         "device_type": "Laser",
+         "name": "561 nm laser",
+         "serial_number": "539251",
+         "manufacturer": {
+            "name": "Oxxius",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "LCX-561-200",
+         "notes": null,
+         "wavelength": 561,
+         "wavelength_unit": "nanometer",
+         "maximum_power": 200,
+         "power_unit": "milliwatt",
+         "coupling": "Free-space",
+         "coupling_efficiency": null,
+         "coupling_efficiency_unit": "percent",
+         "item_number": null
+      },
+      {
+         "device_type": "Laser",
+         "name": "638 nm laser",
+         "serial_number": "LAS-08309",
+         "manufacturer": {
+            "name": "Oxxius",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "LBX-638-200",
+         "notes": null,
+         "wavelength": 638,
+         "wavelength_unit": "nanometer",
+         "maximum_power": 200,
+         "power_unit": "milliwatt",
+         "coupling": "Free-space",
+         "coupling_efficiency": null,
+         "coupling_efficiency_unit": "percent",
+         "item_number": null
+      }
+   ],
+   "lenses": null,
+   "fluorescence_filters": [
+      {
+         "device_type": "Filter",
+         "name": "Emission filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Chroma",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "ZET405/488/561/620m",
+         "notes": "Custom made filter. No filter wheel.",
+         "filter_type": "Multiband",
+         "diameter": 68.9,
+         "width": null,
+         "height": null,
+         "size_unit": "millimeter",
+         "thickness": 1.0,
+         "thickness_unit": "millimeter",
+         "filter_wheel_index": null,
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": null,
+         "wavelength_unit": "nanometer",
+         "description": null
+      },
+      {
+         "device_type": "Filter",
+         "name": "Emission filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Chroma",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "ET500lp",
+         "notes": "Custom made filter. No filter wheel.",
+         "filter_type": "Long pass",
+         "diameter": 68.9,
+         "width": null,
+         "height": null,
+         "size_unit": "millimeter",
+         "thickness": 1.0,
+         "thickness_unit": "millimeter",
+         "filter_wheel_index": null,
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": null,
+         "wavelength_unit": "nanometer",
+         "description": null
+      },
+      {
+         "device_type": "Filter",
+         "name": "Emission filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Chroma",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "ET535/70m",
+         "notes": "Custom made filter. No filter wheel.",
+         "filter_type": "Band pass",
+         "diameter": 68.9,
+         "width": null,
+         "height": null,
+         "size_unit": "millimeter",
+         "thickness": 1.0,
+         "thickness_unit": "millimeter",
+         "filter_wheel_index": null,
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": null,
+         "wavelength_unit": "nanometer",
+         "description": null
+      },
+      {
+         "device_type": "Filter",
+         "name": "Emission filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Chroma",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "ET575lp",
+         "notes": "Custom made filter. No filter wheel.",
+         "filter_type": "Long pass",
+         "diameter": 68.9,
+         "width": null,
+         "height": null,
+         "size_unit": "millimeter",
+         "thickness": 1.0,
+         "thickness_unit": "millimeter",
+         "filter_wheel_index": null,
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": null,
+         "wavelength_unit": "nanometer",
+         "description": null
+      },
+      {
+         "device_type": "Filter",
+         "name": "Emission filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Chroma",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "ET620/60m",
+         "notes": "Custom made filter. No filter wheel.",
+         "filter_type": "Band pass",
+         "diameter": 68.9,
+         "width": null,
+         "height": null,
+         "size_unit": "millimeter",
+         "thickness": 1.0,
+         "thickness_unit": "millimeter",
+         "filter_wheel_index": null,
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": null,
+         "wavelength_unit": "nanometer",
+         "description": null
+      },
+      {
+         "device_type": "Filter",
+         "name": "Emission filter",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Chroma",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "ET655lp",
+         "notes": "Custom made filter. No filter wheel.",
+         "filter_type": "Long pass",
+         "diameter": 50.0,
+         "width": null,
+         "height": null,
+         "size_unit": "millimeter",
+         "thickness": 1.0,
+         "thickness_unit": "millimeter",
+         "filter_wheel_index": null,
+         "cut_off_wavelength": null,
+         "cut_on_wavelength": null,
+         "center_wavelength": null,
+         "wavelength_unit": "nanometer",
+         "description": null
+      }
+   ],
+   "motorized_stages": [
+      {
+         "device_type": "MotorizedStage",
+         "name": "Detection objective stage",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "LS-50",
+         "notes": "Translates detection objective along detection Z axis. Tiger M axis.",
+         "travel": 50,
+         "travel_unit": "millimeter",
+         "firmware": null
+      },
+     {
+         "device_type": "MotorizedStage",
+         "name": "X scanning stage",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "LS-50",
+         "notes": null,
+         "travel": 50,
+         "travel_unit": "millimeter",
+         "firmware": null,
+         "stage_axis_direction": "Detection X axis. Tiger X axis.",
+         "stage_axis_name": "X"
+      },
+      {
+         "device_type": "MotorizedStage",
+         "name": "Y scanning stage",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "LS-200",
+         "notes": null,
+         "travel": 200,
+         "travel_unit": "millimeter",
+         "firmware": null,
+         "stage_axis_direction": "Deteciton Y Axis. Tiger V and W axes.",
+         "stage_axis_name": "Y"
+      },
+      {
+         "device_type": "MotorizedStage",
+         "name": "Rotation stage",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "C60-ROT",
+         "notes": "Rotates specimen. Tiger T axis.",
+         "travel": 360,
+         "travel_unit": "degree",
+         "firmware": null
+      }
+   ],
+   "scanning_stages": [
+      {
+         "device_type": "MotorizedStage",
+         "name": "Z scanning stage",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "LS-50",
+         "notes": null,
+         "travel": 50,
+         "travel_unit": "millimeter",
+         "firmware": null,
+         "stage_axis_direction": "Detection Z axis. Tiger Z axis.",
+         "stage_axis_name": "Z"
+      }
+   ],
+   "daqs": [
+      {
+         "device_type": "DAQDevice",
+         "name": "NIDAQ",
+         "serial_number": null,
+         "manufacturer": {
+            "name": "National Instruments",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "026exqw73"
+         },
+         "model": "PCIe-6738",
+         "notes": "Dev1",
+         "data_interface": "PCIe",
+         "computer_name": "DT900016",
+         "channels": [
+            {
+               "channel_name": "AO16",
+               "device_name": "Left ETL",
+               "channel_type": "Analog Output",
+               "port": null,
+               "channel_index": null,
+               "sample_rate": 10000,
+               "sample_rate_unit": "hertz",
+               "event_based_sampling": false
+            },
+            {
+               "channel_name": "AO12",
+               "device_name": "Right ETL",
+               "channel_type": "Analog Output",
+               "port": null,
+               "channel_index": null,
+               "sample_rate": 10000,
+               "sample_rate_unit": "hertz",
+               "event_based_sampling": false
+            },
+            {
+               "channel_name": "AO6",
+               "device_name": "Imaging camera",
+               "channel_type": "Analog Output",
+               "port": null,
+               "channel_index": null,
+               "sample_rate": 10000,
+               "sample_rate_unit": "hertz",
+               "event_based_sampling": false
+            },
+            {
+               "channel_name": "AO20",
+               "device_name": "Z scanning stage",
+               "channel_type": "Analog Output",
+               "port": null,
+               "channel_index": null,
+               "sample_rate": 10000,
+               "sample_rate_unit": "hertz",
+               "event_based_sampling": false
+            },
+            {
+               "channel_name": "AO8",
+               "device_name": "405 nm",
+               "channel_type": "Analog Output",
+               "port": null,
+               "channel_index": null,
+               "sample_rate": 10000,
+               "sample_rate_unit": "hertz",
+               "event_based_sampling": false
+            },
+            {
+               "channel_name": "AO0",
+               "device_name": "488 nm",
+               "channel_type": "Analog Output",
+               "port": null,
+               "channel_index": null,
+               "sample_rate": 10000,
+               "sample_rate_unit": "hertz",
+               "event_based_sampling": false
+            },
+            {
+               "channel_name": "AO24",
+               "device_name": "561 nm",
+               "channel_type": "Analog Output",
+               "port": null,
+               "channel_index": null,
+               "sample_rate": 10000,
+               "sample_rate_unit": "hertz",
+               "event_based_sampling": false
+            },
+            {
+               "channel_name": "AO4",
+               "device_name": "638 nm",
+               "channel_type": "Analog Output",
+               "port": null,
+               "channel_index": null,
+               "sample_rate": 10000,
+               "sample_rate_unit": "hertz",
+               "event_based_sampling": false
+            }
+         ]
+      }
+   ],
+   "additional_devices": [
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "ETL Controller",
+         "serial_number": "CDAC0453",
+         "manufacturer": {
+            "name": "Optotune",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "ICC4C-500",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "Left ETL",
+         "serial_number": "ANAC8085",
+         "manufacturer": {
+            "name": "Optotune",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "EL-16-40-TG-VIS-5D-C",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "Right ETL",
+         "serial_number": "ANAC8070",
+         "manufacturer": {
+            "name": "Optotune",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "EL-16-40-TG-VIS-5D-C",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "Tiger Controller",
+         "serial_number": "2403-2510-6461-6481-6456-6467-6471-6459",
+         "manufacturer": {
+            "name": "Applied Scientific Instrumentation",
+            "abbreviation": "ASI",
+            "registry": null,
+            "registry_identifier": null
+         },
+         "model": "TG8-XY:5A-Z:5A/T:THETA-MN:A-01:FW6",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "NIDAQ breakout board",
+         "manufacturer": {
+            "name": "National Instruments",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "026exqw73"
+         },
+         "model": "SCB-68A",
+         "notes": null,
+         "type": "Other"
+      },
+      {
+         "device_type": "AdditionalImagingDevice",
+         "name": "Right Left Flip Mount",
+         "serial_number": "37007748",
+         "manufacturer": {
+            "name": "Thorlabs",
+            "abbreviation": null,
+            "registry": {
+               "name": "Research Organization Registry",
+               "abbreviation": "ROR"
+            },
+            "registry_identifier": "04gsnvb07"
+         },
+         "model": "MFF101",
+         "notes": null,
+         "type": "Other"
+      }
+   ],
+   "calibration_date": null,
+   "calibration_data": null,
+   "com_ports": [
+      {
+         "hardware_name": "Oxxius controller",
+         "com_port": "COM4"
+      },
+      {
+         "hardware_name": "Tiger Controller",
+         "com_port": "COM6"
+      },
+      {
+         "hardware_name": "ETL controller",
+         "com_port": "COM5"
+      }
+   ],
+   "notes": null
+}
