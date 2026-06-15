@@ -23,6 +23,7 @@ from aind_metadata_mapper.utils import (
     check_existing_instrument,
     check_instrument_id,
     ensure_timezone,
+    get_iacuc_protocol,
     get_instrument,
     get_intended_measurements,
     get_procedures,
@@ -637,6 +638,64 @@ class TestPromptFunctions(unittest.TestCase):
             prompt_for_string("Test", required=True, help_message="Help", input_func=input_func)
         self.assertEqual(call_count[0], 2)
         self.assertTrue(any("Help" in str(call) for call in mock_print.call_args_list))
+
+
+class TestGetIacucProtocol(unittest.TestCase):
+    """Tests for get_iacuc_protocol function."""
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_returns_protocol_number_field(self, mock_helper):
+        """The protocol_number field (joined from the IacucProtocol table) is returned."""
+        mock_helper.return_value = [{"group_name": "Exp-ND-01-001-2414", "protocol_number": "2414"}]
+        self.assertEqual(get_iacuc_protocol("818908"), "2414")
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_accepts_int_subject_id(self, mock_helper):
+        """An int subject_id is cast to str and handled."""
+        mock_helper.return_value = [{"protocol_number": "2414"}]
+        self.assertEqual(get_iacuc_protocol(818908), "2414")
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_returns_protocol_when_group_name_lacks_number(self, mock_helper):
+        """A breeding-group name with no trailing number still resolves via protocol_number."""
+        mock_helper.return_value = [{"group_name": "Pdyn-IRES-Cre;Oi9(ND)", "protocol_number": "2453"}]
+        self.assertEqual(get_iacuc_protocol("x"), "2453")
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_numeric_protocol_number_is_coerced_to_str(self, mock_helper):
+        """A non-string protocol_number is coerced to str."""
+        mock_helper.return_value = [{"protocol_number": 2414}]
+        self.assertEqual(get_iacuc_protocol("x"), "2414")
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_null_protocol_number_returns_none(self, mock_helper):
+        """A record with a null protocol_number yields None."""
+        mock_helper.return_value = [{"group_name": "Practice Mice", "protocol_number": None}]
+        self.assertIsNone(get_iacuc_protocol("x"))
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_missing_protocol_number_returns_none(self, mock_helper):
+        """A record without a protocol_number yields None."""
+        mock_helper.return_value = [{}]
+        self.assertIsNone(get_iacuc_protocol("x"))
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_no_records_returns_none(self, mock_helper):
+        """No records (helper returns None) yields None."""
+        mock_helper.return_value = None
+        self.assertIsNone(get_iacuc_protocol("x"))
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_dict_error_body_returns_none(self, mock_helper):
+        """A non-list error body (e.g. {"detail": "Not Found"}) yields None."""
+        mock_helper.return_value = {"detail": "Not Found"}
+        self.assertIsNone(get_iacuc_protocol("x"))
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_exception_returns_none(self, mock_helper):
+        """An unexpected error is caught and yields None."""
+        mock_helper.side_effect = ValueError("boom")
+        self.assertIsNone(get_iacuc_protocol("x"))
 
 
 if __name__ == "__main__":
