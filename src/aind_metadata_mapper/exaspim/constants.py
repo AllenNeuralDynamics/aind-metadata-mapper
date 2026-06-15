@@ -67,7 +67,13 @@ FILTER_TYPE_MAP: dict[str, str] = {
 
 # Allowed ``stage_axis_name`` values for scanning stages in v2.
 VALID_STAGE_AXIS_NAMES: set[str] = {
-    "X", "Y", "Z", "AP", "ML", "SI", "Depth",
+    "X",
+    "Y",
+    "Z",
+    "AP",
+    "ML",
+    "SI",
+    "Depth",
 }
 
 # Maps ``instrument.id`` from ``instrument_config.yaml`` to the

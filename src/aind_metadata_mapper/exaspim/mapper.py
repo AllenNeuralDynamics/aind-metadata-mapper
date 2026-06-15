@@ -113,20 +113,15 @@ def _resolve_instrument_from_yaml(metadata_dir: Path) -> Optional[dict]:
     if not isinstance(content, dict):
         return None
 
-    instrument_id = (
-        content.get("instrument", {}).get("id", "")
-    )
+    instrument_id = content.get("instrument", {}).get("id", "")
     if not instrument_id:
-        logger.debug(
-            "No instrument.id found in %s", yaml_path
-        )
+        logger.debug("No instrument.id found in %s", yaml_path)
         return None
 
     filename = INSTRUMENT_ID_MAP.get(instrument_id)
     if filename is None:
         logger.warning(
-            "Unknown instrument id %r in %s — no reference "
-            "instrument available.",
+            "Unknown instrument id %r in %s — no reference " "instrument available.",
             instrument_id,
             yaml_path,
         )
@@ -135,9 +130,7 @@ def _resolve_instrument_from_yaml(metadata_dir: Path) -> Optional[dict]:
     instruments_dir = Path(__file__).parent / "instruments"
     ref_path = instruments_dir / filename
     if not ref_path.is_file():
-        logger.error(
-            "Reference instrument file missing: %s", ref_path
-        )
+        logger.error("Reference instrument file missing: %s", ref_path)
         return None
 
     return _load_json(ref_path)
@@ -188,8 +181,7 @@ def sanitize_instrument(inst_data: dict) -> dict:
             name = mfr.get("name", "")
             if name and Organization.from_name(name) is None:
                 logger.warning(
-                    "Manufacturer %r not recognised — replacing with "
-                    "'Other' in %s[%s]",
+                    "Manufacturer %r not recognised — replacing with " "'Other' in %s[%s]",
                     name,
                     key,
                     device.get("name", "?"),
@@ -202,13 +194,9 @@ def sanitize_instrument(inst_data: dict) -> dict:
 
     # 2. Missing magnification on objectives
     for objective in inst.get("objectives") or []:
-        if (
-            "magnification" not in objective
-            or objective["magnification"] is None
-        ):
+        if "magnification" not in objective or objective["magnification"] is None:
             logger.warning(
-                "Objective %r missing 'magnification' — "
-                "defaulting to 1.0",
+                "Objective %r missing 'magnification' — " "defaulting to 1.0",
                 objective.get("name", "?"),
             )
             _append_note(
@@ -219,16 +207,12 @@ def sanitize_instrument(inst_data: dict) -> dict:
 
     # 3. Multiband filter center_wavelength
     for filt in inst.get("fluorescence_filters") or []:
-        if (
-            filt.get("filter_type") == "Multiband"
-            and not filt.get("center_wavelength")
-        ):
+        if filt.get("filter_type") == "Multiband" and not filt.get("center_wavelength"):
             model = filt.get("model", "")
             wavelengths = [int(m) for m in re.findall(r"\d{3}", model)]
             if wavelengths:
                 logger.warning(
-                    "Multiband filter %r (model %r) — parsed "
-                    "center_wavelength %s from model name",
+                    "Multiband filter %r (model %r) — parsed " "center_wavelength %s from model name",
                     filt.get("name", "?"),
                     model,
                     wavelengths,
@@ -236,8 +220,7 @@ def sanitize_instrument(inst_data: dict) -> dict:
                 filt["center_wavelength"] = wavelengths
             else:
                 logger.warning(
-                    "Multiband filter %r (model %r) — could not "
-                    "parse center_wavelength; upgrade may fail",
+                    "Multiband filter %r (model %r) — could not " "parse center_wavelength; upgrade may fail",
                     filt.get("name", "?"),
                     model,
                 )
@@ -262,8 +245,7 @@ def sanitize_instrument(inst_data: dict) -> dict:
                 removed[field] = stage.pop(field)
         if removed:
             logger.warning(
-                "Removed deprecated fields %s from "
-                "motorized_stages[%s]",
+                "Removed deprecated fields %s from " "motorized_stages[%s]",
                 list(removed.keys()),
                 stage.get("name", "?"),
             )
@@ -273,8 +255,7 @@ def sanitize_instrument(inst_data: dict) -> dict:
         tu = stage.get("travel_unit")
         if tu and tu not in VALID_TRAVEL_UNITS:
             logger.warning(
-                "Stage %r has invalid travel_unit %r — "
-                "remapping to 'millimeter'",
+                "Stage %r has invalid travel_unit %r — " "remapping to 'millimeter'",
                 stage.get("name", "?"),
                 tu,
             )
@@ -287,8 +268,7 @@ def sanitize_instrument(inst_data: dict) -> dict:
         tu = stage.get("travel_unit")
         if tu and tu not in VALID_TRAVEL_UNITS:
             logger.warning(
-                "Scanning stage %r has invalid travel_unit %r — "
-                "remapping to 'millimeter'",
+                "Scanning stage %r has invalid travel_unit %r — " "remapping to 'millimeter'",
                 stage.get("name", "?"),
                 tu,
             )
@@ -298,15 +278,12 @@ def sanitize_instrument(inst_data: dict) -> dict:
         sad = stage.get("stage_axis_direction", "")
         if not sad:
             logger.warning(
-                "Scanning stage %r: missing "
-                "stage_axis_direction — defaulting to "
-                "'Detection axis'",
+                "Scanning stage %r: missing " "stage_axis_direction — defaulting to " "'Detection axis'",
                 stage.get("name", "?"),
             )
             _append_note(
                 stage,
-                "stage_axis_direction was missing, "
-                "defaulted to 'Detection axis'",
+                "stage_axis_direction was missing, " "defaulted to 'Detection axis'",
             )
             stage["stage_axis_direction"] = "Detection axis"
         elif sad not in VALID_AXIS_DIRECTIONS:
@@ -318,8 +295,7 @@ def sanitize_instrument(inst_data: dict) -> dict:
                     break
             if mapped:
                 logger.warning(
-                    "Scanning stage %r: remapping "
-                    "stage_axis_direction %r → %r",
+                    "Scanning stage %r: remapping " "stage_axis_direction %r → %r",
                     stage.get("name", "?"),
                     sad,
                     mapped,
@@ -331,9 +307,7 @@ def sanitize_instrument(inst_data: dict) -> dict:
                 stage["stage_axis_direction"] = mapped
             else:
                 logger.warning(
-                    "Scanning stage %r: unknown "
-                    "stage_axis_direction %r — defaulting to "
-                    "'Detection axis'",
+                    "Scanning stage %r: unknown " "stage_axis_direction %r — defaulting to " "'Detection axis'",
                     stage.get("name", "?"),
                     sad,
                 )
@@ -344,8 +318,7 @@ def sanitize_instrument(inst_data: dict) -> dict:
         san = stage.get("stage_axis_name", "")
         if not san:
             logger.warning(
-                "Scanning stage %r: missing stage_axis_name "
-                "— defaulting to 'X'",
+                "Scanning stage %r: missing stage_axis_name " "— defaulting to 'X'",
                 stage.get("name", "?"),
             )
             _append_note(
@@ -355,15 +328,13 @@ def sanitize_instrument(inst_data: dict) -> dict:
             stage["stage_axis_name"] = "X"
         elif san not in VALID_STAGE_AXIS_NAMES:
             logger.warning(
-                "Scanning stage %r: invalid stage_axis_name %r "
-                "— defaulting to 'X'",
+                "Scanning stage %r: invalid stage_axis_name %r " "— defaulting to 'X'",
                 stage.get("name", "?"),
                 san,
             )
             _append_note(
                 stage,
-                f"original stage_axis_name was '{san}', "
-                f"defaulted to 'X'",
+                f"original stage_axis_name was '{san}', " f"defaulted to 'X'",
             )
             stage["stage_axis_name"] = "X"
 
@@ -374,9 +345,7 @@ def _append_note(device: dict, message: str) -> None:
     """Append a ``(v1v2 pre-process):`` note to *device*."""
     note = f"(v1v2 pre-process): {message}"
     existing = device.get("notes") or ""
-    device["notes"] = (
-        f"{existing} {note}".strip() if existing else note
-    )
+    device["notes"] = f"{existing} {note}".strip() if existing else note
 
 
 # ---------------------------------------------------------------------------
@@ -384,9 +353,7 @@ def _append_note(device: dict, message: str) -> None:
 # ---------------------------------------------------------------------------
 
 
-def upgrade_with_instrument(
-    acq_data: dict, inst_data: dict
-) -> tuple[dict, Optional[dict]]:
+def upgrade_with_instrument(acq_data: dict, inst_data: dict) -> tuple[dict, Optional[dict]]:
     """Upgrade both acquisition and instrument via ``Upgrade()``.
 
     Parameters
@@ -440,9 +407,7 @@ def upgrade_acquisition_only(acq_data: dict) -> dict:
         },
     }
 
-    upgraded_data = AcquisitionV1V2().upgrade(
-        acq_data.copy(), target_version, metadata=metadata_stub
-    )
+    upgraded_data = AcquisitionV1V2().upgrade(acq_data.copy(), target_version, metadata=metadata_stub)
 
     acq_model = Acquisition.model_construct(**upgraded_data)
     return acq_model.model_dump(mode="json", exclude_none=True)
@@ -483,9 +448,7 @@ class ExaSPIMMapper(MapperJob):
         if inst_data is not None:
             for field in ("instrument_id", "instrument_type"):
                 value = inst_data.get(field, "")
-                if isinstance(value, str) and _contains_exaspim_keyword(
-                    value
-                ):
+                if isinstance(value, str) and _contains_exaspim_keyword(value):
                     return True
 
         # Fall-back: derivatives/instrument_config.yaml
@@ -533,14 +496,12 @@ class ExaSPIMMapper(MapperJob):
 
         if acq_data is None:
             raise FileNotFoundError(
-                f"acquisition.json not found at {acq_path}. "
-                "This file is required for metadata upgrade."
+                f"acquisition.json not found at {acq_path}. " "This file is required for metadata upgrade."
             )
 
         if not _needs_upgrade(acq_data):
             logger.info(
-                "acquisition.json is already schema_version %s "
-                "(>= %s) — skipping upgrade.",
+                "acquisition.json is already schema_version %s " "(>= %s) — skipping upgrade.",
                 acq_data.get("schema_version"),
                 V2_THRESHOLD,
             )
@@ -558,8 +519,7 @@ class ExaSPIMMapper(MapperJob):
             inst_data = _resolve_instrument_from_yaml(metadata_dir)
             if inst_data is not None:
                 logger.info(
-                    "Resolved instrument from "
-                    "instrument_config.yaml → writing %s",
+                    "Resolved instrument from " "instrument_config.yaml → writing %s",
                     inst_path,
                 )
                 _write_json(inst_path, inst_data)
@@ -575,18 +535,14 @@ class ExaSPIMMapper(MapperJob):
 
         # Upgrade
         if inst_data is not None:
-            upgraded_acq, upgraded_inst = upgrade_with_instrument(
-                acq_data, inst_data
-            )
+            upgraded_acq, upgraded_inst = upgrade_with_instrument(acq_data, inst_data)
         else:
             upgraded_acq = upgrade_acquisition_only(acq_data)
             upgraded_inst = None
 
         if upgraded_acq is None:
             raise RuntimeError(
-                "Upgrader did not produce an upgraded "
-                "acquisition.json.  Check the input data and "
-                "upgrader logs."
+                "Upgrader did not produce an upgraded " "acquisition.json.  Check the input data and " "upgrader logs."
             )
 
         logger.info(

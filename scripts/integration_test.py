@@ -36,7 +36,7 @@ try:
         subject_id="804670",
         project_name="Learning mFISH-V1omFISH",
         modalities=[Modality.POPHYS, Modality.BEHAVIOR_VIDEOS, Modality.BEHAVIOR],
-        metadata_service_url="http://aind-metadata-service-dev", # DEV metadata service for testing
+        metadata_service_url="http://aind-metadata-service-dev",  # DEV metadata service for testing
     )
 
     job = GatherMetadataJob(settings=settings)

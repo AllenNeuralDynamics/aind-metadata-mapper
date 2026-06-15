@@ -24,7 +24,6 @@ from aind_metadata_mapper.exaspim.mapper import (
     upgrade_with_instrument,
 )
 
-
 # ---------------------------------------------------------------------------
 # Inline v1 fixture data (no external JSON files)
 # ---------------------------------------------------------------------------
@@ -128,12 +127,8 @@ _V1_ACQUISITION = {
     "chamber_immersion": {"medium": "other", "refractive_index": "1.33"},
     "sample_immersion": None,
     "active_objectives": None,
-    "local_storage_directory": (
-        "D:\\exaSPIM_822178-1x_2026-04-03_15-46-33"
-    ),
-    "external_storage_directory": (
-        "Z:\\stage\\exaSPIM\\exaSPIM_822178-1x_2026-04-03_15-46-33"
-    ),
+    "local_storage_directory": ("D:\\exaSPIM_822178-1x_2026-04-03_15-46-33"),
+    "external_storage_directory": ("Z:\\stage\\exaSPIM\\exaSPIM_822178-1x_2026-04-03_15-46-33"),
     "processing_steps": [],
     "software": [],
     "notes": None,
@@ -194,10 +189,7 @@ _V1_INSTRUMENT = {
             "path_to_cad": None,
             "port_index": None,
             "additional_settings": {},
-            "notes": (
-                "manufacturer collaboration between "
-                "Schneider-Kreuznach and Vieworks"
-            ),
+            "notes": ("manufacturer collaboration between " "Schneider-Kreuznach and Vieworks"),
             "numerical_aperture": "0.305",
             "magnification": "5",
             "immersion": "air",
@@ -578,9 +570,7 @@ class TestHelpers:
         mock.model_dump.return_value = {"a": 1}
         result = _to_json_dict(mock)
         assert result == {"a": 1}
-        mock.model_dump.assert_called_once_with(
-            mode="json", exclude_none=True
-        )
+        mock.model_dump.assert_called_once_with(mode="json", exclude_none=True)
 
     def test_contains_exaspim_keyword(self):
         """Various keyword checks."""
@@ -631,18 +621,14 @@ class TestExaSPIMDetection:
         """Detects via instrument_config.yaml fallback."""
         yaml_dir = tmp_path / "derivatives"
         yaml_dir.mkdir()
-        (yaml_dir / "instrument_config.yaml").write_text(
-            "instrument_type: exaSPIM\nrig_id: exaSPIM-beta-01\n"
-        )
+        (yaml_dir / "instrument_config.yaml").write_text("instrument_type: exaSPIM\nrig_id: exaSPIM-beta-01\n")
         assert ExaSPIMMapper.detect(tmp_path) is True
 
     def test_yaml_fallback_no_match(self, tmp_path):
         """YAML fallback with non-matching content → not detected."""
         yaml_dir = tmp_path / "derivatives"
         yaml_dir.mkdir()
-        (yaml_dir / "instrument_config.yaml").write_text(
-            "instrument_type: mesoscope\nrig_id: meso-01\n"
-        )
+        (yaml_dir / "instrument_config.yaml").write_text("instrument_type: mesoscope\nrig_id: meso-01\n")
         assert ExaSPIMMapper.detect(tmp_path) is False
 
     def test_empty_instrument_json(self, tmp_path):
@@ -654,18 +640,14 @@ class TestExaSPIMDetection:
         """Invalid YAML doesn't crash detection."""
         yaml_dir = tmp_path / "derivatives"
         yaml_dir.mkdir()
-        (yaml_dir / "instrument_config.yaml").write_text(
-            ":\n  - [\ninvalid yaml content"
-        )
+        (yaml_dir / "instrument_config.yaml").write_text(":\n  - [\ninvalid yaml content")
         assert ExaSPIMMapper.detect(tmp_path) is False
 
     def test_yaml_fallback_non_dict_content(self, tmp_path):
         """YAML with non-dict content (e.g. a list) is searched as string."""
         yaml_dir = tmp_path / "derivatives"
         yaml_dir.mkdir()
-        (yaml_dir / "instrument_config.yaml").write_text(
-            "- exaSPIM-beta-01\n- some_other_thing\n"
-        )
+        (yaml_dir / "instrument_config.yaml").write_text("- exaSPIM-beta-01\n- some_other_thing\n")
         assert ExaSPIMMapper.detect(tmp_path) is True
 
 
@@ -792,10 +774,7 @@ class TestSanitizeInstrument:
             ],
         }
         result = sanitize_instrument(inst)
-        assert (
-            result["scanning_stages"][0]["stage_axis_direction"]
-            == "Detection axis"
-        )
+        assert result["scanning_stages"][0]["stage_axis_direction"] == "Detection axis"
 
     def test_scanning_stage_valid_direction_unchanged(self):
         """Already-valid direction is not modified."""
@@ -809,10 +788,7 @@ class TestSanitizeInstrument:
             ],
         }
         result = sanitize_instrument(inst)
-        assert (
-            result["scanning_stages"][0]["stage_axis_direction"]
-            == "Illumination axis"
-        )
+        assert result["scanning_stages"][0]["stage_axis_direction"] == "Illumination axis"
         assert result["scanning_stages"][0].get("notes") is None
 
     def test_does_not_mutate_original(self, v1_inst):
@@ -839,13 +815,9 @@ class TestUpgradeWithInstrument:
         # Set up the mock Upgrade instance
         mock_instance = MagicMock()
         mock_instance.metadata.acquisition = MagicMock()
-        mock_instance.metadata.acquisition.model_dump.return_value = {
-            "schema_version": "2.5.1"
-        }
+        mock_instance.metadata.acquisition.model_dump.return_value = {"schema_version": "2.5.1"}
         mock_instance.metadata.instrument = MagicMock()
-        mock_instance.metadata.instrument.model_dump.return_value = {
-            "schema_version": "2.5.1"
-        }
+        mock_instance.metadata.instrument.model_dump.return_value = {"schema_version": "2.5.1"}
         mock_upgrade_cls.return_value = mock_instance
 
         # Test directly through the function
@@ -857,9 +829,7 @@ class TestUpgradeWithInstrument:
             "aind_metadata_mapper.exaspim.mapper.sanitize_instrument",
             return_value={"instrument_id": "sanitized"},
         ) as mock_san:
-            with patch(
-                "aind_metadata_upgrader.upgrade.Upgrade"
-            ) as mock_upg_cls:
+            with patch("aind_metadata_upgrader.upgrade.Upgrade") as mock_upg_cls:
                 mock_up = MagicMock()
                 mock_up.metadata.acquisition = MagicMock()
                 mock_up.metadata.acquisition.model_dump.return_value = {
@@ -872,9 +842,7 @@ class TestUpgradeWithInstrument:
                 }
                 mock_upg_cls.return_value = mock_up
 
-                result_acq, result_inst = upgrade_with_instrument(
-                    acq_data, inst_data
-                )
+                result_acq, result_inst = upgrade_with_instrument(acq_data, inst_data)
 
                 mock_san.assert_called_once_with(inst_data)
                 mock_upg_cls.assert_called_once()
@@ -909,9 +877,7 @@ class TestUpgradeAcquisitionOnly:
             "data_streams": [],
         }
         mock_acq_cls.model_construct.return_value = mock_model
-        mock_acq_cls.model_fields = {
-            "schema_version": MagicMock(default="2.5.1")
-        }
+        mock_acq_cls.model_fields = {"schema_version": MagicMock(default="2.5.1")}
 
         acq_data = {"schema_version": "1.0.4", "tiles": [], "axes": []}
         result = upgrade_acquisition_only(acq_data)
@@ -966,12 +932,8 @@ class TestExaSPIMMapperRunJob:
             result = json.load(f)
         assert result == v2_acq
 
-    @patch(
-        "aind_metadata_mapper.exaspim.mapper.upgrade_with_instrument"
-    )
-    def test_v1_with_instrument_upgrades_both(
-        self, mock_upgrade, tmp_metadata_dir
-    ):
+    @patch("aind_metadata_mapper.exaspim.mapper.upgrade_with_instrument")
+    def test_v1_with_instrument_upgrades_both(self, mock_upgrade, tmp_metadata_dir):
         """v1 with instrument → both files upgraded."""
         mock_upgrade.return_value = (
             {"schema_version": "2.5.1", "data_streams": []},
@@ -992,12 +954,8 @@ class TestExaSPIMMapperRunJob:
             inst = json.load(f)
         assert inst["schema_version"] == "2.5.1"
 
-    @patch(
-        "aind_metadata_mapper.exaspim.mapper.upgrade_acquisition_only"
-    )
-    def test_v1_without_instrument_upgrades_acq(
-        self, mock_upgrade, tmp_path, v1_acq
-    ):
+    @patch("aind_metadata_mapper.exaspim.mapper.upgrade_acquisition_only")
+    def test_v1_without_instrument_upgrades_acq(self, mock_upgrade, tmp_path, v1_acq):
         """v1 without instrument → only acquisition upgraded."""
         (tmp_path / "acquisition.json").write_text(json.dumps(v1_acq))
         mock_upgrade.return_value = {
@@ -1017,12 +975,8 @@ class TestExaSPIMMapperRunJob:
         # No instrument.json should exist
         assert not (tmp_path / "instrument.json").exists()
 
-    @patch(
-        "aind_metadata_mapper.exaspim.mapper.upgrade_with_instrument"
-    )
-    def test_upgrade_returns_none_raises(
-        self, mock_upgrade, tmp_metadata_dir
-    ):
+    @patch("aind_metadata_mapper.exaspim.mapper.upgrade_with_instrument")
+    def test_upgrade_returns_none_raises(self, mock_upgrade, tmp_metadata_dir):
         """RuntimeError when upgrader returns None."""
         mock_upgrade.return_value = (None, None)
 
@@ -1090,9 +1044,7 @@ class TestResolveInstrumentFromYaml:
         """Known instrument id returns the reference JSON dict."""
         deriv = tmp_path / "derivatives"
         deriv.mkdir()
-        (deriv / "instrument_config.yaml").write_text(
-            "instrument:\n  id: exaspim-01\n  channels: {}\n"
-        )
+        (deriv / "instrument_config.yaml").write_text("instrument:\n  id: exaspim-01\n  channels: {}\n")
         result = _resolve_instrument_from_yaml(tmp_path)
         assert result is not None
         assert "schema_version" in result
@@ -1103,9 +1055,7 @@ class TestResolveInstrumentFromYaml:
         """exaspim-1x maps to 1x_instrument.json."""
         deriv = tmp_path / "derivatives"
         deriv.mkdir()
-        (deriv / "instrument_config.yaml").write_text(
-            "instrument:\n  id: exaspim-1x\n"
-        )
+        (deriv / "instrument_config.yaml").write_text("instrument:\n  id: exaspim-1x\n")
         result = _resolve_instrument_from_yaml(tmp_path)
         assert result is not None
         assert "schema_version" in result
@@ -1114,9 +1064,7 @@ class TestResolveInstrumentFromYaml:
         """Unknown instrument id returns None."""
         deriv = tmp_path / "derivatives"
         deriv.mkdir()
-        (deriv / "instrument_config.yaml").write_text(
-            "instrument:\n  id: unknown-scope\n"
-        )
+        (deriv / "instrument_config.yaml").write_text("instrument:\n  id: unknown-scope\n")
         result = _resolve_instrument_from_yaml(tmp_path)
         assert result is None
 
@@ -1129,9 +1077,7 @@ class TestResolveInstrumentFromYaml:
         """Malformed YAML → None (no crash)."""
         deriv = tmp_path / "derivatives"
         deriv.mkdir()
-        (deriv / "instrument_config.yaml").write_text(
-            ":\n  - [\ninvalid"
-        )
+        (deriv / "instrument_config.yaml").write_text(":\n  - [\ninvalid")
         result = _resolve_instrument_from_yaml(tmp_path)
         assert result is None
 
@@ -1139,9 +1085,7 @@ class TestResolveInstrumentFromYaml:
         """YAML without instrument.id → None."""
         deriv = tmp_path / "derivatives"
         deriv.mkdir()
-        (deriv / "instrument_config.yaml").write_text(
-            "other_key: value\n"
-        )
+        (deriv / "instrument_config.yaml").write_text("other_key: value\n")
         result = _resolve_instrument_from_yaml(tmp_path)
         assert result is None
 
@@ -1150,9 +1094,7 @@ class TestResolveInstrumentFromYaml:
         (tmp_path / "acquisition.json").write_text(json.dumps(v1_acq))
         deriv = tmp_path / "derivatives"
         deriv.mkdir()
-        (deriv / "instrument_config.yaml").write_text(
-            "instrument:\n  id: exaspim-01\n"
-        )
+        (deriv / "instrument_config.yaml").write_text("instrument:\n  id: exaspim-01\n")
 
         mapper = ExaSPIMMapper()
         mapper.run_job(_make_job_settings(tmp_path))

@@ -31,10 +31,7 @@ from aind_metadata_mapper.exaspim.mapper import ExaSPIMMapper
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-DEFAULT_DATASET_DIR = (
-    "/allen/aind/stage/exaspim/1x_screening/"
-    "exaSPIM_821805_2026-05-11_16-32-29"
-)
+DEFAULT_DATASET_DIR = "/allen/aind/stage/exaspim/1x_screening/" "exaSPIM_821805_2026-05-11_16-32-29"
 
 
 def _print_header(title: str) -> None:
@@ -134,10 +131,7 @@ def main() -> int:
         else:
             print("✗ ExaSPIMMapper.detect() → False")
             if not has_instrument:
-                print(
-                    "  (Expected — no instrument.json for detection. "
-                    "Continuing with direct upgrade.)"
-                )
+                print("  (Expected — no instrument.json for detection. " "Continuing with direct upgrade.)")
             else:
                 print(
                     "  WARNING: instrument.json is present but "
