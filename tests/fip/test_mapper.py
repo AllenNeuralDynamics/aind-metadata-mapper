@@ -36,6 +36,7 @@ class TestFIPMapper(unittest.TestCase):
             "Fiber_1": {"R": "jRCaMP1b", "G": "dLight", "B": None, "Iso": "dLight"},
         }
         self.test_implanted_fibers = [0, 1]  # Two implanted fibers
+        self.test_ethics_review_id = ["2414"]  # Injected to keep tests network-free
 
     def test_mapper_initialization(self):
         """Test that FIPMapper can be instantiated with default configuration.
@@ -59,6 +60,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
 
         self.assertEqual(acquisition.subject_id, "test")
@@ -70,42 +72,58 @@ class TestFIPMapper(unittest.TestCase):
         self.assertIsNone(acquisition.subject_details)
         self.assertEqual(len(acquisition.stimulus_epochs), 0)
 
-    def test_ethics_review_id_mapping(self):
-        """Test that ethics review ID is correctly set from constant.
+    def test_ethics_review_id_injected(self):
+        """Test that an explicitly provided ethics_review_id is mapped through.
 
-        The ethics_review_id is a constant set by the FIP mapper and should not be
-        provided in the session metadata. If it is provided, we should remove the constant.
+        When ethics_review_id is passed to transform (dependency injection), it should
+        be set on the Acquisition without any LabTracks lookup.
         """
         acquisition = self.mapper.transform(
             self.example_intermediate_data,
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
-            implanted_fibers=self.test_implanted_fibers,
+            implanted_fibers=[0, 1],
+            ethics_review_id=["2414"],
         )
 
-        self.assertIsNotNone(acquisition.ethics_review_id)
-        self.assertEqual(len(acquisition.ethics_review_id), 1)
-        from aind_metadata_mapper.fip.constants import ETHICS_REVIEW_ID
+        self.assertEqual(acquisition.ethics_review_id, ["2414"])
 
-        self.assertEqual(acquisition.ethics_review_id, ETHICS_REVIEW_ID)
+    def test_ethics_review_id_looked_up_from_labtracks(self):
+        """Test that ethics_review_id is looked up by subject_id when not provided.
 
-    def test_ethics_review_id_error_when_provided(self):
-        """Test that an error is raised when ethics_review_id is provided in session.
-
-        The ethics_review_id is a constant and should not be provided in the session metadata.
-        If it is provided, the mapper should raise a ValueError.
+        When ethics_review_id is None, transform should fetch the IACUC protocol from
+        LabTracks via get_iacuc_protocol and wrap the single value in a list.
         """
-        data = self.example_intermediate_data.copy()
-        data["session"]["ethics_review_id"] = "2115"
+        import unittest.mock
 
-        with self.assertRaises(ValueError) as context:
-            self.mapper.transform(
-                data,
+        with unittest.mock.patch.object(mapper_mod, "get_iacuc_protocol", return_value="2414") as mock_get:
+            acquisition = self.mapper.transform(
+                self.example_intermediate_data,
                 skip_validation=True,
                 intended_measurements=self.test_intended_measurements,
-                implanted_fibers=self.test_implanted_fibers,
+                implanted_fibers=[0, 1],
             )
-        self.assertIn("ethics_review_id is a constant", str(context.exception))
+
+        mock_get.assert_called_once_with("test")
+        self.assertEqual(acquisition.ethics_review_id, ["2414"])
+
+    def test_ethics_review_id_none_when_not_found(self):
+        """Test that ethics_review_id is left unmapped when LabTracks has no protocol.
+
+        When get_iacuc_protocol returns None, ethics_review_id should be None so it can
+        be filled from acquisition_behavior.json when acquisitions are merged downstream.
+        """
+        import unittest.mock
+
+        with unittest.mock.patch.object(mapper_mod, "get_iacuc_protocol", return_value=None):
+            acquisition = self.mapper.transform(
+                self.example_intermediate_data,
+                skip_validation=True,
+                intended_measurements=self.test_intended_measurements,
+                implanted_fibers=[0, 1],
+            )
+
+        self.assertIsNone(acquisition.ethics_review_id)
 
     def test_data_stream_created(self):
         """Test that data stream is created with correct FIP modality.
@@ -119,6 +137,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
 
         self.assertEqual(len(acquisition.data_streams), 1)
@@ -161,6 +180,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
         data_stream = acquisition.data_streams[0]
 
@@ -182,6 +202,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
         data_stream = acquisition.data_streams[0]
         # Verify code field is None (fixture has commit_hash=None)
@@ -199,6 +220,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
         data_stream = acquisition.data_streams[0]
 
@@ -243,6 +265,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
         data_stream = acquisition.data_streams[0]
 
@@ -270,6 +293,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
 
         self.assertIsNotNone(acquisition.acquisition_start_time.tzinfo)
@@ -293,6 +317,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
 
         self.assertLess(acquisition.acquisition_start_time, acquisition.acquisition_end_time)
@@ -351,6 +376,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
 
         # Verify that the acquisition uses the earliest start (t0) and latest end (t5)
@@ -416,6 +442,7 @@ class TestFIPMapper(unittest.TestCase):
                     skip_validation=True,
                     intended_measurements=self.test_intended_measurements,
                     implanted_fibers=None,  # Will trigger fetch, returns None
+                    ethics_review_id=["2414"],
                 )
             self.assertIn("Failed to retrieve procedures data", str(cm.exception))
         finally:
@@ -429,6 +456,7 @@ class TestFIPMapper(unittest.TestCase):
                 skip_validation=True,
                 intended_measurements=self.test_intended_measurements,
                 implanted_fibers=[],  # Empty list should also fail
+                ethics_review_id=["2414"],
             )
         self.assertIn("No implanted fibers found", str(cm.exception))
 
@@ -450,6 +478,7 @@ class TestFIPMapper(unittest.TestCase):
                     skip_validation=True,
                     intended_measurements=self.test_intended_measurements,
                     implanted_fibers=None,  # Will trigger fetch, returns (None, True)
+                    ethics_review_id=["2414"],
                 )
             self.assertIn("No implanted fibers found in procedures data", str(cm.exception))
             self.assertNotIn("Failed to retrieve procedures data", str(cm.exception))
@@ -509,6 +538,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=False,  # Don't skip - will validate against schema
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
         # Should complete successfully (validation passes)
         self.assertIsNotNone(result)
@@ -549,6 +579,7 @@ class TestFIPMapper(unittest.TestCase):
                     mapper, "_parse_implanted_fibers", return_value=(self.test_implanted_fibers, True)
                 ),
                 unittest.mock.patch.object(mapper, "_validate_fip_metadata"),
+                unittest.mock.patch.object(mapper_mod, "get_iacuc_protocol", return_value="2414"),
             ):
                 mapper.run_job(job_settings)
 
@@ -715,6 +746,7 @@ class TestFIPMapperEdgeCases(unittest.TestCase):
             skip_validation=True,
             intended_measurements=None,
             implanted_fibers=[0, 1],  # Provide actual implanted fibers (no ROI fallback)
+            ethics_review_id=["2414"],
         )
         self.assertIsNotNone(acquisition)
 

@@ -69,13 +69,6 @@ DEVICE_NAME_MAP = {
 VR_FORAGING_FIP_REPO_URL = "https://github.com/AllenNeuralDynamics/Aind.Experiment.VrForaging-Fip"
 
 # ==============================================================================
-# Ethics Review ID
-# ==============================================================================
-# Ethics review ID for VrForaging-FIP experiments
-# NOTE: This is temporarily hardcoded. Ideally this would come from the extracted metadata.
-ETHICS_REVIEW_ID = ["2414"]
-
-# ==============================================================================
 # Camera Compression
 # ==============================================================================
 # FIP cameras do not use compression/encoding

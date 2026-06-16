@@ -8,7 +8,8 @@ The mapper:
 - Creates 3 channels per fiber: Green (470nm), Isosbestic (415nm), Red (565nm)
 - Fetches intended measurements and implanted fiber info from metadata service (optional)
 
-Note: We don't have access to the ethics_review_id in the extracted metadata. This should be provided by the extractor.
+Note: ethics_review_id (IACUC protocol) is not in the extracted metadata. It is looked
+up by subject_id from LabTracks via utils.get_iacuc_protocol during mapping.
 """
 
 import json
@@ -40,7 +41,6 @@ from aind_metadata_mapper.fip.constants import (
     DEVICE_NAME_MAP,
     EMISSION_GREEN,
     EMISSION_RED,
-    ETHICS_REVIEW_ID,
     EXCITATION_BLUE,
     EXCITATION_UV,
     EXCITATION_YELLOW,
@@ -54,6 +54,7 @@ from aind_metadata_mapper.fip.constants import (
 )
 from aind_metadata_mapper.utils import (
     ensure_timezone,
+    get_iacuc_protocol,
     get_intended_measurements,
     get_procedures,
     get_protocols_for_modality,
@@ -258,6 +259,7 @@ class FIPMapper(MapperJob):
         skip_validation: bool = False,
         intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]] = None,
         implanted_fibers: Optional[List[int]] = None,
+        ethics_review_id: Optional[List[str]] = None,
     ) -> Acquisition:
         """Transforms intermediate metadata into a complete Acquisition model.
 
@@ -273,6 +275,10 @@ class FIPMapper(MapperJob):
         implanted_fibers : Optional[List[int]], optional
             Implanted fiber indices. If None, will be fetched from metadata service.
             Must be non-empty after fetching.
+        ethics_review_id : Optional[List[str]], optional
+            IACUC protocol number(s). If None, looked up by subject_id from LabTracks
+            via utils.get_iacuc_protocol. Remains None (left unmapped) if no protocol
+            is found, in which case it is filled by the acquisition merge downstream.
 
         Returns
         -------
@@ -293,15 +299,15 @@ class FIPMapper(MapperJob):
         rig = metadata["rig"]
         data_streams = metadata["data_stream_metadata"]
 
-        # Validate that ethics_review_id is not in session (it's a constant)
-        if isinstance(session, dict) and "ethics_review_id" in session:
-            raise ValueError(
-                "ethics_review_id is a constant and should not be provided in the session metadata. "
-                "It is automatically set from the FIP mapper constants."
-            )
-
         subject_id = session["subject"]
         instrument_id = rig["rig_name"]
+
+        # Look up the IACUC protocol (ethics_review_id) by subject_id from LabTracks.
+        # If none is found, leave it unmapped (None); it is filled in from
+        # acquisition_behavior.json when acquisitions are merged downstream.
+        if ethics_review_id is None:
+            protocol_number = get_iacuc_protocol(subject_id)
+            ethics_review_id = [protocol_number] if protocol_number else None
 
         # Get timing from all data streams (handle multiple epochs)
         # Find earliest start_time and latest end_time across all epochs
@@ -367,7 +373,7 @@ class FIPMapper(MapperJob):
             acquisition_start_time=session_start_time,
             acquisition_end_time=session_end_time,
             experimenters=session.get("experimenter", []),
-            ethics_review_id=ETHICS_REVIEW_ID,
+            ethics_review_id=ethics_review_id,
             instrument_id=instrument_id,
             acquisition_type=ACQUISITION_TYPE_AIND_VR_FORAGING,
             notes=session.get("notes"),
