@@ -174,6 +174,34 @@ def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL, timeout
         return None
 
 
+def get_scheduled_acquisition(acquisition_uuid: str, base_url: str) -> Optional[dict]:
+    """Fetch a scheduled acquisition record from the metadata portal.
+
+    Parameters
+    ----------
+    acquisition_uuid : str
+        The UUID of the scheduled acquisition to query.
+    base_url : str
+        Base URL for the scheduled-acquisitions endpoint.
+
+    Returns
+    -------
+    Optional[dict]
+        Scheduled acquisition data dictionary (subject_id, date, platform,
+        acquisition_type), or None if the request fails.
+    """
+    try:
+        url_base = base_url.rstrip("/") + "/"
+        url = urljoin(url_base, acquisition_uuid.lstrip("/"))
+        result = metadata_service_helper(url)
+        if result is None:
+            logger.warning(f"Could not fetch scheduled acquisition {acquisition_uuid}")
+        return result
+    except Exception as e:
+        logger.warning(f"Unexpected error fetching scheduled acquisition {acquisition_uuid}: {e}")
+        return None
+
+
 def get_iacuc_protocol(subject_id: str | int, base_url: str = LABTRACKS_SUBJECT_BASE_URL) -> Optional[str]:
     """Fetch a subject's current IACUC protocol number from LabTracks.
 

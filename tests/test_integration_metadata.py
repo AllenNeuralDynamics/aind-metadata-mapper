@@ -257,6 +257,70 @@ class TestIntegrationMetadata(unittest.TestCase):
             except Exception as e:
                 self.fail(f"run_job with all local files failed: {e}")
 
+    @patch("aind_metadata_mapper.gather_metadata.get_scheduled_acquisition")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_does_file_exist_in_user_defined_dir")
+    @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_get_file_from_user_defined_directory")
+    def test_run_job_with_portal_acquisition_uuid(self, mock_get_file, mock_file_exists, mock_get_scheduled):
+        """Test run_job pulls acquisition_type/platform from the portal when portal_acquisition_uuid is set"""
+        acquisition_data = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
+
+        def mock_exists(file_name):
+            return file_name == "acquisition.json"
+
+        mock_file_exists.side_effect = mock_exists
+
+        def mock_read_file(file_name):
+            if file_name == "acquisition.json":
+                return acquisition_data
+            raise FileNotFoundError(f"File {file_name} not found")
+
+        mock_get_file.side_effect = mock_read_file
+
+        mock_get_scheduled.return_value = {
+            "subject_id": acquisition_data["subject_id"],
+            "date": "2025-09-17",
+            "acquisition_type": "portal-acquisition-type",
+            "platform": "behavior",
+        }
+
+        with patch("os.makedirs"):
+            portal_settings = JobSettings(
+                metadata_dir="/test/metadata",
+                output_dir="/test/output",
+                subject_id="804670",
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Visual Behavior",
+                    modalities=[Modality.BEHAVIOR, Modality.ECEPHYS],
+                ),
+                metadata_service_url="http://test-service.com",
+                acquisition_start_time=datetime(2025, 9, 17, 10, 26, 0, tzinfo=timezone.utc),
+                portal_acquisition_uuid="test-uuid",
+            )
+            portal_job = GatherMetadataJob(settings=portal_settings)
+
+        funding_data = self._load_resource_file(METADATA_SERVICE_DIR, "funding_response.json")
+        investigators_data = self._load_resource_file(METADATA_SERVICE_DIR, "investigators_response.json")
+
+        with patch("requests.get") as mock_get:
+
+            def mock_response_side_effect(url, *args, **kwargs):
+                mock_response = MagicMock()
+                mock_response.status_code = 200
+                if "funding" in url:
+                    mock_response.json.return_value = funding_data
+                elif "investigators" in url:
+                    mock_response.json.return_value = investigators_data
+                return mock_response
+
+            mock_get.side_effect = mock_response_side_effect
+
+            with patch.object(portal_job, "_write_json_file") as mock_write:
+                portal_job.run_job()
+
+        written = {call[0][0]: call[0][1] for call in mock_write.call_args_list}
+        self.assertEqual(written["acquisition.json"]["acquisition_type"], "portal-acquisition-type")
+        self.assertIn("platform:behavior", written["data_description.json"]["tags"])
+
     @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_does_file_exist_in_user_defined_dir")
     @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_get_file_from_user_defined_directory")
     def test_build_data_description_uses_acquisition_start_time_for_name(self, mock_get_file, mock_file_exists):

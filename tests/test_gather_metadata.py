@@ -1395,5 +1395,230 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertEqual(result, user_procedures)
 
 
+class TestApplyPortalAcquisition(unittest.TestCase):
+    """Tests for _apply_portal_acquisition"""
+
+    def _make_job(self, raise_if_portal_mismatch: bool = False) -> GatherMetadataJob:
+        with patch("os.makedirs"):
+            settings = JobSettings(
+                metadata_dir="/test/metadata",
+                output_dir="/test/output",
+                subject_id="123456",
+                data_description_settings=DataDescriptionSettings(
+                    project_name="Test Project",
+                    modalities=[Modality.ECEPHYS],
+                ),
+                acquisition_start_time=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+                portal_acquisition_uuid="test-uuid",
+                raise_if_portal_mismatch=raise_if_portal_mismatch,
+            )
+            return GatherMetadataJob(settings=settings)
+
+    @patch("aind_metadata_mapper.gather_metadata.get_scheduled_acquisition")
+    def test_happy_path_sets_acquisition_type_and_returns_platform(self, mock_get):
+        mock_get.return_value = {
+            "subject_id": "123456",
+            "date": "2023-01-01",
+            "acquisition_type": "training",
+            "platform": "behavior",
+        }
+        job = self._make_job()
+        acquisition = {"subject_id": "123456"}
+
+        result_acquisition, platform = job._apply_portal_acquisition(
+            acquisition=acquisition,
+            subject_id="123456",
+            acquisition_start_time="2023-01-01T12:00:00+00:00",
+        )
+
+        self.assertEqual(result_acquisition["acquisition_type"], "training")
+        self.assertEqual(platform, "behavior")
+
+    @patch("logging.warning")
+    @patch("aind_metadata_mapper.gather_metadata.get_scheduled_acquisition")
+    def test_fetch_failure_warns_and_returns_unchanged(self, mock_get, mock_warning):
+        mock_get.return_value = None
+        job = self._make_job(raise_if_portal_mismatch=False)
+        acquisition = {"subject_id": "123456"}
+
+        result_acquisition, platform = job._apply_portal_acquisition(
+            acquisition=acquisition,
+            subject_id="123456",
+            acquisition_start_time="2023-01-01T12:00:00+00:00",
+        )
+
+        self.assertEqual(result_acquisition, acquisition)
+        self.assertIsNone(platform)
+        mock_warning.assert_called_once()
+
+    @patch("aind_metadata_mapper.gather_metadata.get_scheduled_acquisition")
+    def test_fetch_failure_raises_when_flag_set(self, mock_get):
+        mock_get.return_value = None
+        job = self._make_job(raise_if_portal_mismatch=True)
+
+        with self.assertRaises(ValueError) as context:
+            job._apply_portal_acquisition(
+                acquisition={"subject_id": "123456"},
+                subject_id="123456",
+                acquisition_start_time="2023-01-01T12:00:00+00:00",
+            )
+        self.assertIn("Could not fetch scheduled acquisition", str(context.exception))
+
+    @patch("logging.warning")
+    @patch("aind_metadata_mapper.gather_metadata.get_scheduled_acquisition")
+    def test_missing_local_acquisition_warns_and_still_returns_platform(self, mock_get, mock_warning):
+        mock_get.return_value = {
+            "subject_id": "123456",
+            "date": "2023-01-01",
+            "acquisition_type": "training",
+            "platform": "behavior",
+        }
+        job = self._make_job(raise_if_portal_mismatch=False)
+
+        result_acquisition, platform = job._apply_portal_acquisition(
+            acquisition=None,
+            subject_id="123456",
+            acquisition_start_time="2023-01-01T12:00:00+00:00",
+        )
+
+        self.assertIsNone(result_acquisition)
+        self.assertEqual(platform, "behavior")
+        mock_warning.assert_called_once()
+
+    @patch("aind_metadata_mapper.gather_metadata.get_scheduled_acquisition")
+    def test_missing_local_acquisition_raises_when_flag_set(self, mock_get):
+        mock_get.return_value = {
+            "subject_id": "123456",
+            "date": "2023-01-01",
+            "acquisition_type": "training",
+            "platform": "behavior",
+        }
+        job = self._make_job(raise_if_portal_mismatch=True)
+
+        with self.assertRaises(ValueError) as context:
+            job._apply_portal_acquisition(
+                acquisition=None,
+                subject_id="123456",
+                acquisition_start_time="2023-01-01T12:00:00+00:00",
+            )
+        self.assertIn("no acquisition metadata exists", str(context.exception))
+
+    @patch("logging.warning")
+    @patch("aind_metadata_mapper.gather_metadata.get_scheduled_acquisition")
+    def test_subject_id_mismatch_warns_by_default(self, mock_get, mock_warning):
+        mock_get.return_value = {
+            "subject_id": "999999",
+            "date": "2023-01-01",
+            "acquisition_type": "training",
+            "platform": "behavior",
+        }
+        job = self._make_job(raise_if_portal_mismatch=False)
+
+        result_acquisition, platform = job._apply_portal_acquisition(
+            acquisition={"subject_id": "123456"},
+            subject_id="123456",
+            acquisition_start_time="2023-01-01T12:00:00+00:00",
+        )
+
+        self.assertEqual(result_acquisition["acquisition_type"], "training")
+        mock_warning.assert_called_once()
+        self.assertIn("subject_id", str(mock_warning.call_args))
+
+    @patch("aind_metadata_mapper.gather_metadata.get_scheduled_acquisition")
+    def test_subject_id_mismatch_raises_when_flag_set(self, mock_get):
+        mock_get.return_value = {
+            "subject_id": "999999",
+            "date": "2023-01-01",
+            "acquisition_type": "training",
+            "platform": "behavior",
+        }
+        job = self._make_job(raise_if_portal_mismatch=True)
+
+        with self.assertRaises(ValueError) as context:
+            job._apply_portal_acquisition(
+                acquisition={"subject_id": "123456"},
+                subject_id="123456",
+                acquisition_start_time="2023-01-01T12:00:00+00:00",
+            )
+        self.assertIn("subject_id", str(context.exception))
+
+    @patch("logging.warning")
+    @patch("aind_metadata_mapper.gather_metadata.get_scheduled_acquisition")
+    def test_date_mismatch_warns_by_default(self, mock_get, mock_warning):
+        mock_get.return_value = {
+            "subject_id": "123456",
+            "date": "2023-02-02",
+            "acquisition_type": "training",
+            "platform": "behavior",
+        }
+        job = self._make_job(raise_if_portal_mismatch=False)
+
+        job._apply_portal_acquisition(
+            acquisition={"subject_id": "123456"},
+            subject_id="123456",
+            acquisition_start_time="2023-01-01T12:00:00+00:00",
+        )
+
+        mock_warning.assert_called_once()
+        self.assertIn("date", str(mock_warning.call_args))
+
+    @patch("aind_metadata_mapper.gather_metadata.get_scheduled_acquisition")
+    def test_date_mismatch_raises_when_flag_set(self, mock_get):
+        mock_get.return_value = {
+            "subject_id": "123456",
+            "date": "2023-02-02",
+            "acquisition_type": "training",
+            "platform": "behavior",
+        }
+        job = self._make_job(raise_if_portal_mismatch=True)
+
+        with self.assertRaises(ValueError) as context:
+            job._apply_portal_acquisition(
+                acquisition={"subject_id": "123456"},
+                subject_id="123456",
+                acquisition_start_time="2023-01-01T12:00:00+00:00",
+            )
+        self.assertIn("date", str(context.exception))
+
+    @patch("logging.warning")
+    @patch("aind_metadata_mapper.gather_metadata.get_scheduled_acquisition")
+    def test_acquisition_type_override_warns_by_default(self, mock_get, mock_warning):
+        mock_get.return_value = {
+            "subject_id": "123456",
+            "date": "2023-01-01",
+            "acquisition_type": "training",
+            "platform": "behavior",
+        }
+        job = self._make_job(raise_if_portal_mismatch=False)
+
+        result_acquisition, _ = job._apply_portal_acquisition(
+            acquisition={"subject_id": "123456", "acquisition_type": "existing-type"},
+            subject_id="123456",
+            acquisition_start_time="2023-01-01T12:00:00+00:00",
+        )
+
+        self.assertEqual(result_acquisition["acquisition_type"], "training")
+        mock_warning.assert_called_once()
+        self.assertIn("overrides existing acquisition_type", str(mock_warning.call_args))
+
+    @patch("aind_metadata_mapper.gather_metadata.get_scheduled_acquisition")
+    def test_acquisition_type_override_raises_when_flag_set(self, mock_get):
+        mock_get.return_value = {
+            "subject_id": "123456",
+            "date": "2023-01-01",
+            "acquisition_type": "training",
+            "platform": "behavior",
+        }
+        job = self._make_job(raise_if_portal_mismatch=True)
+
+        with self.assertRaises(ValueError) as context:
+            job._apply_portal_acquisition(
+                acquisition={"subject_id": "123456", "acquisition_type": "existing-type"},
+                subject_id="123456",
+                acquisition_start_time="2023-01-01T12:00:00+00:00",
+            )
+        self.assertIn("overrides existing acquisition_type", str(context.exception))
+
+
 if __name__ == "__main__":
     unittest.main()

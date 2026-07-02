@@ -30,6 +30,7 @@ from aind_metadata_mapper.models import JobSettings
 from aind_metadata_mapper.utils import (
     get_instrument,
     get_procedures,
+    get_scheduled_acquisition,
     get_subject,
     metadata_service_helper,
     normalize_utc_timezone,
@@ -369,6 +370,87 @@ class GatherMetadataJob:
             else:
                 logging.debug("No acquisition metadata file found.")
                 return None
+
+    def _raise_or_warn_portal_mismatch(self, msg: str) -> None:
+        """Raise or log a warning for a portal mismatch, based on raise_if_portal_mismatch."""
+        if self.settings.raise_if_portal_mismatch:
+            raise ValueError(msg)
+        logging.warning(msg)
+
+    def _check_portal_record_against_local(
+        self, record: dict, acquisition: dict, subject_id: Optional[str], acquisition_start_time: str
+    ) -> None:
+        """Compare a portal record's subject_id/date/acquisition_type against local values."""
+        portal_subject_id = record.get("subject_id")
+        if subject_id and portal_subject_id and str(subject_id) != str(portal_subject_id):
+            self._raise_or_warn_portal_mismatch(
+                f"Portal scheduled acquisition subject_id '{portal_subject_id}' does not match "
+                f"job subject_id '{subject_id}'."
+            )
+
+        portal_date = record.get("date")
+        local_date = datetime.fromisoformat(normalize_utc_timezone(acquisition_start_time)).date().isoformat()
+        if portal_date and portal_date != local_date:
+            self._raise_or_warn_portal_mismatch(
+                f"Portal scheduled acquisition date '{portal_date}' does not match "
+                f"acquisition_start_time date '{local_date}'."
+            )
+
+        portal_type = record.get("acquisition_type")
+        existing_type = acquisition.get("acquisition_type")
+        if existing_type and portal_type and existing_type != portal_type:
+            self._raise_or_warn_portal_mismatch(
+                f"Portal acquisition_type '{portal_type}' overrides existing acquisition_type '{existing_type}'."
+            )
+
+    def _apply_portal_acquisition(
+        self,
+        acquisition: Optional[dict],
+        subject_id: Optional[str],
+        acquisition_start_time: str,
+    ) -> tuple[Optional[dict], Optional[str]]:
+        """Fetch a scheduled acquisition from the metadata portal and merge it in.
+
+        Sets acquisition["acquisition_type"] from the portal record and returns the
+        record's platform so the caller can append it to data_description.tags.
+        Any mismatch between the portal record and local settings (subject_id, date,
+        or an existing acquisition_type being overridden) either raises or logs a
+        warning, depending on ``self.settings.raise_if_portal_mismatch``.
+
+        Parameters
+        ----------
+        acquisition : Optional[dict]
+            Existing acquisition metadata, or None if none was found locally.
+        subject_id : Optional[str]
+            Resolved subject_id for this job.
+        acquisition_start_time : str
+            Resolved acquisition_start_time (ISO format) for this job.
+
+        Returns
+        -------
+        tuple[Optional[dict], Optional[str]]
+            The (possibly updated) acquisition dict, and the portal's platform value.
+        """
+        portal_uuid = self.settings.portal_acquisition_uuid
+        base_url = urljoin(self.settings.portal_url, self.settings.portal_scheduled_acquisition_endpoint)
+        record = get_scheduled_acquisition(portal_uuid, base_url=base_url)
+
+        if record is None:
+            self._raise_or_warn_portal_mismatch(
+                f"Could not fetch scheduled acquisition '{portal_uuid}' from the metadata portal."
+            )
+            return acquisition, None
+
+        if acquisition is None:
+            self._raise_or_warn_portal_mismatch(
+                "portal_acquisition_uuid was provided but no acquisition metadata exists to apply it to."
+            )
+            return acquisition, record.get("platform")
+
+        self._check_portal_record_against_local(record, acquisition, subject_id, acquisition_start_time)
+
+        acquisition["acquisition_type"] = record.get("acquisition_type")
+        return acquisition, record.get("platform")
 
     def _merge_models(self, model_class, models: list[dict]) -> dict:
         """Merge multiple metadata dictionaries into one."""
@@ -823,9 +905,6 @@ class GatherMetadataJob:
         # Get acquisition first so that we can use the acquisition_start_time
         # for the data_description
         acquisition = self.get_acquisition()
-        if acquisition:
-            core_metadata["acquisition"] = acquisition
-            self._write_json_file(Acquisition.default_filename(), acquisition)
 
         # Get and validate acquisition_start_time
         acquisition_start_time = acquisition.get("acquisition_start_time") if acquisition else None
@@ -848,6 +927,24 @@ class GatherMetadataJob:
 
         # Get and validate subject_id
         subject_id = self._validate_and_get_subject_id(acquisition)
+
+        # If a portal_acquisition_uuid is provided, fetch it and merge acquisition_type/platform in
+        platform = None
+        if self.settings.portal_acquisition_uuid:
+            acquisition, platform = self._apply_portal_acquisition(
+                acquisition=acquisition,
+                subject_id=subject_id,
+                acquisition_start_time=acquisition_start_time,
+            )
+            if platform:
+                tag = f"platform:{platform}"
+                existing_tags = self.settings.data_description_settings.tags or []
+                if tag not in existing_tags:
+                    self.settings.data_description_settings.tags = existing_tags + [tag]
+
+        if acquisition:
+            core_metadata["acquisition"] = acquisition
+            self._write_json_file(Acquisition.default_filename(), acquisition)
 
         # Always create data description (required)
         data_description = self.build_data_description(

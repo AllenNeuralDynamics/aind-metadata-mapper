@@ -100,6 +100,15 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
             "If False, log a warning and continue."
         ),
     )
+    raise_if_portal_mismatch: bool = Field(
+        default=False,
+        description=(
+            "If True, GatherMetadataJob will raise an error if the metadata portal's scheduled "
+            "acquisition (fetched via portal_acquisition_uuid) has a subject_id or date that does "
+            "not match the local settings, or if its acquisition_type would override a different "
+            "existing value. If False, log a warning and continue."
+        ),
+    )
 
     # Metadata settings
     subject_id: Optional[str] = Field(
@@ -116,6 +125,14 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
             "Acquisition start time. If acquisition.json is present, this will be overridden by the value"
             " in acquisition.json. If raise_if_invalid is True, this time must match the start time provided"
             " by the acquisition.json."
+        ),
+    )
+    portal_acquisition_uuid: Optional[str] = Field(
+        default=None,
+        description=(
+            "Optional UUID of a scheduled acquisition registered in the metadata portal. If provided, "
+            "GatherMetadataJob fetches the corresponding record and uses it to set acquisition_type in "
+            "acquisition.json, and appends a 'platform:<value>' tag to data_description.tags."
         ),
     )
 
@@ -149,4 +166,14 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
     metadata_service_instrument_endpoint: str = Field(
         default="/api/v2/instrument/",
         description="Metadata service endpoint for instrument metadata.",
+    )
+
+    # Metadata portal settings
+    portal_url: str = Field(
+        default="https://metadata-portal.allenneuraldynamics.org",
+        description="Metadata portal URL used to fetch scheduled acquisition info.",
+    )
+    portal_scheduled_acquisition_endpoint: str = Field(
+        default="/scheduled-acquisitions/",
+        description="Metadata portal endpoint for scheduled acquisition metadata.",
     )
