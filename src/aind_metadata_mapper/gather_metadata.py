@@ -21,7 +21,6 @@ from aind_data_schema.core.processing import Processing
 from aind_data_schema.core.quality_control import QualityControl
 from aind_data_schema.core.subject import Subject
 from aind_data_schema_models.data_name_patterns import DataLevel
-from aind_data_schema_models.organizations import Organization
 from pydantic import ValidationError
 
 from aind_metadata_mapper.base import MapperJobSettings
@@ -212,7 +211,7 @@ class GatherMetadataJob:
         # Create new data description
         new_data_description = DataDescription(
             creation_time=creation_time,
-            institution=Organization.AIND,
+            institution=self.settings.data_description_settings.institution,
             project_name=self.settings.data_description_settings.project_name,
             modalities=modalities,
             funding_source=funding_source,

@@ -6,6 +6,7 @@ from aind_data_schema.base import AwareDatetimeWithDefault
 from aind_data_schema.components.subjects import CalibrationObject
 from aind_data_schema_models.data_name_patterns import Group
 from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.organizations import Organization
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
@@ -36,6 +37,9 @@ class DataDescriptionSettings(BaseSettings):
     data_summary: Optional[str] = Field(
         default=None,
         description="Semantic summary of experimental goal.",
+    )
+    institution: Organization.ONE_OF = Field(
+        default=Organization.AIND, description="Research organization that collected the data."
     )
 
     @field_validator("modalities", mode="before")
