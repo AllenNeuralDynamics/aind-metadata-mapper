@@ -685,6 +685,133 @@ def calculate_frame_mean_time(sync_file, frame_keys):
     return ptd_start, ptd_end
 
 
+def _select_photodiode_delay(
+    vsync_times,
+    rising_times,
+    falling_times,
+    frames_per_photodiode_cycle=120,
+    maximum_delay_seconds=0.1,
+    minimum_required_matches=3,
+):
+    """Select the photodiode edge phase that follows stimulus frame zero.
+
+    The photodiode square can begin in either state. Its state immediately
+    before the first stimulus vsync predicts whether a rising or falling edge
+    should report the first displayed transition. The predicted polarity is
+    accepted only when it follows frame zero within the monitor-delay window
+    and recurs at the expected photodiode cycle.
+
+    Parameters
+    ----------
+    vsync_times : np.ndarray
+        Falling stimulus-vsync times in seconds.
+    rising_times, falling_times : np.ndarray
+        Photodiode transition times in seconds.
+    frames_per_photodiode_cycle : int, optional
+        Number of stimulus frames between same-polarity transitions.
+    maximum_delay_seconds : float, optional
+        Largest plausible delay between a stimulus frame and photodiode edge.
+    minimum_required_matches : int, optional
+        Minimum number of recurring transitions needed to accept a polarity.
+
+    Returns
+    -------
+    delay : float or None
+        Mean monitor delay for the selected edge phase, or ``None`` when no
+        polarity passes the timing and recurrence checks.
+    """
+    if len(vsync_times) == 0:
+        return None
+
+    # The most recent transition before frame zero determines the line state,
+    # and therefore which polarity should occur next.
+    frame_zero_time = vsync_times[0]
+    rising_edges_before_frame_zero = np.searchsorted(
+        rising_times, frame_zero_time
+    )
+    falling_edges_before_frame_zero = np.searchsorted(
+        falling_times, frame_zero_time
+    )
+    last_rising_time = (
+        rising_times[rising_edges_before_frame_zero - 1]
+        if rising_edges_before_frame_zero
+        else -np.inf
+    )
+    last_falling_time = (
+        falling_times[falling_edges_before_frame_zero - 1]
+        if falling_edges_before_frame_zero
+        else -np.inf
+    )
+    preferred_edge_times = (
+        falling_times
+        if last_rising_time > last_falling_time
+        else rising_times
+    )
+    alternate_edge_times = (
+        rising_times
+        if preferred_edge_times is falling_times
+        else falling_times
+    )
+
+    # Same-polarity photodiode transitions should align with stimulus frames
+    # separated by the configured photodiode cycle.
+    expected_transition_times = vsync_times[::frames_per_photodiode_cycle]
+
+    for candidate_edge_times in (
+        preferred_edge_times,
+        alternate_edge_times,
+    ):
+        # Find the first candidate photodiode edge at or after each expected
+        # transition time.
+        following_edge_indexes = np.searchsorted(
+            candidate_edge_times,
+            expected_transition_times,
+        )
+
+        # Exclude expected transitions after the final recorded edge. For the
+        # rest, subtraction gives the monitor delay for each candidate pair.
+        has_following_edge_mask = following_edge_indexes < len(
+            candidate_edge_times
+        )
+        candidate_delays_seconds = (
+            candidate_edge_times[
+                following_edge_indexes[has_following_edge_mask]
+            ]
+            - expected_transition_times[has_following_edge_mask]
+        )
+
+        # Mark candidate pairs whose delay falls in the monitor-response
+        # window, then measure how consistently this polarity matches.
+        plausible_delay_mask = np.logical_and(
+            candidate_delays_seconds >= 0,
+            candidate_delays_seconds <= maximum_delay_seconds,
+        )
+        plausible_delays_seconds = candidate_delays_seconds[
+            plausible_delay_mask
+        ]
+        required_matches = min(
+            minimum_required_matches,
+            len(expected_transition_times),
+        )
+        plausible_match_fraction = (
+            len(plausible_delays_seconds) / len(candidate_delays_seconds)
+            if len(candidate_delays_seconds)
+            else 0
+        )
+
+        # Require frame zero to match and at least 90% recurrence; boundary
+        # transitions near the end of a stimulus need not follow the cycle.
+        if (
+            len(plausible_delay_mask)
+            and plausible_delay_mask[0]
+            and len(plausible_delays_seconds) >= required_matches
+            and plausible_match_fraction >= 0.9
+        ):
+            return float(np.mean(plausible_delays_seconds))
+
+    return None
+
+
 def extract_frame_times_with_delay(
     sync_file,
     frame_keys=FRAME_KEYS,
@@ -722,6 +849,28 @@ def extract_frame_times_with_delay(
         sync.get_rising_edges(sync_file, "stim_photodiode"),
         dtype=np.float64,
     ) / float(sample_freq)
+    try:
+        photodiode_fall = np.array(
+            sync.get_falling_edges(sync_file, "stim_photodiode"),
+            dtype=np.float64,
+        ) / float(sample_freq)
+        selected_delay = _select_photodiode_delay(
+            stim_vsync_fall,
+            photodiode_rise,
+            photodiode_fall,
+        )
+    except (KeyError, TypeError, ValueError):
+        logger.debug(
+            "Unable to validate both photodiode edge phases; using legacy "
+            "delay calculation",
+            exc_info=True,
+        )
+        selected_delay = None
+    if selected_delay is not None:
+        logger.info(
+            "Monitor delay selected from validated photodiode edge phase"
+        )
+        return selected_delay
 
     # Find start and stop of stimulus
     # test and correct for photodiode transition errors

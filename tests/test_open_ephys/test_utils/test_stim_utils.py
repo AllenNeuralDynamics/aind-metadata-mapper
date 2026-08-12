@@ -462,44 +462,81 @@ class TestStimUtils(unittest.TestCase):
                                     final_frame_start_times,
                                 )
 
-    def test_extract_frame_times_with_delay(self):
-        """
-        Tests the extract_frame_times_with_delay function.
-        """
-        with (
-            patch(
-                "aind_metadata_mapper.open_ephys.utils" ".sync_utils.get_edges"
-            ) as mock_get_edges,
-            patch(
-                "aind_metadata_mapper.open_ephys.utils"
-                ".stim_utils.sync.get_rising_edges"
-            ) as mock_get_rising_edges,
-            patch(
-                "aind_metadata_mapper.open_ephys.utils"
-                ".stim_utils.calculate_frame_mean_time"
-            ) as mock_calculate_frame_mean_time,
-        ):
+    @patch(
+        "aind_metadata_mapper.open_ephys.utils.sync_utils.get_falling_edges"
+    )
+    @patch(
+        "aind_metadata_mapper.open_ephys.utils.sync_utils.get_rising_edges"
+    )
+    @patch("aind_metadata_mapper.open_ephys.utils.sync_utils.get_edges")
+    def test_extract_frame_times_with_delay_uses_rising_phase(
+        self,
+        mock_get_edges,
+        mock_get_rising_edges,
+        mock_get_falling_edges,
+    ):
+        """A low photodiode state at frame zero selects rising edges."""
+        vsync_times = np.arange(0, 6, 1 / 60)
+        mock_get_edges.return_value = vsync_times
+        mock_get_rising_edges.return_value = (
+            np.array([0.024, 2.024, 4.024]) * 100000
+        )
+        mock_get_falling_edges.return_value = (
+            np.array([1.024, 3.024, 5.024]) * 100000
+        )
 
-            # Mock return values
-            mock_get_edges.return_value = np.array([0])
-            mock_get_rising_edges.return_value = np.array([0])
-            mock_calculate_frame_mean_time.return_value = (0, 1)
+        delay = stim.extract_frame_times_with_delay("mock_sync_file")
 
-            # Define input parameters
-            sync_file = "dummy_sync_file"
-            frame_keys = ["key1", "key2"]
+        self.assertAlmostEqual(delay, 0.024)
 
-            # Expected output (based on example values)
-            expected_delay = 0.0356  # Assumed delay in case of error
+    @patch(
+        "aind_metadata_mapper.open_ephys.utils.sync_utils.get_falling_edges"
+    )
+    @patch(
+        "aind_metadata_mapper.open_ephys.utils.sync_utils.get_rising_edges"
+    )
+    @patch("aind_metadata_mapper.open_ephys.utils.sync_utils.get_edges")
+    def test_extract_frame_times_with_delay_uses_falling_phase(
+        self,
+        mock_get_edges,
+        mock_get_rising_edges,
+        mock_get_falling_edges,
+    ):
+        """A high photodiode state at frame zero selects falling edges."""
+        vsync_times = np.arange(0, 6, 1 / 60)
+        mock_get_edges.return_value = vsync_times
+        mock_get_rising_edges.return_value = (
+            np.array([-1, 1.02, 3.02, 5.02]) * 100000
+        )
+        mock_get_falling_edges.return_value = (
+            np.array([0.02, 2.02, 4.02]) * 100000
+        )
 
-            # Call the function
-            delay = stim.extract_frame_times_with_delay(sync_file, frame_keys)
+        delay = stim.extract_frame_times_with_delay("mock_sync_file")
 
-            # Assertions
-            np.testing.assert_array_equal(
-                expected_delay,
-                delay,
-            )
+        self.assertAlmostEqual(delay, 0.02)
+
+    def test_select_photodiode_delay_rejects_missing_frame_zero_edge(self):
+        """Later regular edges cannot replace a missing frame-zero edge."""
+        vsync_times = np.arange(0, 6, 1 / 60)
+        rising_times = np.array([2.024, 4.024])
+        falling_times = np.array([1.024, 3.024, 5.024])
+
+        delay = stim._select_photodiode_delay(
+            vsync_times,
+            rising_times,
+            falling_times,
+        )
+
+        self.assertIsNone(delay)
+
+        delay = stim._select_photodiode_delay(
+            vsync_times,
+            np.array([]),
+            np.array([]),
+        )
+
+        self.assertIsNone(delay)
 
     def test_calculate_frame_mean_time(self):
         """
