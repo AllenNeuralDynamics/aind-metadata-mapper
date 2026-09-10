@@ -332,8 +332,6 @@ class FIPMapper(MapperJob):
             Descriptive acquisition type. Passed straight through when provided. If None,
             an empty string is used rather than None, since aind-data-schema requires the
             field; an empty value is left to be filled by the acquisition merge downstream.
-            The extracted metadata does not yet carry an acquisition_type (see
-            aind-metadata-extractor#34), so today this is the only way to set it.
 
         Returns
         -------
