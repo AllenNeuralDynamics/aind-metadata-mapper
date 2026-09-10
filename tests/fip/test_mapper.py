@@ -18,7 +18,7 @@ from pathlib import Path
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.fip import mapper as mapper_mod
-from aind_metadata_mapper.fip.constants import ACQUISITION_TYPE_AIND_VR_FORAGING, VR_FORAGING_FIP_REPO_URL
+from aind_metadata_mapper.fip.constants import VR_FORAGING_FIP_REPO_URL
 from aind_metadata_mapper.fip.mapper import FIPMapper
 
 
@@ -74,7 +74,7 @@ class TestFIPMapper(unittest.TestCase):
 
         self.assertEqual(acquisition.subject_id, "test")
         self.assertEqual(acquisition.instrument_id, "test_rig")
-        self.assertEqual(acquisition.acquisition_type, ACQUISITION_TYPE_AIND_VR_FORAGING)
+        self.assertEqual(acquisition.acquisition_type, "")
         self.assertEqual(len(acquisition.experimenters), 2)
         self.assertEqual(acquisition.experimenters[0], "Foo")
         self.assertEqual(acquisition.notes, "test session")
@@ -251,6 +251,38 @@ class TestFIPMapper(unittest.TestCase):
         data_stream = acquisition.data_streams[0]
         # Verify code field is None (fixture has commit_hash=None)
         self.assertIsNone(data_stream.code)
+
+    def test_acquisition_type_passed_through(self):
+        """Test that a provided acquisition_type is used verbatim."""
+        acquisition = self.mapper.transform(
+            self.example_intermediate_data,
+            skip_validation=True,
+            intended_measurements=self.test_intended_measurements,
+            implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
+            acquisition_type="AindVrForaging",
+        )
+        self.assertEqual(acquisition.acquisition_type, "AindVrForaging")
+
+    def test_acquisition_type_defaults_to_empty_string(self):
+        """Test that an unset acquisition_type becomes an empty string, not None.
+
+        acquisition_type is required by aind-data-schema, so None is not a valid
+        value. An empty string is left to be filled by the acquisition merge
+        downstream, the same way ethics_review_id is.
+        """
+        for value in (None, ""):
+            with self.subTest(acquisition_type=value):
+                acquisition = self.mapper.transform(
+                    self.example_intermediate_data,
+                    skip_validation=True,
+                    intended_measurements=self.test_intended_measurements,
+                    implanted_fibers=self.test_implanted_fibers,
+                    ethics_review_id=self.test_ethics_review_id,
+                    acquisition_type=value,
+                )
+                self.assertEqual(acquisition.acquisition_type, "")
+                self.assertIsNotNone(acquisition.acquisition_type)
 
     def test_active_devices(self):
         """Test that active devices list is populated with all FIP system components.

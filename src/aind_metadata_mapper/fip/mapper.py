@@ -34,7 +34,6 @@ from aind_data_schema_models.units import PowerUnit, SizeUnit, TimeUnit
 
 from aind_metadata_mapper.base import MapperJob, MapperJobSettings
 from aind_metadata_mapper.fip.constants import (
-    ACQUISITION_TYPE_AIND_VR_FORAGING,
     CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND,
     DEFAULT_LED_POWER,
     DEFAULT_OUTPUT_FILENAME,
@@ -306,6 +305,7 @@ class FIPMapper(MapperJob):
         intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]] = None,
         implanted_fibers: Optional[List[int]] = None,
         ethics_review_id: Optional[List[str]] = None,
+        acquisition_type: Optional[str] = None,
     ) -> Acquisition:
         """Transforms intermediate metadata into a complete Acquisition model.
 
@@ -328,6 +328,12 @@ class FIPMapper(MapperJob):
             protocol is found, in which case it is filled by the acquisition merge
             downstream. If provided, the value is verified against LabTracks and a
             ValueError is raised on mismatch.
+        acquisition_type : Optional[str], optional
+            Descriptive acquisition type. Passed straight through when provided. If None,
+            an empty string is used rather than None, since aind-data-schema requires the
+            field; an empty value is left to be filled by the acquisition merge downstream.
+            The extracted metadata does not yet carry an acquisition_type (see
+            aind-metadata-extractor#34), so today this is the only way to set it.
 
         Returns
         -------
@@ -420,7 +426,10 @@ class FIPMapper(MapperJob):
             experimenters=session.get("experimenter", []),
             ethics_review_id=ethics_review_id,
             instrument_id=instrument_id,
-            acquisition_type=ACQUISITION_TYPE_AIND_VR_FORAGING,
+            # Empty string rather than None when unset: acquisition_type is required by
+            # aind-data-schema, and an empty value is filled in by the acquisition merge
+            # downstream (see aind-data-schema#1876).
+            acquisition_type=acquisition_type or "",
             notes=session.get("notes"),
             data_streams=[data_stream],
             stimulus_epochs=[],
