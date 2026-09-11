@@ -35,6 +35,8 @@ from aind_data_schema_models.units import PowerUnit, SizeUnit, TimeUnit
 from aind_metadata_mapper.base import MapperJob, MapperJobSettings
 from aind_metadata_mapper.fip.constants import (
     ACQUISITION_TYPE_AIND_VR_FORAGING,
+    AIND_PHYSIOLOGY_FIP_PACKAGE_NAME,
+    AIND_PHYSIOLOGY_FIP_REPO_URL,
     CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND,
     DEFAULT_LED_POWER,
     DEFAULT_OUTPUT_FILENAME,
@@ -50,7 +52,6 @@ from aind_metadata_mapper.fip.constants import (
     ROI_KEYWORD_ISO,
     ROI_KEYWORD_RED,
     ROI_KEYWORD_ROI,
-    VR_FORAGING_FIP_REPO_URL,
 )
 from aind_metadata_mapper.utils import (
     ensure_timezone,
@@ -398,10 +399,19 @@ class FIPMapper(MapperJob):
         # Get protocol URLs for FIP modality
         protocol_id = get_protocols_for_modality("fip") or None
 
-        # Create code list from session commit hash
+        # Create code list from the aind-physiology-fip version reported by the rig.
+        # allow_dirty_repo records whether the launcher was permitted to run from a dirty
+        # repository, not whether it actually was; when True the version is unverified.
         code = None
-        if session.get("commit_hash"):
-            code = [Code(url=VR_FORAGING_FIP_REPO_URL, version=session["commit_hash"])]
+        if rig.get("version"):
+            code = [
+                Code(
+                    url=AIND_PHYSIOLOGY_FIP_REPO_URL,
+                    name=AIND_PHYSIOLOGY_FIP_PACKAGE_NAME,
+                    version=rig["version"],
+                    parameters={"allow_dirty_repo": bool(session.get("allow_dirty_repo", False))},
+                )
+            ]
 
         data_stream = DataStream(
             stream_start_time=session_start_time,

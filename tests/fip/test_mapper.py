@@ -18,7 +18,11 @@ from pathlib import Path
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.fip import mapper as mapper_mod
-from aind_metadata_mapper.fip.constants import ACQUISITION_TYPE_AIND_VR_FORAGING, VR_FORAGING_FIP_REPO_URL
+from aind_metadata_mapper.fip.constants import (
+    ACQUISITION_TYPE_AIND_VR_FORAGING,
+    AIND_PHYSIOLOGY_FIP_PACKAGE_NAME,
+    AIND_PHYSIOLOGY_FIP_REPO_URL,
+)
 from aind_metadata_mapper.fip.mapper import FIPMapper
 
 
@@ -190,14 +194,13 @@ class TestFIPMapper(unittest.TestCase):
         self.assertEqual(len(data_stream.modalities), 1)
         self.assertEqual(data_stream.modalities[0], Modality.FIB)
 
-    def test_code_field_with_commit_hash(self):
-        """Test that code field is populated when commit_hash is present.
+    def test_code_field_from_rig_version(self):
+        """Test that code field is populated from the rig's aind-physiology-fip version.
 
-        When the session metadata includes a commit_hash, the mapper should create
-        a Code object with the VrForaging-Fip repository URL and the commit hash
-        as the version, allowing tracking of the exact code version used during acquisition.
+        rig.version is the aind-physiology-fip package version, so it pairs with the
+        Aind.Physiology.Fip repository URL. The session's commit_hash is the HEAD of the
+        deployment repository the launcher runs from, so it is deliberately not used.
         """
-        # Create test metadata with commit_hash
         test_metadata = {
             "data_stream_metadata": [
                 {
@@ -215,8 +218,9 @@ class TestFIPMapper(unittest.TestCase):
                 "root_path": "/data/test",
                 "session_name": "test_session",
                 "commit_hash": "abc123def456",
+                "allow_dirty_repo": False,
             },
-            "rig": self.example_intermediate_data["rig"],
+            "rig": {**self.example_intermediate_data["rig"], "version": "0.1.2"},
         }
 
         acquisition = self.mapper.transform(
@@ -228,19 +232,24 @@ class TestFIPMapper(unittest.TestCase):
         )
         data_stream = acquisition.data_streams[0]
 
-        # Verify code field is populated
         self.assertIsNotNone(data_stream.code)
         self.assertEqual(len(data_stream.code), 1)
-        self.assertEqual(data_stream.code[0].url, VR_FORAGING_FIP_REPO_URL)
-        self.assertEqual(data_stream.code[0].version, "abc123def456")
+        code = data_stream.code[0]
+        self.assertEqual(code.url, AIND_PHYSIOLOGY_FIP_REPO_URL)
+        self.assertEqual(code.name, AIND_PHYSIOLOGY_FIP_PACKAGE_NAME)
+        self.assertEqual(code.version, "0.1.2")
+        # The deployment repo's commit hash must not be paired with this URL
+        self.assertIsNone(code.commit_hash)
+        self.assertEqual(code.parameters.allow_dirty_repo, False)
 
-    def test_code_field_without_commit_hash(self):
-        """Test that code field is None when commit_hash is absent.
+    def test_code_field_records_allow_dirty_repo(self):
+        """Test that allow_dirty_repo is carried through to the Code parameters.
 
-        When the session metadata does not include a commit_hash, the mapper should
-        leave the code field as None rather than creating an incomplete Code object.
+        allow_dirty_repo records whether the launcher was permitted to run from a dirty
+        repository, not whether it actually was, so a True value means the reported
+        version is unverified rather than known to be wrong.
         """
-        # Use fixture data which has commit_hash=None
+        # Fixture data has allow_dirty_repo=True
         acquisition = self.mapper.transform(
             self.example_intermediate_data,
             skip_validation=True,
@@ -249,7 +258,27 @@ class TestFIPMapper(unittest.TestCase):
             ethics_review_id=self.test_ethics_review_id,
         )
         data_stream = acquisition.data_streams[0]
-        # Verify code field is None (fixture has commit_hash=None)
+
+        self.assertIsNotNone(data_stream.code)
+        self.assertEqual(data_stream.code[0].parameters.allow_dirty_repo, True)
+
+    def test_code_field_without_rig_version(self):
+        """Test that code field is None when the rig reports no version.
+
+        Without a version there is nothing to pair with the repository URL, so the
+        mapper leaves code unset rather than creating an incomplete Code object.
+        """
+        rig_without_version = {k: v for k, v in self.example_intermediate_data["rig"].items() if k != "version"}
+        test_metadata = {**self.example_intermediate_data, "rig": rig_without_version}
+
+        acquisition = self.mapper.transform(
+            test_metadata,
+            skip_validation=True,
+            intended_measurements=self.test_intended_measurements,
+            implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
+        )
+        data_stream = acquisition.data_streams[0]
         self.assertIsNone(data_stream.code)
 
     def test_active_devices(self):
