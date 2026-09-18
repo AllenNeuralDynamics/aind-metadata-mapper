@@ -827,7 +827,10 @@ def fingerprint_from_stimulus_file(
     fingerprint_name,
 ):
     """
-    Instantiates fingerprint stimulus epochs from stimulus file.
+    Instantiates static-stimulus epochs from a stimulus file.
+
+    The function name is historical: callers also use it for generalized
+    static stimuli such as surround-suppression and receptive-field blocks.
 
     Parameters
     ----------
@@ -838,60 +841,57 @@ def fingerprint_from_stimulus_file(
     stimulus_timestamps : np.ndarray
         Stimulus timestamps aligned to frame indices.
     fingerprint_name : str
-        Name of the fingerprint stimulus block to extract.
+        Key of the static-stimulus block to extract.
 
     Returns
     -------
     pd.DataFrame
         Table of fingerprint stimulus intervals.
     """
-    fingerprint_stim = stimulus_file["items"]["behavior"]["items"][
+    static_stimulus = stimulus_file["items"]["behavior"]["items"][
         fingerprint_name
     ]["static_stimulus"]
-    save_sweep_table = fingerprint_stim.get("save_sweep_table", False)
+    save_sweep_table = static_stimulus.get("save_sweep_table", False)
 
-    # Get frame indices relative to full session
-    stimulus_session_frame_indices = np.array(
+    # Map each static-stimulus timeline position to its full-session frame.
+    static_to_session_frame_indices = np.array(
         stimulus_file["items"]["behavior"]["items"][fingerprint_name][
             "frame_indices"
         ]
     )
 
-    movie_start_index = sum(
-        1 for frame in fingerprint_stim["frame_list"] if frame == -1
-    )
-    sweep_frames = fingerprint_stim["sweep_frames"]
+    sweep_frame_ranges = static_stimulus["sweep_frames"]
 
-    res = []
+    presentation_rows = []
 
     if save_sweep_table:
-        logger.info("using new logic for fingerprint stimulus")
-        # Use new logic
+        logger.info("Using saved sweep table for static stimulus")
         sweep_table = [
-            fingerprint_stim["sweep_table"][i]
-            for i in fingerprint_stim["sweep_order"]
+            static_stimulus["sweep_table"][i]
+            for i in static_stimulus["sweep_order"]
         ]
-        dimnames = fingerprint_stim["dimnames"]
+        dimnames = static_stimulus["dimnames"]
 
-        for i, stimulus_frame_indices in enumerate(sweep_frames):
-            stimulus_frame_indices = np.array(stimulus_frame_indices).astype(
-                int
-            )
-            stimulus_frame_indices = stimulus_frame_indices + movie_start_index
+        for i, sweep_frame_indices in enumerate(sweep_frame_ranges):
+            # Saved sweep tables use coordinates in the complete static-
+            # stimulus timeline, including gray (-1) frames. Map those
+            # coordinates directly; adding the legacy movie offset would
+            # shift interleaved-gray stimuli and discard valid sweeps.
+            sweep_frame_indices = np.array(sweep_frame_indices).astype(int)
 
             # Keep only valid indices
-            valid_mask = (stimulus_frame_indices >= 0) & (
-                stimulus_frame_indices < len(stimulus_session_frame_indices)
+            valid_mask = (sweep_frame_indices >= 0) & (
+                sweep_frame_indices < len(static_to_session_frame_indices)
             )
-            valid_indices = stimulus_frame_indices[valid_mask]
+            valid_block_indices = sweep_frame_indices[valid_mask]
 
             # Skip sweep if no valid indices remain
-            if len(valid_indices) == 0:
+            if len(valid_block_indices) == 0:
                 logger.info("Skipping sweep %d: no valid frames", i)
                 continue
 
-            start_frame, end_frame = stimulus_session_frame_indices[
-                valid_indices
+            start_frame, end_frame = static_to_session_frame_indices[
+                valid_block_indices
             ]
             start_time = stimulus_timestamps[start_frame]
             stop_time = stimulus_timestamps[
@@ -901,7 +901,7 @@ def fingerprint_from_stimulus_file(
             stim_row = sweep_table[i]
             stim_info = dict(zip(dimnames, stim_row))
 
-            res.append(
+            presentation_rows.append(
                 {
                     "start_time": start_time,
                     "stop_time": stop_time,
@@ -913,31 +913,36 @@ def fingerprint_from_stimulus_file(
             )
 
     else:
-        print("using old logic for fingerprint stimulus")
-        # Fallback to older logic
-        n_repeats = fingerprint_stim["runs"]
-        movie_length = int(len(sweep_frames) / n_repeats)
+        print("Using legacy natural-movie sweep logic")
+        # Legacy natural-movie files use movie-relative sweep coordinates and
+        # encode the movie's gray-frame displacement in frame_list.
+        legacy_movie_gray_frame_offset = sum(
+            1 for frame in static_stimulus["frame_list"] if frame == -1
+        )
+        n_repeats = static_stimulus["runs"]
+        movie_length = int(len(sweep_frame_ranges) / n_repeats)
 
         for repeat in range(n_repeats):
             for frame in range(movie_length):
                 idx = frame + (repeat * movie_length)
-                stimulus_frame_indices = np.array(sweep_frames[idx]).astype(
-                    int
-                )
-                valid_indices = np.clip(
-                    stimulus_frame_indices + movie_start_index,
+                movie_sweep_frame_indices = np.array(
+                    sweep_frame_ranges[idx]
+                ).astype(int)
+                movie_block_indices = np.clip(
+                    movie_sweep_frame_indices
+                    + legacy_movie_gray_frame_offset,
                     0,
-                    len(stimulus_session_frame_indices) - 1,
+                    len(static_to_session_frame_indices) - 1,
                 )
-                start_frame, end_frame = stimulus_session_frame_indices[
-                    valid_indices
+                start_frame, end_frame = static_to_session_frame_indices[
+                    movie_block_indices
                 ]
                 start_time = stimulus_timestamps[start_frame]
                 stop_time = stimulus_timestamps[
                     min(end_frame + 1, len(stimulus_timestamps) - 1)
                 ]
 
-                res.append(
+                presentation_rows.append(
                     {
                         "movie_frame_index": frame,
                         "movie_repeat": repeat,
@@ -949,7 +954,7 @@ def fingerprint_from_stimulus_file(
                     }
                 )
 
-    table = pd.DataFrame(res)
+    table = pd.DataFrame(presentation_rows)
 
     # Add static columns
     table["stim_block"] = stimulus_presentations["stim_block"].max() + 2

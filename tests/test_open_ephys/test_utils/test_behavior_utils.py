@@ -788,6 +788,82 @@ class TestBehaviorUtils(unittest.TestCase):
             result["movie_frame_index"].values.tolist(),
         )
 
+    def test_saved_sweep_frames_include_interleaved_gray_frames(self):
+        """Saved sweep frames are relative to the complete static block."""
+        stimulus_presentations = pd.DataFrame({"stim_block": [1]})
+        stimulus_file = {
+            "items": {
+                "behavior": {
+                    "items": {
+                        "surround_suppression": {
+                            "static_stimulus": {
+                                "runs": 1,
+                                "frame_list": [0, 0, -1, -1, 1, 1, -1, -1],
+                                "sweep_frames": [[0, 1], [4, 5]],
+                                "sweep_order": [0, 1],
+                                "sweep_table": [[10], [20]],
+                                "dimnames": ["condition"],
+                                "save_sweep_table": True,
+                            },
+                            "frame_indices": [10, 11, 12, 13, 20, 21, 22, 23],
+                        }
+                    }
+                }
+            }
+        }
+        stimulus_timestamps = np.arange(30, dtype=float)
+
+        result = behavior.fingerprint_from_stimulus_file(
+            stimulus_presentations,
+            stimulus_file,
+            stimulus_timestamps,
+            "surround_suppression",
+        )
+
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result["start_frame"].tolist(), [10, 20])
+        self.assertEqual(result["end_frame"].tolist(), [11, 21])
+        self.assertEqual(result["start_time"].tolist(), [10.0, 20.0])
+        self.assertEqual(result["stop_time"].tolist(), [12.0, 22.0])
+        self.assertEqual(result["condition"].tolist(), [10, 20])
+
+    def test_legacy_movie_sweep_frames_apply_gray_frame_offset(self):
+        """Legacy movie sweep frames remain relative to movie onset."""
+        stimulus_presentations = pd.DataFrame({"stim_block": [1]})
+        stimulus_file = {
+            "items": {
+                "behavior": {
+                    "items": {
+                        "fingerprint": {
+                            "static_stimulus": {
+                                "runs": 1,
+                                "frame_list": [-1, -1, 0, 1],
+                                "sweep_frames": [[0, 0], [1, 1]],
+                                "save_sweep_table": False,
+                            },
+                            "frame_indices": [10, 11, 20, 21],
+                        }
+                    }
+                }
+            }
+        }
+        stimulus_timestamps = np.arange(30, dtype=float)
+
+        result = behavior.fingerprint_from_stimulus_file(
+            stimulus_presentations,
+            stimulus_file,
+            stimulus_timestamps,
+            "fingerprint",
+        )
+
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result["start_frame"].tolist(), [20, 21])
+        self.assertEqual(result["end_frame"].tolist(), [20, 21])
+        self.assertEqual(result["start_time"].tolist(), [20.0, 21.0])
+        self.assertEqual(result["stop_time"].tolist(), [21.0, 22.0])
+        self.assertEqual(result["movie_frame_index"].tolist(), [0, 1])
+        self.assertEqual(result["movie_repeat"].tolist(), [0, 0])
+
     @patch("aind_metadata_mapper.open_ephys.utils.pkl_utils.load_pkl")
     @patch(
         "aind_metadata_mapper.open_ephys.utils.behavior_utils"
