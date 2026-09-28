@@ -934,7 +934,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertIsInstance(result, dict)
         self.assertIn("acquisition_start_time", result)
-    self.assertEqual(result["acquisition_type"], "test")
+        self.assertEqual(result["acquisition_type"], "test")
 
     def test_merge_models_datetime_serialization(self):
         """Test that merged models can be JSON serialized (datetime objects converted to strings)"""
