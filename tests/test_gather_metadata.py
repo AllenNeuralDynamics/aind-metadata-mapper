@@ -768,6 +768,24 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertIsNone(result)
 
+    def test_get_acquisition_empty_type_raises_when_invalid(self):
+        """Test get_acquisition rejects merged metadata with an empty acquisition_type."""
+        settings = self.test_settings.model_copy(update={"raise_if_invalid": True})
+        with patch("os.makedirs"):
+            job = GatherMetadataJob(settings=settings)
+
+        with (
+            patch.object(job, "_does_file_exist_in_user_defined_dir", return_value=False),
+            patch.object(job, "_run_mappers_for_acquisition"),
+            patch.object(job, "_get_prefixed_files_from_directory", return_value=[{}]),
+            patch.object(job, "_merge_models", return_value={"acquisition_type": ""}),
+        ):
+            with self.assertRaisesRegex(
+                ValueError,
+                "Acquisition.acquisition_type is empty in the merged acquisition metadata.",
+            ):
+                job.get_acquisition()
+
     @patch("os.makedirs")
     def test_run_mappers_for_acquisition_no_metadata_dir(self, mock_makedirs):
         """Test _run_mappers_for_acquisition when metadata_dir is None"""

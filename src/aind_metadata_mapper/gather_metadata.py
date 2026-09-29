@@ -364,7 +364,12 @@ class GatherMetadataJob:
                 directory=self.settings.metadata_dir, file_name_prefix="acquisition"
             )
             if files:
-                return self._merge_models(Acquisition, files)
+                merged_acquisition = self._merge_models(Acquisition, files)
+
+                if not merged_acquisition.get("acquisition_type") and self.settings.raise_if_invalid:
+                    raise ValueError("Acquisition.acquisition_type is empty in the merged acquisition metadata.")
+
+                return merged_acquisition
             else:
                 logging.debug("No acquisition metadata file found.")
                 return None
