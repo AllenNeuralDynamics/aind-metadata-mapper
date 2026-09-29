@@ -768,6 +768,24 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertIsNone(result)
 
+    def test_get_acquisition_empty_type_raises_when_invalid(self):
+        """Test get_acquisition rejects merged metadata with an empty acquisition_type."""
+        settings = self.test_settings.model_copy(update={"raise_if_invalid": True})
+        with patch("os.makedirs"):
+            job = GatherMetadataJob(settings=settings)
+
+        with (
+            patch.object(job, "_does_file_exist_in_user_defined_dir", return_value=False),
+            patch.object(job, "_run_mappers_for_acquisition"),
+            patch.object(job, "_get_prefixed_files_from_directory", return_value=[{}]),
+            patch.object(job, "_merge_models", return_value={"acquisition_type": ""}),
+        ):
+            with self.assertRaisesRegex(
+                ValueError,
+                "Acquisition.acquisition_type is empty in the merged acquisition metadata.",
+            ):
+                job.get_acquisition()
+
     @patch("os.makedirs")
     def test_run_mappers_for_acquisition_no_metadata_dir(self, mock_makedirs):
         """Test _run_mappers_for_acquisition when metadata_dir is None"""
@@ -923,7 +941,9 @@ class TestGatherMetadataJob(unittest.TestCase):
             base_acquisition = json.load(f)
 
         acquisition1 = base_acquisition.copy()
+        acquisition1["acquisition_type"] = ""
         acquisition2 = base_acquisition.copy()
+        acquisition2["acquisition_type"] = "test"
 
         if "subject_details" in acquisition2:
             del acquisition2["subject_details"]
@@ -932,6 +952,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertIsInstance(result, dict)
         self.assertIn("acquisition_start_time", result)
+        self.assertEqual(result["acquisition_type"], "test")
 
     def test_merge_models_datetime_serialization(self):
         """Test that merged models can be JSON serialized (datetime objects converted to strings)"""
