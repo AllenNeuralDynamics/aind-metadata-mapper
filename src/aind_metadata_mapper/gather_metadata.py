@@ -768,6 +768,66 @@ class GatherMetadataJob:
 
         return subject_id
 
+    @staticmethod
+    def _parse_weight_record(weight_record: Any) -> Optional[tuple[datetime, Any]]:
+        """Parse a usable Waterlog weight record."""
+        if not isinstance(weight_record, dict):
+            return None
+
+        weight_datetime_value = weight_record.get("weight_datetime")
+        weight = weight_record.get("weight")
+        if not isinstance(weight_datetime_value, str) or weight is None:
+            return None
+
+        try:
+            weight_datetime = ensure_timezone(datetime.fromisoformat(normalize_utc_timezone(weight_datetime_value)))
+        except ValueError:
+            return None
+        return weight_datetime, weight
+
+    @classmethod
+    def _find_nearest_weights(
+        cls,
+        weight_records: list[Any],
+        acquisition_midpoint: datetime,
+    ) -> tuple[Optional[tuple[datetime, Any]], Optional[tuple[datetime, Any]]]:
+        """Return the nearest records at or before and after the acquisition midpoint."""
+        pre_weight_record = None
+        post_weight_record = None
+        for weight_record in weight_records:
+            parsed_record = cls._parse_weight_record(weight_record)
+            if parsed_record is None:
+                continue
+
+            weight_datetime, _ = parsed_record
+            if weight_datetime <= acquisition_midpoint:
+                if pre_weight_record is None or weight_datetime > pre_weight_record[0]:
+                    pre_weight_record = parsed_record
+            elif weight_datetime > acquisition_midpoint:
+                if post_weight_record is None or weight_datetime < post_weight_record[0]:
+                    post_weight_record = parsed_record
+        return pre_weight_record, post_weight_record
+
+    @staticmethod
+    def _apply_subject_weight(
+        subject_details: dict,
+        weight_field: str,
+        weight_record: Optional[tuple[datetime, Any]],
+    ) -> None:
+        """Fill a missing subject weight or warn when Waterlog disagrees with an existing value."""
+        if weight_record is None:
+            return
+
+        fetched_weight = weight_record[1]
+        existing_weight = subject_details.get(weight_field)
+        if existing_weight is None:
+            subject_details[weight_field] = fetched_weight
+        elif existing_weight != fetched_weight:
+            logging.warning(
+                f"Waterlog {weight_field} ({fetched_weight}) differs from existing {weight_field} "
+                f"({existing_weight}); retaining the existing value."
+            )
+
     def add_subject_weights(
         self,
         subject: Optional[dict],
@@ -804,51 +864,9 @@ class GatherMetadataJob:
         if not isinstance(weight_records, list):
             return subject
 
-        pre_weight_record = None
-        post_weight_record = None
-        for weight_record in weight_records:
-            if not isinstance(weight_record, dict):
-                continue
-            weight_datetime_value = weight_record.get("weight_datetime")
-            weight = weight_record.get("weight")
-            if not isinstance(weight_datetime_value, str) or weight is None:
-                continue
-            try:
-                weight_datetime = ensure_timezone(
-                    datetime.fromisoformat(normalize_utc_timezone(weight_datetime_value))
-                )
-            except ValueError:
-                continue
-
-            if weight_datetime <= acquisition_midpoint:
-                if pre_weight_record is None or weight_datetime > pre_weight_record[0]:
-                    pre_weight_record = (weight_datetime, weight)
-            else:
-                if post_weight_record is None or weight_datetime < post_weight_record[0]:
-                    post_weight_record = (weight_datetime, weight)
-
-        if pre_weight_record:
-            fetched_pre_weight = pre_weight_record[1]
-            existing_pre_weight = subject_details.get("pre_weight")
-            if existing_pre_weight is None:
-                subject_details["pre_weight"] = fetched_pre_weight
-            elif existing_pre_weight != fetched_pre_weight:
-                logging.warning(
-                    "Waterlog pre_weight (%s) differs from existing pre_weight (%s); retaining the existing value.",
-                    fetched_pre_weight,
-                    existing_pre_weight,
-                )
-        if post_weight_record:
-            fetched_post_weight = post_weight_record[1]
-            existing_post_weight = subject_details.get("post_weight")
-            if existing_post_weight is None:
-                subject_details["post_weight"] = fetched_post_weight
-            elif existing_post_weight != fetched_post_weight:
-                logging.warning(
-                    "Waterlog post_weight (%s) differs from existing post_weight (%s); retaining the existing value.",
-                    fetched_post_weight,
-                    existing_post_weight,
-                )
+        pre_weight_record, post_weight_record = self._find_nearest_weights(weight_records, acquisition_midpoint)
+        self._apply_subject_weight(subject_details, "pre_weight", pre_weight_record)
+        self._apply_subject_weight(subject_details, "post_weight", post_weight_record)
         return subject
 
     def add_core_metadata(

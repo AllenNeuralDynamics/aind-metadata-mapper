@@ -10,6 +10,7 @@ from aind_metadata_mapper.models import DataDescriptionSettings, JobSettings
 
 
 def main() -> None:
+    """Fetch a subject and print weights selected around the acquisition midpoint."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--subject-id", default="864846")
     parser.add_argument("--acquisition-start", default="2026-08-07T00:18:00")
