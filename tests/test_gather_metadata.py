@@ -639,6 +639,64 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertIs(result, subject)
         mock_metadata_service_helper.assert_not_called()
 
+    @patch("aind_metadata_mapper.gather_metadata.metadata_service_helper")
+    def test_add_subject_weights_without_acquisition_start_does_not_query(self, mock_metadata_service_helper):
+        """Test that an acquisition without a start time is ignored."""
+        subject = {"subject_id": "123456", "subject_details": {"object_type": "Mouse subject"}}
+        acquisition = {"acquisition_end_time": "2023-01-01T13:00:00+00:00"}
+
+        result = self.job.add_subject_weights(subject, acquisition, "123456")
+
+        self.assertIs(result, subject)
+        mock_metadata_service_helper.assert_not_called()
+
+    @patch("aind_metadata_mapper.gather_metadata.metadata_service_helper")
+    def test_add_subject_weights_ignores_non_mouse_subject(self, mock_metadata_service_helper):
+        """Test that weight enrichment is skipped for non-mouse subjects."""
+        subject = {"subject_id": "123456", "subject_details": {"object_type": "Human subject"}}
+        acquisition = {
+            "acquisition_start_time": "2023-01-01T12:00:00+00:00",
+            "acquisition_end_time": "2023-01-01T13:00:00+00:00",
+        }
+
+        result = self.job.add_subject_weights(subject, acquisition, "123456")
+
+        self.assertIs(result, subject)
+        mock_metadata_service_helper.assert_not_called()
+
+    @patch("aind_metadata_mapper.gather_metadata.metadata_service_helper")
+    def test_add_subject_weights_ignores_invalid_service_records(self, mock_metadata_service_helper):
+        """Test that malformed weight records are skipped."""
+        subject = {"subject_id": "123456", "subject_details": {"object_type": "Mouse subject"}}
+        acquisition = {
+            "acquisition_start_time": "2023-01-01T12:00:00+00:00",
+            "acquisition_end_time": "2023-01-01T13:00:00+00:00",
+        }
+        mock_metadata_service_helper.return_value = [
+            None,
+            {},
+            {"weight": 22.0, "weight_datetime": "not-a-datetime"},
+        ]
+
+        result = self.job.add_subject_weights(subject, acquisition, "123456")
+
+        self.assertNotIn("pre_weight", result["subject_details"])
+        self.assertNotIn("post_weight", result["subject_details"])
+
+    @patch("aind_metadata_mapper.gather_metadata.metadata_service_helper")
+    def test_add_subject_weights_ignores_non_list_service_response(self, mock_metadata_service_helper):
+        """Test that a non-list service response leaves subject weights unchanged."""
+        subject = {"subject_id": "123456", "subject_details": {"object_type": "Mouse subject"}}
+        acquisition = {
+            "acquisition_start_time": "2023-01-01T12:00:00+00:00",
+            "acquisition_end_time": "2023-01-01T13:00:00+00:00",
+        }
+        mock_metadata_service_helper.return_value = {"records": []}
+
+        result = self.job.add_subject_weights(subject, acquisition, "123456")
+
+        self.assertIs(result, subject)
+
     @patch("logging.warning")
     @patch("aind_metadata_mapper.gather_metadata.metadata_service_helper")
     def test_add_subject_weights_preserves_existing_values_and_warns_on_mismatch(
