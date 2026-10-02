@@ -8,7 +8,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
-from urllib.parse import urljoin
+from urllib.parse import urlencode, urljoin
 
 from aind_data_schema.components.subjects import CalibrationObject
 from aind_data_schema.core.acquisition import Acquisition
@@ -27,6 +27,7 @@ from aind_metadata_mapper.base import MapperJobSettings
 from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
 from aind_metadata_mapper.utils import (
+    ensure_timezone,
     get_instrument,
     get_procedures,
     get_subject,
@@ -767,7 +768,78 @@ class GatherMetadataJob:
 
         return subject_id
 
-    def add_core_metadata(self, core_metadata: dict, subject_id: str) -> Dict[str, Any]:
+    def add_subject_weights(
+        self,
+        subject: Optional[dict],
+        acquisition: Optional[dict],
+        subject_id: str,
+    ) -> Optional[dict]:
+        """Add the nearest same-day weights before and after acquisition."""
+        if not subject or not acquisition:
+            return subject
+
+        subject_details = subject.get("subject_details")
+        if not isinstance(subject_details, dict) or subject_details.get("object_type") != "Mouse subject":
+            return subject
+
+        acquisition_start_value = acquisition.get("acquisition_start_time")
+        if not acquisition_start_value:
+            return subject
+
+        acquisition_start_naive = datetime.fromisoformat(normalize_utc_timezone(acquisition_start_value))
+        acquisition_start = ensure_timezone(acquisition_start_naive)
+        acquisition_end_value = acquisition.get("acquisition_end_time")
+        acquisition_end = None
+        if acquisition_end_value:
+            acquisition_end = ensure_timezone(
+                datetime.fromisoformat(normalize_utc_timezone(acquisition_end_value))
+            )
+
+        acquisition_datetime = acquisition_start_naive.replace(tzinfo=None).isoformat(timespec="seconds")
+        weight_records_url = urljoin(
+            self.settings.metadata_service_url,
+            f"/api/v2/dataverse/mouse_weight_records/{subject_id}",
+        )
+        weight_records_url = f"{weight_records_url}?{urlencode({'acquisition_datetime': acquisition_datetime})}"
+        weight_records = metadata_service_helper(weight_records_url)
+        if not isinstance(weight_records, list):
+            return subject
+
+        pre_weight_record = None
+        post_weight_record = None
+        for weight_record in weight_records:
+            if not isinstance(weight_record, dict):
+                continue
+            weight_datetime_value = weight_record.get("weight_datetime")
+            weight = weight_record.get("weight")
+            if not isinstance(weight_datetime_value, str) or weight is None:
+                continue
+            try:
+                weight_datetime = ensure_timezone(
+                    datetime.fromisoformat(normalize_utc_timezone(weight_datetime_value))
+                )
+            except ValueError:
+                continue
+
+            if weight_datetime < acquisition_start:
+                if pre_weight_record is None or weight_datetime > pre_weight_record[0]:
+                    pre_weight_record = (weight_datetime, weight)
+            if acquisition_end and weight_datetime > acquisition_end:
+                if post_weight_record is None or weight_datetime < post_weight_record[0]:
+                    post_weight_record = (weight_datetime, weight)
+
+        if pre_weight_record:
+            subject_details["pre_weight"] = pre_weight_record[1]
+        if post_weight_record:
+            subject_details["post_weight"] = post_weight_record[1]
+        return subject
+
+    def add_core_metadata(
+        self,
+        core_metadata: dict,
+        subject_id: str,
+        acquisition: Optional[dict] = None,
+    ) -> Dict[str, Any]:
         """Get all core metadata as a dictionary
 
         Parameters
@@ -779,6 +851,7 @@ class GatherMetadataJob:
         """
 
         subject = self.get_subject(subject_id=subject_id)
+        subject = self.add_subject_weights(subject, acquisition, subject_id)
         if subject:
             core_metadata["subject"] = subject
             self._write_json_file(Subject.default_filename(), subject)
@@ -864,7 +937,11 @@ class GatherMetadataJob:
 
         # Get other metadata (optional)
         # Adds subject, procedures, instrument, processing, quality_control, model, if available
-        core_metadata = self.add_core_metadata(core_metadata=core_metadata, subject_id=subject_id)
+        core_metadata = self.add_core_metadata(
+            core_metadata=core_metadata,
+            subject_id=subject_id,
+            acquisition=acquisition,
+        )
 
         self.validate_and_create_metadata(core_metadata)
 

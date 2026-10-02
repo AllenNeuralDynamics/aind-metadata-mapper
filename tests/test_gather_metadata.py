@@ -587,6 +587,49 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertIsNone(result)
 
+    @patch("aind_metadata_mapper.gather_metadata.metadata_service_helper")
+    def test_add_subject_weights_uses_nearest_captures_outside_acquisition(self, mock_metadata_service_helper):
+        """Test that only the nearest captures strictly outside acquisition are assigned."""
+        subject = {"subject_id": "123456", "subject_details": {"object_type": "Mouse subject"}}
+        acquisition = {
+            "acquisition_start_time": "2023-01-01T12:00:00+00:00",
+            "acquisition_end_time": "2023-01-01T13:00:00+00:00",
+        }
+        mock_metadata_service_helper.return_value = [
+            {"weight": 20.0, "weight_datetime": "2023-01-01T10:00:00Z"},
+            {"weight": 21.0, "weight_datetime": "2023-01-01T11:59:59Z"},
+            {"weight": 22.0, "weight_datetime": "2023-01-01T12:30:00Z"},
+            {"weight": 23.0, "weight_datetime": "2023-01-01T13:00:00Z"},
+            {"weight": 24.0, "weight_datetime": "2023-01-01T13:00:01Z"},
+            {"weight": 25.0, "weight_datetime": "2023-01-01T14:00:00Z"},
+        ]
+
+        result = self.job.add_subject_weights(subject, acquisition, "123456")
+
+        self.assertEqual(result["subject_details"]["pre_weight"], 21.0)
+        self.assertEqual(result["subject_details"]["post_weight"], 24.0)
+        mock_metadata_service_helper.assert_called_once_with(
+            "http://test-service.com/api/v2/dataverse/mouse_weight_records/123456"
+            "?acquisition_datetime=2023-01-01T12%3A00%3A00"
+        )
+
+    @patch("aind_metadata_mapper.gather_metadata.metadata_service_helper")
+    def test_add_subject_weights_without_matching_captures_does_not_add_weights(self, mock_metadata_service_helper):
+        """Test that records inside acquisition do not become pre or post weights."""
+        subject = {"subject_id": "123456", "subject_details": {"object_type": "Mouse subject"}}
+        acquisition = {
+            "acquisition_start_time": "2023-01-01T12:00:00+00:00",
+            "acquisition_end_time": "2023-01-01T13:00:00+00:00",
+        }
+        mock_metadata_service_helper.return_value = [
+            {"weight": 22.0, "weight_datetime": "2023-01-01T12:30:00Z"}
+        ]
+
+        result = self.job.add_subject_weights(subject, acquisition, "123456")
+
+        self.assertNotIn("pre_weight", result["subject_details"])
+        self.assertNotIn("post_weight", result["subject_details"])
+
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
     @patch("aind_metadata_mapper.gather_metadata.get_subject")
     def test_get_subject_api_other_error(self, mock_get_subject, mock_file_exists):
