@@ -789,11 +789,10 @@ class GatherMetadataJob:
         acquisition_start_naive = datetime.fromisoformat(normalize_utc_timezone(acquisition_start_value))
         acquisition_start = ensure_timezone(acquisition_start_naive)
         acquisition_end_value = acquisition.get("acquisition_end_time")
-        acquisition_end = None
-        if acquisition_end_value:
-            acquisition_end = ensure_timezone(
-                datetime.fromisoformat(normalize_utc_timezone(acquisition_end_value))
-            )
+        if not acquisition_end_value:
+            return subject
+        acquisition_end = ensure_timezone(datetime.fromisoformat(normalize_utc_timezone(acquisition_end_value)))
+        acquisition_midpoint = acquisition_start + (acquisition_end - acquisition_start) / 2
 
         acquisition_datetime = acquisition_start_naive.replace(tzinfo=None).isoformat(timespec="seconds")
         weight_records_url = urljoin(
@@ -821,10 +820,10 @@ class GatherMetadataJob:
             except ValueError:
                 continue
 
-            if weight_datetime < acquisition_start:
+            if weight_datetime <= acquisition_midpoint:
                 if pre_weight_record is None or weight_datetime > pre_weight_record[0]:
                     pre_weight_record = (weight_datetime, weight)
-            if acquisition_end and weight_datetime > acquisition_end:
+            else:
                 if post_weight_record is None or weight_datetime < post_weight_record[0]:
                     post_weight_record = (weight_datetime, weight)
 
