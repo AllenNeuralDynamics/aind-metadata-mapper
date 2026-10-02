@@ -630,6 +630,58 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertNotIn("pre_weight", result["subject_details"])
         self.assertNotIn("post_weight", result["subject_details"])
 
+    @patch("logging.warning")
+    @patch("aind_metadata_mapper.gather_metadata.metadata_service_helper")
+    def test_add_subject_weights_preserves_existing_values_and_warns_on_mismatch(
+        self, mock_metadata_service_helper, mock_warning
+    ):
+        """Test that existing weights are preserved and mismatches are warned about."""
+        subject = {
+            "subject_id": "123456",
+            "subject_details": {"object_type": "Mouse subject", "pre_weight": 19.0, "post_weight": 25.0},
+        }
+        acquisition = {
+            "acquisition_start_time": "2023-01-01T12:00:00+00:00",
+            "acquisition_end_time": "2023-01-01T13:00:00+00:00",
+        }
+        mock_metadata_service_helper.return_value = [
+            {"weight": 21.0, "weight_datetime": "2023-01-01T11:59:59Z"},
+            {"weight": 24.0, "weight_datetime": "2023-01-01T13:00:01Z"},
+        ]
+
+        result = self.job.add_subject_weights(subject, acquisition, "123456")
+
+        self.assertEqual(result["subject_details"]["pre_weight"], 19.0)
+        self.assertEqual(result["subject_details"]["post_weight"], 25.0)
+        self.assertEqual(mock_warning.call_count, 2)
+        self.assertIn("pre_weight", mock_warning.call_args_list[0].args[0])
+        self.assertIn("post_weight", mock_warning.call_args_list[1].args[0])
+
+    @patch("logging.warning")
+    @patch("aind_metadata_mapper.gather_metadata.metadata_service_helper")
+    def test_add_subject_weights_does_not_warn_when_existing_values_match(
+        self, mock_metadata_service_helper, mock_warning
+    ):
+        """Test that matching existing weights are retained without warnings."""
+        subject = {
+            "subject_id": "123456",
+            "subject_details": {"object_type": "Mouse subject", "pre_weight": 21.0, "post_weight": 24.0},
+        }
+        acquisition = {
+            "acquisition_start_time": "2023-01-01T12:00:00+00:00",
+            "acquisition_end_time": "2023-01-01T13:00:00+00:00",
+        }
+        mock_metadata_service_helper.return_value = [
+            {"weight": 21.0, "weight_datetime": "2023-01-01T11:59:59Z"},
+            {"weight": 24.0, "weight_datetime": "2023-01-01T13:00:01Z"},
+        ]
+
+        result = self.job.add_subject_weights(subject, acquisition, "123456")
+
+        self.assertEqual(result["subject_details"]["pre_weight"], 21.0)
+        self.assertEqual(result["subject_details"]["post_weight"], 24.0)
+        mock_warning.assert_not_called()
+
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
     @patch("aind_metadata_mapper.gather_metadata.get_subject")
     def test_get_subject_api_other_error(self, mock_get_subject, mock_file_exists):

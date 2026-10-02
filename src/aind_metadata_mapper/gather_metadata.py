@@ -829,9 +829,27 @@ class GatherMetadataJob:
                     post_weight_record = (weight_datetime, weight)
 
         if pre_weight_record:
-            subject_details["pre_weight"] = pre_weight_record[1]
+            fetched_pre_weight = pre_weight_record[1]
+            existing_pre_weight = subject_details.get("pre_weight")
+            if existing_pre_weight is None:
+                subject_details["pre_weight"] = fetched_pre_weight
+            elif existing_pre_weight != fetched_pre_weight:
+                logging.warning(
+                    "Waterlog pre_weight (%s) differs from existing pre_weight (%s); retaining the existing value.",
+                    fetched_pre_weight,
+                    existing_pre_weight,
+                )
         if post_weight_record:
-            subject_details["post_weight"] = post_weight_record[1]
+            fetched_post_weight = post_weight_record[1]
+            existing_post_weight = subject_details.get("post_weight")
+            if existing_post_weight is None:
+                subject_details["post_weight"] = fetched_post_weight
+            elif existing_post_weight != fetched_post_weight:
+                logging.warning(
+                    "Waterlog post_weight (%s) differs from existing post_weight (%s); retaining the existing value.",
+                    fetched_post_weight,
+                    existing_post_weight,
+                )
         return subject
 
     def add_core_metadata(
