@@ -235,7 +235,14 @@ class TestIntegrationMetadata(unittest.TestCase):
         with patch.object(self.job, "_write_json_file") as mock_write:
             # Run the job
             try:
-                self.job.run_job()
+                with patch(
+                    "aind_metadata_mapper.gather_metadata.metadata_service_helper",
+                    return_value=[
+                        {"weight": 20.5, "weight_datetime": "2025-09-17T17:00:00Z"},
+                        {"weight": 21.5, "weight_datetime": "2025-09-17T18:45:00Z"},
+                    ],
+                ) as mock_weight_service:
+                    self.job.run_job()
 
                 # Verify that files were "written" (mocked)
                 written_files = [call[0][0] for call in mock_write.call_args_list]
@@ -253,6 +260,14 @@ class TestIntegrationMetadata(unittest.TestCase):
 
                 for expected_file in expected_files:
                     self.assertIn(expected_file, written_files, f"Expected {expected_file} to be written")
+
+                subject_data = next(call[0][1] for call in mock_write.call_args_list if call[0][0] == "subject.json")
+                self.assertEqual(subject_data["subject_details"]["pre_weight"], 20.5)
+                self.assertEqual(subject_data["subject_details"]["post_weight"], 21.5)
+                mock_weight_service.assert_called_once_with(
+                    "http://test-service.com/api/v2/dataverse/mouse_weight_records/804670"
+                    "?acquisition_datetime=2025-09-17T10%3A26%3A00"
+                )
 
             except Exception as e:
                 self.fail(f"run_job with all local files failed: {e}")
