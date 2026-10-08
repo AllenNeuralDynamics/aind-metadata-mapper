@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.stimulus_modality import StimulusModality
+from aind_data_schema_models.units import PowerUnit
 
 from aind_metadata_mapper.base import MapperJobSettings
 from aind_metadata_mapper.gather_metadata import GatherMetadataJob
@@ -70,7 +71,10 @@ class TestMesoscopeMapper(unittest.TestCase):
         self.assertEqual(first_plane.coupled_plane_index, 1)
         self.assertEqual(second_plane.plane_index, 1)
         self.assertEqual(second_plane.coupled_plane_index, 0)
-        self.assertEqual(first_plane.power, 88.0)
+        self.assertEqual(first_plane.power, 80.24)
+        self.assertEqual(first_plane.power_unit, PowerUnit.MW)
+        self.assertEqual(second_plane.power, 168.4)
+        self.assertEqual(second_plane.power_unit, PowerUnit.MW)
         self.assertEqual(first_plane.power_ratio, 28.0)
         self.assertEqual(first_plane.targeted_structure.acronym, "VISp")
 
@@ -107,12 +111,14 @@ class TestMesoscopeMapper(unittest.TestCase):
                         "targeted_depth": 325,
                         "targeted_structure_id": "VISam",
                         "scanimage_roi_index": 1,
+                        "calculated_power_mw": 90.5,
                         "registration": {"pixel_size_um": 0.78},
                     },
                     {
                         "targeted_depth": 400,
                         "targeted_structure_id": "VISpm",
                         "scanimage_roi_index": 1,
+                        "calculated_power_mw": 91.5,
                         "registration": {"pixel_size_um": 0.78},
                     },
                 ],
@@ -132,19 +138,55 @@ class TestMesoscopeMapper(unittest.TestCase):
         self.assertEqual(depths, [175.0, 250.0, 325.0, 400.0])
         self.assertEqual(imaging_config.images[2].planes[0].power_ratio, 13.0)
 
-    def test_transform_uses_plane_power_when_group_power_missing(self) -> None:
-        """Mapper should fall back to plane-level percent power."""
+    def test_transform_accepts_zero_and_string_calculated_power_mw(self) -> None:
+        """Mapper should accept zero and numeric string milliwatt values."""
         metadata = copy.deepcopy(self.fixture)
         group = metadata["session_metadata"]["platform"]["imaging_plane_groups"][0]
-        group.pop("scanimage_power_percent")
-        group["imaging_planes"][0]["scanimage_power"] = 61
-        group["imaging_planes"][1]["scanimage_power"] = 62
+        group["imaging_planes"][0]["calculated_power_mw"] = "0"
+        group["imaging_planes"][1]["calculated_power_mw"] = "168.4"
 
         acquisition = self.mapper.transform(metadata)
         imaging_config = acquisition.data_streams[0].configurations[0]
 
-        self.assertEqual(imaging_config.images[0].planes[0].power, 61.0)
-        self.assertEqual(imaging_config.images[1].planes[0].power, 62.0)
+        self.assertEqual(imaging_config.images[0].planes[0].power, 0.0)
+        self.assertEqual(imaging_config.images[1].planes[0].power, 168.4)
+        self.assertEqual(imaging_config.images[0].planes[0].power_unit, PowerUnit.MW)
+
+    def test_transform_rejects_missing_calculated_power_mw(self) -> None:
+        """Mapper should require per-plane calculated milliwatt values."""
+        for plane_index in (0, 1):
+            with self.subTest(plane_index=plane_index):
+                metadata = copy.deepcopy(self.fixture)
+                metadata["session_metadata"]["platform"]["imaging_plane_groups"][0]["imaging_planes"][plane_index].pop(
+                    "calculated_power_mw"
+                )
+
+                with self.assertRaises(ValueError) as context:
+                    self.mapper.transform(metadata)
+
+                self.assertIn(
+                    f"imaging_plane_groups[0].imaging_planes[{plane_index}].calculated_power_mw",
+                    str(context.exception),
+                )
+
+    def test_transform_rejects_invalid_calculated_power_mw_values(self) -> None:
+        """Mapper should reject malformed or negative milliwatt values."""
+        invalid_values = (None, "", "abc", float("nan"), float("inf"), -1, False, True)
+        for plane_index in (0, 1):
+            for invalid_value in invalid_values:
+                with self.subTest(plane_index=plane_index, invalid_value=invalid_value):
+                    metadata = copy.deepcopy(self.fixture)
+                    metadata["session_metadata"]["platform"]["imaging_plane_groups"][0]["imaging_planes"][plane_index][
+                        "calculated_power_mw"
+                    ] = invalid_value
+
+                    with self.assertRaises(ValueError) as context:
+                        self.mapper.transform(metadata)
+
+                    self.assertIn(
+                        f"imaging_plane_groups[0].imaging_planes[{plane_index}].calculated_power_mw",
+                        str(context.exception),
+                    )
 
     def test_transform_assigns_pacific_timezone_to_naive_times(self) -> None:
         """Naive timestamps should use America/Los_Angeles."""
@@ -304,6 +346,30 @@ class TestMesoscopeMapper(unittest.TestCase):
             with open(output_path, "r", encoding="utf-8") as input_stream:
                 acquisition = Acquisition.model_validate(json.load(input_stream))
             self.assertEqual(acquisition.instrument_id, "422_MESO2_20260122")
+            self.assertEqual(acquisition.data_streams[0].configurations[0].images[0].planes[0].power_unit, PowerUnit.MW)
+
+    def test_run_job_leaves_no_output_when_calculated_power_mw_missing(self) -> None:
+        """run_job should fail before writing when plane power is missing."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            runtime_dir = Path(tmpdir)
+            input_path = runtime_dir / "mesoscope.json"
+            metadata = copy.deepcopy(self.fixture)
+            metadata["session_metadata"]["platform"]["imaging_plane_groups"][0]["imaging_planes"][0].pop(
+                "calculated_power_mw"
+            )
+            with open(input_path, "w", encoding="utf-8") as output_stream:
+                json.dump(metadata, output_stream)
+
+            settings = MapperJobSettings(
+                input_filepath=input_path,
+                output_directory=runtime_dir,
+                output_filename_suffix="mesoscope",
+            )
+
+            with self.assertRaises(ValueError):
+                self.mapper.run_job(settings)
+
+            self.assertFalse((runtime_dir / "acquisition_mesoscope.json").exists())
 
     def test_gather_metadata_job_runs_registered_mapper_without_network(self) -> None:
         """GatherMetadataJob should discover and run mesoscope mapper."""
@@ -442,6 +508,8 @@ class TestMesoscopeMapper(unittest.TestCase):
         image_plane = acquisition.data_streams[0].configurations[0].images[0].planes[0]
 
         self.assertEqual(type(image_plane).__name__, "Plane")
+        self.assertEqual(image_plane.power, 80.24)
+        self.assertEqual(image_plane.power_unit, PowerUnit.MW)
         self.assertIsNone(acquisition.data_streams[0].notes)
 
     def test_empty_plane_groups_raise(self) -> None:
@@ -454,16 +522,16 @@ class TestMesoscopeMapper(unittest.TestCase):
 
         self.assertIn("must contain at least one group", str(context.exception))
 
-    def test_missing_power_raises(self) -> None:
-        """Mapper should reject missing percent power."""
+    def test_missing_calculated_power_mw_raises_with_legacy_percent_present(self) -> None:
+        """Legacy percent power should not satisfy the milliwatt requirement."""
         metadata = copy.deepcopy(self.fixture)
         group = metadata["session_metadata"]["platform"]["imaging_plane_groups"][0]
-        group.pop("scanimage_power_percent")
+        group["imaging_planes"][0].pop("calculated_power_mw")
 
         with self.assertRaises(ValueError) as context:
             self.mapper.transform(metadata)
 
-        self.assertIn("scanimage_power_percent", str(context.exception))
+        self.assertIn("imaging_plane_groups[0].imaging_planes[0].calculated_power_mw", str(context.exception))
 
     def test_performance_metrics_helper(self) -> None:
         """Performance metrics helper should infer reward units when needed."""

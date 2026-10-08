@@ -3,6 +3,7 @@
 import json
 import re
 from datetime import datetime, tzinfo
+from math import isfinite
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
@@ -96,12 +97,6 @@ class MesoscopeMapper(MapperJob):
         """Parse a required numeric field."""
         if value in (None, ""):
             raise ValueError(f"{field_name} is required.")
-        return float(value)
-
-    def _parse_optional_float(self, value: Any) -> Optional[float]:
-        """Parse an optional numeric field."""
-        if value in (None, ""):
-            return None
         return float(value)
 
     def _normalize_camera_base_name(self, name: str) -> str:
@@ -258,20 +253,19 @@ class MesoscopeMapper(MapperJob):
             ],
         )
 
-    def _get_plane_power(self, group: dict, plane: dict, group_index: int, plane_index: int) -> float:
-        """Resolve plane power from group or plane data."""
-        group_power = self._parse_optional_float(group.get("scanimage_power_percent"))
-        if group_power is not None:
-            return group_power
-
-        plane_power = self._parse_optional_float(plane.get("scanimage_power"))
-        if plane_power is not None:
-            return plane_power
-
-        raise ValueError(
-            "Mesoscope imaging_plane_groups["
-            f"{group_index}] plane[{plane_index}] is missing scanimage_power_percent and scanimage_power."
-        )
+    def _get_plane_power(self, _group: dict, plane: dict, group_index: int, plane_index: int) -> float:
+        """Resolve per-plane calculated power in milliwatts."""
+        field_name = f"imaging_plane_groups[{group_index}].imaging_planes[{plane_index}].calculated_power_mw"
+        value = plane.get("calculated_power_mw")
+        if isinstance(value, bool):
+            raise ValueError(f"{field_name} must be a finite, nonnegative number.")
+        try:
+            power = float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{field_name} must be a finite, nonnegative number.") from exc
+        if not isfinite(power) or power < 0:
+            raise ValueError(f"{field_name} must be a finite, nonnegative number.")
+        return power
 
     def _build_plane(
         self, group: dict, plane: dict, group_index: int, plane_index: int, global_index: int
@@ -284,7 +278,7 @@ class MesoscopeMapper(MapperJob):
             ),
             depth_unit=SizeUnit.UM,
             power=self._get_plane_power(group, plane, group_index, plane_index),
-            power_unit=PowerUnit.PERCENT,
+            power_unit=PowerUnit.MW,
             targeted_structure=targeted_structure,
         )
 
