@@ -1,0 +1,118 @@
+{
+  "tiff_header": [
+    {
+      "SI.hRoiManager.pixelsPerLine": 512,
+      "SI.hRoiManager.linesPerFrame": 512
+    }
+  ],
+  "session_metadata": {
+    "platform": {
+      "rig_id": "MESO.2",
+      "session_id": 1770928800,
+      "subject_id": "825546",
+      "stimulus_name": "STAGE_1",
+      "imaging_plane_groups": [
+        {
+          "local_z_stack_tif": "1770928800_local_z_stack0.tiff",
+          "acquisition_framerate_Hz": 42.85,
+          "scanimage_power_percent": 88,
+          "scanimage_split_percent": 28,
+          "imaging_planes": [
+            {
+              "targeted_depth": 175,
+              "targeted_structure_id": "VISp",
+              "scanimage_roi_index": 0,
+              "scanimage_scanfield_z": -185,
+              "channel": "Channel2",
+              "registration": {
+                "pixel_size_um": 0.78
+              }
+            },
+            {
+              "targeted_depth": 250,
+              "targeted_structure_id": "VISp",
+              "scanimage_roi_index": 0,
+              "scanimage_scanfield_z": -95,
+              "channel": "Channel1",
+              "registration": {
+                "pixel_size_um": 0.78
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "1770928800_Behavior_20260212T130408": {
+      "RecordingReport": {
+        "CameraLabel": "Behavior",
+        "TimeStart": "2026-02-12T13:04:08Z",
+        "TimeEnd": "2026-02-12T14:07:24Z"
+      }
+    },
+    "1770928800_Eye_20260212T130408": {
+      "RecordingReport": {
+        "CameraLabel": "Eye",
+        "TimeStart": "2026-02-12T13:04:09Z",
+        "TimeEnd": "2026-02-12T14:07:24Z"
+      }
+    },
+    "1770928800_Face_20260212T130409": {
+      "RecordingReport": {
+        "CameraLabel": "Face",
+        "TimeStart": "2026-02-12T13:04:09Z",
+        "TimeEnd": "2026-02-12T14:07:24Z"
+      }
+    }
+  },
+  "camstim_epchs": [
+    {
+      "stimulus_start_time": "2026-02-12T13:05:03.110704-08:00",
+      "stimulus_end_time": "2026-02-12T13:19:02.807314-08:00",
+      "stimulus_name": "drifting_gratings_contrast",
+      "stimulus_parameters": [
+        {
+          "stimulus_name": "drifting_gratings_contrast",
+          "stimulus_template_name": [],
+          "stimulus_parameters": {
+            "contrast": [
+              0.2,
+              0.8
+            ],
+            "orientation": [
+              0,
+              90
+            ]
+          }
+        }
+      ],
+      "script": {
+        "name": "STAGE_1",
+        "version": "1.0"
+      },
+      "software": [
+        {
+          "name": "camstim",
+          "url": "https://eng-gitlab.corp.alleninstitute.org/braintv/camstim",
+          "version": "1.0"
+        }
+      ]
+    }
+  ],
+  "camstim_session_type": "STAGE_1",
+  "job_settings": {
+    "session_id": "1770928800",
+    "subject_id": "825546",
+    "instrument_id": "422_MESO2_20260122",
+    "session_start_time": "2026-02-12T13:04:36.555247-08:00",
+    "session_end_time": "2026-02-12T14:07:12.672057-08:00",
+    "experimenter_full_name": [
+      "Sam Seid"
+    ],
+    "iacuc_protocol": "2115",
+    "mouse_platform_name": "disc",
+    "magnification": "16x",
+    "fov_coordinate_ml": 1.5,
+    "fov_coordinate_ap": 1.5,
+    "fov_reference": "Bregma"
+  }
+}
