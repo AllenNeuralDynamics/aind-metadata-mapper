@@ -44,9 +44,11 @@ overwriting any values that are already supplied by extraction.
 
 ## Inherited limits
 
-The nested `Unknown Detector`, `Laser`, and `Ophys Channel` values are
-deliberate scientific compatibility defaults inherited from the legacy mapper
-and upgrader outputs. Detector and channel-index inference are not included.
+Each planar image uses its plane's `channel` from `platform.json` (for example
+`Channel1`), with one imaging channel per distinct value. Planes from platform
+files without a `channel` use `Ophys Channel`. The nested `Unknown Detector` and
+`Laser` values are deliberate scientific compatibility defaults inherited from
+the legacy mapper and upgrader outputs. Detector inference is not included.
 
 ## Sources
 
