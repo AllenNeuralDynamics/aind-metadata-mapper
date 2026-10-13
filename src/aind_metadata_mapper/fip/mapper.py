@@ -46,11 +46,9 @@ from aind_metadata_mapper.fip.constants import (
     EXCITATION_UV,
     EXCITATION_YELLOW,
     FIP_CAMERA_COMPRESSION,
-    ROI_KEYWORD_BACKGROUND,
     ROI_KEYWORD_GREEN,
     ROI_KEYWORD_ISO,
     ROI_KEYWORD_RED,
-    ROI_KEYWORD_ROI,
 )
 from aind_metadata_mapper.utils import (
     ensure_timezone,
@@ -357,8 +355,6 @@ class FIPMapper(MapperJob):
         subject_id = session["subject"]
         instrument_id = rig["rig_name"]
 
-        roi_settings = self._get_roi_settings(data_streams, rig)
-
         ethics_review_id = self._resolve_ethics_review_id(subject_id, ethics_review_id)
 
         # Get timing from all data streams (handle multiple epochs)
@@ -425,7 +421,7 @@ class FIPMapper(MapperJob):
             modalities=[Modality.FIB],
             code=code,
             active_devices=self._get_active_devices(rig, implanted_fibers),
-            configurations=self._build_configurations(rig, implanted_fibers, roi_settings, intended_measurements),
+            configurations=self._build_configurations(rig, implanted_fibers, intended_measurements),
             connections=self._build_connections(implanted_fibers),
         )
 
@@ -497,51 +493,16 @@ class FIPMapper(MapperJob):
         )
         return 10000.0  # Default exposure time in microseconds
 
-    def _get_roi_settings(self, data_streams: List[Dict[str, Any]], rig_config: Dict[str, Any]) -> Dict[str, Any]:
-        """Merge the ROI settings used by all data streams, by key.
+    def _get_camera_names(self, rig_config: Dict) -> Dict[str, str]:
+        """Get camera device identifiers from the rig configuration.
 
-        Streams record the ROI settings in effect while they were collected under ``regions``
-        (aind-physiology-fip 0.3.5 and later). Older data only has ``rig.roi_settings``, the
-        definition loaded before the experiment, which is used as a fallback with a warning.
-        Only the keys are consumed downstream (which cameras had ROIs drawn), so differences in
-        ROI position, size, or count between streams are not distinguished.
-
-        Raises
-        ------
-        ValueError
-            If a stream has no ``regions`` and ``rig.roi_settings`` is also missing or null.
-            aind-data-schema requires a PatchCordConfig for the fiber photometry modality, and
-            those are built from the ROI settings, so the acquisition cannot be created.
-        """
-        roi_settings: Dict[str, Any] = {}
-        for stream in data_streams:
-            regions = stream.get("regions")
-            if not regions:
-                regions = rig_config.get("roi_settings")
-                if not regions:
-                    raise ValueError(
-                        f"Data stream '{stream.get('id')}' has no regions and rig.roi_settings is missing or "
-                        "null in the extracted FIP metadata. Patch cord configurations are built from the ROI "
-                        "settings, and aind-data-schema requires a PatchCordConfig for the fiber photometry "
-                        "modality, so the acquisition cannot be created without them."
-                    )
-                logger.warning(
-                    f"Data stream '{stream.get('id')}' has no regions; falling back to rig.roi_settings. "
-                    "Per-stream ROI settings are recorded by aind-physiology-fip >= 0.3.5."
-                )
-            roi_settings.update(regions)
-        return roi_settings
-
-    def _get_camera_names_from_roi(self, roi_settings: Dict) -> Dict[str, str]:
-        """Get camera device identifiers from ROI settings.
-
-        Extracts camera config keys from ROI settings and transforms them to
+        Classifies the rig's camera entries as green or red and transforms them to
         historical standard device names using DEVICE_NAME_MAP.
 
         Parameters
         ----------
-        roi_settings : Dict
-            ROI settings from rig configuration.
+        rig_config : Dict
+            Rig configuration dictionary from metadata.
 
         Returns
         -------
@@ -551,11 +512,8 @@ class FIPMapper(MapperJob):
         """
         camera_names = {}
 
-        for roi_key in roi_settings.keys():
-            if ROI_KEYWORD_ROI in roi_key and ROI_KEYWORD_BACKGROUND not in roi_key:
-                # Extract camera key from roi_key (e.g., "camera_green_iso_roi" -> "camera_green_iso")
-                camera_key = roi_key.replace(ROI_KEYWORD_ROI, "")
-
+        for camera_key in rig_config.keys():
+            if camera_key.startswith("camera_"):
                 # Determine camera type
                 if ROI_KEYWORD_GREEN in camera_key or ROI_KEYWORD_ISO in camera_key:
                     camera_type = "green"
@@ -662,7 +620,6 @@ class FIPMapper(MapperJob):
         self,
         rig_config: Dict[str, Any],
         implanted_fibers: List[int],
-        roi_settings: Dict[str, Any],
         intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]] = None,
     ) -> List[Any]:
         """Build device configurations from rig config.
@@ -671,8 +628,6 @@ class FIPMapper(MapperJob):
         ----------
         rig_config : Dict[str, Any]
             Rig configuration dictionary from metadata.
-        roi_settings : Dict[str, Any]
-            ROI settings merged across data streams; identifies which cameras had ROIs drawn.
         intended_measurements : Optional[Dict[str, Dict[str, Optional[str]]]], optional
             Intended measurements from metadata service, mapping fiber names to
             channel measurements (R, G, B, Iso), by default None.
@@ -704,8 +659,8 @@ class FIPMapper(MapperJob):
         #   1. Green: 470nm excitation, ~520nm emission, green camera
         #   2. Isosbestic: 415nm excitation, ~520nm emission, green camera (same detector!)
         #   3. Red: 565nm excitation, ~590nm emission, red camera
-        # Get camera identifiers from ROI settings
-        camera_names = self._get_camera_names_from_roi(roi_settings)
+        # Get camera identifiers from the rig configuration
+        camera_names = self._get_camera_names(rig_config)
         green_camera_name = camera_names.get("green")
         red_camera_name = camera_names.get("red")
 

@@ -51,7 +51,7 @@ acquisition.write_standard_file(output_directory=Path("/output/path"), suffix=No
 The mapper expects input JSON with this structure:
 - `session` - experiment metadata (subject, experimenters, notes, etc.)
 - `rig` - hardware configuration (cameras, LEDs, ROI settings, etc.)
-- `data_stream_metadata` - timing information and the ROI settings (`regions`) used in each stream
+- `data_stream_metadata` - timing information
 
 ## What Gets Mapped
 
@@ -69,9 +69,9 @@ The mapper expects input JSON with this structure:
 - `rig.camera_green_iso` → Green/Isosbestic detector
 - `rig.camera_red` → Red detector
 - `rig.cuttlefish_fip` → Controller device
-- `data_stream_metadata[*].regions` → Camera identifiers for patch cord configurations. Streams without `regions` (data from aind-physiology-fip before 0.3.5) fall back to `rig.roi_settings`, with a warning; if that is also null the mapper raises `ValueError`.
+- `rig.roi_settings` → Not currently read; may be null. Camera identifiers come from `rig.camera_*` and patch cords from the implanted fibers in the procedures record. The per-stream `data_stream_metadata[*].regions` recorded by aind-physiology-fip 0.3.5 and later are accepted but not read yet either.
 
-The mapper assumes each ROI is drawn over its index-matched patch cord (ROI 0 over Patch Cord 0, and so on). Patch cords are created for each implanted fiber from the procedures record; the ROI settings only identify which cameras had ROIs drawn, and regions from all streams are merged by key.
+The mapper assumes each ROI is drawn over its index-matched patch cord (ROI 0 over Patch Cord 0, and so on), that both cameras are in use, and that every implanted fiber has an active patch cord. Using the per-stream `regions` to determine which patch cords were actually in use is future work.
 
 ### Channels
 Each fiber gets three channels:
