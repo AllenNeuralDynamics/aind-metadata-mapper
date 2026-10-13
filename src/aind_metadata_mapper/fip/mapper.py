@@ -345,10 +345,6 @@ class FIPMapper(MapperJob):
             If metadata validation fails, or if a provided ethics_review_id does not
             match the IACUC protocol on record in LabTracks for the subject.
         """
-        # Fill in per-stream `regions` from `rig.roi_settings` for data recorded before
-        # aind-physiology-fip 0.3.5, so one shape flows through validation and mapping (#498)
-        metadata = self._normalize_legacy_roi_settings(metadata)
-
         # Validate metadata against JSON schema unless skipped
         if not skip_validation:
             self._validate_fip_metadata(metadata)
@@ -361,8 +357,7 @@ class FIPMapper(MapperJob):
         subject_id = session["subject"]
         instrument_id = rig["rig_name"]
 
-        # Merge each stream's ROI settings by key; only the keys (which cameras had ROIs) are used
-        roi_settings = {k: v for ds in data_streams for k, v in ds["regions"].items()}
+        roi_settings = self._get_roi_settings(data_streams, rig)
 
         ethics_review_id = self._resolve_ethics_review_id(subject_id, ethics_review_id)
 
@@ -502,15 +497,14 @@ class FIPMapper(MapperJob):
         )
         return 10000.0  # Default exposure time in microseconds
 
-    def _normalize_legacy_roi_settings(self, metadata: dict) -> dict:
-        """Fill in per-stream ``regions`` from ``rig.roi_settings`` for legacy input.
+    def _get_roi_settings(self, data_streams: List[Dict[str, Any]], rig_config: Dict[str, Any]) -> Dict[str, Any]:
+        """Merge the ROI settings used by all data streams, by key.
 
-        aind-physiology-fip 0.3.5 and later record the ROI settings used by each data stream
-        under ``regions``. Older data only has ``rig.roi_settings``, the definition loaded
-        before the experiment, so it is copied into any stream lacking ``regions`` (with a
-        warning). Streams that already have ``regions`` are left as is. The input is not
-        modified; metadata without data streams is returned unchanged for schema validation
-        to report.
+        Streams record the ROI settings in effect while they were collected under ``regions``
+        (aind-physiology-fip 0.3.5 and later). Older data only has ``rig.roi_settings``, the
+        definition loaded before the experiment, which is used as a fallback with a warning.
+        Only the keys are consumed downstream (which cameras had ROIs drawn), so differences in
+        ROI position, size, or count between streams are not distinguished.
 
         Raises
         ------
@@ -519,11 +513,12 @@ class FIPMapper(MapperJob):
             aind-data-schema requires a PatchCordConfig for the fiber photometry modality, and
             those are built from the ROI settings, so the acquisition cannot be created.
         """
-        rig_roi_settings = (metadata.get("rig") or {}).get("roi_settings")
-        streams = []
-        for stream in metadata.get("data_stream_metadata") or []:
-            if not stream.get("regions"):
-                if not rig_roi_settings:
+        roi_settings: Dict[str, Any] = {}
+        for stream in data_streams:
+            regions = stream.get("regions")
+            if not regions:
+                regions = rig_config.get("roi_settings")
+                if not regions:
                     raise ValueError(
                         f"Data stream '{stream.get('id')}' has no regions and rig.roi_settings is missing or "
                         "null in the extracted FIP metadata. Patch cord configurations are built from the ROI "
@@ -534,9 +529,8 @@ class FIPMapper(MapperJob):
                     f"Data stream '{stream.get('id')}' has no regions; falling back to rig.roi_settings. "
                     "Per-stream ROI settings are recorded by aind-physiology-fip >= 0.3.5."
                 )
-                stream = {**stream, "regions": rig_roi_settings}
-            streams.append(stream)
-        return {**metadata, "data_stream_metadata": streams} if streams else metadata
+            roi_settings.update(regions)
+        return roi_settings
 
     def _get_camera_names_from_roi(self, roi_settings: Dict) -> Dict[str, str]:
         """Get camera device identifiers from ROI settings.

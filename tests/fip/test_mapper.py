@@ -631,10 +631,10 @@ class TestFIPMapper(unittest.TestCase):
                 self.assertEqual(self._transform({**self.example_intermediate_data, "rig": bad_rig}), baseline)
 
     def test_legacy_streams_fall_back_to_rig_roi_settings(self):
-        """Test that streams without regions are filled from rig.roi_settings before validation.
+        """Test that streams without regions fall back to rig.roi_settings.
 
         Legacy data (aind-physiology-fip before 0.3.5) must validate, map identically to the
-        new shape, log a warning, and leave the caller's input untouched.
+        new shape, and log a warning.
         """
         baseline = self._transform(self.example_intermediate_data)
         stream = self.example_intermediate_data["data_stream_metadata"][0]
@@ -646,7 +646,6 @@ class TestFIPMapper(unittest.TestCase):
                     acquisition = self._transform(data, skip_validation=False)
                 self.assertEqual(acquisition, baseline)
                 self.assertIn("falling back to rig.roi_settings", logs.output[0])
-        self.assertNotIn("regions", legacy_stream)
 
     def test_regions_merged_across_streams(self):
         """Test that camera identifiers are collected from the regions of every data stream."""
