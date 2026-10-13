@@ -42,6 +42,7 @@ class TestFIPMapper(unittest.TestCase):
         }
         self.test_implanted_fibers = [0, 1]  # Two implanted fibers
         self.test_ethics_review_id = ["2414"]  # Injected to keep tests network-free
+        self.test_regions = self.example_intermediate_data["data_stream_metadata"][0]["regions"]
 
         # transform always calls get_iacuc_protocol to verify ethics_review_id against
         # LabTracks, so mock it here to keep all tests network-free. Individual tests
@@ -49,6 +50,16 @@ class TestFIPMapper(unittest.TestCase):
         patcher = unittest.mock.patch.object(mapper_mod, "get_iacuc_protocol", return_value="2414")
         self.mock_get_iacuc_protocol = patcher.start()
         self.addCleanup(patcher.stop)
+
+    def _transform(self, data, **overrides):
+        """Run transform on ``data`` with network-free test inputs, overridable per call."""
+        kwargs = dict(
+            skip_validation=True,
+            intended_measurements=self.test_intended_measurements,
+            implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
+        )
+        return self.mapper.transform(data, **{**kwargs, **overrides})
 
     def test_mapper_initialization(self):
         """Test that FIPMapper can be instantiated with default configuration.
@@ -206,6 +217,7 @@ class TestFIPMapper(unittest.TestCase):
                     "id": "test_stream",
                     "start_time": "2025-07-18 19:32:35.275046+00:00",
                     "end_time": "2025-07-18 19:49:22.448358+00:00",
+                    "regions": self.test_regions,
                 }
             ],
             "session": {
@@ -451,16 +463,19 @@ class TestFIPMapper(unittest.TestCase):
                     "id": "fip_epoch_0",
                     "start_time": t0.isoformat(),
                     "end_time": t1.isoformat(),
+                    "regions": self.test_regions,
                 },
                 {
                     "id": "fip_epoch_1",
                     "start_time": t2.isoformat(),
                     "end_time": t3.isoformat(),
+                    "regions": self.test_regions,
                 },
                 {
                     "id": "fip_epoch_2",
                     "start_time": t4.isoformat(),
                     "end_time": t5.isoformat(),
+                    "regions": self.test_regions,
                 },
             ],
             "session": {
@@ -589,6 +604,67 @@ class TestFIPMapper(unittest.TestCase):
         finally:
             # Restore original method
             self.mapper._parse_implanted_fibers = original_method
+
+    def test_transform_fails_when_no_roi_settings(self):
+        """Test the clear ValueError when a stream has no regions and rig.roi_settings is also missing (#498)."""
+        stream = self.example_intermediate_data["data_stream_metadata"][0]
+        legacy_stream = {k: v for k, v in stream.items() if k != "regions"}
+        rig = {k: v for k, v in self.example_intermediate_data["rig"].items() if k != "roi_settings"}
+        cases = (
+            ("null", {**legacy_stream, "regions": None}, {**rig, "roi_settings": None}),
+            ("absent", legacy_stream, rig),
+        )
+        for label, bad_stream, bad_rig in cases:
+            with self.subTest(fields=label):
+                data = {**self.example_intermediate_data, "data_stream_metadata": [bad_stream], "rig": bad_rig}
+                with self.assertRaises(ValueError) as cm:
+                    self._transform(data)
+                self.assertIn(stream["id"], str(cm.exception))
+                self.assertIn("rig.roi_settings", str(cm.exception))
+
+    def test_rig_roi_settings_ignored_when_regions_present(self):
+        """Test that rig.roi_settings has no effect when every stream has regions (they take precedence)."""
+        baseline = self._transform(self.example_intermediate_data)
+        rig = {k: v for k, v in self.example_intermediate_data["rig"].items() if k != "roi_settings"}
+        for label, bad_rig in (("null", {**rig, "roi_settings": None}), ("absent", rig)):
+            with self.subTest(roi_settings=label):
+                self.assertEqual(self._transform({**self.example_intermediate_data, "rig": bad_rig}), baseline)
+
+    def test_legacy_streams_fall_back_to_rig_roi_settings(self):
+        """Test that streams without regions are filled from rig.roi_settings before validation.
+
+        Legacy data (aind-physiology-fip before 0.3.5) must validate, map identically to the
+        new shape, log a warning, and leave the caller's input untouched.
+        """
+        baseline = self._transform(self.example_intermediate_data)
+        stream = self.example_intermediate_data["data_stream_metadata"][0]
+        legacy_stream = {k: v for k, v in stream.items() if k != "regions"}
+        for label, old_stream in (("null", {**legacy_stream, "regions": None}), ("absent", legacy_stream)):
+            with self.subTest(regions=label):
+                data = {**self.example_intermediate_data, "data_stream_metadata": [old_stream]}
+                with self.assertLogs(mapper_mod.logger, level="WARNING") as logs:
+                    acquisition = self._transform(data, skip_validation=False)
+                self.assertEqual(acquisition, baseline)
+                self.assertIn("falling back to rig.roi_settings", logs.output[0])
+        self.assertNotIn("regions", legacy_stream)
+
+    def test_regions_merged_across_streams(self):
+        """Test that camera identifiers are collected from the regions of every data stream."""
+        stream = self.example_intermediate_data["data_stream_metadata"][0]
+        green_only = {k: v for k, v in self.test_regions.items() if k != "camera_red_roi"}
+        red_only = {k: v for k, v in self.test_regions.items() if k != "camera_green_iso_roi"}
+
+        def detectors(streams):
+            """Return the detector names across all patch cord channels for the given streams."""
+            configs = self._transform({**self.example_intermediate_data, "data_stream_metadata": streams})
+            patch_cords = [c for c in configs.data_streams[0].configurations if type(c).__name__ == "PatchCordConfig"]
+            return {ch.detector.device_name for pc in patch_cords for ch in pc.channels}
+
+        self.assertEqual(detectors([{**stream, "regions": green_only}]), {"Green CMOS"})
+        self.assertEqual(
+            detectors([{**stream, "id": "a", "regions": green_only}, {**stream, "id": "b", "regions": red_only}]),
+            {"Green CMOS", "Red CMOS"},
+        )
 
     def test_validate_fip_metadata_error(self):
         """Test that _validate_fip_metadata raises ValueError on validation failure.

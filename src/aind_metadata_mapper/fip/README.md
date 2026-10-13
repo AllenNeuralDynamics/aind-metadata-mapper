@@ -51,7 +51,7 @@ acquisition.write_standard_file(output_directory=Path("/output/path"), suffix=No
 The mapper expects input JSON with this structure:
 - `session` - experiment metadata (subject, experimenters, notes, etc.)
 - `rig` - hardware configuration (cameras, LEDs, ROI settings, etc.)
-- `data_stream_metadata` - timing information
+- `data_stream_metadata` - timing information and the ROI settings (`regions`) used in each stream
 
 ## What Gets Mapped
 
@@ -69,7 +69,9 @@ The mapper expects input JSON with this structure:
 - `rig.camera_green_iso` → Green/Isosbestic detector
 - `rig.camera_red` → Red detector
 - `rig.cuttlefish_fip` → Controller device
-- `rig.roi_settings` → Determines fiber count and creates patch cord configurations
+- `data_stream_metadata[*].regions` → Camera identifiers for patch cord configurations. Streams without `regions` (data from aind-physiology-fip before 0.3.5) are filled from `rig.roi_settings` before validation, with a warning; if that is also null the mapper raises `ValueError`.
+
+The mapper assumes each ROI is drawn over its index-matched patch cord (ROI 0 over Patch Cord 0, and so on). Patch cords are created for each implanted fiber from the procedures record; the ROI settings only identify which cameras had ROIs drawn, and regions from all streams are merged by key.
 
 ### Channels
 Each fiber gets three channels:

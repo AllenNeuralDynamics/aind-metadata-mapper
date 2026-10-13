@@ -3,7 +3,83 @@
     {
       "id": "fip_2025-07-18T192959",
       "start_time": "2025-07-18 12:32:35.275046-07:00",
-      "end_time": "2025-07-18 12:49:22.448358-07:00"
+      "end_time": "2025-07-18 12:49:22.448358-07:00",
+      "regions": {
+        "camera_green_iso_background": {
+          "center": {
+            "x": 10.0,
+            "y": 10.0
+          },
+          "radius": 10.0
+        },
+        "camera_red_background": {
+          "center": {
+            "x": 10.0,
+            "y": 10.0
+          },
+          "radius": 10.0
+        },
+        "camera_green_iso_roi": [
+          {
+            "center": {
+              "x": 50.0,
+              "y": 50.0
+            },
+            "radius": 20.0
+          },
+          {
+            "center": {
+              "x": 50.0,
+              "y": 150.0
+            },
+            "radius": 20.0
+          },
+          {
+            "center": {
+              "x": 150.0,
+              "y": 50.0
+            },
+            "radius": 20.0
+          },
+          {
+            "center": {
+              "x": 150.0,
+              "y": 150.0
+            },
+            "radius": 20.0
+          }
+        ],
+        "camera_red_roi": [
+          {
+            "center": {
+              "x": 50.0,
+              "y": 50.0
+            },
+            "radius": 20.0
+          },
+          {
+            "center": {
+              "x": 50.0,
+              "y": 150.0
+            },
+            "radius": 20.0
+          },
+          {
+            "center": {
+              "x": 150.0,
+              "y": 50.0
+            },
+            "radius": 20.0
+          },
+          {
+            "center": {
+              "x": 150.0,
+              "y": 150.0
+            },
+            "radius": 20.0
+          }
+        ]
+      }
     }
   ],
   "session": {

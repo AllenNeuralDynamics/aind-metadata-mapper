@@ -345,6 +345,10 @@ class FIPMapper(MapperJob):
             If metadata validation fails, or if a provided ethics_review_id does not
             match the IACUC protocol on record in LabTracks for the subject.
         """
+        # Fill in per-stream `regions` from `rig.roi_settings` for data recorded before
+        # aind-physiology-fip 0.3.5, so one shape flows through validation and mapping (#498)
+        metadata = self._normalize_legacy_roi_settings(metadata)
+
         # Validate metadata against JSON schema unless skipped
         if not skip_validation:
             self._validate_fip_metadata(metadata)
@@ -356,6 +360,9 @@ class FIPMapper(MapperJob):
 
         subject_id = session["subject"]
         instrument_id = rig["rig_name"]
+
+        # Merge each stream's ROI settings by key; only the keys (which cameras had ROIs) are used
+        roi_settings = {k: v for ds in data_streams for k, v in ds["regions"].items()}
 
         ethics_review_id = self._resolve_ethics_review_id(subject_id, ethics_review_id)
 
@@ -423,7 +430,7 @@ class FIPMapper(MapperJob):
             modalities=[Modality.FIB],
             code=code,
             active_devices=self._get_active_devices(rig, implanted_fibers),
-            configurations=self._build_configurations(rig, implanted_fibers, intended_measurements),
+            configurations=self._build_configurations(rig, implanted_fibers, roi_settings, intended_measurements),
             connections=self._build_connections(implanted_fibers),
         )
 
@@ -494,6 +501,42 @@ class FIPMapper(MapperJob):
             "Using default value of 10000 μs."
         )
         return 10000.0  # Default exposure time in microseconds
+
+    def _normalize_legacy_roi_settings(self, metadata: dict) -> dict:
+        """Fill in per-stream ``regions`` from ``rig.roi_settings`` for legacy input.
+
+        aind-physiology-fip 0.3.5 and later record the ROI settings used by each data stream
+        under ``regions``. Older data only has ``rig.roi_settings``, the definition loaded
+        before the experiment, so it is copied into any stream lacking ``regions`` (with a
+        warning). Streams that already have ``regions`` are left as is. The input is not
+        modified; metadata without data streams is returned unchanged for schema validation
+        to report.
+
+        Raises
+        ------
+        ValueError
+            If a stream has no ``regions`` and ``rig.roi_settings`` is also missing or null.
+            aind-data-schema requires a PatchCordConfig for the fiber photometry modality, and
+            those are built from the ROI settings, so the acquisition cannot be created.
+        """
+        rig_roi_settings = (metadata.get("rig") or {}).get("roi_settings")
+        streams = []
+        for stream in metadata.get("data_stream_metadata") or []:
+            if not stream.get("regions"):
+                if not rig_roi_settings:
+                    raise ValueError(
+                        f"Data stream '{stream.get('id')}' has no regions and rig.roi_settings is missing or "
+                        "null in the extracted FIP metadata. Patch cord configurations are built from the ROI "
+                        "settings, and aind-data-schema requires a PatchCordConfig for the fiber photometry "
+                        "modality, so the acquisition cannot be created without them."
+                    )
+                logger.warning(
+                    f"Data stream '{stream.get('id')}' has no regions; falling back to rig.roi_settings. "
+                    "Per-stream ROI settings are recorded by aind-physiology-fip >= 0.3.5."
+                )
+                stream = {**stream, "regions": rig_roi_settings}
+            streams.append(stream)
+        return {**metadata, "data_stream_metadata": streams} if streams else metadata
 
     def _get_camera_names_from_roi(self, roi_settings: Dict) -> Dict[str, str]:
         """Get camera device identifiers from ROI settings.
@@ -625,6 +668,7 @@ class FIPMapper(MapperJob):
         self,
         rig_config: Dict[str, Any],
         implanted_fibers: List[int],
+        roi_settings: Dict[str, Any],
         intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]] = None,
     ) -> List[Any]:
         """Build device configurations from rig config.
@@ -633,6 +677,8 @@ class FIPMapper(MapperJob):
         ----------
         rig_config : Dict[str, Any]
             Rig configuration dictionary from metadata.
+        roi_settings : Dict[str, Any]
+            ROI settings merged across data streams; identifies which cameras had ROIs drawn.
         intended_measurements : Optional[Dict[str, Dict[str, Optional[str]]]], optional
             Intended measurements from metadata service, mapping fiber names to
             channel measurements (R, G, B, Iso), by default None.
@@ -664,51 +710,49 @@ class FIPMapper(MapperJob):
         #   1. Green: 470nm excitation, ~520nm emission, green camera
         #   2. Isosbestic: 415nm excitation, ~520nm emission, green camera (same detector!)
         #   3. Red: 565nm excitation, ~590nm emission, red camera
-        roi_settings = rig_config.get("roi_settings", {})
-        if roi_settings:
-            # Get camera identifiers from ROI settings
-            camera_names = self._get_camera_names_from_roi(roi_settings)
-            green_camera_name = camera_names.get("green")
-            red_camera_name = camera_names.get("red")
+        # Get camera identifiers from ROI settings
+        camera_names = self._get_camera_names_from_roi(roi_settings)
+        green_camera_name = camera_names.get("green")
+        red_camera_name = camera_names.get("red")
 
-            # Use implanted fibers directly
-            fiber_indices = implanted_fibers
+        # Use implanted fibers directly
+        fiber_indices = implanted_fibers
 
-            # Create patch cord for each implanted fiber
-            for fiber_idx in fiber_indices:
-                channels = []
-                fiber_name = f"Fiber_{fiber_idx}"
-                fiber_measurements = intended_measurements.get(fiber_name) if intended_measurements else None
+        # Create patch cord for each implanted fiber
+        for fiber_idx in fiber_indices:
+            channels = []
+            fiber_name = f"Fiber_{fiber_idx}"
+            fiber_measurements = intended_measurements.get(fiber_name) if intended_measurements else None
 
-                # Channel definitions: (channel_type, measurement_key, led_wavelength, camera_name, emission_wavelength)
-                channel_defs = [
-                    ("Green", "G", EXCITATION_BLUE, green_camera_name, EMISSION_GREEN),
-                    ("Isosbestic", "Iso", EXCITATION_UV, green_camera_name, EMISSION_GREEN),
-                    ("Red", "R", EXCITATION_YELLOW, red_camera_name, EMISSION_RED),
-                ]
+            # Channel definitions: (channel_type, measurement_key, led_wavelength, camera_name, emission_wavelength)
+            channel_defs = [
+                ("Green", "G", EXCITATION_BLUE, green_camera_name, EMISSION_GREEN),
+                ("Isosbestic", "Iso", EXCITATION_UV, green_camera_name, EMISSION_GREEN),
+                ("Red", "R", EXCITATION_YELLOW, red_camera_name, EMISSION_RED),
+            ]
 
-                for channel_type, measurement_key, led_wavelength, camera_name, emission_wavelength in channel_defs:
-                    if camera_name:
-                        measurement = fiber_measurements.get(measurement_key) if fiber_measurements else None
-                        channels.append(
-                            self._create_channel(
-                                fiber_idx,
-                                channel_type,
-                                led_configs_by_wavelength.get(led_wavelength),
-                                measurement,
-                                camera_name,
-                                emission_wavelength,
-                                exposure_time_ms,
-                            )
+            for channel_type, measurement_key, led_wavelength, camera_name, emission_wavelength in channel_defs:
+                if camera_name:
+                    measurement = fiber_measurements.get(measurement_key) if fiber_measurements else None
+                    channels.append(
+                        self._create_channel(
+                            fiber_idx,
+                            channel_type,
+                            led_configs_by_wavelength.get(led_wavelength),
+                            measurement,
+                            camera_name,
+                            emission_wavelength,
+                            exposure_time_ms,
                         )
-
-                # Create patch cord if we have channels
-                if channels:
-                    patch_cord = PatchCordConfig(
-                        device_name=f"Patch Cord {fiber_idx}",
-                        channels=channels,
                     )
-                    configurations.append(patch_cord)
+
+            # Create patch cord if we have channels
+            if channels:
+                patch_cord = PatchCordConfig(
+                    device_name=f"Patch Cord {fiber_idx}",
+                    channels=channels,
+                )
+                configurations.append(patch_cord)
 
         return configurations
 
