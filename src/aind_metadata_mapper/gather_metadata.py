@@ -816,19 +816,17 @@ class GatherMetadataJob:
         subject_id: str,
     ) -> Optional[dict]:
         """Add the nearest same-day weights before and after acquisition."""
-        if not subject or not acquisition:
-            return subject
-
-        subject_details = subject.get("subject_details")
-        if not isinstance(subject_details, dict) or subject_details.get("object_type") != "Mouse subject":
+        subject_details = (subject or {}).get("subject_details")
+        if (
+            not acquisition
+            or not isinstance(subject_details, dict)
+            or subject_details.get("object_type") != "Mouse subject"
+        ):
             return subject
 
         acquisition_start_value = acquisition.get("acquisition_start_time")
-        if not acquisition_start_value:
-            return subject
-
         acquisition_end_value = acquisition.get("acquisition_end_time")
-        if not acquisition_end_value:
+        if not acquisition_start_value or not acquisition_end_value:
             return subject
         acquisition_start_naive = datetime.fromisoformat(normalize_utc_timezone(acquisition_start_value))
         acquisition_start = ensure_timezone(acquisition_start_naive)
@@ -842,10 +840,10 @@ class GatherMetadataJob:
         )
         weight_records_url = f"{weight_records_url}?{urlencode({'acquisition_datetime': acquisition_datetime})}"
         weight_records = metadata_service_helper(weight_records_url)
-        if not isinstance(weight_records, list):
-            return subject
 
-        pre_weight_record, post_weight_record = self._find_nearest_weights(weight_records, acquisition_midpoint)
+        pre_weight_record, post_weight_record = self._find_nearest_weights(
+            weight_records if isinstance(weight_records, list) else [], acquisition_midpoint
+        )
         if pre_weight_record is None and post_weight_record is None:
             return subject
         acquisition_subject_details = (acquisition.get("subject_details") or {}).copy()
@@ -857,13 +855,12 @@ class GatherMetadataJob:
                 continue
             fetched_weight = weight_record[1]
             existing_weight = acquisition_subject_details.get(weight_field)
-            if existing_weight is None:
-                acquisition_subject_details[weight_field] = fetched_weight
-            elif Decimal(str(existing_weight)) != Decimal(str(fetched_weight)):
+            if existing_weight is not None and Decimal(str(existing_weight)) != Decimal(str(fetched_weight)):
                 logging.warning(
                     f"Waterlog {weight_field} ({fetched_weight}) differs from existing {weight_field} "
                     f"({existing_weight}); retaining the existing value."
                 )
+            acquisition_subject_details[weight_field] = fetched_weight if existing_weight is None else existing_weight
         try:
             updated_details = AcquisitionSubjectDetails(**acquisition_subject_details)
         except ValidationError as error:
