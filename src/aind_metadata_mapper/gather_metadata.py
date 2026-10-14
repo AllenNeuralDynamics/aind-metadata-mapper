@@ -6,12 +6,13 @@ import os
 import shutil
 import sys
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode, urljoin
 
 from aind_data_schema.components.subjects import CalibrationObject
-from aind_data_schema.core.acquisition import Acquisition
+from aind_data_schema.core.acquisition import Acquisition, AcquisitionSubjectDetails
 from aind_data_schema.core.data_description import DataDescription
 from aind_data_schema.core.instrument import Instrument
 from aind_data_schema.core.metadata import Metadata, create_metadata_json
@@ -808,26 +809,6 @@ class GatherMetadataJob:
                     post_weight_record = parsed_record
         return pre_weight_record, post_weight_record
 
-    @staticmethod
-    def _apply_subject_weight(
-        subject_details: dict,
-        weight_field: str,
-        weight_record: Optional[tuple[datetime, Any]],
-    ) -> None:
-        """Fill a missing subject weight or warn when Waterlog disagrees with an existing value."""
-        if weight_record is None:
-            return
-
-        fetched_weight = weight_record[1]
-        existing_weight = subject_details.get(weight_field)
-        if existing_weight is None:
-            subject_details[weight_field] = fetched_weight
-        elif existing_weight != fetched_weight:
-            logging.warning(
-                f"Waterlog {weight_field} ({fetched_weight}) differs from existing {weight_field} "
-                f"({existing_weight}); retaining the existing value."
-            )
-
     def add_subject_weights(
         self,
         subject: Optional[dict],
@@ -846,11 +827,11 @@ class GatherMetadataJob:
         if not acquisition_start_value:
             return subject
 
-        acquisition_start_naive = datetime.fromisoformat(normalize_utc_timezone(acquisition_start_value))
-        acquisition_start = ensure_timezone(acquisition_start_naive)
         acquisition_end_value = acquisition.get("acquisition_end_time")
         if not acquisition_end_value:
             return subject
+        acquisition_start_naive = datetime.fromisoformat(normalize_utc_timezone(acquisition_start_value))
+        acquisition_start = ensure_timezone(acquisition_start_naive)
         acquisition_end = ensure_timezone(datetime.fromisoformat(normalize_utc_timezone(acquisition_end_value)))
         acquisition_midpoint = acquisition_start + (acquisition_end - acquisition_start) / 2
 
@@ -865,8 +846,32 @@ class GatherMetadataJob:
             return subject
 
         pre_weight_record, post_weight_record = self._find_nearest_weights(weight_records, acquisition_midpoint)
-        self._apply_subject_weight(subject_details, "pre_weight", pre_weight_record)
-        self._apply_subject_weight(subject_details, "post_weight", post_weight_record)
+        if pre_weight_record is None and post_weight_record is None:
+            return subject
+        acquisition_subject_details = (acquisition.get("subject_details") or {}).copy()
+        for weight_field, weight_record in (
+            ("animal_weight_prior", pre_weight_record),
+            ("animal_weight_post", post_weight_record),
+        ):
+            if weight_record is None:
+                continue
+            fetched_weight = weight_record[1]
+            existing_weight = acquisition_subject_details.get(weight_field)
+            if existing_weight is None:
+                acquisition_subject_details[weight_field] = fetched_weight
+            elif Decimal(str(existing_weight)) != Decimal(str(fetched_weight)):
+                logging.warning(
+                    f"Waterlog {weight_field} ({fetched_weight}) differs from existing {weight_field} "
+                    f"({existing_weight}); retaining the existing value."
+                )
+        try:
+            updated_details = AcquisitionSubjectDetails(**acquisition_subject_details)
+        except ValidationError as error:
+            if self.settings.raise_if_invalid:
+                raise
+            logging.warning(f"Unable to enrich acquisition subject weights: {error}")
+            return subject
+        acquisition["subject_details"] = updated_details.model_dump(mode="json")
         return subject
 
     def add_core_metadata(
@@ -887,6 +892,8 @@ class GatherMetadataJob:
 
         subject = self.get_subject(subject_id=subject_id)
         subject = self.add_subject_weights(subject, acquisition, subject_id)
+        if acquisition:
+            self._write_json_file(Acquisition.default_filename(), acquisition)
         if subject:
             core_metadata["subject"] = subject
             self._write_json_file(Subject.default_filename(), subject)
@@ -937,7 +944,6 @@ class GatherMetadataJob:
         acquisition = self.get_acquisition()
         if acquisition:
             core_metadata["acquisition"] = acquisition
-            self._write_json_file(Acquisition.default_filename(), acquisition)
 
         # Get and validate acquisition_start_time
         acquisition_start_time = acquisition.get("acquisition_start_time") if acquisition else None

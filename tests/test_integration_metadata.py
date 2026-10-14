@@ -262,8 +262,13 @@ class TestIntegrationMetadata(unittest.TestCase):
                     self.assertIn(expected_file, written_files, f"Expected {expected_file} to be written")
 
                 subject_data = next(call[0][1] for call in mock_write.call_args_list if call[0][0] == "subject.json")
-                self.assertEqual(subject_data["subject_details"]["pre_weight"], 20.5)
-                self.assertEqual(subject_data["subject_details"]["post_weight"], 21.5)
+                self.assertNotIn("pre_weight", subject_data["subject_details"])
+                self.assertNotIn("post_weight", subject_data["subject_details"])
+                acquisition_data = next(
+                    call[0][1] for call in mock_write.call_args_list if call[0][0] == "acquisition.json"
+                )
+                self.assertEqual(acquisition_data["subject_details"]["animal_weight_prior"], "20.5")
+                self.assertEqual(acquisition_data["subject_details"]["animal_weight_post"], "21.5")
                 mock_weight_service.assert_called_once_with(
                     "http://test-service.com/api/v2/dataverse/mouse_weight_records/804670"
                     "?acquisition_datetime=2025-09-17T10%3A26%3A00"
