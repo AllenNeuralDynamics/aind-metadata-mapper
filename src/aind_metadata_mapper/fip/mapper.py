@@ -57,7 +57,6 @@ from aind_metadata_mapper.utils import (
     get_iacuc_protocol,
     get_intended_measurements,
     get_procedures,
-    get_protocols_for_modality,
     normalize_utc_timezone,
 )
 
@@ -400,9 +399,6 @@ class FIPMapper(MapperJob):
                     "Implanted fiber information is required to create FIP acquisition metadata."
                 )
 
-        # Get protocol URLs for FIP modality
-        protocol_id = get_protocols_for_modality("fip") or None
-
         # Create code list from the aind-physiology-fip version reported by the rig.
         # allow_dirty_repo records whether the launcher was permitted to run from a dirty
         # repository, not whether it actually was; when True the version is unverified.
@@ -442,7 +438,6 @@ class FIPMapper(MapperJob):
             data_streams=[data_stream],
             stimulus_epochs=[],
             subject_details=None,  # FIP data contract does not include subject details
-            protocol_id=protocol_id,
         )
 
         return acquisition
