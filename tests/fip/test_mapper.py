@@ -385,6 +385,40 @@ class TestFIPMapper(unittest.TestCase):
         self.assertGreater(len(patch_cords[0].channels), 0)
         self.assertIsNotNone(patch_cords[0].channels[0].detector)
 
+    def test_roi_settings_not_used(self):
+        """Test that ROI settings do not affect the acquisition.
+
+        Camera identifiers come from the rig configuration and patch cords from the implanted
+        fibers, so rig.roi_settings may be null or absent (#498), and the per-stream regions
+        recorded by aind-physiology-fip 0.3.5 and later are accepted but not yet read. All
+        variants are run with schema validation on.
+        """
+        data = self.example_intermediate_data
+        rig, stream = data["rig"], data["data_stream_metadata"][0]
+        variants = {
+            "baseline": data,
+            "rig.roi_settings null": {**data, "rig": {**rig, "roi_settings": None}},
+            "rig.roi_settings absent": {**data, "rig": {k: v for k, v in rig.items() if k != "roi_settings"}},
+            "stream regions present": {**data, "data_stream_metadata": [{**stream, "regions": rig["roi_settings"]}]},
+        }
+        acquisitions = {}
+        for label, variant in variants.items():
+            with self.subTest(variant=label):
+                acquisitions[label] = self.mapper.transform(
+                    variant,
+                    skip_validation=False,
+                    intended_measurements=self.test_intended_measurements,
+                    implanted_fibers=self.test_implanted_fibers,
+                    ethics_review_id=self.test_ethics_review_id,
+                )
+        for label, acquisition in acquisitions.items():
+            self.assertEqual(acquisition, acquisitions["baseline"], label)
+
+    def test_get_camera_names_ignores_unclassified_cameras(self):
+        """Test that camera entries that are neither green nor red are skipped."""
+        names = self.mapper._get_camera_names({"camera_green_iso": {}, "camera_red": {}, "camera_other": {}})
+        self.assertEqual(names, {"green": "Green CMOS", "red": "Red CMOS"})
+
     def test_timezone_handling(self):
         """Test that session times are properly timezone-aware after processing.
 

@@ -46,11 +46,9 @@ from aind_metadata_mapper.fip.constants import (
     EXCITATION_UV,
     EXCITATION_YELLOW,
     FIP_CAMERA_COMPRESSION,
-    ROI_KEYWORD_BACKGROUND,
     ROI_KEYWORD_GREEN,
     ROI_KEYWORD_ISO,
     ROI_KEYWORD_RED,
-    ROI_KEYWORD_ROI,
 )
 from aind_metadata_mapper.utils import (
     ensure_timezone,
@@ -490,16 +488,16 @@ class FIPMapper(MapperJob):
         )
         return 10000.0  # Default exposure time in microseconds
 
-    def _get_camera_names_from_roi(self, roi_settings: Dict) -> Dict[str, str]:
-        """Get camera device identifiers from ROI settings.
+    def _get_camera_names(self, rig_config: Dict) -> Dict[str, str]:
+        """Get camera device identifiers from the rig configuration.
 
-        Extracts camera config keys from ROI settings and transforms them to
+        Classifies the rig's camera entries as green or red and transforms them to
         historical standard device names using DEVICE_NAME_MAP.
 
         Parameters
         ----------
-        roi_settings : Dict
-            ROI settings from rig configuration.
+        rig_config : Dict
+            Rig configuration dictionary from metadata.
 
         Returns
         -------
@@ -509,11 +507,8 @@ class FIPMapper(MapperJob):
         """
         camera_names = {}
 
-        for roi_key in roi_settings.keys():
-            if ROI_KEYWORD_ROI in roi_key and ROI_KEYWORD_BACKGROUND not in roi_key:
-                # Extract camera key from roi_key (e.g., "camera_green_iso_roi" -> "camera_green_iso")
-                camera_key = roi_key.replace(ROI_KEYWORD_ROI, "")
-
+        for camera_key in rig_config.keys():
+            if camera_key.startswith("camera_"):
                 # Determine camera type
                 if ROI_KEYWORD_GREEN in camera_key or ROI_KEYWORD_ISO in camera_key:
                     camera_type = "green"
@@ -659,51 +654,49 @@ class FIPMapper(MapperJob):
         #   1. Green: 470nm excitation, ~520nm emission, green camera
         #   2. Isosbestic: 415nm excitation, ~520nm emission, green camera (same detector!)
         #   3. Red: 565nm excitation, ~590nm emission, red camera
-        roi_settings = rig_config.get("roi_settings", {})
-        if roi_settings:
-            # Get camera identifiers from ROI settings
-            camera_names = self._get_camera_names_from_roi(roi_settings)
-            green_camera_name = camera_names.get("green")
-            red_camera_name = camera_names.get("red")
+        # Get camera identifiers from the rig configuration
+        camera_names = self._get_camera_names(rig_config)
+        green_camera_name = camera_names.get("green")
+        red_camera_name = camera_names.get("red")
 
-            # Use implanted fibers directly
-            fiber_indices = implanted_fibers
+        # Use implanted fibers directly
+        fiber_indices = implanted_fibers
 
-            # Create patch cord for each implanted fiber
-            for fiber_idx in fiber_indices:
-                channels = []
-                fiber_name = f"Fiber_{fiber_idx}"
-                fiber_measurements = intended_measurements.get(fiber_name) if intended_measurements else None
+        # Create patch cord for each implanted fiber
+        for fiber_idx in fiber_indices:
+            channels = []
+            fiber_name = f"Fiber_{fiber_idx}"
+            fiber_measurements = intended_measurements.get(fiber_name) if intended_measurements else None
 
-                # Channel definitions: (channel_type, measurement_key, led_wavelength, camera_name, emission_wavelength)
-                channel_defs = [
-                    ("Green", "G", EXCITATION_BLUE, green_camera_name, EMISSION_GREEN),
-                    ("Isosbestic", "Iso", EXCITATION_UV, green_camera_name, EMISSION_GREEN),
-                    ("Red", "R", EXCITATION_YELLOW, red_camera_name, EMISSION_RED),
-                ]
+            # Channel definitions: (channel_type, measurement_key, led_wavelength, camera_name, emission_wavelength)
+            channel_defs = [
+                ("Green", "G", EXCITATION_BLUE, green_camera_name, EMISSION_GREEN),
+                ("Isosbestic", "Iso", EXCITATION_UV, green_camera_name, EMISSION_GREEN),
+                ("Red", "R", EXCITATION_YELLOW, red_camera_name, EMISSION_RED),
+            ]
 
-                for channel_type, measurement_key, led_wavelength, camera_name, emission_wavelength in channel_defs:
-                    if camera_name:
-                        measurement = fiber_measurements.get(measurement_key) if fiber_measurements else None
-                        channels.append(
-                            self._create_channel(
-                                fiber_idx,
-                                channel_type,
-                                led_configs_by_wavelength.get(led_wavelength),
-                                measurement,
-                                camera_name,
-                                emission_wavelength,
-                                exposure_time_ms,
-                            )
+            for channel_type, measurement_key, led_wavelength, camera_name, emission_wavelength in channel_defs:
+                if camera_name:
+                    measurement = fiber_measurements.get(measurement_key) if fiber_measurements else None
+                    channels.append(
+                        self._create_channel(
+                            fiber_idx,
+                            channel_type,
+                            led_configs_by_wavelength.get(led_wavelength),
+                            measurement,
+                            camera_name,
+                            emission_wavelength,
+                            exposure_time_ms,
                         )
-
-                # Create patch cord if we have channels
-                if channels:
-                    patch_cord = PatchCordConfig(
-                        device_name=f"Patch Cord {fiber_idx}",
-                        channels=channels,
                     )
-                    configurations.append(patch_cord)
+
+            # Create patch cord if we have channels
+            if channels:
+                patch_cord = PatchCordConfig(
+                    device_name=f"Patch Cord {fiber_idx}",
+                    channels=channels,
+                )
+                configurations.append(patch_cord)
 
         return configurations
 
