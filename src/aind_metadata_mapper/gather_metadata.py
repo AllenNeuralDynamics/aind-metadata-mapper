@@ -790,9 +790,9 @@ class GatherMetadataJob:
     def _find_nearest_weights(
         cls,
         weight_records: list[Any],
-        acquisition_midpoint: datetime,
+        acquisition_start: datetime,
     ) -> tuple[Optional[tuple[datetime, Any]], Optional[tuple[datetime, Any]]]:
-        """Return the nearest records at or before and after the acquisition midpoint."""
+        """Return the nearest records at or before and after acquisition start."""
         pre_weight_record = None
         post_weight_record = None
         for weight_record in weight_records:
@@ -801,10 +801,10 @@ class GatherMetadataJob:
                 continue
 
             weight_datetime, _ = parsed_record
-            if weight_datetime <= acquisition_midpoint:
+            if weight_datetime <= acquisition_start:
                 if pre_weight_record is None or weight_datetime > pre_weight_record[0]:
                     pre_weight_record = parsed_record
-            elif weight_datetime > acquisition_midpoint:
+            elif weight_datetime > acquisition_start:
                 if post_weight_record is None or weight_datetime < post_weight_record[0]:
                     post_weight_record = parsed_record
         return pre_weight_record, post_weight_record
@@ -815,7 +815,7 @@ class GatherMetadataJob:
         acquisition: Optional[dict],
         subject_id: str,
     ) -> Optional[dict]:
-        """Add the nearest same-day weights before and after acquisition."""
+        """Add the nearest same-day weights at or before and after acquisition start."""
         subject_details = (subject or {}).get("subject_details")
         if (
             not acquisition
@@ -825,13 +825,10 @@ class GatherMetadataJob:
             return subject
 
         acquisition_start_value = acquisition.get("acquisition_start_time")
-        acquisition_end_value = acquisition.get("acquisition_end_time")
-        if not acquisition_start_value or not acquisition_end_value:
+        if not acquisition_start_value:
             return subject
         acquisition_start_naive = datetime.fromisoformat(normalize_utc_timezone(acquisition_start_value))
         acquisition_start = ensure_timezone(acquisition_start_naive)
-        acquisition_end = ensure_timezone(datetime.fromisoformat(normalize_utc_timezone(acquisition_end_value)))
-        acquisition_midpoint = acquisition_start + (acquisition_end - acquisition_start) / 2
 
         acquisition_datetime = acquisition_start_naive.replace(tzinfo=None).isoformat(timespec="seconds")
         weight_records_url = urljoin(
@@ -842,7 +839,7 @@ class GatherMetadataJob:
         weight_records = metadata_service_helper(weight_records_url)
 
         pre_weight_record, post_weight_record = self._find_nearest_weights(
-            weight_records if isinstance(weight_records, list) else [], acquisition_midpoint
+            weight_records if isinstance(weight_records, list) else [], acquisition_start
         )
         if pre_weight_record is None and post_weight_record is None:
             return subject

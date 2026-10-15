@@ -589,8 +589,8 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertIsNone(result)
 
     @patch("aind_metadata_mapper.gather_metadata.metadata_service_helper")
-    def test_add_subject_weights_uses_nearest_captures_on_each_side_of_midpoint(self, mock_metadata_service_helper):
-        """Test that the midpoint is included in pre-weight and later captures are post-weight."""
+    def test_add_subject_weights_uses_nearest_captures_on_each_side_of_start(self, mock_metadata_service_helper):
+        """Test that captures after acquisition start are post weights."""
         subject = {"subject_id": "123456", "subject_details": {"object_type": "Mouse subject"}}
         acquisition = {
             "acquisition_start_time": "2023-01-01T12:00:00+00:00",
@@ -610,8 +610,8 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertEqual(result["subject_details"], {"object_type": "Mouse subject"})
         details = AcquisitionSubjectDetails.model_validate(acquisition["subject_details"])
-        self.assertEqual(details.animal_weight_prior, 22)
-        self.assertEqual(details.animal_weight_post, 23)
+        self.assertEqual(details.animal_weight_prior, 21)
+        self.assertEqual(details.animal_weight_post, 22)
         self.assertEqual(acquisition["subject_details"], details.model_dump(mode="json"))
         mock_metadata_service_helper.assert_called_once_with(
             "http://test-service.com/api/v2/dataverse/mouse_weight_records/123456"
@@ -636,15 +636,27 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_metadata_service_helper.assert_called_once()
 
     @patch("aind_metadata_mapper.gather_metadata.metadata_service_helper")
-    def test_add_subject_weights_without_acquisition_end_does_not_query(self, mock_metadata_service_helper):
-        """Test that a midpoint is required to classify weights."""
+    def test_add_subject_weights_without_acquisition_end_uses_start(self, mock_metadata_service_helper):
+        """Test that acquisition end is unnecessary and exact start matches are pre weights."""
         subject = {"subject_id": "123456", "subject_details": {"object_type": "Mouse subject"}}
-        acquisition = {"acquisition_start_time": "2023-01-01T12:00:00+00:00"}
+        acquisition = {
+            "acquisition_start_time": "2023-01-01T12:00:00+00:00",
+            "subject_details": {"mouse_platform_name": "wheel"},
+        }
+        mock_metadata_service_helper.return_value = [
+            {"weight": 24.0, "weight_datetime": "2023-01-01T12:30:00Z"},
+            {"weight": 22.0, "weight_datetime": "2023-01-01T07:00:00-05:00"},
+            {"weight": 21.0, "weight_datetime": "2023-01-01T11:59:59Z"},
+            {"weight": 23.0, "weight_datetime": "2023-01-01T12:00:01Z"},
+        ]
 
         result = self.job.add_subject_weights(subject, acquisition, "123456")
 
         self.assertIs(result, subject)
-        mock_metadata_service_helper.assert_not_called()
+        details = AcquisitionSubjectDetails.model_validate(acquisition["subject_details"])
+        self.assertEqual(details.animal_weight_prior, 22)
+        self.assertEqual(details.animal_weight_post, 23)
+        mock_metadata_service_helper.assert_called_once()
 
     @patch("aind_metadata_mapper.gather_metadata.metadata_service_helper")
     def test_add_subject_weights_without_acquisition_start_does_not_query(self, mock_metadata_service_helper):
@@ -876,17 +888,15 @@ class TestGatherMetadataJob(unittest.TestCase):
         """Datetime parsing errors propagate independently of the validation flag."""
         subject = {"subject_details": {"object_type": "Mouse subject"}}
         for strict in (False, True):
-            for time_field in ("acquisition_start_time", "acquisition_end_time"):
-                with self.subTest(strict=strict, time_field=time_field):
-                    self.job.settings.raise_if_invalid = strict
-                    acquisition = {
-                        "acquisition_start_time": "2023-01-01T12:00:00Z",
-                        "acquisition_end_time": "2023-01-01T13:00:00Z",
-                        "subject_details": {"mouse_platform_name": "wheel"},
-                    }
-                    acquisition[time_field] = "invalid"
-                    with self.assertRaises(ValueError):
-                        self.job.add_subject_weights(subject, acquisition, "123456")
+            with self.subTest(strict=strict):
+                self.job.settings.raise_if_invalid = strict
+                acquisition = {
+                    "acquisition_start_time": "invalid",
+                    "acquisition_end_time": "2023-01-01T13:00:00Z",
+                    "subject_details": {"mouse_platform_name": "wheel"},
+                }
+                with self.assertRaises(ValueError):
+                    self.job.add_subject_weights(subject, acquisition, "123456")
         mock_warning.assert_not_called()
         mock_metadata_service_helper.assert_not_called()
 
