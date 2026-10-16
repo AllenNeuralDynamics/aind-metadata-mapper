@@ -205,3 +205,4 @@ acquisition.write_standard_file(output_directory=job_settings.output_directory, 
 #### Individual mappers
 
 [FIP (Fiber photometry)](src/aind_metadata_mapper/fip/README.md)
+[Mesoscope](src/aind_metadata_mapper/mesoscope/README.md)
