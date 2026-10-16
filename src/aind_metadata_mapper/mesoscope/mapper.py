@@ -485,7 +485,7 @@ class MesoscopeMapper(MapperJob):
         return StimulusEpoch(
             stimulus_start_time=stimulus_start,
             stimulus_end_time=stimulus_end,
-            stimulus_name=self._get_required_value(epoch, "stimulus_name", "camstim_epchs"),
+            stimulus_name=self._get_required_value(epoch, "stimulus_name", "camstim_epochs"),
             stimulus_modalities=self._resolve_stimulus_modalities(epoch),
             performance_metrics=self._build_performance_metrics(epoch),
             code=self._build_code(epoch),
@@ -557,7 +557,7 @@ class MesoscopeMapper(MapperJob):
 
         stimulus_epochs = [
             self._build_stimulus_epoch(epoch, session_start.tzinfo or PACIFIC_TIMEZONE)
-            for epoch in raw_metadata.get("camstim_epchs", [])
+            for epoch in raw_metadata.get("camstim_epochs", [])
         ]
         acquisition_start, acquisition_end = self._get_acquisition_bounds(session_start, session_end, stimulus_epochs)
 

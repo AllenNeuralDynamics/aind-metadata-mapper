@@ -151,8 +151,8 @@ class TestMesoscopeMapper(unittest.TestCase):
         metadata = copy.deepcopy(self.fixture)
         metadata["job_settings"]["session_start_time"] = "2026-02-12T13:04:36.555247"
         metadata["job_settings"]["session_end_time"] = "2026-02-12T14:07:12.672057"
-        metadata["camstim_epchs"][0]["stimulus_start_time"] = "2026-02-12T13:05:03.110704"
-        metadata["camstim_epchs"][0]["stimulus_end_time"] = "2026-02-12T13:19:02.807314"
+        metadata["camstim_epochs"][0]["stimulus_start_time"] = "2026-02-12T13:05:03.110704"
+        metadata["camstim_epochs"][0]["stimulus_end_time"] = "2026-02-12T13:19:02.807314"
 
         acquisition = self.mapper.transform(metadata)
 
@@ -222,8 +222,8 @@ class TestMesoscopeMapper(unittest.TestCase):
         """Acquisition bounds should span stream and stimulus times."""
         metadata = copy.deepcopy(self.fixture)
         metadata["job_settings"]["session_end_time"] = "2026-02-20T11:17:49.592634-08:00"
-        metadata["camstim_epchs"][0]["stimulus_start_time"] = "2026-02-20T10:07:44.569904-08:00"
-        metadata["camstim_epchs"][0]["stimulus_end_time"] = "2026-02-20T11:17:55.926134-08:00"
+        metadata["camstim_epochs"][0]["stimulus_start_time"] = "2026-02-20T10:07:44.569904-08:00"
+        metadata["camstim_epochs"][0]["stimulus_end_time"] = "2026-02-20T11:17:55.926134-08:00"
 
         acquisition = self.mapper.transform(metadata)
 
@@ -240,8 +240,8 @@ class TestMesoscopeMapper(unittest.TestCase):
     def test_transform_rejects_inverted_stimulus_interval(self) -> None:
         """Mapper should reject inverted stimulus intervals."""
         metadata = copy.deepcopy(self.fixture)
-        metadata["camstim_epchs"][0]["stimulus_start_time"] = "2026-02-12T13:19:02.807314-08:00"
-        metadata["camstim_epchs"][0]["stimulus_end_time"] = "2026-02-12T13:05:03.110704-08:00"
+        metadata["camstim_epochs"][0]["stimulus_start_time"] = "2026-02-12T13:19:02.807314-08:00"
+        metadata["camstim_epochs"][0]["stimulus_end_time"] = "2026-02-12T13:05:03.110704-08:00"
 
         with self.assertRaises(ValueError) as context:
             self.mapper.transform(metadata)
@@ -251,7 +251,7 @@ class TestMesoscopeMapper(unittest.TestCase):
     def test_transform_defaults_missing_stimulus_modalities_to_visual(self) -> None:
         """Mapper should normalize missing mesoscope Camstim modalities to Visual."""
         metadata = copy.deepcopy(self.fixture)
-        metadata["camstim_epchs"][0].pop("stimulus_modalities", None)
+        metadata["camstim_epochs"][0].pop("stimulus_modalities", None)
 
         acquisition = self.mapper.transform(metadata)
 
@@ -260,9 +260,9 @@ class TestMesoscopeMapper(unittest.TestCase):
     def test_transform_preserves_explicit_stimulus_modalities(self) -> None:
         """Mapper should preserve explicit upstream stimulus fields."""
         metadata = copy.deepcopy(self.fixture)
-        metadata["camstim_epchs"][0]["stimulus_modalities"] = [StimulusModality.VISUAL]
-        metadata["camstim_epchs"][0]["stimulus_parameters"][0]["stimulus_type"] = "Custom visual"
-        metadata["camstim_epchs"][0]["stimulus_parameters"][0]["notes"] = "keep me"
+        metadata["camstim_epochs"][0]["stimulus_modalities"] = [StimulusModality.VISUAL]
+        metadata["camstim_epochs"][0]["stimulus_parameters"][0]["stimulus_type"] = "Custom visual"
+        metadata["camstim_epochs"][0]["stimulus_parameters"][0]["notes"] = "keep me"
 
         acquisition = self.mapper.transform(metadata)
 

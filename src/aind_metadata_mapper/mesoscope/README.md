@@ -6,7 +6,7 @@ This mapper transforms extractor-produced `mesoscope.json` into
 ## Input contract
 
 The mapper consumes the `aind-metadata-extractor` `MesoscopeExtractModel`,
-including `tiff_header`, `session_metadata`, `camstim_epchs`,
+including `tiff_header`, `session_metadata`, `camstim_epochs`,
 `camstim_session_type`, and `job_settings`.
 
 `job_settings.instrument_id` is required. Preparation should populate this
