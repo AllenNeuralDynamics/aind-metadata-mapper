@@ -39,14 +39,6 @@ DEFAULT_LED_POWER = 1.0
 
 
 # ==============================================================================
-# Acquisition Type
-# ==============================================================================
-# Hardcoded acquisition type for VrForaging-FIP experiments
-# NOTE: Ideally this would come from the extracted metadata, but we don't have it yet.
-ACQUISITION_TYPE_AIND_VR_FORAGING = "AindVrForaging"
-
-
-# ==============================================================================
 # Device Name Transformations
 # ==============================================================================
 # Maps rig config keys to historical standard device names

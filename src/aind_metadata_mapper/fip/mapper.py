@@ -34,7 +34,6 @@ from aind_data_schema_models.units import PowerUnit, SizeUnit, TimeUnit
 
 from aind_metadata_mapper.base import MapperJob, MapperJobSettings
 from aind_metadata_mapper.fip.constants import (
-    ACQUISITION_TYPE_AIND_VR_FORAGING,
     AIND_PHYSIOLOGY_FIP_PACKAGE_NAME,
     AIND_PHYSIOLOGY_FIP_REPO_URL,
     CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND,
@@ -58,7 +57,6 @@ from aind_metadata_mapper.utils import (
     get_iacuc_protocol,
     get_intended_measurements,
     get_procedures,
-    get_protocols_for_modality,
     normalize_utc_timezone,
 )
 
@@ -307,6 +305,7 @@ class FIPMapper(MapperJob):
         intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]] = None,
         implanted_fibers: Optional[List[int]] = None,
         ethics_review_id: Optional[List[str]] = None,
+        acquisition_type: Optional[str] = None,
     ) -> Acquisition:
         """Transforms intermediate metadata into a complete Acquisition model.
 
@@ -329,6 +328,10 @@ class FIPMapper(MapperJob):
             protocol is found, in which case it is filled by the acquisition merge
             downstream. If provided, the value is verified against LabTracks and a
             ValueError is raised on mismatch.
+        acquisition_type : Optional[str], optional
+            Descriptive acquisition type. Passed straight through when provided. If None,
+            an empty string is used rather than None, since aind-data-schema requires the
+            field; an empty value is left to be filled by the acquisition merge downstream.
 
         Returns
         -------
@@ -396,9 +399,6 @@ class FIPMapper(MapperJob):
                     "Implanted fiber information is required to create FIP acquisition metadata."
                 )
 
-        # Get protocol URLs for FIP modality
-        protocol_id = get_protocols_for_modality("fip") or None
-
         # Create code list from the aind-physiology-fip version reported by the rig.
         # allow_dirty_repo records whether the launcher was permitted to run from a dirty
         # repository, not whether it actually was; when True the version is unverified.
@@ -430,12 +430,14 @@ class FIPMapper(MapperJob):
             experimenters=session.get("experimenter", []),
             ethics_review_id=ethics_review_id,
             instrument_id=instrument_id,
-            acquisition_type=ACQUISITION_TYPE_AIND_VR_FORAGING,
+            # Empty string rather than None when unset: acquisition_type is required by
+            # aind-data-schema, and an empty value is filled in by the acquisition merge
+            # downstream (see aind-data-schema#1876).
+            acquisition_type=acquisition_type or "",
             notes=session.get("notes"),
             data_streams=[data_stream],
             stimulus_epochs=[],
             subject_details=None,  # FIP data contract does not include subject details
-            protocol_id=protocol_id,
         )
 
         return acquisition

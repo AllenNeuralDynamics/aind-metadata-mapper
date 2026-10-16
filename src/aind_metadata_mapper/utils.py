@@ -11,7 +11,6 @@ from urllib.parse import urljoin
 
 import aind_data_schema.core.instrument as instrument
 import requests
-import yaml
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -241,39 +240,6 @@ def get_intended_measurements(
     except Exception as e:
         logger.warning(f"Error fetching intended measurements for subject {subject_id}: {e}")
         return None
-
-
-def get_protocols_for_modality(modality):
-    """Get protocol URLs for a specific modality.
-
-    Loads protocols from protocols.yaml file and returns the list for the given modality.
-
-    Parameters
-    ----------
-    modality : str
-        The modality name (e.g., 'fip', 'smartspim').
-
-    Returns
-    -------
-    list
-        List of protocol URLs for the modality.
-    """
-    try:
-        project_root = Path(__file__).parent.parent.parent
-        protocols_file = project_root / "protocols.yaml"
-
-        if not protocols_file.exists():
-            logger.warning(f"Protocols file not found at {protocols_file}")
-            return []
-
-        with open(protocols_file, "r") as f:
-            protocols = yaml.safe_load(f)
-
-        protocols = protocols or {}
-        return protocols.get(modality, [])
-    except Exception as e:
-        logger.warning(f"Error loading protocols: {e}")
-        return []
 
 
 def get_instrument(
