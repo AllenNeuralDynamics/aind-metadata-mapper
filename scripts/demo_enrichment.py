@@ -1,11 +1,11 @@
 """Enrich one session's acquisition from the metadata service and report what changed.
 
 Pass a data asset name, for example ``behavior_869134_2026-09-28_09-35-27``. The script reads that
-record's ``acquisition`` and ``subject`` from the v2 DocDB REST API, runs
-``aind_metadata_mapper.enrichment.enrich_acquisition`` on it (which validates the acquisition before
-and after enriching), and prints the enriched fields before and after. With ``--output-dir`` it also
-writes the enriched ``acquisition.json`` there through ``Acquisition.write_standard_file``. Nothing is
-written back to DocDB. This is the shape a back-fill migration would copy.
+record's ``acquisition`` from the v2 DocDB REST API, runs
+``aind_metadata_mapper.enrichment.enrich_acquisition`` on it, and prints the enriched fields before
+and after. With ``--output-dir`` it validates the result and writes it as ``acquisition.json`` there
+through ``Acquisition.write_standard_file``. Nothing is written back to DocDB. This is the shape a
+back-fill migration would copy.
 """
 
 import argparse
@@ -14,8 +14,9 @@ import json
 from pathlib import Path
 
 import requests
+from aind_data_schema.core.acquisition import Acquisition
 
-from aind_metadata_mapper.enrichment import enrich_acquisition, write_acquisition
+from aind_metadata_mapper.enrichment import enrich_acquisition
 from aind_metadata_mapper.models import EnrichmentSettings
 
 DOCDB_FIND_URL = "https://api.allenneuraldynamics.org/v2/metadata_index/data_assets/find"
@@ -27,10 +28,10 @@ ENRICHED_FIELDS = (
 
 
 def fetch_record(name: str) -> dict:
-    """Return the subject and acquisition of the v2 DocDB record with this name."""
+    """Return the name and acquisition of the v2 DocDB record with this name."""
     params = {
         "filter": json.dumps({"name": name}),
-        "projection": json.dumps({"name": 1, "subject": 1, "acquisition": 1}),
+        "projection": json.dumps({"name": 1, "acquisition": 1}),
         "limit": "1",
     }
     response = requests.get(DOCDB_FIND_URL, params=params, timeout=60)
@@ -79,13 +80,11 @@ def main() -> None:
     acquisition = record.get("acquisition")
     if acquisition is None:
         raise SystemExit(f"{args.name} has no acquisition metadata.")
-    subject = record.get("subject")
 
     before = copy.deepcopy(acquisition)
     enriched = enrich_acquisition(
         acquisition=acquisition,
-        subject=subject,
-        subject_id=acquisition.get("subject_id") or (subject or {}).get("subject_id"),
+        subject_id=acquisition.get("subject_id"),
         settings=EnrichmentSettings(replace_existing=args.replace_existing),
         metadata_service_url=args.metadata_service_url,
         raise_if_invalid=True,
@@ -97,7 +96,9 @@ def main() -> None:
     }
     print(json.dumps(result, indent=2))
     if args.output_dir:
-        print(f"Wrote {write_acquisition(enriched, args.output_dir)}")
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        Acquisition.model_validate(enriched).write_standard_file(output_directory=args.output_dir)
+        print(f"Wrote {args.output_dir / Acquisition.default_filename()}")
 
 
 if __name__ == "__main__":

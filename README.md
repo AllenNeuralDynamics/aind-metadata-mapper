@@ -65,7 +65,7 @@ When mappers are developed from the `BaseMapper` class and registered in `mapper
 
 #### Enrichment
 
-After all core files are assembled, the job passes the acquisition through `aind_metadata_mapper.enrichment.enrich_acquisition`, which fills optional acquisition fields with data that exists at upload time but was not supplied by the rig. This runs on every acquisition, including an exact-match `acquisition.json`, and is skipped when the subject is not a mouse (for example when `subject_id` is `"calibration"`). The step validates the acquisition as an `Acquisition` before and after the enrichers run, so an invalid input is reported and an enricher that breaks validity is caught. A validation failure raises when `raise_if_invalid` is set and warns otherwise. The enriched acquisition is what gets written to `acquisition.json` and validated with the rest of the metadata.
+After all core files are assembled, the job passes the acquisition through `aind_metadata_mapper.enrichment.enrich_acquisition`, which fills optional acquisition fields with data that exists at upload time but was not supplied by the rig. This runs on every acquisition, including an exact-match `acquisition.json`, and is skipped when `subject_id` is `"calibration"`, since there is nothing to look up. The enriched acquisition is what gets written to `acquisition.json` and validated with the rest of the metadata.
 
 Every enricher must satisfy all of these:
 

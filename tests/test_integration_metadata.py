@@ -585,7 +585,6 @@ class TestIntegrationMetadata(unittest.TestCase):
     def test_run_job_enriches_acquisition_after_core_metadata(self, mock_enrich):
         """Test that run_job enriches the acquisition with the assembled subject, then writes and validates it"""
         acquisition_data = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
-        subject_data = self._load_resource_file(V2_METADATA_DIR, "subject.json")
         enriched = {**acquisition_data, "ethics_review_id": ["2414"]}
         mock_enrich.return_value = enriched
 
@@ -595,7 +594,7 @@ class TestIntegrationMetadata(unittest.TestCase):
             patch.object(
                 self.job,
                 "add_core_metadata",
-                side_effect=lambda core_metadata, subject_id: {**core_metadata, "subject": subject_data},
+                side_effect=lambda core_metadata, subject_id: core_metadata,
             ),
             patch.object(self.job, "validate_and_create_metadata") as mock_validate,
             patch.object(self.job, "_write_json_file") as mock_write,
@@ -604,7 +603,6 @@ class TestIntegrationMetadata(unittest.TestCase):
 
         mock_enrich.assert_called_once_with(
             acquisition=acquisition_data,
-            subject=subject_data,
             subject_id="804670",
             settings=self.test_settings.enrichment_settings,
             metadata_service_url="http://test-service.com",
@@ -612,6 +610,36 @@ class TestIntegrationMetadata(unittest.TestCase):
         )
         mock_write.assert_any_call("acquisition.json", enriched)
         self.assertIs(mock_validate.call_args.args[0]["acquisition"], enriched)
+
+    @patch("aind_metadata_mapper.enrichment.get_iacuc_protocol")
+    @patch("aind_metadata_mapper.enrichment.metadata_service_helper")
+    def test_run_job_calibration_makes_no_enrichment_calls(self, mock_metadata_service_helper, mock_iacuc):
+        """Test that a calibration run_job makes no enrichment calls and leaves the acquisition unchanged"""
+        with patch("os.makedirs"):
+            test_job = GatherMetadataJob(
+                settings=JobSettings(
+                    metadata_dir="/test/metadata",
+                    output_dir="/test/output",
+                    subject_id="calibration",
+                    data_description_settings=DataDescriptionSettings(project_name="Test", modalities=[Modality.FIB]),
+                )
+            )
+        acquisition_data = {"subject_id": "calibration", "acquisition_start_time": "2025-09-17T10:26:00+00:00"}
+        expected = dict(acquisition_data)
+
+        with (
+            patch.object(test_job, "get_acquisition", return_value=acquisition_data),
+            patch.object(test_job, "build_data_description", return_value={"name": "test"}),
+            patch.object(test_job, "validate_and_create_metadata"),
+            patch.object(test_job, "_write_json_file") as mock_write,
+        ):
+            test_job.run_job()
+
+        mock_metadata_service_helper.assert_not_called()
+        mock_iacuc.assert_not_called()
+        mock_write.assert_any_call("acquisition.json", expected)
+        written_subject = next(call.args[1] for call in mock_write.call_args_list if call.args[0] == "subject.json")
+        self.assertEqual(written_subject["subject_details"]["object_type"], "Calibration object")
 
     @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_does_file_exist_in_user_defined_dir")
     @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_get_file_from_user_defined_directory")

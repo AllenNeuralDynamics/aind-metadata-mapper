@@ -882,7 +882,6 @@ class GatherMetadataJob:
         if acquisition:
             acquisition = enrich_acquisition(
                 acquisition=acquisition,
-                subject=core_metadata.get("subject"),
                 subject_id=subject_id,
                 settings=self.settings.enrichment_settings,
                 metadata_service_url=self.settings.metadata_service_url,

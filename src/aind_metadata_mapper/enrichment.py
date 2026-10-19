@@ -2,10 +2,7 @@
 
 ``GatherMetadataJob.run_job`` calls :func:`enrich_acquisition` once, after the core metadata files
 are assembled and before the final validation. The same function is meant to be imported by
-migration scripts to back-fill existing records (see ``scripts/demo_enrichment.py``). By default it
-validates the acquisition as an ``Acquisition`` before and after the enrichers run, so an invalid
-input is reported and an enricher that breaks validity is caught. :func:`validate_acquisition` and
-:func:`write_acquisition` are the pieces a script needs around it.
+migration scripts to back-fill existing records (see ``scripts/demo_enrichment.py``).
 
 Enrichment contract. Every enricher must satisfy all of these:
 
@@ -34,11 +31,10 @@ Enrichers run in the order listed in ``ENRICHERS``:
 import logging
 from datetime import datetime
 from decimal import Decimal
-from pathlib import Path
 from typing import Any, Callable, Optional
 from urllib.parse import urlencode, urljoin
 
-from aind_data_schema.core.acquisition import Acquisition, AcquisitionSubjectDetails
+from aind_data_schema.core.acquisition import AcquisitionSubjectDetails
 from pydantic import ValidationError
 
 from aind_metadata_mapper.models import EnrichmentSettings
@@ -117,7 +113,6 @@ def _apply_weight_records(
 
 def add_subject_weights(
     acquisition: dict,
-    subject: Optional[dict],
     subject_id: str,
     metadata_service_url: str,
     raise_if_invalid: bool = False,
@@ -166,7 +161,6 @@ def add_subject_weights(
 
 def add_ethics_review_id(
     acquisition: dict,
-    subject: Optional[dict],
     subject_id: str,
     metadata_service_url: str,
     raise_if_invalid: bool = False,
@@ -198,67 +192,29 @@ def add_ethics_review_id(
 ENRICHERS: list[Callable[..., dict]] = [add_subject_weights, add_ethics_review_id]
 
 
-def validate_acquisition(acquisition: dict, raise_if_invalid: bool = False, context: str = "") -> bool:
-    """Check that ``acquisition`` is a valid ``Acquisition``.
-
-    Returns True when it is. When it is not, raises the ``ValidationError`` if ``raise_if_invalid``
-    is True, otherwise logs a warning and returns False.
-    """
-    try:
-        Acquisition.model_validate(acquisition)
-    except ValidationError as error:
-        if raise_if_invalid:
-            raise
-        logging.warning(f"Acquisition is invalid {context}: {error}")
-        return False
-    return True
-
-
-def write_acquisition(acquisition: dict, output_directory: Path) -> Path:
-    """Validate ``acquisition`` and write it as ``acquisition.json`` with ``Acquisition.write_standard_file``.
-
-    Creates ``output_directory`` if needed and returns the path of the written file.
-    """
-    model = Acquisition.model_validate(acquisition)
-    output_directory = Path(output_directory)
-    output_directory.mkdir(parents=True, exist_ok=True)
-    model.write_standard_file(output_directory=output_directory)
-    return output_directory / Acquisition.default_filename()
-
-
 def enrich_acquisition(
     acquisition: Optional[dict],
-    subject: Optional[dict],
     subject_id: str,
     settings: EnrichmentSettings,
     metadata_service_url: str,
     raise_if_invalid: bool = False,
-    validate: bool = True,
 ) -> Optional[dict]:
     """Apply every enabled enricher to ``acquisition`` and return it.
 
     Returns ``acquisition`` unchanged when it is None, when ``settings.enabled`` is False, or when
-    ``subject`` is not a Mouse subject (this covers the "calibration" subject). When ``validate`` is
-    True, the acquisition is validated before and after the enrichers run. A validation failure
-    raises when ``raise_if_invalid`` is True and warns otherwise.
+    ``subject_id`` is ``"calibration"`` (nothing to look up).
     """
     if acquisition is None or not settings.enabled:
         return acquisition
-    subject_details = (subject or {}).get("subject_details")
-    if not isinstance(subject_details, dict) or subject_details.get("object_type") != "Mouse subject":
-        logging.info(f"Skipping acquisition enrichment for subject {subject_id}: not a Mouse subject.")
+    if subject_id == "calibration":
+        logging.info("Skipping acquisition enrichment: subject_id is 'calibration'.")
         return acquisition
-    if validate:
-        validate_acquisition(acquisition, raise_if_invalid, context="before enrichment")
     for enricher in ENRICHERS:
         acquisition = enricher(
             acquisition=acquisition,
-            subject=subject,
             subject_id=subject_id,
             metadata_service_url=metadata_service_url,
             raise_if_invalid=raise_if_invalid,
             replace_existing=settings.replace_existing,
         )
-    if validate:
-        validate_acquisition(acquisition, raise_if_invalid, context="after enrichment")
     return acquisition

@@ -42,14 +42,12 @@ class TestDemoEnrichment(unittest.TestCase):
     """Check the demo fetches a session by name, reports what enrichment filled, and can write the result."""
 
     def setUp(self):
-        """Build a DocDB-shaped record from the v2 fixtures, with ethics_review_id removed so it gets filled."""
+        """Build a DocDB-shaped record from the acquisition fixture, with ethics_review_id removed."""
         with (V2_METADATA_DIR / "acquisition.json").open() as resource:
             acquisition = json.load(resource)
-        with (V2_METADATA_DIR / "subject.json").open() as resource:
-            subject = json.load(resource)
         del acquisition["ethics_review_id"]
         self.name = "behavior_804670_2025-09-17_10-26-00"
-        self.record = {"name": self.name, "subject": subject, "acquisition": acquisition}
+        self.record = {"name": self.name, "acquisition": acquisition}
 
     def test_prints_before_and_after(self):
         """The named record's acquisition is enriched and the before and after values are printed."""
