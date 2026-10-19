@@ -73,6 +73,17 @@ class InstrumentSettings(BaseSettings):
     )
 
 
+class EnrichmentSettings(BaseSettings):
+    """Settings for the acquisition enrichment step."""
+
+    enabled: bool = Field(default=True, description="Run the enrichment step after assembling core metadata.")
+    replace_existing: bool = Field(
+        default=False,
+        description="If True, enrichers overwrite values already present in acquisition.json. "
+        "Default keeps existing values and warns on mismatch.",
+    )
+
+
 class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=True):
     """Settings required to fetch metadata from metadata service and construct the data_description"""
 
@@ -135,6 +146,10 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
     instrument_settings: Optional[InstrumentSettings] = Field(
         default=None,
         description="Settings specific to instrument metadata.",
+    )
+    enrichment_settings: EnrichmentSettings = Field(
+        default_factory=EnrichmentSettings,
+        description="Settings for the acquisition enrichment step.",
     )
 
     # Metadata service settings

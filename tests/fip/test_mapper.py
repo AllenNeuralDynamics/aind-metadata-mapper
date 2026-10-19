@@ -5,8 +5,8 @@ Strategy:
 - Use SimpleNamespace to shape fixture payloads into attribute access the mapper expects.
 - Pass intended_measurements and implanted_fibers as parameters to avoid network calls.
 - Use skip_validation=True to avoid FIPDataModel dependency in tests.
-- get_iacuc_protocol is mocked in setUp because transform always calls it to verify
-  ethics_review_id against LabTracks; all other collaborators use dependency injection.
+- ethics_review_id is passed straight through by transform. The GatherMetadataJob fills it
+  via aind_metadata_mapper.enrichment, so no LabTracks lookup is mocked here.
 """
 
 import json
@@ -41,14 +41,7 @@ class TestFIPMapper(unittest.TestCase):
             "Fiber_1": {"R": "jRCaMP1b", "G": "dLight", "B": None, "Iso": "dLight"},
         }
         self.test_implanted_fibers = [0, 1]  # Two implanted fibers
-        self.test_ethics_review_id = ["2414"]  # Injected to keep tests network-free
-
-        # transform always calls get_iacuc_protocol to verify ethics_review_id against
-        # LabTracks, so mock it here to keep all tests network-free. Individual tests
-        # override the return value (or re-patch) to exercise specific behaviors.
-        patcher = unittest.mock.patch.object(mapper_mod, "get_iacuc_protocol", return_value="2414")
-        self.mock_get_iacuc_protocol = patcher.start()
-        self.addCleanup(patcher.stop)
+        self.test_ethics_review_id = ["2414"]
 
     def test_mapper_initialization(self):
         """Test that FIPMapper can be instantiated with default configuration.
@@ -85,11 +78,7 @@ class TestFIPMapper(unittest.TestCase):
         self.assertEqual(len(acquisition.stimulus_epochs), 0)
 
     def test_ethics_review_id_injected(self):
-        """Test that an explicitly provided ethics_review_id is verified and mapped through.
-
-        When ethics_review_id is passed to transform and matches the IACUC protocol in
-        LabTracks, it should be set on the Acquisition.
-        """
+        """Test that an explicitly provided ethics_review_id is passed straight through."""
         acquisition = self.mapper.transform(
             self.example_intermediate_data,
             skip_validation=True,
@@ -98,33 +87,13 @@ class TestFIPMapper(unittest.TestCase):
             ethics_review_id=["2414"],
         )
 
-        self.mock_get_iacuc_protocol.assert_called_once_with("test")
         self.assertEqual(acquisition.ethics_review_id, ["2414"])
 
-    def test_ethics_review_id_looked_up_from_labtracks(self):
-        """Test that ethics_review_id is looked up by subject_id when not provided.
+    def test_ethics_review_id_none_when_not_provided(self):
+        """Test that ethics_review_id is left unmapped when not provided.
 
-        When ethics_review_id is None, transform should fetch the IACUC protocol from
-        LabTracks via get_iacuc_protocol and wrap the single value in a list.
+        The GatherMetadataJob fills it via aind_metadata_mapper.enrichment after acquisitions are merged.
         """
-        acquisition = self.mapper.transform(
-            self.example_intermediate_data,
-            skip_validation=True,
-            intended_measurements=self.test_intended_measurements,
-            implanted_fibers=[0, 1],
-        )
-
-        self.mock_get_iacuc_protocol.assert_called_once_with("test")
-        self.assertEqual(acquisition.ethics_review_id, ["2414"])
-
-    def test_ethics_review_id_none_when_not_found(self):
-        """Test that ethics_review_id is left unmapped when LabTracks has no protocol.
-
-        When get_iacuc_protocol returns None, ethics_review_id should be None so it can
-        be filled from acquisition_behavior.json when acquisitions are merged downstream.
-        """
-        self.mock_get_iacuc_protocol.return_value = None
-
         acquisition = self.mapper.transform(
             self.example_intermediate_data,
             skip_validation=True,
@@ -133,44 +102,6 @@ class TestFIPMapper(unittest.TestCase):
         )
 
         self.assertIsNone(acquisition.ethics_review_id)
-
-    def test_ethics_review_id_mismatch_raises(self):
-        """Test that a provided ethics_review_id that mismatches LabTracks raises.
-
-        LabTracks is the source of truth for the IACUC protocol, so a provided
-        ethics_review_id that disagrees with it should raise a ValueError (which the
-        GatherMetadataJob gates behind the raise_if_mapper_errors setting).
-        """
-        with self.assertRaises(ValueError) as context:
-            self.mapper.transform(
-                self.example_intermediate_data,
-                skip_validation=True,
-                intended_measurements=self.test_intended_measurements,
-                implanted_fibers=[0, 1],
-                ethics_review_id=["9999"],
-            )
-
-        self.assertIn("does not match the IACUC protocol", str(context.exception))
-
-    def test_ethics_review_id_kept_when_unverifiable(self):
-        """Test that a provided ethics_review_id is kept when LabTracks has no protocol.
-
-        When get_iacuc_protocol returns None, a provided value cannot be verified, so it
-        should be used as-is (with a warning) rather than raising.
-        """
-        self.mock_get_iacuc_protocol.return_value = None
-
-        with self.assertLogs(mapper_mod.logger, level="WARNING") as logs:
-            acquisition = self.mapper.transform(
-                self.example_intermediate_data,
-                skip_validation=True,
-                intended_measurements=self.test_intended_measurements,
-                implanted_fibers=[0, 1],
-                ethics_review_id=["2414"],
-            )
-
-        self.assertEqual(acquisition.ethics_review_id, ["2414"])
-        self.assertTrue(any("Could not verify" in msg for msg in logs.output))
 
     def test_data_stream_created(self):
         """Test that data stream is created with correct FIP modality.
@@ -683,7 +614,6 @@ class TestFIPMapper(unittest.TestCase):
                     mapper, "_parse_implanted_fibers", return_value=(self.test_implanted_fibers, True)
                 ),
                 unittest.mock.patch.object(mapper, "_validate_fip_metadata"),
-                unittest.mock.patch.object(mapper_mod, "get_iacuc_protocol", return_value="2414"),
             ):
                 mapper.run_job(job_settings)
 

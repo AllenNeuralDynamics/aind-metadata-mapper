@@ -210,6 +210,8 @@ class TestIntegrationMetadata(unittest.TestCase):
             "processing.json": self._load_resource_file(V2_METADATA_DIR, "processing.json"),
             "quality_control.json": self._load_resource_file(V2_METADATA_DIR, "quality_control.json"),
         }
+        # The stored acquisition already has an ethics_review_id; drop it so enrichment has to fill it.
+        del v2_files["acquisition.json"]["ethics_review_id"]
 
         # Mock file existence - return True for files that exist locally
         def mock_exists(file_name):
@@ -235,13 +237,16 @@ class TestIntegrationMetadata(unittest.TestCase):
         with patch.object(self.job, "_write_json_file") as mock_write:
             # Run the job
             try:
-                with patch(
-                    "aind_metadata_mapper.gather_metadata.metadata_service_helper",
-                    return_value=[
-                        {"weight": 20.5, "weight_datetime": "2025-09-17T17:00:00Z"},
-                        {"weight": 21.5, "weight_datetime": "2025-09-17T18:45:00Z"},
-                    ],
-                ) as mock_weight_service:
+                with (
+                    patch(
+                        "aind_metadata_mapper.enrichment.metadata_service_helper",
+                        return_value=[
+                            {"weight": 20.5, "weight_datetime": "2025-09-17T17:00:00Z"},
+                            {"weight": 21.5, "weight_datetime": "2025-09-17T18:45:00Z"},
+                        ],
+                    ) as mock_weight_service,
+                    patch("aind_metadata_mapper.enrichment.get_iacuc_protocol", return_value="2414") as mock_iacuc,
+                ):
                     self.job.run_job()
 
                 # Verify that files were "written" (mocked)
@@ -272,6 +277,10 @@ class TestIntegrationMetadata(unittest.TestCase):
                 mock_weight_service.assert_called_once_with(
                     "http://test-service.com/api/v2/dataverse/mouse_weight_records/804670"
                     "?acquisition_datetime=2025-09-17T10%3A26%3A00"
+                )
+                self.assertEqual(acquisition_data["ethics_review_id"], ["2414"])
+                mock_iacuc.assert_called_once_with(
+                    "804670", base_url="http://test-service.com/api/v2/labtracks/subject"
                 )
 
             except Exception as e:
@@ -571,6 +580,38 @@ class TestIntegrationMetadata(unittest.TestCase):
         mock_build.assert_called_once_with(acquisition_start_time=acq_start_time.isoformat(), subject_id="804670")
         log_calls = [call[0][0] for call in mock_log_info.call_args_list]
         self.assertTrue(any("No acquisition_start_time found in acquisition metadata" in call for call in log_calls))
+
+    @patch("aind_metadata_mapper.gather_metadata.enrich_acquisition")
+    def test_run_job_enriches_acquisition_after_core_metadata(self, mock_enrich):
+        """Test that run_job enriches the acquisition with the assembled subject, then writes and validates it"""
+        acquisition_data = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
+        subject_data = self._load_resource_file(V2_METADATA_DIR, "subject.json")
+        enriched = {**acquisition_data, "ethics_review_id": ["2414"]}
+        mock_enrich.return_value = enriched
+
+        with (
+            patch.object(self.job, "get_acquisition", return_value=acquisition_data),
+            patch.object(self.job, "build_data_description", return_value={"name": "test"}),
+            patch.object(
+                self.job,
+                "add_core_metadata",
+                side_effect=lambda core_metadata, subject_id: {**core_metadata, "subject": subject_data},
+            ),
+            patch.object(self.job, "validate_and_create_metadata") as mock_validate,
+            patch.object(self.job, "_write_json_file") as mock_write,
+        ):
+            self.job.run_job()
+
+        mock_enrich.assert_called_once_with(
+            acquisition=acquisition_data,
+            subject=subject_data,
+            subject_id="804670",
+            settings=self.test_settings.enrichment_settings,
+            metadata_service_url="http://test-service.com",
+            raise_if_invalid=False,
+        )
+        mock_write.assert_any_call("acquisition.json", enriched)
+        self.assertIs(mock_validate.call_args.args[0]["acquisition"], enriched)
 
     @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_does_file_exist_in_user_defined_dir")
     @patch("aind_metadata_mapper.gather_metadata.GatherMetadataJob." + "_get_file_from_user_defined_directory")
