@@ -58,7 +58,8 @@ class TestMesoscopeMapper(unittest.TestCase):
 
         imaging_config = stream.configurations[0]
         self.assertEqual(imaging_config.device_name, "MESO.2")
-        self.assertEqual(imaging_config.channels[0].channel_name, "Ophys Channel")
+        self.assertEqual([channel.channel_name for channel in imaging_config.channels], ["Channel1", "Channel2"])
+        self.assertEqual([image.channel_name for image in imaging_config.images], ["Channel2", "Channel1"])
         self.assertEqual(imaging_config.channels[0].detector.device_name, "Unknown Detector")
         self.assertEqual(imaging_config.channels[0].light_sources[0].device_name, "Laser")
         self.assertEqual(imaging_config.channels[0].light_sources[0].wavelength, 920)
@@ -92,6 +93,29 @@ class TestMesoscopeMapper(unittest.TestCase):
             stimulus_parameters["stimulus_parameters"]["contrast"],
             [0.2, 0.8],
         )
+
+    def test_transform_defaults_channel_when_platform_lacks_it(self) -> None:
+        """Mapper should keep the default channel for platform files without plane channels."""
+        metadata = copy.deepcopy(self.fixture)
+        for group in metadata["session_metadata"]["platform"]["imaging_plane_groups"]:
+            for plane in group["imaging_planes"]:
+                del plane["channel"]
+
+        imaging_config = self.mapper.transform(metadata).data_streams[0].configurations[0]
+
+        self.assertEqual([channel.channel_name for channel in imaging_config.channels], ["Ophys Channel"])
+        self.assertEqual({image.channel_name for image in imaging_config.images}, {"Ophys Channel"})
+
+    def test_transform_rejects_malformed_channel(self) -> None:
+        """Mapper should reject a plane channel that is not a non-empty string."""
+        for channel in ["", "  ", 1]:
+            with self.subTest(channel=channel):
+                metadata = copy.deepcopy(self.fixture)
+                metadata["session_metadata"]["platform"]["imaging_plane_groups"][0]["imaging_planes"][0][
+                    "channel"
+                ] = channel
+                with self.assertRaisesRegex(ValueError, r"planes\[0\]\.channel"):
+                    self.mapper.transform(metadata)
 
     def test_transform_maps_multiple_groups_in_platform_order(self) -> None:
         """Mapper should keep platform plane order across multiple groups."""

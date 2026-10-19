@@ -238,10 +238,22 @@ class MesoscopeMapper(MapperJob):
         scale_mm = DEFAULT_PIXEL_SIZE_UM / 1000.0
         return Scale(scale=[scale_mm, scale_mm])
 
-    def _build_imaging_channel(self) -> Channel:
-        """Build default mesoscope imaging channel."""
+    def _get_plane_channel_name(self, plane: dict, group_index: int, plane_index: int) -> str:
+        """Return the platform channel for a plane, or the default when platform.json predates it."""
+        channel_name = plane.get("channel")
+        if channel_name is None:
+            return DEFAULT_CHANNEL_NAME
+        if not isinstance(channel_name, str) or not channel_name.strip():
+            raise ValueError(
+                f"Mesoscope imaging_plane_groups[{group_index}].planes[{plane_index}].channel "
+                f"must be a non-empty string, got {channel_name!r}."
+            )
+        return channel_name.strip()
+
+    def _build_imaging_channel(self, channel_name: str) -> Channel:
+        """Build a mesoscope imaging channel with the default detector and laser."""
         return Channel(
-            channel_name=DEFAULT_CHANNEL_NAME,
+            channel_name=channel_name,
             detector=DetectorConfig(
                 device_name=DEFAULT_DETECTOR_NAME,
                 exposure_time=DEFAULT_EXPOSURE_TIME_MS,
@@ -326,7 +338,6 @@ class MesoscopeMapper(MapperJob):
         """Build ImagingConfig and any stream notes."""
         dimensions = self._get_image_dimensions(tiff_header)
         translation = Translation(translation=self._get_fov_translation_mm(job_settings))
-        channel = self._build_imaging_channel()
         images = []
         notes = []
         global_plane_index = 0
@@ -347,7 +358,7 @@ class MesoscopeMapper(MapperJob):
                 schema_plane = self._build_plane(group, plane, group_index, plane_index, global_plane_index)
                 images.append(
                     PlanarImage(
-                        channel_name=channel.channel_name,
+                        channel_name=self._get_plane_channel_name(plane, group_index, plane_index),
                         planes=[schema_plane],
                         image_to_acquisition_transform=[self._get_scale_transform(), translation],
                         dimensions=dimensions,
@@ -361,7 +372,7 @@ class MesoscopeMapper(MapperJob):
 
         imaging_config = ImagingConfig(
             device_name=imaging_device_name,
-            channels=[channel],
+            channels=[self._build_imaging_channel(name) for name in sorted({image.channel_name for image in images})],
             images=images,
             sampling_strategy=SamplingStrategy(
                 frame_rate=self._parse_float(
