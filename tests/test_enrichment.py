@@ -1,13 +1,23 @@
 """Tests for the acquisition enrichment module."""
 
 import copy
+import json
+import os
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
-from aind_data_schema.core.acquisition import AcquisitionSubjectDetails
+from aind_data_schema.core.acquisition import Acquisition, AcquisitionSubjectDetails
 from pydantic import ValidationError
 
-from aind_metadata_mapper.enrichment import enrich_acquisition, add_ethics_review_id, add_subject_weights
+from aind_metadata_mapper.enrichment import (
+    add_ethics_review_id,
+    add_subject_weights,
+    enrich_acquisition,
+    validate_acquisition,
+    write_acquisition,
+)
 from aind_metadata_mapper.models import EnrichmentSettings
 
 SERVICE_URL = "http://test-service.com"
@@ -16,9 +26,14 @@ WEIGHT_RECORDS_URL = (
     "http://test-service.com/api/v2/dataverse/mouse_weight_records/123456?acquisition_datetime=2023-01-01T12%3A00%3A00"
 )
 LABTRACKS_URL = "http://test-service.com/api/v2/labtracks/subject"
-WEIGHT_RECORDS = [
-    {"weight": 20.5, "weight_datetime": "2023-01-01T11:00:00Z"},
-    {"weight": 21.5, "weight_datetime": "2023-01-01T13:30:00Z"},
+V2_METADATA_DIR = Path(os.path.dirname(os.path.realpath(__file__))) / "resources" / "v2_metadata"
+FIXTURE_SUBJECT_ID = "804670"
+FIXTURE_WEIGHT_RECORDS_URL = (
+    "http://test-service.com/api/v2/dataverse/mouse_weight_records/804670?acquisition_datetime=2025-09-17T10%3A26%3A00"
+)
+FIXTURE_WEIGHT_RECORDS = [
+    {"weight": 20.5, "weight_datetime": "2025-09-17T17:00:00Z"},
+    {"weight": 21.5, "weight_datetime": "2025-09-17T18:45:00Z"},
 ]
 
 
@@ -28,12 +43,26 @@ def mouse_subject() -> dict:
 
 
 def mouse_acquisition(**subject_details) -> dict:
-    """Return a minimal acquisition for a wheel session starting at noon UTC."""
+    """Return a minimal acquisition for a wheel session starting at noon UTC. Not a valid Acquisition."""
     return {
         "acquisition_start_time": "2023-01-01T12:00:00+00:00",
         "acquisition_end_time": "2023-01-01T13:00:00+00:00",
         "subject_details": {"mouse_platform_name": "wheel", **subject_details},
     }
+
+
+def fixture_acquisition() -> dict:
+    """Return the valid v2 acquisition fixture with ethics_review_id removed so enrichment has to fill it."""
+    with (V2_METADATA_DIR / "acquisition.json").open() as resource:
+        acquisition = json.load(resource)
+    del acquisition["ethics_review_id"]
+    return acquisition
+
+
+def fixture_subject() -> dict:
+    """Return the v2 subject fixture, a Mouse subject."""
+    with (V2_METADATA_DIR / "subject.json").open() as resource:
+        return json.load(resource)
 
 
 class TestAddSubjectWeights(unittest.TestCase):
@@ -350,32 +379,33 @@ class TestAddEthicsReviewId(unittest.TestCase):
 
 
 @patch("aind_metadata_mapper.enrichment.get_iacuc_protocol", return_value="2414")
-@patch("aind_metadata_mapper.enrichment.metadata_service_helper", return_value=WEIGHT_RECORDS)
+@patch("aind_metadata_mapper.enrichment.metadata_service_helper", return_value=FIXTURE_WEIGHT_RECORDS)
 class TestEnrichAcquisition(unittest.TestCase):
     """Tests enrich_acquisition"""
 
-    def enrich(self, acquisition, subject, settings=None):
+    def enrich(self, acquisition, subject, settings=None, **kwargs):
         """Run enrich_acquisition against the test service."""
         return enrich_acquisition(
             acquisition=acquisition,
             subject=subject,
-            subject_id=SUBJECT_ID,
+            subject_id=FIXTURE_SUBJECT_ID,
             settings=settings or EnrichmentSettings(),
             metadata_service_url=SERVICE_URL,
+            **kwargs,
         )
 
     def test_returns_none_for_missing_acquisition(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
         """Test that a None acquisition is returned as is and no service is called."""
-        self.assertIsNone(self.enrich(None, mouse_subject()))
+        self.assertIsNone(self.enrich(None, fixture_subject()))
         mock_metadata_service_helper.assert_not_called()
         mock_get_iacuc_protocol.assert_not_called()
 
     def test_disabled_returns_acquisition_unchanged(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
         """Test that settings.enabled=False returns the acquisition untouched and calls no service."""
-        acquisition = mouse_acquisition()
+        acquisition = fixture_acquisition()
         expected = copy.deepcopy(acquisition)
 
-        result = self.enrich(acquisition, mouse_subject(), EnrichmentSettings(enabled=False))
+        result = self.enrich(acquisition, fixture_subject(), EnrichmentSettings(enabled=False))
 
         self.assertIs(result, acquisition)
         self.assertEqual(acquisition, expected)
@@ -391,7 +421,7 @@ class TestEnrichAcquisition(unittest.TestCase):
             {"subject_id": SUBJECT_ID, "subject_details": {"object_type": "Human subject"}},
         ):
             with self.subTest(subject=subject):
-                acquisition = mouse_acquisition()
+                acquisition = fixture_acquisition()
                 expected = copy.deepcopy(acquisition)
                 self.assertIs(self.enrich(acquisition, subject), acquisition)
                 self.assertEqual(acquisition, expected)
@@ -399,34 +429,114 @@ class TestEnrichAcquisition(unittest.TestCase):
         mock_get_iacuc_protocol.assert_not_called()
 
     def test_runs_all_enrichers_and_is_idempotent(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
-        """Test that both enrichers run, both fields land, and a second pass changes nothing."""
-        acquisition = mouse_acquisition()
+        """Test that both enrichers run, both fields land, and a second pass changes nothing and warns about nothing."""
+        acquisition = fixture_acquisition()
 
-        first = self.enrich(acquisition, mouse_subject())
+        with patch("logging.warning") as mock_warning:
+            first = self.enrich(acquisition, fixture_subject())
 
         self.assertIs(first, acquisition)
         self.assertEqual(acquisition["subject_details"]["animal_weight_prior"], "20.5")
         self.assertEqual(acquisition["subject_details"]["animal_weight_post"], "21.5")
         self.assertEqual(acquisition["ethics_review_id"], ["2414"])
-        mock_metadata_service_helper.assert_called_once_with(WEIGHT_RECORDS_URL)
-        mock_get_iacuc_protocol.assert_called_once_with(SUBJECT_ID, base_url=LABTRACKS_URL)
+        mock_warning.assert_not_called()
+        mock_metadata_service_helper.assert_called_once_with(FIXTURE_WEIGHT_RECORDS_URL)
+        mock_get_iacuc_protocol.assert_called_once_with(FIXTURE_SUBJECT_ID, base_url=LABTRACKS_URL)
 
         expected = copy.deepcopy(acquisition)
         with patch("logging.warning") as mock_warning:
-            second = self.enrich(acquisition, mouse_subject())
+            second = self.enrich(acquisition, fixture_subject())
         self.assertEqual(second, expected)
         mock_warning.assert_not_called()
 
     def test_replace_existing_is_passed_to_enrichers(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
         """Test that settings.replace_existing makes every enricher overwrite existing values."""
-        acquisition = mouse_acquisition(animal_weight_prior=19.0, animal_weight_post=25.0)
+        acquisition = fixture_acquisition()
+        acquisition["subject_details"].update(animal_weight_prior="19.0", animal_weight_post="25.0")
         acquisition["ethics_review_id"] = ["9999"]
 
-        self.enrich(acquisition, mouse_subject(), EnrichmentSettings(replace_existing=True))
+        self.enrich(acquisition, fixture_subject(), EnrichmentSettings(replace_existing=True))
 
         self.assertEqual(acquisition["subject_details"]["animal_weight_prior"], "20.5")
         self.assertEqual(acquisition["subject_details"]["animal_weight_post"], "21.5")
         self.assertEqual(acquisition["ethics_review_id"], ["2414"])
+
+    def test_invalid_input_warns_before_and_after_or_raises(
+        self, mock_metadata_service_helper, mock_get_iacuc_protocol
+    ):
+        """An input that is not a valid Acquisition warns before and after enriching, or raises first when strict."""
+        acquisition = mouse_acquisition()
+        with self.assertLogs(level="WARNING") as captured:
+            self.enrich(acquisition, mouse_subject())
+        self.assertIn("before enrichment", captured.output[0])
+        self.assertIn("after enrichment", captured.output[-1])
+        self.assertEqual(acquisition["ethics_review_id"], ["2414"])
+        mock_metadata_service_helper.assert_called_once()
+
+        mock_metadata_service_helper.reset_mock()
+        with self.assertRaises(ValidationError):
+            self.enrich(mouse_acquisition(), mouse_subject(), raise_if_invalid=True)
+        mock_metadata_service_helper.assert_not_called()
+
+    def test_validate_false_skips_validation(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
+        """validate=False enriches an input that is not a valid Acquisition without warning or raising."""
+        acquisition = mouse_acquisition()
+        with patch("logging.warning") as mock_warning:
+            self.enrich(acquisition, mouse_subject(), raise_if_invalid=True, validate=False)
+        self.assertEqual(acquisition["ethics_review_id"], ["2414"])
+        mock_warning.assert_not_called()
+
+    def test_enricher_that_breaks_validity_is_caught(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
+        """If an enricher leaves the acquisition invalid, the validation after enriching reports it."""
+
+        def break_subject_id(acquisition, **kwargs):
+            """Enricher stand-in that violates the schema."""
+            acquisition["subject_id"] = None
+            return acquisition
+
+        with patch("aind_metadata_mapper.enrichment.ENRICHERS", [break_subject_id]):
+            with self.assertLogs(level="WARNING") as captured:
+                self.enrich(fixture_acquisition(), fixture_subject())
+            self.assertEqual(len(captured.output), 1)
+            self.assertIn("after enrichment", captured.output[0])
+            with self.assertRaises(ValidationError):
+                self.enrich(fixture_acquisition(), fixture_subject(), raise_if_invalid=True)
+
+
+class TestValidateAndWriteAcquisition(unittest.TestCase):
+    """Tests validate_acquisition and write_acquisition"""
+
+    def test_validate_acquisition_returns_true_when_valid(self):
+        """A valid Acquisition passes silently."""
+        with patch("logging.warning") as mock_warning:
+            self.assertTrue(validate_acquisition(fixture_acquisition()))
+        mock_warning.assert_not_called()
+
+    def test_validate_acquisition_invalid_warns_or_raises(self):
+        """An invalid Acquisition warns with the given context, or raises when strict."""
+        with self.assertLogs(level="WARNING") as captured:
+            self.assertFalse(validate_acquisition({}, context="in a test"))
+        self.assertIn("in a test", captured.output[0])
+        with self.assertRaises(ValidationError):
+            validate_acquisition({}, raise_if_invalid=True)
+
+    def test_write_acquisition_writes_standard_file(self):
+        """The acquisition is written as acquisition.json in a directory that is created if needed."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_directory = Path(tmpdir) / "nested"
+            written = write_acquisition(fixture_acquisition(), output_directory)
+            self.assertEqual(written, output_directory / Acquisition.default_filename())
+            with written.open() as resource:
+                contents = json.load(resource)
+        Acquisition.model_validate(contents)
+        self.assertEqual(contents["subject_id"], FIXTURE_SUBJECT_ID)
+
+    def test_write_acquisition_rejects_invalid(self):
+        """An invalid acquisition raises and nothing is written."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with self.assertRaises(ValidationError):
+                write_acquisition({}, Path(tmpdir) / "nested")
+            self.assertEqual(os.listdir(tmpdir), [])
 
 
 if __name__ == "__main__":

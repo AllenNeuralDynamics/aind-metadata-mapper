@@ -65,7 +65,7 @@ When mappers are developed from the `BaseMapper` class and registered in `mapper
 
 #### Enrichment
 
-After all core files are assembled, the job passes the acquisition through `aind_metadata_mapper.enrichment.enrich_acquisition`, which fills optional acquisition fields with data that exists at upload time but was not supplied by the rig. This runs on every acquisition, including an exact-match `acquisition.json`, and is skipped when the subject is not a mouse (for example when `subject_id` is `"calibration"`). The enriched acquisition is what gets written to `acquisition.json` and validated.
+After all core files are assembled, the job passes the acquisition through `aind_metadata_mapper.enrichment.enrich_acquisition`, which fills optional acquisition fields with data that exists at upload time but was not supplied by the rig. This runs on every acquisition, including an exact-match `acquisition.json`, and is skipped when the subject is not a mouse (for example when `subject_id` is `"calibration"`). The step validates the acquisition as an `Acquisition` before and after the enrichers run, so an invalid input is reported and an enricher that breaks validity is caught. A validation failure raises when `raise_if_invalid` is set and warns otherwise. The enriched acquisition is what gets written to `acquisition.json` and validated with the rest of the metadata.
 
 Every enricher must satisfy all of these:
 
@@ -83,7 +83,7 @@ Every enricher must satisfy all of these:
 | `acquisition.subject_details.animal_weight_post` | same | Earliest same-day record after `acquisition_start_time` | Keep existing, warn |
 | `acquisition.ethics_review_id` | metadata-service `/api/v2/labtracks/subject?subject_id=` (LabTracks `protocol_number`) | Subject's current protocol | Keep existing, warn |
 
-The step is controlled by `enrichment_settings` (see Optional settings). `scripts/demo_enrichment.py` runs the same function against a single acquisition and prints the before and after values, which is the pattern a back-fill migration would follow.
+The step is controlled by `enrichment_settings` (see Optional settings). `scripts/demo_enrichment.py` takes a data asset name, pulls that record's acquisition and subject from DocDB, runs the same function, and prints the before and after values. With `--output-dir` it also writes the enriched `acquisition.json` there through `Acquisition.write_standard_file`. Nothing is written back to DocDB. That is the pattern a back-fill migration would follow.
 
 #### Optional settings
 
