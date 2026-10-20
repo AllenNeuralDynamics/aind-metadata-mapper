@@ -24,9 +24,9 @@ from aind_data_schema_models.data_name_patterns import DataLevel
 from pydantic import ValidationError
 
 from aind_metadata_mapper.base import MapperJobSettings
-from aind_metadata_mapper.enrichment import enrich_acquisition
 from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
+from aind_metadata_mapper.supplement import supplement_acquisition
 from aind_metadata_mapper.utils import (
     get_instrument,
     get_procedures,
@@ -819,7 +819,7 @@ class GatherMetadataJob:
         #   3. Derive and validate acquisition_start_time and subject_id.
         #   4. Build data_description.
         #   5. Add core metadata: subject, procedures, instrument, processing, quality_control, model.
-        #   6. Enrich acquisition and write acquisition.json.
+        #   6. Supplement acquisition (in vivo modalities only) and write acquisition.json.
         #   7. Validate everything as a Metadata object.
         logging.info("Starting run_job")
 
@@ -877,13 +877,15 @@ class GatherMetadataJob:
             subject_id=subject_id,
         )
 
-        # Enrich acquisition with data available at upload time but not supplied by the rig.
-        # See aind_metadata_mapper.enrichment for the contract and the list of enrichers.
+        # Supplement acquisition with data available at upload time but not supplied by the rig.
+        # Runs only for in vivo modalities. See aind_metadata_mapper.supplement for the contract
+        # and the list of steps.
         if acquisition:
-            acquisition = enrich_acquisition(
+            acquisition = supplement_acquisition(
                 acquisition=acquisition,
+                data_description=core_metadata.get("data_description"),
                 subject_id=subject_id,
-                settings=self.settings.enrichment_settings,
+                settings=self.settings.supplement_settings,
                 metadata_service_url=self.settings.metadata_service_url,
                 raise_if_invalid=self.settings.raise_if_invalid,
             )

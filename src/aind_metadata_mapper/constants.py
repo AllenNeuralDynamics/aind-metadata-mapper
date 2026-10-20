@@ -1,7 +1,7 @@
 """Shared constants.
 
 The aind-metadata-service host and the endpoint paths used across the package. Each path is defined
-once here so that ``JobSettings``, the fetch helpers in ``utils`` and the enrichers in ``enrichment``
+once here so that ``JobSettings``, the fetch helpers in ``utils`` and the steps in ``supplement``
 agree on it. Paths carry a leading slash and no trailing slash. Callers join them onto a host and add
 the trailing slash themselves where needed.
 """

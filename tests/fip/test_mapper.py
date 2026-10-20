@@ -6,7 +6,7 @@ Strategy:
 - Pass intended_measurements and implanted_fibers as parameters to avoid network calls.
 - Use skip_validation=True to avoid FIPDataModel dependency in tests.
 - ethics_review_id is passed straight through by transform. The GatherMetadataJob fills it
-  via aind_metadata_mapper.enrichment, so no LabTracks lookup is mocked here.
+  via aind_metadata_mapper.supplement, so no LabTracks lookup is mocked here.
 """
 
 import json
@@ -92,7 +92,7 @@ class TestFIPMapper(unittest.TestCase):
     def test_ethics_review_id_none_when_not_provided(self):
         """Test that ethics_review_id is left unmapped when not provided.
 
-        The GatherMetadataJob fills it via aind_metadata_mapper.enrichment after acquisitions are merged.
+        The GatherMetadataJob fills it via aind_metadata_mapper.supplement after acquisitions are merged.
         """
         acquisition = self.mapper.transform(
             self.example_intermediate_data,

@@ -11,7 +11,7 @@ Repository to contain code that will parse source files into aind-data-schema mo
 
 ## Usage
 
-The `GatherMetadataJob` is used to create the `data_description.json` and pull the `subject.json` and `procedures.json` from `aind-metadata-service`. Users are expected to provide the `instrument.json` and the `acquisition.json` as well as optional `processing.json`, `quality_control.json` and `model.json`. If a user provides `procedures.json`, it will be merged with the procedures fetched from the service (subject and specimen procedures are deduplicated). After all core files are assembled, the job runs an enrichment step that fills optional acquisition fields from the metadata service (currently subject weights from Waterlog and `ethics_review_id` from LabTracks). See Enrichment below. The job will attempt to validate all of the metadata files, displaying errors, and then will save all metadata fields into the selected folder.
+The `GatherMetadataJob` is used to create the `data_description.json` and pull the `subject.json` and `procedures.json` from `aind-metadata-service`. Users are expected to provide the `instrument.json` and the `acquisition.json` as well as optional `processing.json`, `quality_control.json` and `model.json`. If a user provides `procedures.json`, it will be merged with the procedures fetched from the service (subject and specimen procedures are deduplicated). After all core files are assembled, the job runs a supplement step that fills optional acquisition fields from the metadata service for in vivo modalities (currently subject weights from Waterlog and `ethics_review_id` from LabTracks). See [Supplementing the acquisition](#supplementing-the-acquisition) below. The job will attempt to validate all of the metadata files, displaying errors, and then will save all metadata fields into the selected folder.
 
 ### Using the GatherMetadataJob
 
@@ -44,7 +44,7 @@ job.run_job()
 
 The GatherMetadataJob attempts to find all of the core metadata files (instrument.json, acquisition.json, etc) and then validates them as a full `Metadata` object.
 
-The job will always prioritize an exact match for a core file when it finds one in the `metadata_dir`. An exact-match `acquisition.json` is still passed through the enrichment step, which only fills fields that are empty.
+The job will always prioritize an exact match for a core file when it finds one in the `metadata_dir`. An exact-match `acquisition.json` is still passed through the supplement step, which only fills fields that are empty.
 
 If no exact match exists, it will construct, fetch, merge or run mappers to generate the appropriate metadata, if it is available.
 
@@ -63,15 +63,17 @@ If no exact match exists, it will construct, fetch, merge or run mappers to gene
 
 When mappers are developed from the `BaseMapper` class and registered in `mapper_registry.py` they can be automatically run by the GatherMetadataJob. A file matching the mapper name `<mapper>.json` will be turned into a file `acquisition_<mapper>.json` and then merged with any other acquisition files.
 
-#### Enrichment
+#### Supplementing the acquisition
 
-After all core files are assembled, the job passes the acquisition through `aind_metadata_mapper.enrichment.enrich_acquisition`, which fills optional acquisition fields with data that exists at upload time but was not supplied by the rig. This runs on every acquisition, including an exact-match `acquisition.json`, and is skipped when `subject_id` is `"calibration"`, since there is nothing to look up. The enriched acquisition is what gets written to `acquisition.json` and validated with the rest of the metadata.
+After all core files are assembled, the job passes the acquisition through `aind_metadata_mapper.supplement.supplement_acquisition`, which fills optional acquisition fields with data that exists at upload time but was not supplied by the rig. This runs on every acquisition, including an exact-match `acquisition.json`, and is skipped when `subject_id` is `"calibration"`, since there is nothing to look up. The supplemented acquisition is what gets written to `acquisition.json` and validated with the rest of the metadata.
 
-Every enricher must satisfy all of these:
+The step runs only when `data_description.modalities` includes at least one in vivo modality. That list is `IN_VIVO_MODALITIES` in `supplement.py`: behavior, behavior-videos, ecephys, EMG, fib, ISI, MRI, one-photon, pophys and slap2. Weights and IACUC protocols describe a living animal, so a post-mortem acquisition such as SPIM gets neither, and a modality that is not on the list gets no lookups until it is added.
+
+Every step must satisfy all of these:
 
 1. Fills only fields that are currently `None` or absent. Never overwrites unless `replace_existing=True`.
 2. If a value is already present and differs from the fetched value, logs a warning and keeps the existing value (unless `replace_existing=True`).
-3. Touches only schema-optional fields. The rig's `acquisition.json` already validated, so nothing an enricher adds can be required.
+3. Touches only schema-optional fields. The rig's `acquisition.json` already validated, so nothing a step adds can be required.
 4. Fetches only through `aind-metadata-service` endpoints. No direct Dataverse or LabTracks table access.
 5. A failed or empty lookup is a warning, never an exception.
 6. Idempotent. Running twice produces the same result, so the same function can back-fill records later.
@@ -83,11 +85,11 @@ Every enricher must satisfy all of these:
 | `acquisition.subject_details.animal_weight_post` | same | Earliest same-day record after `acquisition_start_time` | Keep existing, warn |
 | `acquisition.ethics_review_id` | metadata-service `/api/v2/labtracks/subject?subject_id=` (LabTracks `protocol_number`) | Subject's current protocol | Keep existing, warn |
 
-The step is controlled by `enrichment_settings` (see Optional settings). `scripts/demo_enrichment.py` takes a data asset name, pulls that record's acquisition and subject from DocDB, runs the same function, and prints the before and after values. With `--output-dir` it also writes the enriched `acquisition.json` there through `Acquisition.write_standard_file`. Nothing is written back to DocDB. That is the pattern a back-fill migration would follow.
+The step is controlled by `supplement_settings` (see Optional settings). `scripts/demo_supplement.py` takes a data asset name, pulls that record's acquisition and subject from DocDB, runs the same function, and prints the before and after values. With `--output-dir` it also writes the supplemented `acquisition.json` there through `Acquisition.write_standard_file`. Nothing is written back to DocDB. That is the pattern a back-fill migration would follow.
 
 #### Optional settings
 
-- **`metadata_dir`** (str, optional): Location of existing metadata files, if different from the `output_dir`. If a file is found here, it will be used instead of constructing/fetching it. `acquisition.json` is additionally passed through the enrichment step.
+- **`metadata_dir`** (str, optional): Location of existing metadata files, if different from the `output_dir`. If a file is found here, it will be used instead of constructing/fetching it. `acquisition.json` is additionally passed through the supplement step.
 
 - **`subject_id`** (str): Subject ID used to fetch metadata from the service (subject.json, procedures.json). This setting should only be used when an `acquisition.json` is not available.
 
@@ -99,9 +101,9 @@ The step is controlled by `enrichment_settings` (see Optional settings). `script
 - **`instrument_settings`**:
   - **`instrument_id`** (str): ID for the instrument used in data collection. When set, the instrument.json will attempt to be fetched from the metadata-service and saved as `instrument_<modality-abbreviation(s)>.json`. If multiple `instrument*.json` files exist after fetching they will be merged.
 
-- **`enrichment_settings`** (optional): Settings for the enrichment step (see Enrichment above).
-  - **`enabled`** (bool, default=True): Run the enrichment step after assembling core metadata.
-  - **`replace_existing`** (bool, default=False): If True, enrichers overwrite values already present in `acquisition.json`. The default keeps existing values and warns on mismatch.
+- **`supplement_settings`** (optional): Settings for the supplement step (see [Supplementing the acquisition](#supplementing-the-acquisition) above).
+  - **`enabled`** (bool, default=True): Run the supplement step after assembling core metadata.
+  - **`replace_existing`** (bool, default=False): If True, steps overwrite values already present in `acquisition.json`. The default keeps existing values and warns on mismatch.
 
 - **`data_description_settings`**: See [DataDescription](https://aind-data-schema.readthedocs.io/en/latest/data_description.html#datadescription) for details.
   - **`tags`** (list[str], optional)
@@ -220,7 +222,7 @@ aind-instrument get 422_MESO2_20241017 --output-directory ./output
 
 Each MapperJob class should inherit from `BaseMapper` in `base.py`. The only parameter should be the `MapperJobSettings` from `base.py`. You cannot add additional parameters to your job or it will not be possible for it to be run automatically on the data-transfer-service. GatherMetadataJob will then run your mappers automatically when it detects the extracted metadata output.
 
-Mappers should not look up platform-agnostic fields such as `ethics_review_id`. Those are filled by the enrichment step after acquisitions are merged.
+Mappers should not look up platform-agnostic fields such as `ethics_review_id`. Those are filled by the supplement step after acquisitions are merged.
 
 #### Writing the output file
 
