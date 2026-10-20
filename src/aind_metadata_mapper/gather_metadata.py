@@ -21,10 +21,10 @@ from aind_data_schema.core.processing import Processing
 from aind_data_schema.core.quality_control import QualityControl
 from aind_data_schema.core.subject import Subject
 from aind_data_schema_models.data_name_patterns import DataLevel
-from aind_data_schema_models.organizations import Organization
 from pydantic import ValidationError
 
 from aind_metadata_mapper.base import MapperJobSettings
+from aind_metadata_mapper.enrichment import enrich_acquisition
 from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
 from aind_metadata_mapper.utils import (
@@ -212,7 +212,7 @@ class GatherMetadataJob:
         # Create new data description
         new_data_description = DataDescription(
             creation_time=creation_time,
-            institution=Organization.AIND,
+            institution=self.settings.data_description_settings.institution,
             project_name=self.settings.data_description_settings.project_name,
             modalities=modalities,
             funding_source=funding_source,
@@ -365,7 +365,12 @@ class GatherMetadataJob:
                 directory=self.settings.metadata_dir, file_name_prefix="acquisition"
             )
             if files:
-                return self._merge_models(Acquisition, files)
+                merged_acquisition = self._merge_models(Acquisition, files)
+
+                if not merged_acquisition.get("acquisition_type") and self.settings.raise_if_invalid:
+                    raise ValueError("Acquisition.acquisition_type is empty in the merged acquisition metadata.")
+
+                return merged_acquisition
             else:
                 logging.debug("No acquisition metadata file found.")
                 return None
@@ -808,6 +813,14 @@ class GatherMetadataJob:
 
     def run_job(self) -> None:
         """Run job"""
+        # Phases, in order:
+        #   1. Back up the original metadata files.
+        #   2. Get acquisition (exact match, or run mappers and merge).
+        #   3. Derive and validate acquisition_start_time and subject_id.
+        #   4. Build data_description.
+        #   5. Add core metadata: subject, procedures, instrument, processing, quality_control, model.
+        #   6. Enrich acquisition and write acquisition.json.
+        #   7. Validate everything as a Metadata object.
         logging.info("Starting run_job")
 
         # Set the metadata_dir to output_dir if not provided
@@ -825,7 +838,6 @@ class GatherMetadataJob:
         acquisition = self.get_acquisition()
         if acquisition:
             core_metadata["acquisition"] = acquisition
-            self._write_json_file(Acquisition.default_filename(), acquisition)
 
         # Get and validate acquisition_start_time
         acquisition_start_time = acquisition.get("acquisition_start_time") if acquisition else None
@@ -860,7 +872,23 @@ class GatherMetadataJob:
 
         # Get other metadata (optional)
         # Adds subject, procedures, instrument, processing, quality_control, model, if available
-        core_metadata = self.add_core_metadata(core_metadata=core_metadata, subject_id=subject_id)
+        core_metadata = self.add_core_metadata(
+            core_metadata=core_metadata,
+            subject_id=subject_id,
+        )
+
+        # Enrich acquisition with data available at upload time but not supplied by the rig.
+        # See aind_metadata_mapper.enrichment for the contract and the list of enrichers.
+        if acquisition:
+            acquisition = enrich_acquisition(
+                acquisition=acquisition,
+                subject_id=subject_id,
+                settings=self.settings.enrichment_settings,
+                metadata_service_url=self.settings.metadata_service_url,
+                raise_if_invalid=self.settings.raise_if_invalid,
+            )
+            core_metadata["acquisition"] = acquisition
+            self._write_json_file(Acquisition.default_filename(), acquisition)
 
         self.validate_and_create_metadata(core_metadata)
 

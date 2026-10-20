@@ -8,7 +8,8 @@ The mapper:
 - Creates 3 channels per fiber: Green (470nm), Isosbestic (415nm), Red (565nm)
 - Fetches intended measurements and implanted fiber info from metadata service (optional)
 
-Note: We don't have access to the ethics_review_id in the extracted metadata. This should be provided by the extractor.
+Note: ethics_review_id (IACUC protocol) is not in the extracted metadata. It is filled by
+aind_metadata_mapper.enrichment after acquisitions are merged in the GatherMetadataJob.
 """
 
 import json
@@ -33,14 +34,14 @@ from aind_data_schema_models.units import PowerUnit, SizeUnit, TimeUnit
 
 from aind_metadata_mapper.base import MapperJob, MapperJobSettings
 from aind_metadata_mapper.fip.constants import (
-    ACQUISITION_TYPE_AIND_VR_FORAGING,
+    AIND_PHYSIOLOGY_FIP_PACKAGE_NAME,
+    AIND_PHYSIOLOGY_FIP_REPO_URL,
     CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND,
     DEFAULT_LED_POWER,
     DEFAULT_OUTPUT_FILENAME,
     DEVICE_NAME_MAP,
     EMISSION_GREEN,
     EMISSION_RED,
-    ETHICS_REVIEW_ID,
     EXCITATION_BLUE,
     EXCITATION_UV,
     EXCITATION_YELLOW,
@@ -50,13 +51,11 @@ from aind_metadata_mapper.fip.constants import (
     ROI_KEYWORD_ISO,
     ROI_KEYWORD_RED,
     ROI_KEYWORD_ROI,
-    VR_FORAGING_FIP_REPO_URL,
 )
 from aind_metadata_mapper.utils import (
     ensure_timezone,
     get_intended_measurements,
     get_procedures,
-    get_protocols_for_modality,
     normalize_utc_timezone,
 )
 
@@ -258,6 +257,8 @@ class FIPMapper(MapperJob):
         skip_validation: bool = False,
         intended_measurements: Optional[Dict[str, Dict[str, Optional[str]]]] = None,
         implanted_fibers: Optional[List[int]] = None,
+        ethics_review_id: Optional[List[str]] = None,
+        acquisition_type: Optional[str] = None,
     ) -> Acquisition:
         """Transforms intermediate metadata into a complete Acquisition model.
 
@@ -273,6 +274,14 @@ class FIPMapper(MapperJob):
         implanted_fibers : Optional[List[int]], optional
             Implanted fiber indices. If None, will be fetched from metadata service.
             Must be non-empty after fetching.
+        ethics_review_id : Optional[List[str]], optional
+            IACUC protocol number(s). Passed straight through when provided. If None, it is
+            left unmapped and filled by aind_metadata_mapper.enrichment after acquisitions
+            are merged in the GatherMetadataJob.
+        acquisition_type : Optional[str], optional
+            Descriptive acquisition type. Passed straight through when provided. If None,
+            an empty string is used rather than None, since aind-data-schema requires the
+            field; an empty value is left to be filled by the acquisition merge downstream.
 
         Returns
         -------
@@ -292,13 +301,6 @@ class FIPMapper(MapperJob):
         session = metadata["session"]
         rig = metadata["rig"]
         data_streams = metadata["data_stream_metadata"]
-
-        # Validate that ethics_review_id is not in session (it's a constant)
-        if isinstance(session, dict) and "ethics_review_id" in session:
-            raise ValueError(
-                "ethics_review_id is a constant and should not be provided in the session metadata. "
-                "It is automatically set from the FIP mapper constants."
-            )
 
         subject_id = session["subject"]
         instrument_id = rig["rig_name"]
@@ -344,13 +346,19 @@ class FIPMapper(MapperJob):
                     "Implanted fiber information is required to create FIP acquisition metadata."
                 )
 
-        # Get protocol URLs for FIP modality
-        protocol_id = get_protocols_for_modality("fip") or None
-
-        # Create code list from session commit hash
+        # Create code list from the aind-physiology-fip version reported by the rig.
+        # allow_dirty_repo records whether the launcher was permitted to run from a dirty
+        # repository, not whether it actually was; when True the version is unverified.
         code = None
-        if session.get("commit_hash"):
-            code = [Code(url=VR_FORAGING_FIP_REPO_URL, version=session["commit_hash"])]
+        if rig.get("version"):
+            code = [
+                Code(
+                    url=AIND_PHYSIOLOGY_FIP_REPO_URL,
+                    name=AIND_PHYSIOLOGY_FIP_PACKAGE_NAME,
+                    version=rig["version"],
+                    parameters={"allow_dirty_repo": bool(session.get("allow_dirty_repo", False))},
+                )
+            ]
 
         data_stream = DataStream(
             stream_start_time=session_start_time,
@@ -367,14 +375,16 @@ class FIPMapper(MapperJob):
             acquisition_start_time=session_start_time,
             acquisition_end_time=session_end_time,
             experimenters=session.get("experimenter", []),
-            ethics_review_id=ETHICS_REVIEW_ID,
+            ethics_review_id=ethics_review_id,
             instrument_id=instrument_id,
-            acquisition_type=ACQUISITION_TYPE_AIND_VR_FORAGING,
+            # Empty string rather than None when unset: acquisition_type is required by
+            # aind-data-schema, and an empty value is filled in by the acquisition merge
+            # downstream (see aind-data-schema#1876).
+            acquisition_type=acquisition_type or "",
             notes=session.get("notes"),
             data_streams=[data_stream],
             stimulus_epochs=[],
             subject_details=None,  # FIP data contract does not include subject details
-            protocol_id=protocol_id,
         )
 
         return acquisition

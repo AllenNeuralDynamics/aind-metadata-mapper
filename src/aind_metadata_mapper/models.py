@@ -6,8 +6,16 @@ from aind_data_schema.base import AwareDatetimeWithDefault
 from aind_data_schema.components.subjects import CalibrationObject
 from aind_data_schema_models.data_name_patterns import Group
 from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.organizations import Organization
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
+
+from aind_metadata_mapper.constants import (
+    INSTRUMENT_ENDPOINT,
+    METADATA_SERVICE_URL,
+    PROCEDURES_ENDPOINT,
+    SUBJECT_ENDPOINT,
+)
 
 
 class DataDescriptionSettings(BaseSettings):
@@ -36,6 +44,9 @@ class DataDescriptionSettings(BaseSettings):
     data_summary: Optional[str] = Field(
         default=None,
         description="Semantic summary of experimental goal.",
+    )
+    institution: Organization.ONE_OF = Field(
+        default=Organization.AIND, description="Research organization that collected the data."
     )
 
     @field_validator("modalities", mode="before")
@@ -66,6 +77,17 @@ class InstrumentSettings(BaseSettings):
     instrument_id: str = Field(
         ...,
         description="Identifier for the instrument used in data collection.",
+    )
+
+
+class EnrichmentSettings(BaseSettings):
+    """Settings for the acquisition enrichment step."""
+
+    enabled: bool = Field(default=True, description="Run the enrichment step after assembling core metadata.")
+    replace_existing: bool = Field(
+        default=False,
+        description="If True, enrichers overwrite values already present in acquisition.json. "
+        "Default keeps existing values and warns on mismatch.",
     )
 
 
@@ -132,21 +154,25 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
         default=None,
         description="Settings specific to instrument metadata.",
     )
+    enrichment_settings: EnrichmentSettings = Field(
+        default_factory=EnrichmentSettings,
+        description="Settings for the acquisition enrichment step.",
+    )
 
     # Metadata service settings
     metadata_service_url: str = Field(
-        default="http://aind-metadata-service",
+        default=METADATA_SERVICE_URL,
         description="Metadata service URL to download metadata info.",
     )
     metadata_service_subject_endpoint: str = Field(
-        default="/api/v2/subject/",
+        default=SUBJECT_ENDPOINT,
         description="Metadata service endpoint for subject metadata.",
     )
     metadata_service_procedures_endpoint: str = Field(
-        default="/api/v2/procedures/",
+        default=PROCEDURES_ENDPOINT,
         description="Metadata service endpoint for procedures metadata.",
     )
     metadata_service_instrument_endpoint: str = Field(
-        default="/api/v2/instrument/",
+        default=INSTRUMENT_ENDPOINT,
         description="Metadata service endpoint for instrument metadata.",
     )

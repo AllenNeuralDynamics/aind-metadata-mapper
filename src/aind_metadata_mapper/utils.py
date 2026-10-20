@@ -11,14 +11,17 @@ from urllib.parse import urljoin
 
 import aind_data_schema.core.instrument as instrument
 import requests
-import yaml
+
+from aind_metadata_mapper.constants import (
+    INSTRUMENT_BASE_URL,
+    INTENDED_MEASUREMENTS_BASE_URL,
+    LABTRACKS_SUBJECT_BASE_URL,
+    PROCEDURES_BASE_URL,
+    SUBJECT_BASE_URL,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-INSTRUMENT_BASE_URL = "http://aind-metadata-service/api/v2/instrument"
-PROCEDURES_BASE_URL = "http://aind-metadata-service/api/v2/procedures"
-SUBJECT_BASE_URL = "http://aind-metadata-service/api/v2/subject"
 
 
 def normalize_utc_timezone(dt: str) -> str:
@@ -173,9 +176,49 @@ def get_procedures(subject_id: str, base_url: str = PROCEDURES_BASE_URL, timeout
         return None
 
 
+def get_iacuc_protocol(subject_id: str | int, base_url: str = LABTRACKS_SUBJECT_BASE_URL) -> Optional[str]:
+    """Fetch a subject's current IACUC protocol number from LabTracks.
+
+    LabTracks is the regulatory source of truth for which protocol a mouse is on. The
+    metadata service exposes the LabTracks subject record, which includes a
+    ``protocol_number`` field (e.g. "2414") joined directly from the LabTracks
+    ``IacucProtocol`` table.
+
+    Note that, in the future, this information will also be tracked in DataVerse.
+    This function could be updated to pull from there in the future if desired.
+
+    Parameters
+    ----------
+    subject_id : str or int
+        The subject ID to query. An int is cast to str automatically.
+    base_url : str
+        Base URL for the LabTracks subject endpoint. Defaults to LABTRACKS_SUBJECT_BASE_URL.
+
+    Returns
+    -------
+    Optional[str]
+        The IACUC protocol number (e.g. "2414"), or None if the subject is not in
+        LabTracks, has no associated protocol, or the request fails.
+    """
+    try:
+        subject_id = str(subject_id)
+        # This endpoint takes subject_id as a query parameter, not a path segment.
+        url = f"{base_url}?subject_id={subject_id}"
+        records = metadata_service_helper(url)
+        if not records:
+            logger.warning(f"Could not fetch LabTracks subject {subject_id}")
+            return None
+        records = records if isinstance(records, list) else [records]
+        protocol_number = records[0].get("protocol_number")
+        return str(protocol_number) if protocol_number else None
+    except Exception as e:
+        logger.warning(f"Unexpected error fetching IACUC protocol for subject {subject_id}: {e}")
+        return None
+
+
 def get_intended_measurements(
     subject_id: str,
-    base_url: str = "http://aind-metadata-service/intended_measurements",
+    base_url: str = INTENDED_MEASUREMENTS_BASE_URL,
 ) -> Optional[dict]:
     """Fetch intended measurements for a subject from the metadata service.
 
@@ -184,7 +227,7 @@ def get_intended_measurements(
     subject_id : str
         The subject ID to query.
     base_url : str
-        Base URL for the intended measurements endpoint.
+        Base URL for the intended measurements endpoint. Defaults to INTENDED_MEASUREMENTS_BASE_URL.
 
     Returns
     -------
@@ -200,39 +243,6 @@ def get_intended_measurements(
     except Exception as e:
         logger.warning(f"Error fetching intended measurements for subject {subject_id}: {e}")
         return None
-
-
-def get_protocols_for_modality(modality):
-    """Get protocol URLs for a specific modality.
-
-    Loads protocols from protocols.yaml file and returns the list for the given modality.
-
-    Parameters
-    ----------
-    modality : str
-        The modality name (e.g., 'fip', 'smartspim').
-
-    Returns
-    -------
-    list
-        List of protocol URLs for the modality.
-    """
-    try:
-        project_root = Path(__file__).parent.parent.parent
-        protocols_file = project_root / "protocols.yaml"
-
-        if not protocols_file.exists():
-            logger.warning(f"Protocols file not found at {protocols_file}")
-            return []
-
-        with open(protocols_file, "r") as f:
-            protocols = yaml.safe_load(f)
-
-        protocols = protocols or {}
-        return protocols.get(modality, [])
-    except Exception as e:
-        logger.warning(f"Error loading protocols: {e}")
-        return []
 
 
 def get_instrument(

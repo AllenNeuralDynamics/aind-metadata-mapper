@@ -5,18 +5,23 @@ Strategy:
 - Use SimpleNamespace to shape fixture payloads into attribute access the mapper expects.
 - Pass intended_measurements and implanted_fibers as parameters to avoid network calls.
 - Use skip_validation=True to avoid FIPDataModel dependency in tests.
-- Result: simple, straightforward tests without mocking infrastructure.
+- ethics_review_id is passed straight through by transform. The GatherMetadataJob fills it
+  via aind_metadata_mapper.enrichment, so no LabTracks lookup is mocked here.
 """
 
 import json
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 from aind_data_schema_models.modalities import Modality
 
 from aind_metadata_mapper.fip import mapper as mapper_mod
-from aind_metadata_mapper.fip.constants import ACQUISITION_TYPE_AIND_VR_FORAGING, VR_FORAGING_FIP_REPO_URL
+from aind_metadata_mapper.fip.constants import (
+    AIND_PHYSIOLOGY_FIP_PACKAGE_NAME,
+    AIND_PHYSIOLOGY_FIP_REPO_URL,
+)
 from aind_metadata_mapper.fip.mapper import FIPMapper
 
 
@@ -36,6 +41,7 @@ class TestFIPMapper(unittest.TestCase):
             "Fiber_1": {"R": "jRCaMP1b", "G": "dLight", "B": None, "Iso": "dLight"},
         }
         self.test_implanted_fibers = [0, 1]  # Two implanted fibers
+        self.test_ethics_review_id = ["2414"]
 
     def test_mapper_initialization(self):
         """Test that FIPMapper can be instantiated with default configuration.
@@ -59,53 +65,43 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
 
         self.assertEqual(acquisition.subject_id, "test")
         self.assertEqual(acquisition.instrument_id, "test_rig")
-        self.assertEqual(acquisition.acquisition_type, ACQUISITION_TYPE_AIND_VR_FORAGING)
+        self.assertEqual(acquisition.acquisition_type, "")
         self.assertEqual(len(acquisition.experimenters), 2)
         self.assertEqual(acquisition.experimenters[0], "Foo")
         self.assertEqual(acquisition.notes, "test session")
         self.assertIsNone(acquisition.subject_details)
         self.assertEqual(len(acquisition.stimulus_epochs), 0)
 
-    def test_ethics_review_id_mapping(self):
-        """Test that ethics review ID is correctly set from constant.
+    def test_ethics_review_id_injected(self):
+        """Test that an explicitly provided ethics_review_id is passed straight through."""
+        acquisition = self.mapper.transform(
+            self.example_intermediate_data,
+            skip_validation=True,
+            intended_measurements=self.test_intended_measurements,
+            implanted_fibers=[0, 1],
+            ethics_review_id=["2414"],
+        )
 
-        The ethics_review_id is a constant set by the FIP mapper and should not be
-        provided in the session metadata. If it is provided, we should remove the constant.
+        self.assertEqual(acquisition.ethics_review_id, ["2414"])
+
+    def test_ethics_review_id_none_when_not_provided(self):
+        """Test that ethics_review_id is left unmapped when not provided.
+
+        The GatherMetadataJob fills it via aind_metadata_mapper.enrichment after acquisitions are merged.
         """
         acquisition = self.mapper.transform(
             self.example_intermediate_data,
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
-            implanted_fibers=self.test_implanted_fibers,
+            implanted_fibers=[0, 1],
         )
 
-        self.assertIsNotNone(acquisition.ethics_review_id)
-        self.assertEqual(len(acquisition.ethics_review_id), 1)
-        from aind_metadata_mapper.fip.constants import ETHICS_REVIEW_ID
-
-        self.assertEqual(acquisition.ethics_review_id, ETHICS_REVIEW_ID)
-
-    def test_ethics_review_id_error_when_provided(self):
-        """Test that an error is raised when ethics_review_id is provided in session.
-
-        The ethics_review_id is a constant and should not be provided in the session metadata.
-        If it is provided, the mapper should raise a ValueError.
-        """
-        data = self.example_intermediate_data.copy()
-        data["session"]["ethics_review_id"] = "2115"
-
-        with self.assertRaises(ValueError) as context:
-            self.mapper.transform(
-                data,
-                skip_validation=True,
-                intended_measurements=self.test_intended_measurements,
-                implanted_fibers=self.test_implanted_fibers,
-            )
-        self.assertIn("ethics_review_id is a constant", str(context.exception))
+        self.assertIsNone(acquisition.ethics_review_id)
 
     def test_data_stream_created(self):
         """Test that data stream is created with correct FIP modality.
@@ -119,6 +115,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
 
         self.assertEqual(len(acquisition.data_streams), 1)
@@ -127,14 +124,13 @@ class TestFIPMapper(unittest.TestCase):
         self.assertEqual(len(data_stream.modalities), 1)
         self.assertEqual(data_stream.modalities[0], Modality.FIB)
 
-    def test_code_field_with_commit_hash(self):
-        """Test that code field is populated when commit_hash is present.
+    def test_code_field_from_rig_version(self):
+        """Test that code field is populated from the rig's aind-physiology-fip version.
 
-        When the session metadata includes a commit_hash, the mapper should create
-        a Code object with the VrForaging-Fip repository URL and the commit hash
-        as the version, allowing tracking of the exact code version used during acquisition.
+        rig.version is the aind-physiology-fip package version, so it pairs with the
+        Aind.Physiology.Fip repository URL. The session's commit_hash is the HEAD of the
+        deployment repository the launcher runs from, so it is deliberately not used.
         """
-        # Create test metadata with commit_hash
         test_metadata = {
             "data_stream_metadata": [
                 {
@@ -152,8 +148,9 @@ class TestFIPMapper(unittest.TestCase):
                 "root_path": "/data/test",
                 "session_name": "test_session",
                 "commit_hash": "abc123def456",
+                "allow_dirty_repo": False,
             },
-            "rig": self.example_intermediate_data["rig"],
+            "rig": {**self.example_intermediate_data["rig"], "version": "0.1.2"},
         }
 
         acquisition = self.mapper.transform(
@@ -161,31 +158,90 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
         data_stream = acquisition.data_streams[0]
 
-        # Verify code field is populated
         self.assertIsNotNone(data_stream.code)
         self.assertEqual(len(data_stream.code), 1)
-        self.assertEqual(data_stream.code[0].url, VR_FORAGING_FIP_REPO_URL)
-        self.assertEqual(data_stream.code[0].version, "abc123def456")
+        code = data_stream.code[0]
+        self.assertEqual(code.url, AIND_PHYSIOLOGY_FIP_REPO_URL)
+        self.assertEqual(code.name, AIND_PHYSIOLOGY_FIP_PACKAGE_NAME)
+        self.assertEqual(code.version, "0.1.2")
+        # The deployment repo's commit hash must not be paired with this URL
+        self.assertIsNone(code.commit_hash)
+        self.assertEqual(code.parameters.allow_dirty_repo, False)
 
-    def test_code_field_without_commit_hash(self):
-        """Test that code field is None when commit_hash is absent.
+    def test_code_field_records_allow_dirty_repo(self):
+        """Test that allow_dirty_repo is carried through to the Code parameters.
 
-        When the session metadata does not include a commit_hash, the mapper should
-        leave the code field as None rather than creating an incomplete Code object.
+        allow_dirty_repo records whether the launcher was permitted to run from a dirty
+        repository, not whether it actually was, so a True value means the reported
+        version is unverified rather than known to be wrong.
         """
-        # Use fixture data which has commit_hash=None
+        # Fixture data has allow_dirty_repo=True
         acquisition = self.mapper.transform(
             self.example_intermediate_data,
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
         data_stream = acquisition.data_streams[0]
-        # Verify code field is None (fixture has commit_hash=None)
+
+        self.assertIsNotNone(data_stream.code)
+        self.assertEqual(data_stream.code[0].parameters.allow_dirty_repo, True)
+
+    def test_code_field_without_rig_version(self):
+        """Test that code field is None when the rig reports no version.
+
+        Without a version there is nothing to pair with the repository URL, so the
+        mapper leaves code unset rather than creating an incomplete Code object.
+        """
+        rig_without_version = {k: v for k, v in self.example_intermediate_data["rig"].items() if k != "version"}
+        test_metadata = {**self.example_intermediate_data, "rig": rig_without_version}
+
+        acquisition = self.mapper.transform(
+            test_metadata,
+            skip_validation=True,
+            intended_measurements=self.test_intended_measurements,
+            implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
+        )
+        data_stream = acquisition.data_streams[0]
         self.assertIsNone(data_stream.code)
+
+    def test_acquisition_type_passed_through(self):
+        """Test that a provided acquisition_type is used verbatim."""
+        acquisition = self.mapper.transform(
+            self.example_intermediate_data,
+            skip_validation=True,
+            intended_measurements=self.test_intended_measurements,
+            implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
+            acquisition_type="AindVrForaging",
+        )
+        self.assertEqual(acquisition.acquisition_type, "AindVrForaging")
+
+    def test_acquisition_type_defaults_to_empty_string(self):
+        """Test that an unset acquisition_type becomes an empty string, not None.
+
+        acquisition_type is required by aind-data-schema, so None is not a valid
+        value. An empty string is left to be filled by the acquisition merge
+        downstream, the same way ethics_review_id is.
+        """
+        for value in (None, ""):
+            with self.subTest(acquisition_type=value):
+                acquisition = self.mapper.transform(
+                    self.example_intermediate_data,
+                    skip_validation=True,
+                    intended_measurements=self.test_intended_measurements,
+                    implanted_fibers=self.test_implanted_fibers,
+                    ethics_review_id=self.test_ethics_review_id,
+                    acquisition_type=value,
+                )
+                self.assertEqual(acquisition.acquisition_type, "")
+                self.assertIsNotNone(acquisition.acquisition_type)
 
     def test_active_devices(self):
         """Test that active devices list is populated with all FIP system components.
@@ -199,6 +255,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
         data_stream = acquisition.data_streams[0]
 
@@ -243,6 +300,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
         data_stream = acquisition.data_streams[0]
 
@@ -270,6 +328,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
 
         self.assertIsNotNone(acquisition.acquisition_start_time.tzinfo)
@@ -293,6 +352,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
 
         self.assertLess(acquisition.acquisition_start_time, acquisition.acquisition_end_time)
@@ -351,6 +411,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=True,
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
 
         # Verify that the acquisition uses the earliest start (t0) and latest end (t5)
@@ -416,6 +477,7 @@ class TestFIPMapper(unittest.TestCase):
                     skip_validation=True,
                     intended_measurements=self.test_intended_measurements,
                     implanted_fibers=None,  # Will trigger fetch, returns None
+                    ethics_review_id=["2414"],
                 )
             self.assertIn("Failed to retrieve procedures data", str(cm.exception))
         finally:
@@ -429,6 +491,7 @@ class TestFIPMapper(unittest.TestCase):
                 skip_validation=True,
                 intended_measurements=self.test_intended_measurements,
                 implanted_fibers=[],  # Empty list should also fail
+                ethics_review_id=["2414"],
             )
         self.assertIn("No implanted fibers found", str(cm.exception))
 
@@ -450,6 +513,7 @@ class TestFIPMapper(unittest.TestCase):
                     skip_validation=True,
                     intended_measurements=self.test_intended_measurements,
                     implanted_fibers=None,  # Will trigger fetch, returns (None, True)
+                    ethics_review_id=["2414"],
                 )
             self.assertIn("No implanted fibers found in procedures data", str(cm.exception))
             self.assertNotIn("Failed to retrieve procedures data", str(cm.exception))
@@ -509,6 +573,7 @@ class TestFIPMapper(unittest.TestCase):
             skip_validation=False,  # Don't skip - will validate against schema
             intended_measurements=self.test_intended_measurements,
             implanted_fibers=self.test_implanted_fibers,
+            ethics_review_id=self.test_ethics_review_id,
         )
         # Should complete successfully (validation passes)
         self.assertIsNotNone(result)
@@ -715,6 +780,7 @@ class TestFIPMapperEdgeCases(unittest.TestCase):
             skip_validation=True,
             intended_measurements=None,
             implanted_fibers=[0, 1],  # Provide actual implanted fibers (no ROI fallback)
+            ethics_review_id=["2414"],
         )
         self.assertIsNotNone(acquisition)
 

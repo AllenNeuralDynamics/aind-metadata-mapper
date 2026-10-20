@@ -7,7 +7,7 @@ Transforms FIP metadata extracted from acquisition systems into AIND Data Schema
 The FIP mapper transforms extracted metadata from fiber photometry acquisition systems into AIND Data Schema compliant format. It:
 
 1. **Rearranges keys** from the extracted metadata structure to match the schema
-2. **Enriches metadata** by fetching protocols and intended measurements from the metadata service
+2. **Fetches** intended measurements and implanted fiber information from the metadata service
 3. **Filters devices** to include only patch cords connected to implanted fibers (assumes 1-to-1 mapping between patch cords and implanted fibers from subject procedures)
 4. **Generates channels** - three per fiber (Green, Isosbestic, Red) based on the rig's temporal multiplexing configuration
 
@@ -63,6 +63,8 @@ The mapper expects input JSON with this structure:
 - `rig.rig_name` → `instrument_id`
 - `data_stream_metadata[0].start_time` → `acquisition_start_time`
 - `data_stream_metadata[0].end_time` → `acquisition_end_time`
+
+`ethics_review_id` is not mapped here. The GatherMetadataJob fills it from LabTracks via `aind_metadata_mapper.enrichment` after acquisitions are merged.
 
 ### Hardware Devices
 - `rig.light_source_*` → LED configurations with wavelengths (415nm, 470nm, 565nm)

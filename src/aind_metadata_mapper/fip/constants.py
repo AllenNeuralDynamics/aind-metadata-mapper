@@ -39,14 +39,6 @@ DEFAULT_LED_POWER = 1.0
 
 
 # ==============================================================================
-# Acquisition Type
-# ==============================================================================
-# Hardcoded acquisition type for VrForaging-FIP experiments
-# NOTE: Ideally this would come from the extracted metadata, but we don't have it yet.
-ACQUISITION_TYPE_AIND_VR_FORAGING = "AindVrForaging"
-
-
-# ==============================================================================
 # Device Name Transformations
 # ==============================================================================
 # Maps rig config keys to historical standard device names
@@ -64,16 +56,13 @@ DEVICE_NAME_MAP = {
 # ==============================================================================
 # Code Repository
 # ==============================================================================
-# URL for the VrForaging-FIP experiment repository used to track code versions
-# NOTE: Ideally this would come from the extracted metadata, but we don't have it yet.
-VR_FORAGING_FIP_REPO_URL = "https://github.com/AllenNeuralDynamics/Aind.Experiment.VrForaging-Fip"
-
-# ==============================================================================
-# Ethics Review ID
-# ==============================================================================
-# Ethics review ID for VrForaging-FIP experiments
-# NOTE: This is temporarily hardcoded. Ideally this would come from the extracted metadata.
-ETHICS_REVIEW_ID = ["2414"]
+# URL for the acquisition repository whose version is reported in the extracted metadata.
+# The extracted metadata's rig.version is aind-physiology-fip's package version, so this is
+# the repository that version pairs with. session.commit_hash is deliberately not used here:
+# it is the HEAD of the deployment repository the launcher runs from (Aind.Experiment.VrForaging-Fip
+# for VR Foraging, something else for Dynamic Foraging), which does not pair with this URL.
+AIND_PHYSIOLOGY_FIP_REPO_URL = "https://github.com/AllenNeuralDynamics/Aind.Physiology.Fip"
+AIND_PHYSIOLOGY_FIP_PACKAGE_NAME = "aind-physiology-fip"
 
 # ==============================================================================
 # Camera Compression
