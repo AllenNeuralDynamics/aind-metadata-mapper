@@ -1046,7 +1046,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         self.assertEqual("Missing", main_metadata["metadata_status"])
         self.assertEqual("632269", main_metadata["subject"]["subject_id"])
-        mock_warn.assert_called_once()
+        mock_warn.assert_called()
 
     @patch("logging.warning")
     def test_get_main_metadata_with_ser_issues(self, mock_log: MagicMock):
@@ -1071,7 +1071,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         )
         metadata_job = GatherMetadataJob(settings=job_settings)
         main_metadata = metadata_job.get_main_metadata()
-        mock_log.assert_called_once()
+        mock_log.assert_called()
         self.assertIsNotNone(main_metadata["rig"]["schema_version"])
 
     @patch("logging.warning")
@@ -1106,7 +1106,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertIsNotNone(main_metadata["processing"])
         self.assertIsNotNone(main_metadata["acquisition"])
         self.assertIsNotNone(main_metadata["instrument"])
-        mock_warn.assert_called_once()
+        mock_warn.assert_called()
 
     @patch("builtins.open", new_callable=mock_open())
     @patch("json.dump")

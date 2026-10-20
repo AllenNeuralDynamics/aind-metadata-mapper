@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from aind_data_schema.core.session import Session
+from aind_data_schema_models.brain_atlas import CCFStructure
 
 from aind_metadata_mapper.bergamo.session import BergamoEtl, JobSettings
 
@@ -40,7 +41,7 @@ class TestBergamoEtl(unittest.TestCase):
             subject_id="12345",
             imaging_laser_wavelength=920,  # nm
             fov_imaging_depth=200,  # microns
-            fov_targeted_structure="Primary Motor Cortex",
+            fov_targeted_structure=CCFStructure.ISOCORTEX,
             notes="test upload",
         )
         expected_session_contents["schema_version"] = Session.model_fields[
@@ -118,7 +119,6 @@ class TestBergamoEtl(unittest.TestCase):
         mock_extract.return_value = self.example_metadata
         etl = BergamoEtl(job_settings=self.example_job_settings)
         response = etl.run_job()
-
         self.assertEqual(self.expected_session, json.loads(response.data))
         mock_get_files.assert_called_once()
 
