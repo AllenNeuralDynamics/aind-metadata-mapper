@@ -8,8 +8,8 @@ The mapper:
 - Creates 3 channels per fiber: Green (470nm), Isosbestic (415nm), Red (565nm)
 - Fetches intended measurements and implanted fiber info from metadata service (optional)
 
-Note: ethics_review_id (IACUC protocol) is not in the extracted metadata. It is looked
-up by subject_id from LabTracks via utils.get_iacuc_protocol during mapping.
+Note: ethics_review_id (IACUC protocol) is not in the extracted metadata. It is filled by
+aind_metadata_mapper.enrichment after acquisitions are merged in the GatherMetadataJob.
 """
 
 import json
@@ -54,7 +54,6 @@ from aind_metadata_mapper.fip.constants import (
 )
 from aind_metadata_mapper.utils import (
     ensure_timezone,
-    get_iacuc_protocol,
     get_intended_measurements,
     get_procedures,
     normalize_utc_timezone,
@@ -252,52 +251,6 @@ class FIPMapper(MapperJob):
 
         return sorted(implanted_indices), True
 
-    def _resolve_ethics_review_id(self, subject_id: str, ethics_review_id: Optional[List[str]]) -> Optional[List[str]]:
-        """Resolve the ethics_review_id (IACUC protocol) against LabTracks.
-
-        LabTracks is the source of truth for the IACUC protocol, so it is always
-        looked up by subject_id, even when a value is passed in. A passed value must
-        match LabTracks; a mismatch raises (gated upstream by the GatherMetadataJob
-        raise_if_mapper_errors setting).
-
-        Parameters
-        ----------
-        subject_id : str
-            Subject ID to look up in LabTracks.
-        ethics_review_id : Optional[List[str]]
-            Caller-provided IACUC protocol number(s), or None to use the LabTracks
-            value directly.
-
-        Returns
-        -------
-        Optional[List[str]]
-            The resolved protocol number(s), or None if nothing was provided and
-            LabTracks has no protocol (left unmapped and filled in from
-            acquisition_behavior.json when acquisitions are merged downstream).
-
-        Raises
-        ------
-        ValueError
-            If a provided ethics_review_id does not match the IACUC protocol on
-            record in LabTracks for the subject.
-        """
-        protocol_number = get_iacuc_protocol(subject_id)
-        labtracks_ethics_review_id = [protocol_number] if protocol_number else None
-        if ethics_review_id is None:
-            return labtracks_ethics_review_id
-        if labtracks_ethics_review_id is None:
-            logger.warning(
-                f"Could not verify provided ethics_review_id {ethics_review_id} for subject "
-                f"{subject_id}: no IACUC protocol found in LabTracks. Using the provided value."
-            )
-        elif set(ethics_review_id) != set(labtracks_ethics_review_id):
-            raise ValueError(
-                f"Provided ethics_review_id {ethics_review_id} does not match the IACUC protocol "
-                f"{labtracks_ethics_review_id} on record in LabTracks for subject {subject_id}. "
-                "Omit ethics_review_id to have it looked up automatically."
-            )
-        return ethics_review_id
-
     def transform(
         self,
         metadata: dict,
@@ -322,12 +275,9 @@ class FIPMapper(MapperJob):
             Implanted fiber indices. If None, will be fetched from metadata service.
             Must be non-empty after fetching.
         ethics_review_id : Optional[List[str]], optional
-            IACUC protocol number(s). The protocol is always looked up by subject_id
-            from LabTracks via utils.get_iacuc_protocol (the source of truth). If None,
-            the LabTracks value is used directly; it remains None (left unmapped) if no
-            protocol is found, in which case it is filled by the acquisition merge
-            downstream. If provided, the value is verified against LabTracks and a
-            ValueError is raised on mismatch.
+            IACUC protocol number(s). Passed straight through when provided. If None, it is
+            left unmapped and filled by aind_metadata_mapper.enrichment after acquisitions
+            are merged in the GatherMetadataJob.
         acquisition_type : Optional[str], optional
             Descriptive acquisition type. Passed straight through when provided. If None,
             an empty string is used rather than None, since aind-data-schema requires the
@@ -341,8 +291,7 @@ class FIPMapper(MapperJob):
         Raises
         ------
         ValueError
-            If metadata validation fails, or if a provided ethics_review_id does not
-            match the IACUC protocol on record in LabTracks for the subject.
+            If metadata validation fails.
         """
         # Validate metadata against JSON schema unless skipped
         if not skip_validation:
@@ -355,8 +304,6 @@ class FIPMapper(MapperJob):
 
         subject_id = session["subject"]
         instrument_id = rig["rig_name"]
-
-        ethics_review_id = self._resolve_ethics_review_id(subject_id, ethics_review_id)
 
         # Get timing from all data streams (handle multiple epochs)
         # Find earliest start_time and latest end_time across all epochs
