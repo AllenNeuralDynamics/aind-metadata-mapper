@@ -6,13 +6,12 @@ import os
 import shutil
 import sys
 from datetime import datetime, timezone
-from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, Optional
-from urllib.parse import urlencode, urljoin
+from urllib.parse import urljoin
 
 from aind_data_schema.components.subjects import CalibrationObject
-from aind_data_schema.core.acquisition import Acquisition, AcquisitionSubjectDetails
+from aind_data_schema.core.acquisition import Acquisition
 from aind_data_schema.core.data_description import DataDescription
 from aind_data_schema.core.instrument import Instrument
 from aind_data_schema.core.metadata import Metadata, create_metadata_json
@@ -25,10 +24,10 @@ from aind_data_schema_models.data_name_patterns import DataLevel
 from pydantic import ValidationError
 
 from aind_metadata_mapper.base import MapperJobSettings
+from aind_metadata_mapper.enrichment import enrich_acquisition
 from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
 from aind_metadata_mapper.utils import (
-    ensure_timezone,
     get_instrument,
     get_procedures,
     get_subject,
@@ -769,111 +768,7 @@ class GatherMetadataJob:
 
         return subject_id
 
-    @staticmethod
-    def _parse_weight_record(weight_record: Any) -> Optional[tuple[datetime, Any]]:
-        """Parse a usable Waterlog weight record."""
-        if not isinstance(weight_record, dict):
-            return None
-
-        weight_datetime_value = weight_record.get("weight_datetime")
-        weight = weight_record.get("weight")
-        if not isinstance(weight_datetime_value, str) or weight is None:
-            return None
-
-        try:
-            weight_datetime = ensure_timezone(datetime.fromisoformat(normalize_utc_timezone(weight_datetime_value)))
-        except ValueError:
-            return None
-        return weight_datetime, weight
-
-    @classmethod
-    def _find_nearest_weights(
-        cls,
-        weight_records: list[Any],
-        acquisition_start: datetime,
-    ) -> tuple[Optional[tuple[datetime, Any]], Optional[tuple[datetime, Any]]]:
-        """Return the nearest records at or before and after acquisition start."""
-        pre_weight_record = None
-        post_weight_record = None
-        for weight_record in weight_records:
-            parsed_record = cls._parse_weight_record(weight_record)
-            if parsed_record is None:
-                continue
-
-            weight_datetime, _ = parsed_record
-            if weight_datetime <= acquisition_start:
-                if pre_weight_record is None or weight_datetime > pre_weight_record[0]:
-                    pre_weight_record = parsed_record
-            elif weight_datetime > acquisition_start:
-                if post_weight_record is None or weight_datetime < post_weight_record[0]:
-                    post_weight_record = parsed_record
-        return pre_weight_record, post_weight_record
-
-    def add_subject_weights(
-        self,
-        subject: Optional[dict],
-        acquisition: Optional[dict],
-        subject_id: str,
-    ) -> Optional[dict]:
-        """Add the nearest same-day weights at or before and after acquisition start."""
-        subject_details = (subject or {}).get("subject_details")
-        if (
-            not acquisition
-            or not isinstance(subject_details, dict)
-            or subject_details.get("object_type") != "Mouse subject"
-        ):
-            return subject
-
-        acquisition_start_value = acquisition.get("acquisition_start_time")
-        if not acquisition_start_value:
-            return subject
-        acquisition_start_naive = datetime.fromisoformat(normalize_utc_timezone(acquisition_start_value))
-        acquisition_start = ensure_timezone(acquisition_start_naive)
-
-        acquisition_datetime = acquisition_start_naive.replace(tzinfo=None).isoformat(timespec="seconds")
-        weight_records_url = urljoin(
-            self.settings.metadata_service_url,
-            f"/api/v2/dataverse/mouse_weight_records/{subject_id}",
-        )
-        weight_records_url = f"{weight_records_url}?{urlencode({'acquisition_datetime': acquisition_datetime})}"
-        weight_records = metadata_service_helper(weight_records_url)
-
-        pre_weight_record, post_weight_record = self._find_nearest_weights(
-            weight_records if isinstance(weight_records, list) else [], acquisition_start
-        )
-        if pre_weight_record is None and post_weight_record is None:
-            return subject
-        acquisition_subject_details = (acquisition.get("subject_details") or {}).copy()
-        for weight_field, weight_record in (
-            ("animal_weight_prior", pre_weight_record),
-            ("animal_weight_post", post_weight_record),
-        ):
-            if weight_record is None:
-                continue
-            fetched_weight = weight_record[1]
-            existing_weight = acquisition_subject_details.get(weight_field)
-            if existing_weight is not None and Decimal(str(existing_weight)) != Decimal(str(fetched_weight)):
-                logging.warning(
-                    f"Waterlog {weight_field} ({fetched_weight}) differs from existing {weight_field} "
-                    f"({existing_weight}); retaining the existing value."
-                )
-            acquisition_subject_details[weight_field] = fetched_weight if existing_weight is None else existing_weight
-        try:
-            updated_details = AcquisitionSubjectDetails(**acquisition_subject_details)
-        except ValidationError as error:
-            if self.settings.raise_if_invalid:
-                raise
-            logging.warning(f"Unable to enrich acquisition subject weights: {error}")
-            return subject
-        acquisition["subject_details"] = updated_details.model_dump(mode="json")
-        return subject
-
-    def add_core_metadata(
-        self,
-        core_metadata: dict,
-        subject_id: str,
-        acquisition: Optional[dict] = None,
-    ) -> Dict[str, Any]:
+    def add_core_metadata(self, core_metadata: dict, subject_id: str) -> Dict[str, Any]:
         """Get all core metadata as a dictionary
 
         Parameters
@@ -885,9 +780,6 @@ class GatherMetadataJob:
         """
 
         subject = self.get_subject(subject_id=subject_id)
-        subject = self.add_subject_weights(subject, acquisition, subject_id)
-        if acquisition:
-            self._write_json_file(Acquisition.default_filename(), acquisition)
         if subject:
             core_metadata["subject"] = subject
             self._write_json_file(Subject.default_filename(), subject)
@@ -921,6 +813,14 @@ class GatherMetadataJob:
 
     def run_job(self) -> None:
         """Run job"""
+        # Phases, in order:
+        #   1. Back up the original metadata files.
+        #   2. Get acquisition (exact match, or run mappers and merge).
+        #   3. Derive and validate acquisition_start_time and subject_id.
+        #   4. Build data_description.
+        #   5. Add core metadata: subject, procedures, instrument, processing, quality_control, model.
+        #   6. Enrich acquisition and write acquisition.json.
+        #   7. Validate everything as a Metadata object.
         logging.info("Starting run_job")
 
         # Set the metadata_dir to output_dir if not provided
@@ -975,8 +875,20 @@ class GatherMetadataJob:
         core_metadata = self.add_core_metadata(
             core_metadata=core_metadata,
             subject_id=subject_id,
-            acquisition=acquisition,
         )
+
+        # Enrich acquisition with data available at upload time but not supplied by the rig.
+        # See aind_metadata_mapper.enrichment for the contract and the list of enrichers.
+        if acquisition:
+            acquisition = enrich_acquisition(
+                acquisition=acquisition,
+                subject_id=subject_id,
+                settings=self.settings.enrichment_settings,
+                metadata_service_url=self.settings.metadata_service_url,
+                raise_if_invalid=self.settings.raise_if_invalid,
+            )
+            core_metadata["acquisition"] = acquisition
+            self._write_json_file(Acquisition.default_filename(), acquisition)
 
         self.validate_and_create_metadata(core_metadata)
 

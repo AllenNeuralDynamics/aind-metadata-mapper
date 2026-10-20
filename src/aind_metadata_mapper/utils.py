@@ -12,13 +12,16 @@ from urllib.parse import urljoin
 import aind_data_schema.core.instrument as instrument
 import requests
 
+from aind_metadata_mapper.constants import (
+    INSTRUMENT_BASE_URL,
+    INTENDED_MEASUREMENTS_BASE_URL,
+    LABTRACKS_SUBJECT_BASE_URL,
+    PROCEDURES_BASE_URL,
+    SUBJECT_BASE_URL,
+)
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-INSTRUMENT_BASE_URL = "http://aind-metadata-service/api/v2/instrument"
-PROCEDURES_BASE_URL = "http://aind-metadata-service/api/v2/procedures"
-SUBJECT_BASE_URL = "http://aind-metadata-service/api/v2/subject"
-LABTRACKS_SUBJECT_BASE_URL = "http://aind-metadata-service/api/v2/labtracks/subject"
 
 
 def normalize_utc_timezone(dt: str) -> str:
@@ -215,7 +218,7 @@ def get_iacuc_protocol(subject_id: str | int, base_url: str = LABTRACKS_SUBJECT_
 
 def get_intended_measurements(
     subject_id: str,
-    base_url: str = "http://aind-metadata-service/intended_measurements",
+    base_url: str = INTENDED_MEASUREMENTS_BASE_URL,
 ) -> Optional[dict]:
     """Fetch intended measurements for a subject from the metadata service.
 
@@ -224,7 +227,7 @@ def get_intended_measurements(
     subject_id : str
         The subject ID to query.
     base_url : str
-        Base URL for the intended measurements endpoint.
+        Base URL for the intended measurements endpoint. Defaults to INTENDED_MEASUREMENTS_BASE_URL.
 
     Returns
     -------

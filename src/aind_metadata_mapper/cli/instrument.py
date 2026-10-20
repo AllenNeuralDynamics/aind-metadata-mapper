@@ -21,7 +21,8 @@ from typing import Optional
 from pydantic import BaseModel, Field
 from pydantic_settings import CliApp, CliPositionalArg, CliSubCommand
 
-from aind_metadata_mapper.utils import INSTRUMENT_BASE_URL, get_instrument, save_instrument
+from aind_metadata_mapper.constants import INSTRUMENT_BASE_URL
+from aind_metadata_mapper.utils import get_instrument, save_instrument
 
 logger = logging.getLogger(__name__)
 
