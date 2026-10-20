@@ -4,18 +4,10 @@ aind\_metadata\_mapper.mesoscope package
 Submodules
 ----------
 
-aind\_metadata\_mapper.mesoscope.models module
+aind\_metadata\_mapper.mesoscope.mapper module
 ----------------------------------------------
 
-.. automodule:: aind_metadata_mapper.mesoscope.models
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-aind\_metadata\_mapper.mesoscope.session module
------------------------------------------------
-
-.. automodule:: aind_metadata_mapper.mesoscope.session
+.. automodule:: aind_metadata_mapper.mesoscope.mapper
    :members:
    :undoc-members:
    :show-inheritance:
