@@ -1,8 +1,8 @@
-"""Supplement acquisition metadata with data that exists at upload time but was not supplied by the rig.
+"""Populate acquisition metadata with data that exists at upload time but was not supplied by the rig.
 
-``GatherMetadataJob.run_job`` calls :func:`supplement_acquisition` once, after the core metadata files
+``GatherMetadataJob.run_job`` calls :func:`populate_acquisition` once, after the core metadata files
 are assembled and before the final validation. The same function is meant to be imported by
-migration scripts to back-fill existing records (see ``scripts/demo_supplement.py``).
+migration scripts to back-fill existing records (see ``scripts/demo_populate_acquisition.py``).
 
 The step runs only when ``data_description.modalities`` includes at least one in vivo modality
 (``constants.IN_VIVO_MODALITIES``). Weights and IACUC protocols describe a living animal, so a
@@ -23,7 +23,7 @@ Contract. Every step must satisfy all of these:
    later.
 7. Not platform or task specific.
 
-Steps run in the order listed in ``SUPPLEMENT_STEPS``:
+Steps run in the order listed in ``POPULATE_STEPS``:
 
 - :func:`add_subject_weights` fills ``subject_details.animal_weight_prior`` and
   ``subject_details.animal_weight_post`` from Waterlog
@@ -46,7 +46,7 @@ from aind_metadata_mapper.constants import (
     LABTRACKS_SUBJECT_ENDPOINT,
     MOUSE_WEIGHT_RECORDS_ENDPOINT,
 )
-from aind_metadata_mapper.models import SupplementSettings
+from aind_metadata_mapper.models import PopulateAcquisitionSettings
 from aind_metadata_mapper.utils import (
     ensure_timezone,
     get_iacuc_protocol,
@@ -157,11 +157,11 @@ def add_subject_weights(
     except ValidationError as error:
         if raise_if_invalid:
             raise
-        logging.warning(f"Unable to supplement acquisition subject weights: {error}")
+        logging.warning(f"Unable to populate acquisition subject weights: {error}")
         return acquisition
     acquisition["subject_details"] = updated_details.model_dump(mode="json")
     if filled_fields:
-        logging.info(f"Supplemented acquisition.subject_details {filled_fields} from Waterlog.")
+        logging.info(f"Populated acquisition.subject_details {filled_fields} from Waterlog.")
     return acquisition
 
 
@@ -187,7 +187,7 @@ def add_ethics_review_id(
     existing = acquisition.get("ethics_review_id")
     if not existing or replace_existing:
         acquisition["ethics_review_id"] = fetched
-        logging.info(f"Supplemented acquisition.ethics_review_id with {fetched} from LabTracks.")
+        logging.info(f"Populated acquisition.ethics_review_id with {fetched} from LabTracks.")
     elif set(existing) != set(fetched):
         logging.warning(
             f"LabTracks ethics_review_id {fetched} differs from existing {existing}; retaining the existing value."
@@ -195,7 +195,7 @@ def add_ethics_review_id(
     return acquisition
 
 
-SUPPLEMENT_STEPS: list[Callable[..., dict]] = [add_subject_weights, add_ethics_review_id]
+POPULATE_STEPS: list[Callable[..., dict]] = [add_subject_weights, add_ethics_review_id]
 
 
 def _modality_abbreviations(data_description: Optional[dict]) -> set[str]:
@@ -204,11 +204,11 @@ def _modality_abbreviations(data_description: Optional[dict]) -> set[str]:
     return {m.get("abbreviation") if isinstance(m, dict) else getattr(m, "abbreviation", m) for m in modalities}
 
 
-def supplement_acquisition(
+def populate_acquisition(
     acquisition: Optional[dict],
     data_description: Optional[dict],
     subject_id: str,
-    settings: SupplementSettings,
+    settings: PopulateAcquisitionSettings,
     metadata_service_url: str,
     raise_if_invalid: bool = False,
 ) -> Optional[dict]:
@@ -221,13 +221,13 @@ def supplement_acquisition(
     if acquisition is None or not settings.enabled:
         return acquisition
     if subject_id == "calibration":
-        logging.info("Skipping acquisition supplement: subject_id is 'calibration'.")
+        logging.info("Skipping populate_acquisition: subject_id is 'calibration'.")
         return acquisition
     modalities = _modality_abbreviations(data_description)
     if not modalities & IN_VIVO_MODALITIES:
-        logging.info(f"Skipping acquisition supplement: no in vivo modality in {sorted(map(str, modalities))}.")
+        logging.info(f"Skipping populate_acquisition: no in vivo modality in {sorted(map(str, modalities))}.")
         return acquisition
-    for step in SUPPLEMENT_STEPS:
+    for step in POPULATE_STEPS:
         acquisition = step(
             acquisition=acquisition,
             subject_id=subject_id,

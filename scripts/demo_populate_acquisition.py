@@ -1,8 +1,8 @@
-"""Supplement one session's acquisition from the metadata service and report what changed.
+"""Populate one session's acquisition from the metadata service and report what changed.
 
 Pass a data asset name, for example ``behavior_869134_2026-09-28_09-35-27``. The script reads that
 record's ``acquisition`` and ``data_description.modalities`` from the v2 DocDB REST API, runs
-``aind_metadata_mapper.supplement.supplement_acquisition`` on it, and prints the supplemented fields
+``aind_metadata_mapper.populate_acquisition.populate_acquisition`` on it, and prints the populated fields
 before and after. A record with no in vivo modality is printed unchanged. With ``--output-dir`` it
 validates the result and writes it as ``acquisition.json`` there through
 ``Acquisition.write_standard_file``. Nothing is written back to DocDB. This is the shape a back-fill
@@ -18,11 +18,11 @@ import requests
 from aind_data_schema.core.acquisition import Acquisition
 
 from aind_metadata_mapper.constants import METADATA_SERVICE_URL
-from aind_metadata_mapper.models import SupplementSettings
-from aind_metadata_mapper.supplement import supplement_acquisition
+from aind_metadata_mapper.models import PopulateAcquisitionSettings
+from aind_metadata_mapper.populate_acquisition import populate_acquisition
 
 DOCDB_FIND_URL = "https://api.allenneuraldynamics.org/v2/metadata_index/data_assets/find"
-SUPPLEMENTED_FIELDS = (
+POPULATED_FIELDS = (
     "subject_details.animal_weight_prior",
     "subject_details.animal_weight_post",
     "ethics_review_id",
@@ -53,13 +53,13 @@ def _get_field(acquisition: dict, dotted_path: str):
 
 
 def main() -> None:
-    """Fetch a session by name, supplement its acquisition, print what changed, and optionally write the result."""
+    """Fetch a session by name, populate its acquisition, print what changed, and optionally write the result."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("name", help="Data asset name, for example behavior_869134_2026-09-28_09-35-27")
     parser.add_argument(
         "--output-dir",
         type=Path,
-        help="Directory to write the supplemented acquisition.json to. Without it the script only prints.",
+        help="Directory to write the populated acquisition.json to. Without it the script only prints.",
     )
     parser.add_argument(
         "--metadata-service-url",
@@ -85,24 +85,24 @@ def main() -> None:
 
     data_description = record.get("data_description") or {}
     before = copy.deepcopy(acquisition)
-    supplemented = supplement_acquisition(
+    populated = populate_acquisition(
         acquisition=acquisition,
         data_description=data_description,
         subject_id=acquisition.get("subject_id"),
-        settings=SupplementSettings(replace_existing=args.replace_existing),
+        settings=PopulateAcquisitionSettings(replace_existing=args.replace_existing),
         metadata_service_url=args.metadata_service_url,
         raise_if_invalid=True,
     )
     result = {
         "name": args.name,
         "modalities": [modality.get("abbreviation") for modality in data_description.get("modalities") or []],
-        "before": {field: _get_field(before, field) for field in SUPPLEMENTED_FIELDS},
-        "after": {field: _get_field(supplemented, field) for field in SUPPLEMENTED_FIELDS},
+        "before": {field: _get_field(before, field) for field in POPULATED_FIELDS},
+        "after": {field: _get_field(populated, field) for field in POPULATED_FIELDS},
     }
     print(json.dumps(result, indent=2))
     if args.output_dir:
         args.output_dir.mkdir(parents=True, exist_ok=True)
-        Acquisition.model_validate(supplemented).write_standard_file(output_directory=args.output_dir)
+        Acquisition.model_validate(populated).write_standard_file(output_directory=args.output_dir)
         print(f"Wrote {args.output_dir / Acquisition.default_filename()}")
 
 

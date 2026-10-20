@@ -211,7 +211,7 @@ class TestIntegrationMetadata(unittest.TestCase):
             "processing.json": self._load_resource_file(V2_METADATA_DIR, "processing.json"),
             "quality_control.json": self._load_resource_file(V2_METADATA_DIR, "quality_control.json"),
         }
-        # The stored acquisition already has an ethics_review_id; drop it so supplement has to fill it.
+        # The stored acquisition already has an ethics_review_id; drop it so populate has to fill it.
         del v2_files["acquisition.json"]["ethics_review_id"]
 
         # Mock file existence - return True for files that exist locally
@@ -240,13 +240,15 @@ class TestIntegrationMetadata(unittest.TestCase):
             try:
                 with (
                     patch(
-                        "aind_metadata_mapper.supplement.metadata_service_helper",
+                        "aind_metadata_mapper.populate_acquisition.metadata_service_helper",
                         return_value=[
                             {"weight": 20.5, "weight_datetime": "2025-09-17T17:00:00Z"},
                             {"weight": 21.5, "weight_datetime": "2025-09-17T18:45:00Z"},
                         ],
                     ) as mock_weight_service,
-                    patch("aind_metadata_mapper.supplement.get_iacuc_protocol", return_value="2414") as mock_iacuc,
+                    patch(
+                        "aind_metadata_mapper.populate_acquisition.get_iacuc_protocol", return_value="2414"
+                    ) as mock_iacuc,
                 ):
                     self.job.run_job()
 
@@ -582,12 +584,12 @@ class TestIntegrationMetadata(unittest.TestCase):
         log_calls = [call[0][0] for call in mock_log_info.call_args_list]
         self.assertTrue(any("No acquisition_start_time found in acquisition metadata" in call for call in log_calls))
 
-    @patch("aind_metadata_mapper.gather_metadata.supplement_acquisition")
-    def test_run_job_supplements_acquisition_after_core_metadata(self, mock_supplement):
-        """Test that run_job supplements the acquisition with the assembled subject, then writes and validates it"""
+    @patch("aind_metadata_mapper.gather_metadata.populate_acquisition")
+    def test_run_job_populates_acquisition_after_core_metadata(self, mock_populate):
+        """Test that run_job populates the acquisition with the assembled subject, then writes and validates it"""
         acquisition_data = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
-        supplemented = {**acquisition_data, "ethics_review_id": ["2414"]}
-        mock_supplement.return_value = supplemented
+        populated = {**acquisition_data, "ethics_review_id": ["2414"]}
+        mock_populate.return_value = populated
 
         with (
             patch.object(self.job, "get_acquisition", return_value=acquisition_data),
@@ -602,21 +604,21 @@ class TestIntegrationMetadata(unittest.TestCase):
         ):
             self.job.run_job()
 
-        mock_supplement.assert_called_once_with(
+        mock_populate.assert_called_once_with(
             acquisition=acquisition_data,
             data_description={"name": "test"},
             subject_id="804670",
-            settings=self.test_settings.supplement_settings,
+            settings=self.test_settings.populate_acquisition_settings,
             metadata_service_url="http://test-service.com",
             raise_if_invalid=False,
         )
-        mock_write.assert_any_call("acquisition.json", supplemented)
-        self.assertIs(mock_validate.call_args.args[0]["acquisition"], supplemented)
+        mock_write.assert_any_call("acquisition.json", populated)
+        self.assertIs(mock_validate.call_args.args[0]["acquisition"], populated)
 
-    @patch("aind_metadata_mapper.supplement.get_iacuc_protocol")
-    @patch("aind_metadata_mapper.supplement.metadata_service_helper")
-    def test_run_job_calibration_makes_no_supplement_calls(self, mock_metadata_service_helper, mock_iacuc):
-        """Test that a calibration run_job makes no supplement calls and leaves the acquisition unchanged"""
+    @patch("aind_metadata_mapper.populate_acquisition.get_iacuc_protocol")
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper")
+    def test_run_job_calibration_makes_no_populate_calls(self, mock_metadata_service_helper, mock_iacuc):
+        """Test that a calibration run_job makes no populate calls and leaves the acquisition unchanged"""
         with patch("os.makedirs"):
             test_job = GatherMetadataJob(
                 settings=JobSettings(
@@ -643,10 +645,10 @@ class TestIntegrationMetadata(unittest.TestCase):
         written_subject = next(call.args[1] for call in mock_write.call_args_list if call.args[0] == "subject.json")
         self.assertEqual(written_subject["subject_details"]["object_type"], "Calibration object")
 
-    @patch("aind_metadata_mapper.supplement.get_iacuc_protocol")
-    @patch("aind_metadata_mapper.supplement.metadata_service_helper")
-    def test_run_job_post_mortem_modality_makes_no_supplement_calls(self, mock_metadata_service_helper, mock_iacuc):
-        """Test that a SPIM-only run_job makes no supplement calls and writes the acquisition unchanged"""
+    @patch("aind_metadata_mapper.populate_acquisition.get_iacuc_protocol")
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper")
+    def test_run_job_post_mortem_modality_makes_no_populate_calls(self, mock_metadata_service_helper, mock_iacuc):
+        """Test that a SPIM-only run_job makes no populate calls and writes the acquisition unchanged"""
         acquisition_data = self._load_resource_file(V2_METADATA_DIR, "acquisition.json")
         expected = copy.deepcopy(acquisition_data)
         spim_only = {"modalities": [{"name": "Selective plane illumination microscopy", "abbreviation": "SPIM"}]}

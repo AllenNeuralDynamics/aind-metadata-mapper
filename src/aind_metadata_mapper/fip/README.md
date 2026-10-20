@@ -64,7 +64,7 @@ The mapper expects input JSON with this structure:
 - `data_stream_metadata[0].start_time` → `acquisition_start_time`
 - `data_stream_metadata[0].end_time` → `acquisition_end_time`
 
-`ethics_review_id` is not mapped here. The GatherMetadataJob fills it from LabTracks via `aind_metadata_mapper.supplement` after acquisitions are merged.
+`ethics_review_id` is not mapped here. The GatherMetadataJob fills it from LabTracks via `aind_metadata_mapper.populate_acquisition` after acquisitions are merged.
 
 ### Hardware Devices
 - `rig.light_source_*` → LED configurations with wavelengths (415nm, 470nm, 565nm)

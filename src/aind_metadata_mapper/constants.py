@@ -1,8 +1,8 @@
 """Shared constants.
 
 The aind-metadata-service host and the endpoint paths used across the package, plus the list of in
-vivo modalities that gates the acquisition supplement step. Each path is defined once here so that
-``JobSettings``, the fetch helpers in ``utils`` and the steps in ``supplement`` agree on it. Paths
+vivo modalities that gates the acquisition populate step. Each path is defined once here so that
+``JobSettings``, the fetch helpers in ``utils`` and the steps in ``populate`` agree on it. Paths
 carry a leading slash and no trailing slash. Callers join them onto a host and add the trailing slash
 themselves where needed.
 """
@@ -26,7 +26,7 @@ INSTRUMENT_BASE_URL = METADATA_SERVICE_URL + INSTRUMENT_ENDPOINT
 LABTRACKS_SUBJECT_BASE_URL = METADATA_SERVICE_URL + LABTRACKS_SUBJECT_ENDPOINT
 INTENDED_MEASUREMENTS_BASE_URL = METADATA_SERVICE_URL + INTENDED_MEASUREMENTS_ENDPOINT
 
-# Modalities acquired from a living animal. The supplement step (weights, IACUC protocol) runs only
+# Modalities acquired from a living animal. The populate step (weights, IACUC protocol) runs only
 # when data_description.modalities includes at least one of these.
 IN_VIVO_MODALITIES: frozenset[str] = frozenset(
     modality.abbreviation

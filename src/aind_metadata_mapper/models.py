@@ -80,14 +80,19 @@ class InstrumentSettings(BaseSettings):
     )
 
 
-class SupplementSettings(BaseSettings):
-    """Settings for the acquisition supplement step."""
+class PopulateAcquisitionSettings(BaseSettings):
+    """Settings for populate_acquisition, which fills optional acquisition fields with values pulled from
+    aind-metadata-service (Waterlog weights, LabTracks IACUC protocol) after the core metadata is assembled."""
 
-    enabled: bool = Field(default=True, description="Run the supplement step after assembling core metadata.")
+    enabled: bool = Field(
+        default=True,
+        description="Run populate_acquisition after assembling core metadata, filling optional acquisition fields "
+        "from aind-metadata-service.",
+    )
     replace_existing: bool = Field(
         default=False,
-        description="If True, steps overwrite values already present in acquisition.json. "
-        "Default keeps existing values and warns on mismatch.",
+        description="If True, populate_acquisition overwrites values already present in acquisition.json with the "
+        "service values. Default keeps existing values and warns on mismatch.",
     )
 
 
@@ -154,9 +159,10 @@ class JobSettings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=Tru
         default=None,
         description="Settings specific to instrument metadata.",
     )
-    supplement_settings: SupplementSettings = Field(
-        default_factory=SupplementSettings,
-        description="Settings for the acquisition supplement step.",
+    populate_acquisition_settings: PopulateAcquisitionSettings = Field(
+        default_factory=PopulateAcquisitionSettings,
+        description="Settings for populate_acquisition, which fills optional acquisition fields from "
+        "aind-metadata-service.",
     )
 
     # Metadata service settings

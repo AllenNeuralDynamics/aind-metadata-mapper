@@ -26,7 +26,7 @@ from pydantic import ValidationError
 from aind_metadata_mapper.base import MapperJobSettings
 from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
-from aind_metadata_mapper.supplement import supplement_acquisition
+from aind_metadata_mapper.populate_acquisition import populate_acquisition
 from aind_metadata_mapper.utils import (
     get_instrument,
     get_procedures,
@@ -819,7 +819,7 @@ class GatherMetadataJob:
         #   3. Derive and validate acquisition_start_time and subject_id.
         #   4. Build data_description.
         #   5. Add core metadata: subject, procedures, instrument, processing, quality_control, model.
-        #   6. Supplement acquisition (in vivo modalities only) and write acquisition.json.
+        #   6. Populate acquisition (in vivo modalities only) and write acquisition.json.
         #   7. Validate everything as a Metadata object.
         logging.info("Starting run_job")
 
@@ -877,15 +877,16 @@ class GatherMetadataJob:
             subject_id=subject_id,
         )
 
-        # Supplement acquisition with data available at upload time but not supplied by the rig.
-        # Runs only for in vivo modalities. See aind_metadata_mapper.supplement for the contract
-        # and the list of steps.
+        # Populate acquisition with data available at upload time but not supplied by the rig.
+        # populate_acquisition checks data_description.modalities and runs only when at least one
+        # is in vivo, per IN_VIVO_MODALITIES in aind_metadata_mapper.constants. See that module
+        # for the contract and the list of steps.
         if acquisition:
-            acquisition = supplement_acquisition(
+            acquisition = populate_acquisition(
                 acquisition=acquisition,
                 data_description=core_metadata.get("data_description"),
                 subject_id=subject_id,
-                settings=self.settings.supplement_settings,
+                settings=self.settings.populate_acquisition_settings,
                 metadata_service_url=self.settings.metadata_service_url,
                 raise_if_invalid=self.settings.raise_if_invalid,
             )
