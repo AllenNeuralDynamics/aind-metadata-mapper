@@ -5,8 +5,8 @@ are assembled and before the final validation. The same function is meant to be 
 migration scripts to back-fill existing records (see ``scripts/demo_supplement.py``).
 
 The step runs only when ``data_description.modalities`` includes at least one in vivo modality
-(``IN_VIVO_MODALITIES``). Weights and IACUC protocols describe a living animal, so a post-mortem
-acquisition such as SPIM gets neither.
+(``constants.IN_VIVO_MODALITIES``). Weights and IACUC protocols describe a living animal, so a
+post-mortem acquisition such as SPIM gets neither.
 
 Contract. Every step must satisfy all of these:
 
@@ -39,33 +39,19 @@ from typing import Any, Callable, Optional
 from urllib.parse import urlencode, urljoin
 
 from aind_data_schema.core.acquisition import AcquisitionSubjectDetails
-from aind_data_schema_models.modalities import Modality
 from pydantic import ValidationError
 
-from aind_metadata_mapper.constants import LABTRACKS_SUBJECT_ENDPOINT, MOUSE_WEIGHT_RECORDS_ENDPOINT
+from aind_metadata_mapper.constants import (
+    IN_VIVO_MODALITIES,
+    LABTRACKS_SUBJECT_ENDPOINT,
+    MOUSE_WEIGHT_RECORDS_ENDPOINT,
+)
 from aind_metadata_mapper.models import SupplementSettings
 from aind_metadata_mapper.utils import (
     ensure_timezone,
     get_iacuc_protocol,
     metadata_service_helper,
     normalize_utc_timezone,
-)
-
-# Modalities acquired from a living animal. Weights and the IACUC protocol only make sense for these.
-IN_VIVO_MODALITIES: frozenset[str] = frozenset(
-    modality.abbreviation
-    for modality in (
-        Modality.BEHAVIOR,
-        Modality.BEHAVIOR_VIDEOS,
-        Modality.ECEPHYS,
-        Modality.EMG,
-        Modality.FIB,
-        Modality.ISI,
-        Modality.MRI,
-        Modality.ONE_PHOTON,
-        Modality.POPHYS,
-        Modality.SLAP2,
-    )
 )
 
 

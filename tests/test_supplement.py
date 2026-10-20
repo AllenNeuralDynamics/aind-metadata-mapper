@@ -11,13 +11,9 @@ from aind_data_schema.core.acquisition import AcquisitionSubjectDetails
 from aind_data_schema_models.modalities import Modality
 from pydantic import ValidationError
 
+from aind_metadata_mapper.constants import IN_VIVO_MODALITIES
 from aind_metadata_mapper.models import SupplementSettings
-from aind_metadata_mapper.supplement import (
-    IN_VIVO_MODALITIES,
-    add_ethics_review_id,
-    add_subject_weights,
-    supplement_acquisition,
-)
+from aind_metadata_mapper.supplement import add_ethics_review_id, add_subject_weights, supplement_acquisition
 
 SERVICE_URL = "http://test-service.com"
 SUBJECT_ID = "123456"

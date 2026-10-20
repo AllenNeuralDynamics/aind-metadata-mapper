@@ -67,7 +67,7 @@ When mappers are developed from the `BaseMapper` class and registered in `mapper
 
 After all core files are assembled, the job passes the acquisition through `aind_metadata_mapper.supplement.supplement_acquisition`, which fills optional acquisition fields with data that exists at upload time but was not supplied by the rig. This runs on every acquisition, including an exact-match `acquisition.json`, and is skipped when `subject_id` is `"calibration"`, since there is nothing to look up. The supplemented acquisition is what gets written to `acquisition.json` and validated with the rest of the metadata.
 
-The step runs only when `data_description.modalities` includes at least one in vivo modality. That list is `IN_VIVO_MODALITIES` in `supplement.py`: behavior, behavior-videos, ecephys, EMG, fib, ISI, MRI, one-photon, pophys and slap2. Weights and IACUC protocols describe a living animal, so a post-mortem acquisition such as SPIM gets neither, and a modality that is not on the list gets no lookups until it is added.
+The step runs only when `data_description.modalities` includes at least one in vivo modality. That list is `IN_VIVO_MODALITIES` in `constants.py`: behavior, behavior-videos, ecephys, EMG, fib, ISI, MRI, one-photon, pophys and slap2. Weights and IACUC protocols describe a living animal, so a post-mortem acquisition such as SPIM gets neither, and a modality that is not on the list gets no lookups until it is added.
 
 Every step must satisfy all of these:
 

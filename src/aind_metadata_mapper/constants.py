@@ -1,10 +1,13 @@
 """Shared constants.
 
-The aind-metadata-service host and the endpoint paths used across the package. Each path is defined
-once here so that ``JobSettings``, the fetch helpers in ``utils`` and the steps in ``supplement``
-agree on it. Paths carry a leading slash and no trailing slash. Callers join them onto a host and add
-the trailing slash themselves where needed.
+The aind-metadata-service host and the endpoint paths used across the package, plus the list of in
+vivo modalities that gates the acquisition supplement step. Each path is defined once here so that
+``JobSettings``, the fetch helpers in ``utils`` and the steps in ``supplement`` agree on it. Paths
+carry a leading slash and no trailing slash. Callers join them onto a host and add the trailing slash
+themselves where needed.
 """
+
+from aind_data_schema_models.modalities import Modality
 
 METADATA_SERVICE_URL = "http://aind-metadata-service"
 
@@ -22,3 +25,21 @@ PROCEDURES_BASE_URL = METADATA_SERVICE_URL + PROCEDURES_ENDPOINT
 INSTRUMENT_BASE_URL = METADATA_SERVICE_URL + INSTRUMENT_ENDPOINT
 LABTRACKS_SUBJECT_BASE_URL = METADATA_SERVICE_URL + LABTRACKS_SUBJECT_ENDPOINT
 INTENDED_MEASUREMENTS_BASE_URL = METADATA_SERVICE_URL + INTENDED_MEASUREMENTS_ENDPOINT
+
+# Modalities acquired from a living animal. The supplement step (weights, IACUC protocol) runs only
+# when data_description.modalities includes at least one of these.
+IN_VIVO_MODALITIES: frozenset[str] = frozenset(
+    modality.abbreviation
+    for modality in (
+        Modality.BEHAVIOR,
+        Modality.BEHAVIOR_VIDEOS,
+        Modality.ECEPHYS,
+        Modality.EMG,
+        Modality.FIB,
+        Modality.ISI,
+        Modality.MRI,
+        Modality.ONE_PHOTON,
+        Modality.POPHYS,
+        Modality.SLAP2,
+    )
+)
