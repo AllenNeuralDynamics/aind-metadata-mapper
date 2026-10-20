@@ -1,17 +1,21 @@
-"""Enrich acquisition metadata with data that exists at upload time but was not supplied by the rig.
+"""Populate acquisition metadata with data that exists at upload time but was not supplied by the rig.
 
-``GatherMetadataJob.run_job`` calls :func:`enrich_acquisition` once, after the core metadata files
+``GatherMetadataJob.run_job`` calls :func:`populate_acquisition` once, after the core metadata files
 are assembled and before the final validation. The same function is meant to be imported by
-migration scripts to back-fill existing records (see ``scripts/demo_enrichment.py``).
+migration scripts to back-fill existing records (see ``scripts/demo_populate_acquisition.py``).
 
-Enrichment contract. Every enricher must satisfy all of these:
+The step runs only when ``data_description.modalities`` includes at least one in vivo modality
+(``constants.IN_VIVO_MODALITIES``). Weights and IACUC protocols describe a living animal, so a
+post-mortem acquisition such as SPIM gets neither.
+
+Contract. Every step must satisfy all of these:
 
 1. Fills only fields that are currently ``None`` or absent. Never overwrites unless
    ``replace_existing=True``.
 2. If a value is already present and differs from the fetched value, logs a warning and keeps the
    existing value (unless ``replace_existing=True``).
 3. Touches only schema-optional fields. The rig's ``acquisition.json`` already validated, so nothing
-   an enricher adds can be required.
+   a step adds can be required.
 4. Fetches only through ``aind-metadata-service`` endpoints. No direct Dataverse or LabTracks table
    access.
 5. A failed or empty lookup is a warning, never an exception.
@@ -19,7 +23,7 @@ Enrichment contract. Every enricher must satisfy all of these:
    later.
 7. Not platform or task specific.
 
-Enrichers run in the order listed in ``ENRICHERS``:
+Steps run in the order listed in ``POPULATE_STEPS``:
 
 - :func:`add_subject_weights` fills ``subject_details.animal_weight_prior`` and
   ``subject_details.animal_weight_post`` from Waterlog
@@ -37,8 +41,12 @@ from urllib.parse import urlencode, urljoin
 from aind_data_schema.core.acquisition import AcquisitionSubjectDetails
 from pydantic import ValidationError
 
-from aind_metadata_mapper.constants import LABTRACKS_SUBJECT_ENDPOINT, MOUSE_WEIGHT_RECORDS_ENDPOINT
-from aind_metadata_mapper.models import EnrichmentSettings
+from aind_metadata_mapper.constants import (
+    IN_VIVO_MODALITIES,
+    LABTRACKS_SUBJECT_ENDPOINT,
+    MOUSE_WEIGHT_RECORDS_ENDPOINT,
+)
+from aind_metadata_mapper.models import PopulateAcquisitionSettings
 from aind_metadata_mapper.utils import (
     ensure_timezone,
     get_iacuc_protocol,
@@ -149,11 +157,11 @@ def add_subject_weights(
     except ValidationError as error:
         if raise_if_invalid:
             raise
-        logging.warning(f"Unable to enrich acquisition subject weights: {error}")
+        logging.warning(f"Unable to populate acquisition subject weights: {error}")
         return acquisition
     acquisition["subject_details"] = updated_details.model_dump(mode="json")
     if filled_fields:
-        logging.info(f"Enriched acquisition.subject_details {filled_fields} from Waterlog.")
+        logging.info(f"Populated acquisition.subject_details {filled_fields} from Waterlog.")
     return acquisition
 
 
@@ -179,7 +187,7 @@ def add_ethics_review_id(
     existing = acquisition.get("ethics_review_id")
     if not existing or replace_existing:
         acquisition["ethics_review_id"] = fetched
-        logging.info(f"Enriched acquisition.ethics_review_id with {fetched} from LabTracks.")
+        logging.info(f"Populated acquisition.ethics_review_id with {fetched} from LabTracks.")
     elif set(existing) != set(fetched):
         logging.warning(
             f"LabTracks ethics_review_id {fetched} differs from existing {existing}; retaining the existing value."
@@ -187,28 +195,40 @@ def add_ethics_review_id(
     return acquisition
 
 
-ENRICHERS: list[Callable[..., dict]] = [add_subject_weights, add_ethics_review_id]
+POPULATE_STEPS: list[Callable[..., dict]] = [add_subject_weights, add_ethics_review_id]
 
 
-def enrich_acquisition(
+def _modality_abbreviations(data_description: Optional[dict]) -> set[str]:
+    """Return the modality abbreviations listed in ``data_description``, given as dicts, models or strings."""
+    modalities = (data_description or {}).get("modalities") or []
+    return {m.get("abbreviation") if isinstance(m, dict) else getattr(m, "abbreviation", m) for m in modalities}
+
+
+def populate_acquisition(
     acquisition: Optional[dict],
+    data_description: Optional[dict],
     subject_id: str,
-    settings: EnrichmentSettings,
+    settings: PopulateAcquisitionSettings,
     metadata_service_url: str,
     raise_if_invalid: bool = False,
 ) -> Optional[dict]:
-    """Apply every enabled enricher to ``acquisition`` and return it.
+    """Apply every enabled step to ``acquisition`` and return it.
 
-    Returns ``acquisition`` unchanged when it is None, when ``settings.enabled`` is False, or when
-    ``subject_id`` is ``"calibration"`` (nothing to look up).
+    Returns ``acquisition`` unchanged when it is None, when ``settings.enabled`` is False, when
+    ``subject_id`` is ``"calibration"`` (nothing to look up), or when ``data_description.modalities``
+    has no in vivo modality (see ``IN_VIVO_MODALITIES``).
     """
     if acquisition is None or not settings.enabled:
         return acquisition
     if subject_id == "calibration":
-        logging.info("Skipping acquisition enrichment: subject_id is 'calibration'.")
+        logging.info("Skipping populate_acquisition: subject_id is 'calibration'.")
         return acquisition
-    for enricher in ENRICHERS:
-        acquisition = enricher(
+    modalities = _modality_abbreviations(data_description)
+    if not modalities & IN_VIVO_MODALITIES:
+        logging.info(f"Skipping populate_acquisition: no in vivo modality in {sorted(map(str, modalities))}.")
+        return acquisition
+    for step in POPULATE_STEPS:
+        acquisition = step(
             acquisition=acquisition,
             subject_id=subject_id,
             metadata_service_url=metadata_service_url,

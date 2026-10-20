@@ -1,4 +1,4 @@
-"""Tests for the acquisition enrichment module."""
+"""Tests for populate_acquisition and its steps."""
 
 import copy
 import json
@@ -8,10 +8,12 @@ from pathlib import Path
 from unittest.mock import patch
 
 from aind_data_schema.core.acquisition import AcquisitionSubjectDetails
+from aind_data_schema_models.modalities import Modality
 from pydantic import ValidationError
 
-from aind_metadata_mapper.enrichment import add_ethics_review_id, add_subject_weights, enrich_acquisition
-from aind_metadata_mapper.models import EnrichmentSettings
+from aind_metadata_mapper.constants import IN_VIVO_MODALITIES
+from aind_metadata_mapper.models import PopulateAcquisitionSettings
+from aind_metadata_mapper.populate_acquisition import add_ethics_review_id, add_subject_weights, populate_acquisition
 
 SERVICE_URL = "http://test-service.com"
 SUBJECT_ID = "123456"
@@ -28,6 +30,10 @@ FIXTURE_WEIGHT_RECORDS = [
     {"weight": 20.5, "weight_datetime": "2025-09-17T17:00:00Z"},
     {"weight": 21.5, "weight_datetime": "2025-09-17T18:45:00Z"},
 ]
+IN_VIVO_DATA_DESCRIPTION = {"modalities": [{"name": "Behavior", "abbreviation": "behavior"}]}
+POST_MORTEM_DATA_DESCRIPTION = {
+    "modalities": [{"name": "Selective plane illumination microscopy", "abbreviation": "SPIM"}]
+}
 
 
 def mouse_acquisition(**subject_details) -> dict:
@@ -40,7 +46,7 @@ def mouse_acquisition(**subject_details) -> dict:
 
 
 def fixture_acquisition() -> dict:
-    """Return the valid v2 acquisition fixture with ethics_review_id removed so enrichment has to fill it."""
+    """Return the valid v2 acquisition fixture with ethics_review_id removed so populate_acquisition has to fill it."""
     with (V2_METADATA_DIR / "acquisition.json").open() as resource:
         acquisition = json.load(resource)
     del acquisition["ethics_review_id"]
@@ -50,7 +56,7 @@ def fixture_acquisition() -> dict:
 class TestAddSubjectWeights(unittest.TestCase):
     """Tests add_subject_weights"""
 
-    def enrich(self, acquisition, raise_if_invalid=False, replace_existing=False):
+    def populate(self, acquisition, raise_if_invalid=False, replace_existing=False):
         """Run add_subject_weights against the test service for a mouse subject."""
         return add_subject_weights(
             acquisition=acquisition,
@@ -60,7 +66,7 @@ class TestAddSubjectWeights(unittest.TestCase):
             replace_existing=replace_existing,
         )
 
-    @patch("aind_metadata_mapper.enrichment.metadata_service_helper")
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper")
     def test_uses_nearest_captures_on_each_side_of_start(self, mock_metadata_service_helper):
         """Test that captures after acquisition start are post weights."""
         acquisition = mouse_acquisition()
@@ -73,7 +79,7 @@ class TestAddSubjectWeights(unittest.TestCase):
             {"weight": 25.0, "weight_datetime": "2023-01-01T14:00:00Z"},
         ]
 
-        result = self.enrich(acquisition)
+        result = self.populate(acquisition)
 
         self.assertIs(result, acquisition)
         details = AcquisitionSubjectDetails.model_validate(acquisition["subject_details"])
@@ -82,20 +88,20 @@ class TestAddSubjectWeights(unittest.TestCase):
         self.assertEqual(acquisition["subject_details"], details.model_dump(mode="json"))
         mock_metadata_service_helper.assert_called_once_with(WEIGHT_RECORDS_URL)
 
-    @patch("aind_metadata_mapper.enrichment.metadata_service_helper", return_value=[])
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper", return_value=[])
     def test_without_matching_captures_warns_and_does_not_add_weights(self, mock_metadata_service_helper):
         """Test that no available captures leave pre and post weights unset, with a warning."""
         acquisition = mouse_acquisition()
 
         with self.assertLogs(level="WARNING") as captured:
-            result = self.enrich(acquisition)
+            result = self.populate(acquisition)
 
         self.assertIs(result, acquisition)
         self.assertEqual(acquisition["subject_details"], {"mouse_platform_name": "wheel"})
         self.assertIn("No Waterlog weight records", captured.output[0])
         mock_metadata_service_helper.assert_called_once()
 
-    @patch("aind_metadata_mapper.enrichment.metadata_service_helper")
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper")
     def test_without_acquisition_end_uses_start(self, mock_metadata_service_helper):
         """Test that acquisition end is unnecessary and exact start matches are pre weights."""
         acquisition = mouse_acquisition()
@@ -107,25 +113,25 @@ class TestAddSubjectWeights(unittest.TestCase):
             {"weight": 23.0, "weight_datetime": "2023-01-01T12:00:01Z"},
         ]
 
-        self.enrich(acquisition)
+        self.populate(acquisition)
 
         details = AcquisitionSubjectDetails.model_validate(acquisition["subject_details"])
         self.assertEqual(details.animal_weight_prior, 22)
         self.assertEqual(details.animal_weight_post, 23)
         mock_metadata_service_helper.assert_called_once()
 
-    @patch("aind_metadata_mapper.enrichment.metadata_service_helper")
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper")
     def test_without_acquisition_start_does_not_query(self, mock_metadata_service_helper):
         """Test that an acquisition without a start time is ignored."""
         acquisition = {"acquisition_end_time": "2023-01-01T13:00:00+00:00"}
 
-        result = self.enrich(acquisition)
+        result = self.populate(acquisition)
 
         self.assertIs(result, acquisition)
         self.assertEqual(acquisition, {"acquisition_end_time": "2023-01-01T13:00:00+00:00"})
         mock_metadata_service_helper.assert_not_called()
 
-    @patch("aind_metadata_mapper.enrichment.metadata_service_helper")
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper")
     def test_ignores_invalid_service_records(self, mock_metadata_service_helper):
         """Test that malformed weight records are skipped."""
         acquisition = mouse_acquisition()
@@ -135,23 +141,23 @@ class TestAddSubjectWeights(unittest.TestCase):
             {"weight": 22.0, "weight_datetime": "not-a-datetime"},
         ]
 
-        self.enrich(acquisition)
+        self.populate(acquisition)
 
         self.assertEqual(acquisition["subject_details"], {"mouse_platform_name": "wheel"})
         mock_metadata_service_helper.assert_called_once()
 
-    @patch("aind_metadata_mapper.enrichment.metadata_service_helper", return_value={"records": []})
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper", return_value={"records": []})
     def test_ignores_non_list_service_response(self, mock_metadata_service_helper):
         """Test that a non-list service response leaves subject weights unchanged."""
         acquisition = mouse_acquisition()
 
-        self.enrich(acquisition)
+        self.populate(acquisition)
 
         self.assertEqual(acquisition["subject_details"], {"mouse_platform_name": "wheel"})
         mock_metadata_service_helper.assert_called_once()
 
     @patch("logging.warning")
-    @patch("aind_metadata_mapper.enrichment.metadata_service_helper")
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper")
     def test_preserves_existing_values_and_warns_on_mismatch(self, mock_metadata_service_helper, mock_warning):
         """Test that existing weights are preserved and mismatches are warned about."""
         acquisition = mouse_acquisition(animal_weight_prior=19.0, animal_weight_post=25.0)
@@ -160,7 +166,7 @@ class TestAddSubjectWeights(unittest.TestCase):
             {"weight": 24.0, "weight_datetime": "2023-01-01T13:00:01Z"},
         ]
 
-        self.enrich(acquisition)
+        self.populate(acquisition)
 
         details = AcquisitionSubjectDetails.model_validate(acquisition["subject_details"])
         self.assertEqual(details.animal_weight_prior, 19)
@@ -169,7 +175,7 @@ class TestAddSubjectWeights(unittest.TestCase):
         self.assertIn("animal_weight_prior", mock_warning.call_args_list[0].args[0])
         self.assertIn("animal_weight_post", mock_warning.call_args_list[1].args[0])
 
-    @patch("aind_metadata_mapper.enrichment.metadata_service_helper")
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper")
     def test_replace_existing_overwrites_existing_values(self, mock_metadata_service_helper):
         """Test that replace_existing=True overwrites existing weights with the fetched values."""
         acquisition = mouse_acquisition(animal_weight_prior=19.0, animal_weight_post=25.0)
@@ -178,14 +184,14 @@ class TestAddSubjectWeights(unittest.TestCase):
             {"weight": 24.0, "weight_datetime": "2023-01-01T13:00:01Z"},
         ]
 
-        self.enrich(acquisition, replace_existing=True)
+        self.populate(acquisition, replace_existing=True)
 
         details = AcquisitionSubjectDetails.model_validate(acquisition["subject_details"])
         self.assertEqual(details.animal_weight_prior, 21)
         self.assertEqual(details.animal_weight_post, 24)
 
     @patch("logging.warning")
-    @patch("aind_metadata_mapper.enrichment.metadata_service_helper")
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper")
     def test_does_not_warn_when_existing_values_match(self, mock_metadata_service_helper, mock_warning):
         """Test that matching existing weights are retained without warnings."""
         acquisition = mouse_acquisition(animal_weight_prior="21.1", animal_weight_post="24.1")
@@ -194,13 +200,13 @@ class TestAddSubjectWeights(unittest.TestCase):
             {"weight": 24.1, "weight_datetime": "2023-01-01T13:00:01Z"},
         ]
 
-        self.enrich(acquisition)
+        self.populate(acquisition)
 
         self.assertEqual(acquisition["subject_details"]["animal_weight_prior"], "21.1")
         self.assertEqual(acquisition["subject_details"]["animal_weight_post"], "24.1")
         mock_warning.assert_not_called()
 
-    @patch("aind_metadata_mapper.enrichment.metadata_service_helper")
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper")
     def test_invalid_details_respect_raise_if_invalid(self, mock_metadata_service_helper):
         """Invalid modified acquisition details must not be saved."""
         mock_metadata_service_helper.return_value = [
@@ -216,15 +222,15 @@ class TestAddSubjectWeights(unittest.TestCase):
                     }
                     if strict:
                         with self.assertRaises(ValidationError):
-                            self.enrich(acquisition, raise_if_invalid=True)
+                            self.populate(acquisition, raise_if_invalid=True)
                     else:
                         with self.assertLogs(level="WARNING"):
-                            self.enrich(acquisition)
+                            self.populate(acquisition)
                     self.assertIs(acquisition["subject_details"], details)
         self.assertEqual(mock_metadata_service_helper.call_count, 6)
 
     @patch.object(AcquisitionSubjectDetails, "model_validate")
-    @patch("aind_metadata_mapper.enrichment.metadata_service_helper", return_value=[])
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper", return_value=[])
     def test_does_not_validate_incoming_details(self, mock_metadata_service_helper, mock_validate):
         """Incoming details are not validated when there are no weights to apply."""
         acquisition = {
@@ -232,12 +238,12 @@ class TestAddSubjectWeights(unittest.TestCase):
             "acquisition_end_time": "2023-01-01T13:00:00Z",
             "subject_details": {},
         }
-        self.assertIs(self.enrich(acquisition, raise_if_invalid=True), acquisition)
+        self.assertIs(self.populate(acquisition, raise_if_invalid=True), acquisition)
         self.assertEqual(acquisition["subject_details"], {})
         mock_metadata_service_helper.assert_called_once()
         mock_validate.assert_not_called()
 
-    @patch("aind_metadata_mapper.enrichment.metadata_service_helper")
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper")
     def test_invalid_weight_respects_raise_if_invalid(self, mock_metadata_service_helper):
         """Invalid fetched weights leave both acquisition weights unchanged."""
         mock_metadata_service_helper.return_value = [
@@ -254,14 +260,14 @@ class TestAddSubjectWeights(unittest.TestCase):
                 }
                 if strict:
                     with self.assertRaises(ValidationError):
-                        self.enrich(acquisition, raise_if_invalid=True)
+                        self.populate(acquisition, raise_if_invalid=True)
                 else:
                     with self.assertLogs(level="WARNING"):
-                        self.enrich(acquisition)
+                        self.populate(acquisition)
                 self.assertIs(acquisition["subject_details"], details)
                 self.assertEqual(details, {"mouse_platform_name": "wheel"})
 
-    @patch("aind_metadata_mapper.enrichment.metadata_service_helper")
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper")
     def test_mismatch_warns_if_invalid(self, mock_metadata_service_helper):
         """Weight conflicts are warnings even in strict validation mode."""
         details = {"mouse_platform_name": "wheel", "animal_weight_post": 25}
@@ -275,7 +281,7 @@ class TestAddSubjectWeights(unittest.TestCase):
             {"weight": 24, "weight_datetime": "2023-01-01T13:00:00Z"},
         ]
         with self.assertLogs(level="WARNING") as captured:
-            self.enrich(acquisition, raise_if_invalid=True)
+            self.populate(acquisition, raise_if_invalid=True)
         self.assertIn("animal_weight_post", captured.output[0])
         validated_details = AcquisitionSubjectDetails.model_validate(acquisition["subject_details"])
         self.assertEqual(validated_details.animal_weight_prior, 21)
@@ -283,7 +289,7 @@ class TestAddSubjectWeights(unittest.TestCase):
         self.assertEqual(details, {"mouse_platform_name": "wheel", "animal_weight_post": 25})
 
     @patch("logging.warning")
-    @patch("aind_metadata_mapper.enrichment.metadata_service_helper")
+    @patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper")
     def test_datetime_errors_are_not_validation_errors(self, mock_metadata_service_helper, mock_warning):
         """Datetime parsing errors propagate independently of the validation flag."""
         for strict in (False, True):
@@ -294,7 +300,7 @@ class TestAddSubjectWeights(unittest.TestCase):
                     "subject_details": {"mouse_platform_name": "wheel"},
                 }
                 with self.assertRaises(ValueError):
-                    self.enrich(acquisition, raise_if_invalid=strict)
+                    self.populate(acquisition, raise_if_invalid=strict)
         mock_warning.assert_not_called()
         mock_metadata_service_helper.assert_not_called()
 
@@ -302,7 +308,7 @@ class TestAddSubjectWeights(unittest.TestCase):
 class TestAddEthicsReviewId(unittest.TestCase):
     """Tests add_ethics_review_id"""
 
-    def enrich(self, acquisition, replace_existing=False):
+    def populate(self, acquisition, replace_existing=False):
         """Run add_ethics_review_id against the test service for a mouse subject."""
         return add_ethics_review_id(
             acquisition=acquisition,
@@ -311,71 +317,79 @@ class TestAddEthicsReviewId(unittest.TestCase):
             replace_existing=replace_existing,
         )
 
-    @patch("aind_metadata_mapper.enrichment.get_iacuc_protocol", return_value="2414")
+    @patch("aind_metadata_mapper.populate_acquisition.get_iacuc_protocol", return_value="2414")
     def test_fills_when_missing(self, mock_get_iacuc_protocol):
         """Test that a missing, None, or empty ethics_review_id is filled from LabTracks."""
         for acquisition in ({}, {"ethics_review_id": None}, {"ethics_review_id": []}):
             with self.subTest(acquisition=acquisition):
-                result = self.enrich(acquisition)
+                result = self.populate(acquisition)
                 self.assertIs(result, acquisition)
                 self.assertEqual(acquisition["ethics_review_id"], ["2414"])
         mock_get_iacuc_protocol.assert_called_with(SUBJECT_ID, base_url=LABTRACKS_URL)
 
-    @patch("aind_metadata_mapper.enrichment.get_iacuc_protocol", return_value=None)
+    @patch("aind_metadata_mapper.populate_acquisition.get_iacuc_protocol", return_value=None)
     def test_warns_and_leaves_acquisition_unchanged_when_not_found(self, mock_get_iacuc_protocol):
         """Test that a failed or empty lookup is a warning and changes nothing."""
         acquisition = {"subject_id": SUBJECT_ID}
         with self.assertLogs(level="WARNING") as captured:
-            result = self.enrich(acquisition)
+            result = self.populate(acquisition)
         self.assertIs(result, acquisition)
         self.assertEqual(acquisition, {"subject_id": SUBJECT_ID})
         self.assertIn("ethics_review_id", captured.output[0])
 
     @patch("logging.warning")
-    @patch("aind_metadata_mapper.enrichment.get_iacuc_protocol", return_value="2414")
+    @patch("aind_metadata_mapper.populate_acquisition.get_iacuc_protocol", return_value="2414")
     def test_keeps_matching_existing_value_without_warning(self, mock_get_iacuc_protocol, mock_warning):
         """Test that a matching existing value is kept silently."""
         acquisition = {"ethics_review_id": ["2414"]}
-        self.enrich(acquisition)
+        self.populate(acquisition)
         self.assertEqual(acquisition["ethics_review_id"], ["2414"])
         mock_warning.assert_not_called()
 
-    @patch("aind_metadata_mapper.enrichment.get_iacuc_protocol", return_value="2414")
+    @patch("aind_metadata_mapper.populate_acquisition.get_iacuc_protocol", return_value="2414")
     def test_keeps_mismatched_existing_value_and_warns(self, mock_get_iacuc_protocol):
         """Test that a mismatched existing value is kept with a warning rather than raising."""
         acquisition = {"ethics_review_id": ["9999"]}
         with self.assertLogs(level="WARNING") as captured:
-            self.enrich(acquisition)
+            self.populate(acquisition)
         self.assertEqual(acquisition["ethics_review_id"], ["9999"])
         self.assertIn("9999", captured.output[0])
         self.assertIn("2414", captured.output[0])
 
-    @patch("aind_metadata_mapper.enrichment.get_iacuc_protocol", return_value="2414")
+    @patch("aind_metadata_mapper.populate_acquisition.get_iacuc_protocol", return_value="2414")
     def test_replace_existing_overwrites(self, mock_get_iacuc_protocol):
         """Test that replace_existing=True overwrites a mismatched existing value."""
         acquisition = {"ethics_review_id": ["9999"]}
-        self.enrich(acquisition, replace_existing=True)
+        self.populate(acquisition, replace_existing=True)
         self.assertEqual(acquisition["ethics_review_id"], ["2414"])
 
 
-@patch("aind_metadata_mapper.enrichment.get_iacuc_protocol", return_value="2414")
-@patch("aind_metadata_mapper.enrichment.metadata_service_helper", return_value=FIXTURE_WEIGHT_RECORDS)
-class TestEnrichAcquisition(unittest.TestCase):
-    """Tests enrich_acquisition"""
+@patch("aind_metadata_mapper.populate_acquisition.get_iacuc_protocol", return_value="2414")
+@patch("aind_metadata_mapper.populate_acquisition.metadata_service_helper", return_value=FIXTURE_WEIGHT_RECORDS)
+class TestPopulateAcquisition(unittest.TestCase):
+    """Tests populate_acquisition"""
 
-    def enrich(self, acquisition, settings=None, subject_id=FIXTURE_SUBJECT_ID, **kwargs):
-        """Run enrich_acquisition against the test service."""
-        return enrich_acquisition(
+    def populate(
+        self,
+        acquisition,
+        settings=None,
+        subject_id=FIXTURE_SUBJECT_ID,
+        data_description=IN_VIVO_DATA_DESCRIPTION,
+        **kwargs,
+    ):
+        """Run populate_acquisition against the test service, for an in vivo acquisition unless told otherwise."""
+        return populate_acquisition(
             acquisition=acquisition,
+            data_description=data_description,
             subject_id=subject_id,
-            settings=settings or EnrichmentSettings(),
+            settings=settings or PopulateAcquisitionSettings(),
             metadata_service_url=SERVICE_URL,
             **kwargs,
         )
 
     def test_returns_none_for_missing_acquisition(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
         """Test that a None acquisition is returned as is and no service is called."""
-        self.assertIsNone(self.enrich(None))
+        self.assertIsNone(self.populate(None))
         mock_metadata_service_helper.assert_not_called()
         mock_get_iacuc_protocol.assert_not_called()
 
@@ -384,7 +398,7 @@ class TestEnrichAcquisition(unittest.TestCase):
         acquisition = fixture_acquisition()
         expected = copy.deepcopy(acquisition)
 
-        result = self.enrich(acquisition, EnrichmentSettings(enabled=False))
+        result = self.populate(acquisition, PopulateAcquisitionSettings(enabled=False))
 
         self.assertIs(result, acquisition)
         self.assertEqual(acquisition, expected)
@@ -392,24 +406,70 @@ class TestEnrichAcquisition(unittest.TestCase):
         mock_get_iacuc_protocol.assert_not_called()
 
     def test_skips_calibration_subject(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
-        """Test that a calibration run skips enrichment entirely: no service calls, no changes."""
+        """Test that a calibration run skips populate_acquisition entirely: no service calls, no changes."""
         acquisition = {"subject_id": "calibration", "acquisition_start_time": "2023-01-01T12:00:00+00:00"}
         expected = copy.deepcopy(acquisition)
 
         with patch("logging.warning") as mock_warning:
-            self.assertIs(self.enrich(acquisition, subject_id="calibration"), acquisition)
+            self.assertIs(self.populate(acquisition, subject_id="calibration"), acquisition)
 
         self.assertEqual(acquisition, expected)
         mock_warning.assert_not_called()
         mock_metadata_service_helper.assert_not_called()
         mock_get_iacuc_protocol.assert_not_called()
 
-    def test_runs_all_enrichers_and_is_idempotent(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
-        """Test that both enrichers run, both fields land, and a second pass changes nothing and warns about nothing."""
+    def test_in_vivo_modalities_are_the_agreed_set(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
+        """Test that the in vivo list is exactly the agreed modalities, so a change to it is deliberate."""
+        self.assertEqual(
+            IN_VIVO_MODALITIES,
+            {"behavior", "behavior-videos", "ecephys", "EMG", "fib", "ISI", "MRI", "one-photon", "pophys", "slap2"},
+        )
+
+    def test_skips_without_in_vivo_modality(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
+        """Test that a post-mortem acquisition (SPIM only) is left untouched, with no service calls and an INFO log."""
+        acquisition = fixture_acquisition()
+        expected = copy.deepcopy(acquisition)
+
+        with self.assertLogs(level="INFO") as captured:
+            result = self.populate(acquisition, data_description=POST_MORTEM_DATA_DESCRIPTION)
+
+        self.assertIs(result, acquisition)
+        self.assertEqual(acquisition, expected)
+        self.assertIn("no in vivo modality", captured.output[0])
+        self.assertIn("SPIM", captured.output[0])
+        mock_metadata_service_helper.assert_not_called()
+        mock_get_iacuc_protocol.assert_not_called()
+
+    def test_skips_without_data_description(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
+        """Test that a missing or empty data description means no lookups."""
+        for data_description in (None, {}, {"modalities": []}):
+            with self.subTest(data_description=data_description):
+                acquisition = fixture_acquisition()
+                expected = copy.deepcopy(acquisition)
+                self.assertIs(self.populate(acquisition, data_description=data_description), acquisition)
+                self.assertEqual(acquisition, expected)
+        mock_metadata_service_helper.assert_not_called()
+        mock_get_iacuc_protocol.assert_not_called()
+
+    def test_runs_when_any_modality_is_in_vivo(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
+        """Test that one in vivo modality next to a post-mortem one is enough, however the modalities are given."""
+        for modalities in (
+            [{"name": "Selective plane illumination microscopy", "abbreviation": "SPIM"}, {"abbreviation": "ecephys"}],
+            ["SPIM", "ecephys"],
+            [Modality.SPIM, Modality.ECEPHYS],
+        ):
+            with self.subTest(modalities=modalities):
+                acquisition = fixture_acquisition()
+                self.populate(acquisition, data_description={"modalities": modalities})
+                self.assertEqual(acquisition["ethics_review_id"], ["2414"])
+        self.assertEqual(mock_get_iacuc_protocol.call_count, 3)
+
+    def test_runs_all_steps_and_is_idempotent(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
+        """Test that both steps run, both fields land, and a second pass changes nothing and warns about nothing."""
         acquisition = fixture_acquisition()
 
         with patch("logging.warning") as mock_warning:
-            first = self.enrich(acquisition)
+            first = self.populate(acquisition)
 
         self.assertIs(first, acquisition)
         self.assertEqual(acquisition["subject_details"]["animal_weight_prior"], "20.5")
@@ -421,17 +481,17 @@ class TestEnrichAcquisition(unittest.TestCase):
 
         expected = copy.deepcopy(acquisition)
         with patch("logging.warning") as mock_warning:
-            second = self.enrich(acquisition)
+            second = self.populate(acquisition)
         self.assertEqual(second, expected)
         mock_warning.assert_not_called()
 
-    def test_replace_existing_is_passed_to_enrichers(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
-        """Test that settings.replace_existing makes every enricher overwrite existing values."""
+    def test_replace_existing_is_passed_to_steps(self, mock_metadata_service_helper, mock_get_iacuc_protocol):
+        """Test that settings.replace_existing makes every step overwrite existing values."""
         acquisition = fixture_acquisition()
         acquisition["subject_details"].update(animal_weight_prior="19.0", animal_weight_post="25.0")
         acquisition["ethics_review_id"] = ["9999"]
 
-        self.enrich(acquisition, EnrichmentSettings(replace_existing=True))
+        self.populate(acquisition, PopulateAcquisitionSettings(replace_existing=True))
 
         self.assertEqual(acquisition["subject_details"]["animal_weight_prior"], "20.5")
         self.assertEqual(acquisition["subject_details"]["animal_weight_post"], "21.5")

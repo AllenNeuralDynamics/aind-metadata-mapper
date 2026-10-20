@@ -9,7 +9,7 @@ The mapper:
 - Fetches intended measurements and implanted fiber info from metadata service (optional)
 
 Note: ethics_review_id (IACUC protocol) is not in the extracted metadata. It is filled by
-aind_metadata_mapper.enrichment after acquisitions are merged in the GatherMetadataJob.
+aind_metadata_mapper.populate_acquisition after acquisitions are merged in the GatherMetadataJob.
 """
 
 import json
@@ -276,7 +276,7 @@ class FIPMapper(MapperJob):
             Must be non-empty after fetching.
         ethics_review_id : Optional[List[str]], optional
             IACUC protocol number(s). Passed straight through when provided. If None, it is
-            left unmapped and filled by aind_metadata_mapper.enrichment after acquisitions
+            left unmapped and filled by aind_metadata_mapper.populate_acquisition after acquisitions
             are merged in the GatherMetadataJob.
         acquisition_type : Optional[str], optional
             Descriptive acquisition type. Passed straight through when provided. If None,
