@@ -9,7 +9,7 @@ from unittest.mock import patch
 import aind_data_schema.core.instrument as instrument
 
 from aind_metadata_mapper.cli.instrument import Get, Upload
-from aind_metadata_mapper.utils import INSTRUMENT_BASE_URL
+from aind_metadata_mapper.constants import INSTRUMENT_BASE_URL
 
 INSTRUMENT_JSON = Path(__file__).parent.parent / "resources" / "v2_metadata" / "instrument.json"
 

@@ -188,9 +188,9 @@ You probably shouldn't be modifying these.
 - **`metadata_service_url`** (str, default=`http://aind-metadata-service`): Base URL of the metadata service.
 
 - **`metadata_service_*_endpoint`** (str): API endpoints for specific metadata types:
-  - `metadata_service_subject_endpoint` (default="/api/v2/subject/")
-  - `metadata_service_procedures_endpoint` (default="/api/v2/procedures/")
-  - `metadata_service_instrument_endpoint` (default="/api/v2/instrument/")
+  - `metadata_service_subject_endpoint` (default="/api/v2/subject")
+  - `metadata_service_procedures_endpoint` (default="/api/v2/procedures")
+  - `metadata_service_instrument_endpoint` (default="/api/v2/instrument")
 
 ### Instrument CLI
 

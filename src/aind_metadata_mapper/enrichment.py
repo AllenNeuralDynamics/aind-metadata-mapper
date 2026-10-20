@@ -37,6 +37,7 @@ from urllib.parse import urlencode, urljoin
 from aind_data_schema.core.acquisition import AcquisitionSubjectDetails
 from pydantic import ValidationError
 
+from aind_metadata_mapper.constants import LABTRACKS_SUBJECT_ENDPOINT, MOUSE_WEIGHT_RECORDS_ENDPOINT
 from aind_metadata_mapper.models import EnrichmentSettings
 from aind_metadata_mapper.utils import (
     ensure_timezone,
@@ -44,9 +45,6 @@ from aind_metadata_mapper.utils import (
     metadata_service_helper,
     normalize_utc_timezone,
 )
-
-MOUSE_WEIGHT_RECORDS_ENDPOINT = "/api/v2/dataverse/mouse_weight_records/"
-LABTRACKS_SUBJECT_ENDPOINT = "/api/v2/labtracks/subject"
 
 
 def _parse_weight_record(weight_record: Any) -> Optional[tuple[datetime, Any]]:
@@ -130,7 +128,7 @@ def add_subject_weights(
     acquisition_start = ensure_timezone(acquisition_start_naive)
 
     acquisition_datetime = acquisition_start_naive.replace(tzinfo=None).isoformat(timespec="seconds")
-    weight_records_url = urljoin(metadata_service_url, f"{MOUSE_WEIGHT_RECORDS_ENDPOINT}{subject_id}")
+    weight_records_url = urljoin(metadata_service_url, f"{MOUSE_WEIGHT_RECORDS_ENDPOINT}/{subject_id}")
     weight_records_url = f"{weight_records_url}?{urlencode({'acquisition_datetime': acquisition_datetime})}"
     weight_records = metadata_service_helper(weight_records_url)
 

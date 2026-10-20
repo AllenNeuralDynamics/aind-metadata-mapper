@@ -16,6 +16,7 @@ from pathlib import Path
 import requests
 from aind_data_schema.core.acquisition import Acquisition
 
+from aind_metadata_mapper.constants import METADATA_SERVICE_URL
 from aind_metadata_mapper.enrichment import enrich_acquisition
 from aind_metadata_mapper.models import EnrichmentSettings
 
@@ -61,7 +62,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--metadata-service-url",
-        default="http://aind-metadata-service",
+        default=METADATA_SERVICE_URL,
         help="Where the enrichers fetch weights and the IACUC protocol from. Requires the Allen network.",
     )
     parser.add_argument(

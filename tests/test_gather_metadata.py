@@ -574,7 +574,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         result = self.job.get_subject()
 
         self.assertEqual(result, {"subject_id": "123456"})
-        mock_get_subject.assert_called_once_with("123456", base_url="http://test-service.com/api/v2/subject/")
+        mock_get_subject.assert_called_once_with("123456", base_url="http://test-service.com/api/v2/subject")
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
     @patch("aind_metadata_mapper.gather_metadata.get_subject")
@@ -701,7 +701,7 @@ class TestGatherMetadataJob(unittest.TestCase):
         result = self.job.get_procedures(subject_id="123456")
 
         self.assertEqual(result, {"procedures": "data"})
-        mock_get_procedures.assert_called_once_with("123456", base_url="http://test-service.com/api/v2/procedures/")
+        mock_get_procedures.assert_called_once_with("123456", base_url="http://test-service.com/api/v2/procedures")
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
     @patch("aind_metadata_mapper.gather_metadata.get_procedures")
@@ -1275,7 +1275,7 @@ class TestGatherMetadataJob(unittest.TestCase):
 
         self.assertIsNotNone(result)
         self.assertEqual(result["subject_id"], "123456")
-        mock_get_procedures.assert_called_once_with("123456", base_url="http://test-service.com/api/v2/procedures/")
+        mock_get_procedures.assert_called_once_with("123456", base_url="http://test-service.com/api/v2/procedures")
 
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
     @patch.object(GatherMetadataJob, "_get_file_from_user_defined_directory")
