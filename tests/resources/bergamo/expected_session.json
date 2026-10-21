@@ -1,6 +1,6 @@
 {
    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/session.py",
-   "schema_version": "1.0.0",
+   "schema_version": "1.1.2",
    "protocol_id": [],
    "experimenter_full_name": [
       "John Apple"
@@ -91,7 +91,12 @@
             "fov_scale_factor_unit": "um/pixel",
             "frame_rate": "19.4073",
             "frame_rate_unit": "hertz",
-            "targeted_structure": "Primary Motor Cortex"
+            "targeted_structure": {
+               "atlas": "CCFv3",
+               "name": "Isocortex",
+               "acronym": "Isocortex",
+               "id": "315"
+            }
          },
          "mri_scans": [],
          "stream_modalities": [
@@ -138,7 +143,12 @@
                "index": 0,
                "imaging_depth": 200,
                "imaging_depth_unit": "micrometer",
-               "targeted_structure": "Primary Motor Cortex",
+               "targeted_structure": {
+                  "atlas": "CCFv3",
+                  "name": "Isocortex",
+                  "acronym": "Isocortex",
+                  "id": "315"
+               },
                "fov_coordinate_ml": "1.5",
                "fov_coordinate_ap": "1.5",
                "fov_coordinate_unit": "micrometer",
@@ -211,7 +221,12 @@
                "index": 0,
                "imaging_depth": 200,
                "imaging_depth_unit": "micrometer",
-               "targeted_structure": "Primary Motor Cortex",
+               "targeted_structure": {
+                  "atlas": "CCFv3",
+                  "name": "Isocortex",
+                  "acronym": "Isocortex",
+                  "id": "315"
+               },
                "fov_coordinate_ml": "1.5",
                "fov_coordinate_ap": "1.5",
                "fov_coordinate_unit": "micrometer",
@@ -292,7 +307,12 @@
                "index": 0,
                "imaging_depth": 200,
                "imaging_depth_unit": "micrometer",
-               "targeted_structure": "Primary Motor Cortex",
+               "targeted_structure": {
+                  "atlas": "CCFv3",
+                  "name": "Isocortex",
+                  "acronym": "Isocortex",
+                  "id": "315"
+               },
                "fov_coordinate_ml": "1.5",
                "fov_coordinate_ap": "1.5",
                "fov_coordinate_unit": "micrometer",
@@ -373,7 +393,12 @@
                "index": 0,
                "imaging_depth": 200,
                "imaging_depth_unit": "micrometer",
-               "targeted_structure": "Primary Motor Cortex",
+               "targeted_structure": {
+                  "atlas": "CCFv3",
+                  "name": "Isocortex",
+                  "acronym": "Isocortex",
+                  "id": "315"
+               },
                "fov_coordinate_ml": "1.5",
                "fov_coordinate_ap": "1.5",
                "fov_coordinate_unit": "micrometer",
@@ -451,7 +476,12 @@
                "index": 0,
                "imaging_depth": 200,
                "imaging_depth_unit": "micrometer",
-               "targeted_structure": "Primary Motor Cortex",
+               "targeted_structure": {
+                  "atlas": "CCFv3",
+                  "name": "Isocortex",
+                  "acronym": "Isocortex",
+                  "id": "315"
+               },
                "fov_coordinate_ml": "1.5",
                "fov_coordinate_ap": "1.5",
                "fov_coordinate_unit": "micrometer",
@@ -502,6 +532,7 @@
          "stimulus_device_names": [],
          "speaker_config": null,
          "light_source_config": [],
+         "objects_in_arena": null,
          "output_parameters": {
             "tiff_files": [
                "spont_00001.tif",
@@ -566,6 +597,7 @@
          ],
          "speaker_config": null,
          "light_source_config": [],
+         "objects_in_arena": null,
          "output_parameters": {
             "tiff_files": [
                "neuron2_00001.tif",
@@ -619,6 +651,7 @@
          ],
          "speaker_config": null,
          "light_source_config": [],
+         "objects_in_arena": null,
          "output_parameters": {
             "tiff_files": [
                "neuron2_22_00001.tif",
@@ -700,6 +733,7 @@
          ],
          "speaker_config": null,
          "light_source_config": [],
+         "objects_in_arena": null,
          "output_parameters": {
             "tiff_files": [
                "neuron2_2_00001.tif",
@@ -2303,6 +2337,7 @@
                "excitation_power_unit": "percent"
             }
          ],
+         "objects_in_arena": null,
          "output_parameters": {
             "tiff_files": [
                "neuron2_slm4_00001.tif",

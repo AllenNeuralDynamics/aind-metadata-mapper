@@ -3,6 +3,8 @@
 from decimal import Decimal
 from typing import List, Literal, Optional
 
+from aind_data_schema_models.brain_atlas import CCFStructure
+
 from aind_metadata_mapper.core_models import BaseJobSettings
 
 
@@ -16,7 +18,7 @@ class JobSettings(BaseJobSettings):
     subject_id: str
     imaging_laser_wavelength: int  # user defined
     fov_imaging_depth: int
-    fov_targeted_structure: str
+    fov_targeted_structure: CCFStructure.ONE_OF
     notes: Optional[str]
 
     # fields with default values

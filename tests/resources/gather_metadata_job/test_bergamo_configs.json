@@ -9,7 +9,12 @@
    "subject_id": "12345",
    "imaging_laser_wavelength": 920,
    "fov_imaging_depth": 200,
-   "fov_targeted_structure": "Primary Motor Cortex",
+   "fov_targeted_structure": {
+     "atlas": "CCFv3",
+     "name": "Isocortex",
+     "acronym": "Isocortex",
+     "id": "315"
+   },
    "notes": "test upload",
    "mouse_platform_name": "Standard Mouse Tube",
    "active_mouse_platform": false,
