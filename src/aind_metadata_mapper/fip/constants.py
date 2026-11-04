@@ -28,8 +28,6 @@ CAMERA_EXPOSURE_TIME_MICROSECONDS_PER_MILLISECOND = 1000
 ROI_KEYWORD_GREEN = "green"
 ROI_KEYWORD_ISO = "iso"
 ROI_KEYWORD_RED = "red"
-ROI_KEYWORD_ROI = "_roi"
-ROI_KEYWORD_BACKGROUND = "_background"
 
 # ==============================================================================
 # Default Values

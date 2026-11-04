@@ -64,14 +64,16 @@ The mapper expects input JSON with this structure:
 - `data_stream_metadata[0].start_time` → `acquisition_start_time`
 - `data_stream_metadata[0].end_time` → `acquisition_end_time`
 
-`ethics_review_id` is not mapped here. The GatherMetadataJob fills it from LabTracks via `aind_metadata_mapper.enrichment` after acquisitions are merged.
+`ethics_review_id` is not mapped here. The GatherMetadataJob fills it from LabTracks via `aind_metadata_mapper.populate_acquisition` after acquisitions are merged.
 
 ### Hardware Devices
 - `rig.light_source_*` → LED configurations with wavelengths (415nm, 470nm, 565nm)
 - `rig.camera_green_iso` → Green/Isosbestic detector
 - `rig.camera_red` → Red detector
 - `rig.cuttlefish_fip` → Controller device
-- `rig.roi_settings` → Determines fiber count and creates patch cord configurations
+- `rig.roi_settings` → Not currently read; may be null. Camera identifiers come from `rig.camera_*` and patch cords from the implanted fibers in the procedures record. The per-stream `data_stream_metadata[*].regions` recorded by aind-physiology-fip 0.3.5 and later are accepted but not read yet either.
+
+The mapper assumes each ROI is drawn over its index-matched patch cord (ROI 0 over Patch Cord 0, and so on), that both cameras are in use, and that every implanted fiber has an active patch cord. The implanted fiber list comes from the subject's procedures record via the metadata service (see `_parse_implanted_fibers`), which describes the surgery rather than what was plugged in during the session. If the rig recorded which patch cords were in use and which fiber each was connected to, patch cord configurations and connections could be built from that record instead. That would be more accurate, and simpler: the procedures lookup (`_parse_implanted_fibers`, `get_procedures`), the `Fiber_<n>` name parsing (`_extract_fiber_index`), the implanted-fiber error handling in `transform`, and the index-matching assumption behind `_build_connections` and `_get_active_devices` would all go away, with connections read from the rig record rather than synthesized. The per-stream `regions` recorded by aind-physiology-fip 0.3.5 and later do not yet carry that mapping (see [Aind.Physiology.Fip #40](https://github.com/AllenNeuralDynamics/Aind.Physiology.Fip/issues/40)).
 
 ### Channels
 Each fiber gets three channels:
