@@ -25,6 +25,7 @@
               "scanimage_scanfield_z": -185,
               "channel": "Channel2",
               "calculated_power_mw": 80.24,
+              "intended_depth": 175,
               "registration": {
                 "pixel_size_um": 0.78
               }
@@ -36,6 +37,7 @@
               "scanimage_scanfield_z": -95,
               "channel": "Channel1",
               "calculated_power_mw": 168.4,
+              "intended_depth": 250,
               "registration": {
                 "pixel_size_um": 0.78
               }

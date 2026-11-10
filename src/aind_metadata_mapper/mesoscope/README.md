@@ -26,6 +26,13 @@ Every plane requires `calculated_power_mw`, mapped to `Plane.power` or
 negative, or boolean values fail mapping; zero is valid. Legacy percent-power
 fields are ignored.
 
+Every plane requires `intended_depth`, the operator-entered depth in
+micrometers that stays constant across sessions. The schema has no plane field
+for it, so it is recorded in the data stream notes as
+`FOV <plane_index>: intended_depth_um=<value>`. `Plane.depth` remains the
+measured `targeted_depth`. Missing, null, empty, malformed, nonfinite,
+negative, or boolean values fail mapping; zero is valid.
+
 Naive timestamps are interpreted in `America/Los_Angeles`, while aware timestamps
 are preserved. Acquisition bounds span the recorded stream and stimulus epochs
 without altering their individual timestamps.

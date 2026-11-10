@@ -56,6 +56,8 @@ class TestMesoscopeMapper(unittest.TestCase):
         self.assertIn("Face camera assembly", stream.active_devices)
         self.assertIn("magnification=16x", stream.notes)
         self.assertIn("scanimage_roi_index=0", stream.notes)
+        self.assertIn("FOV 0: intended_depth_um=175,", stream.notes)
+        self.assertIn("FOV 1: intended_depth_um=250,", stream.notes)
 
         imaging_config = stream.configurations[0]
         self.assertEqual(imaging_config.device_name, "MESO.2")
@@ -112,6 +114,7 @@ class TestMesoscopeMapper(unittest.TestCase):
                         "targeted_structure_id": "VISam",
                         "scanimage_roi_index": 1,
                         "calculated_power_mw": 90.5,
+                        "intended_depth": 325,
                         "registration": {"pixel_size_um": 0.78},
                     },
                     {
@@ -119,6 +122,7 @@ class TestMesoscopeMapper(unittest.TestCase):
                         "targeted_structure_id": "VISpm",
                         "scanimage_roi_index": 1,
                         "calculated_power_mw": 91.5,
+                        "intended_depth": 400,
                         "registration": {"pixel_size_um": 0.78},
                     },
                 ],
@@ -185,6 +189,56 @@ class TestMesoscopeMapper(unittest.TestCase):
 
                     self.assertIn(
                         f"imaging_plane_groups[0].imaging_planes[{plane_index}].calculated_power_mw",
+                        str(context.exception),
+                    )
+
+    def test_transform_keeps_targeted_depth_as_plane_depth(self) -> None:
+        """Intended depth should not replace the measured targeted depth."""
+        metadata = copy.deepcopy(self.fixture)
+        group = metadata["session_metadata"]["platform"]["imaging_plane_groups"][0]
+        group["imaging_planes"][0]["intended_depth"] = "160"
+        group["imaging_planes"][1]["intended_depth"] = 0
+
+        acquisition = self.mapper.transform(metadata)
+        stream = acquisition.data_streams[0]
+
+        self.assertEqual(stream.configurations[0].images[0].planes[0].depth, 175.0)
+        self.assertIn("FOV 0: intended_depth_um=160,", stream.notes)
+        self.assertIn("FOV 1: intended_depth_um=0,", stream.notes)
+
+    def test_transform_rejects_missing_intended_depth(self) -> None:
+        """Mapper should require per-plane intended depth."""
+        for plane_index in (0, 1):
+            with self.subTest(plane_index=plane_index):
+                metadata = copy.deepcopy(self.fixture)
+                metadata["session_metadata"]["platform"]["imaging_plane_groups"][0]["imaging_planes"][plane_index].pop(
+                    "intended_depth"
+                )
+
+                with self.assertRaises(ValueError) as context:
+                    self.mapper.transform(metadata)
+
+                self.assertIn(
+                    f"imaging_plane_groups[0].imaging_planes[{plane_index}].intended_depth",
+                    str(context.exception),
+                )
+
+    def test_transform_rejects_invalid_intended_depth_values(self) -> None:
+        """Mapper should reject malformed or negative intended depths."""
+        invalid_values = (None, "", "abc", float("nan"), float("inf"), -1, False, True)
+        for plane_index in (0, 1):
+            for invalid_value in invalid_values:
+                with self.subTest(plane_index=plane_index, invalid_value=invalid_value):
+                    metadata = copy.deepcopy(self.fixture)
+                    metadata["session_metadata"]["platform"]["imaging_plane_groups"][0]["imaging_planes"][plane_index][
+                        "intended_depth"
+                    ] = invalid_value
+
+                    with self.assertRaises(ValueError) as context:
+                        self.mapper.transform(metadata)
+
+                    self.assertIn(
+                        f"imaging_plane_groups[0].imaging_planes[{plane_index}].intended_depth",
                         str(context.exception),
                     )
 
@@ -494,8 +548,8 @@ class TestMesoscopeMapper(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.mapper._get_image_dimensions([])
 
-    def test_single_plane_group_maps_plane_without_notes(self) -> None:
-        """Single-plane groups should emit Plane and allow empty stream notes."""
+    def test_single_plane_group_maps_plane_with_intended_depth_note(self) -> None:
+        """Single-plane groups should emit Plane and a note with only intended depth."""
         metadata = copy.deepcopy(self.fixture)
         metadata["job_settings"].pop("magnification")
         plane = metadata["session_metadata"]["platform"]["imaging_plane_groups"][0]["imaging_planes"][0]
@@ -510,7 +564,7 @@ class TestMesoscopeMapper(unittest.TestCase):
         self.assertEqual(type(image_plane).__name__, "Plane")
         self.assertEqual(image_plane.power, 80.24)
         self.assertEqual(image_plane.power_unit, PowerUnit.MW)
-        self.assertIsNone(acquisition.data_streams[0].notes)
+        self.assertEqual(acquisition.data_streams[0].notes, "FOV 0: intended_depth_um=175")
 
     def test_empty_plane_groups_raise(self) -> None:
         """Mapper should reject empty plane group lists."""
