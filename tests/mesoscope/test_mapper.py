@@ -566,6 +566,48 @@ class TestMesoscopeMapper(unittest.TestCase):
         self.assertEqual(image_plane.power_unit, PowerUnit.MW)
         self.assertEqual(acquisition.data_streams[0].notes, "FOV 0: intended_depth_um=175")
 
+    def test_reticle_registration_recorded_in_stream_notes(self) -> None:
+        """Reticle-image stage position and rotations should lead the stream notes."""
+        metadata = copy.deepcopy(self.fixture)
+        metadata["session_metadata"]["platform"]["registration"] = {
+            "reticle_image": {
+                "stage_x": 607.0,
+                "stage_y": 107147.0,
+                "stage_z": 27877.0,
+                "rotation": 28.204,
+                "stage_image_rotation": 24.508,
+                "pixel_size_um": 0.4962,
+            },
+            "surface_vasculature": {"stage_x": 1.0, "rotation": 2.0},
+        }
+
+        notes = self.mapper.transform(metadata).data_streams[0].notes
+
+        self.assertTrue(
+            notes.startswith(
+                "Reticle registration: stage_x=607, stage_y=107147, stage_z=27877, "
+                "rotation=28.204, stage_image_rotation=24.508; FOV 0: "
+            )
+        )
+
+    def test_reticle_registration_skips_null_values(self) -> None:
+        """Null reticle fields should be omitted and an all-null block emits no note."""
+        metadata = copy.deepcopy(self.fixture)
+        platform = metadata["session_metadata"]["platform"]
+        platform["registration"] = {"reticle_image": {"stage_x": 1.5, "stage_image_rotation": None}}
+        self.assertEqual(self.mapper._build_reticle_registration_note(platform), "Reticle registration: stage_x=1.5")
+
+        platform["registration"] = {"reticle_image": {"stage_image_rotation": None}}
+        notes = self.mapper.transform(metadata).data_streams[0].notes
+        self.assertTrue(notes.startswith("FOV 0: "))
+
+    def test_reticle_registration_rejects_invalid_values(self) -> None:
+        """Nonnumeric or nonfinite reticle values should fail mapping."""
+        for value in ("abc", "nan"):
+            platform = {"registration": {"reticle_image": {"stage_x": value}}}
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                self.mapper._build_reticle_registration_note(platform)
+
     def test_empty_plane_groups_raise(self) -> None:
         """Mapper should reject empty plane group lists."""
         metadata = copy.deepcopy(self.fixture)
