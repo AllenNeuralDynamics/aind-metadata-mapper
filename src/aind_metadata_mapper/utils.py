@@ -7,12 +7,17 @@ import time
 from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
-from urllib.parse import urljoin
+from urllib.parse import urlencode, urljoin
 
 import aind_data_schema.core.instrument as instrument
 import requests
 
 from aind_metadata_mapper.constants import (
+    DATAVERSE_MICE_TABLE,
+    DATAVERSE_MOUSE_ID_COLUMN,
+    DATAVERSE_PROJECT_COLUMN,
+    DATAVERSE_PROJECT_NAME_KEY,
+    DATAVERSE_TABLES_BASE_URL,
     INSTRUMENT_BASE_URL,
     INTENDED_MEASUREMENTS_BASE_URL,
     LABTRACKS_SUBJECT_BASE_URL,
@@ -214,6 +219,38 @@ def get_iacuc_protocol(subject_id: str | int, base_url: str = LABTRACKS_SUBJECT_
     except Exception as e:
         logger.warning(f"Unexpected error fetching IACUC protocol for subject {subject_id}: {e}")
         return None
+
+
+def get_project_name(subject_id: str | int, base_url: str = DATAVERSE_TABLES_BASE_URL) -> Optional[str]:
+    """Fetch the project assigned to a subject in the Dataverse mice table.
+
+    The metadata service exposes Dataverse tables through a passthrough endpoint that takes an OData
+    filter and a list of columns. The table and column names are defined in ``constants`` because
+    they will change when the Dataverse production environment is migrated.
+
+    Parameters
+    ----------
+    subject_id : str or int
+        The subject ID to query. An int is cast to str automatically.
+    base_url : str
+        Base URL for the Dataverse tables endpoint. Defaults to DATAVERSE_TABLES_BASE_URL.
+
+    Returns
+    -------
+    Optional[str]
+        The project name, or None if the subject is not in the mice table, has no project assigned,
+        or the request fails.
+    """
+    query = urlencode(
+        {
+            "filter": f"{DATAVERSE_MOUSE_ID_COLUMN} eq '{subject_id}'",
+            "columns": f"{DATAVERSE_MOUSE_ID_COLUMN},{DATAVERSE_PROJECT_COLUMN}",
+        }
+    )
+    rows = metadata_service_helper(f"{base_url}/{DATAVERSE_MICE_TABLE}?{query}")
+    if not rows or not isinstance(rows, list):
+        return None
+    return rows[0].get(DATAVERSE_PROJECT_NAME_KEY)
 
 
 def get_intended_measurements(

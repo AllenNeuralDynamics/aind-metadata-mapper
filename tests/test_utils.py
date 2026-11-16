@@ -15,9 +15,14 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import aind_data_schema.core.instrument as instrument
 import requests
 
-import aind_data_schema.core.instrument as instrument
+from aind_metadata_mapper.constants import (
+    DATAVERSE_MICE_TABLE,
+    DATAVERSE_MOUSE_ID_COLUMN,
+    DATAVERSE_PROJECT_NAME_KEY,
+)
 from aind_metadata_mapper.utils import (
     check_existing_instrument,
     check_instrument_id,
@@ -26,6 +31,7 @@ from aind_metadata_mapper.utils import (
     get_instrument,
     get_intended_measurements,
     get_procedures,
+    get_project_name,
     get_subject,
     metadata_service_helper,
     normalize_utc_timezone,
@@ -642,6 +648,31 @@ class TestGetIacucProtocol(unittest.TestCase):
         """No records (helper returns None) yields None."""
         mock_helper.return_value = None
         self.assertIsNone(get_iacuc_protocol("x"))
+
+
+class TestGetProjectName(unittest.TestCase):
+    """Tests for get_project_name function."""
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_returns_project_name(self, mock_helper):
+        """The project's display name is returned for a mouse with a project."""
+        mock_helper.return_value = [{DATAVERSE_MOUSE_ID_COLUMN: "123456", DATAVERSE_PROJECT_NAME_KEY: "Fake Project"}]
+        self.assertEqual(get_project_name("123456"), "Fake Project")
+        url = mock_helper.call_args.args[0]
+        self.assertIn(f"/{DATAVERSE_MICE_TABLE}?", url)
+        self.assertIn("123456", url)
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_no_project_assigned_returns_none(self, mock_helper):
+        """A mouse in the table with no project yields None."""
+        mock_helper.return_value = [{DATAVERSE_MOUSE_ID_COLUMN: "123456"}]
+        self.assertIsNone(get_project_name("123456"))
+
+    @patch("aind_metadata_mapper.utils.metadata_service_helper")
+    def test_no_records_returns_none(self, mock_helper):
+        """No records (mouse not in the table, or the request failed) yields None."""
+        mock_helper.return_value = None
+        self.assertIsNone(get_project_name("123456"))
 
     @patch("aind_metadata_mapper.utils.metadata_service_helper")
     def test_dict_error_body_returns_none(self, mock_helper):

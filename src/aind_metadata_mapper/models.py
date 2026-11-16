@@ -21,9 +21,12 @@ from aind_metadata_mapper.constants import (
 class DataDescriptionSettings(BaseSettings):
     """Settings specific to data description metadata"""
 
-    project_name: str = Field(
-        default=...,
-        description=("Project name. Will be used to download metadata from a service."),
+    project_name: Optional[str] = Field(
+        default=None,
+        description=(
+            "Project name. Will be used to download metadata from a service. If not provided, it is "
+            "looked up by subject_id in the Dataverse mice table."
+        ),
     )
     modalities: List[Modality.ONE_OF] = Field(
         default=...,
