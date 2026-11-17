@@ -27,11 +27,7 @@ class TestJobSettings(unittest.TestCase):
         new_processing = Processing(data_processes=[])
         # Neither s3_location nor data_asset_id are set
         with self.assertRaises(ValueError):
-            JobSettings(
-                docdb_host="http://example.com",
-                docdb_version="v2",
-                processing=new_processing
-            )
+            JobSettings(docdb_host="http://example.com", docdb_version="v2", processing=new_processing)
         # Both s3_location nor data_asset_id are set
         with self.assertRaises(ValueError):
             JobSettings(
@@ -39,15 +35,16 @@ class TestJobSettings(unittest.TestCase):
                 docdb_version="v2",
                 processing=new_processing,
                 s3_location="s3://example/asset",
-                data_asset_id="123-456"
+                data_asset_id="123-456",
             )
         job_settings = JobSettings(
-                docdb_host="http://example.com",
-                docdb_version="v2",
-                processing=new_processing,
-                s3_location="s3://example/asset",
-            )
+            docdb_host="http://example.com",
+            docdb_version="v2",
+            processing=new_processing,
+            s3_location="s3://example/asset",
+        )
         self.assertIsNotNone(job_settings.s3_location)
+
 
 class TestAppendProcessingJob(unittest.TestCase):
     """Tests for methods in AppendProcessingJob class."""
@@ -63,7 +60,7 @@ class TestAppendProcessingJob(unittest.TestCase):
                     process_type=ProcessName.COMPRESSION,
                     code=Code(url="www.example.com/code", version="0"),
                     experimenters=["person 1"],
-                    start_date_time=datetime(2026,10,11,1,2,3),
+                    start_date_time=datetime(2026, 10, 11, 1, 2, 3),
                     stage=ProcessStage.PROCESSING,
                 )
             ]
@@ -80,13 +77,14 @@ class TestAppendProcessingJob(unittest.TestCase):
             docdb_host="http://example.com",
             docdb_version="v2",
         )
-        old_processing_example = Processing(data_processes=[
+        old_processing_example = Processing(
+            data_processes=[
                 DataProcess(
                     name="ecephys compression",
                     process_type=ProcessName.COMPRESSION,
                     code=Code(url="www.example.com/code2", version="0"),
                     experimenters=["person 2"],
-                    start_date_time=datetime(2026,10,10,1,2,3),
+                    start_date_time=datetime(2026, 10, 10, 1, 2, 3),
                     stage=ProcessStage.PROCESSING,
                 )
             ]
@@ -94,7 +92,7 @@ class TestAppendProcessingJob(unittest.TestCase):
         docdb_example_record = {
             "_id": "123456",
             "location": "s3://example/asset",
-            "processing": old_processing_example.model_dump(mode="json")
+            "processing": old_processing_example.model_dump(mode="json"),
         }
         cls.job_with_location = AppendProcessingJob(settings=job_settings_with_location)
         cls.job_with_id = AppendProcessingJob(settings=job_settings_with_asset_id)
@@ -131,9 +129,7 @@ class TestAppendProcessingJob(unittest.TestCase):
     def test_merge_processing_record(self):
         """Tests _merge_processing_record method."""
         old_docdb_record = self.docdb_record
-        updated_processing = self.job_with_location._merge_processing_record(
-            docdb_record=old_docdb_record
-        )
+        updated_processing = self.job_with_location._merge_processing_record(docdb_record=old_docdb_record)
         self.assertEqual(2, len(updated_processing["processing"]["data_processes"]))
 
     @patch("aind_data_access_api.document_db.MetadataDbClient")
@@ -151,10 +147,7 @@ class TestAppendProcessingJob(unittest.TestCase):
     @patch("aind_metadata_mapper.append_processing_job.AppendProcessingJob._merge_processing_record")
     @patch("aind_metadata_mapper.append_processing_job.AppendProcessingJob._update_processing_record")
     def test_run_job(
-            self,
-            mock_update_record: MagicMock,
-            mock_merge_record: MagicMock,
-            mock_fetch_processing_record: MagicMock
+        self, mock_update_record: MagicMock, mock_merge_record: MagicMock, mock_fetch_processing_record: MagicMock
     ):
         """Tests run_job method."""
         mock_fetch_processing_record.return_value = self.docdb_record
