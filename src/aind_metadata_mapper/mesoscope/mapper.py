@@ -253,19 +253,27 @@ class MesoscopeMapper(MapperJob):
             ],
         )
 
-    def _get_plane_power(self, _group: dict, plane: dict, group_index: int, plane_index: int) -> float:
-        """Resolve per-plane calculated power in milliwatts."""
-        field_name = f"imaging_plane_groups[{group_index}].imaging_planes[{plane_index}].calculated_power_mw"
-        value = plane.get("calculated_power_mw")
+    def _parse_plane_nonnegative_float(self, plane: dict, key: str, group_index: int, plane_index: int) -> float:
+        """Parse a required finite, nonnegative numeric plane field."""
+        field_name = f"imaging_plane_groups[{group_index}].imaging_planes[{plane_index}].{key}"
+        value = plane.get(key)
         if isinstance(value, bool):
             raise ValueError(f"{field_name} must be a finite, nonnegative number.")
         try:
-            power = float(value)
+            parsed = float(value)
         except (TypeError, ValueError) as exc:
             raise ValueError(f"{field_name} must be a finite, nonnegative number.") from exc
-        if not isfinite(power) or power < 0:
+        if not isfinite(parsed) or parsed < 0:
             raise ValueError(f"{field_name} must be a finite, nonnegative number.")
-        return power
+        return parsed
+
+    def _get_plane_power(self, _group: dict, plane: dict, group_index: int, plane_index: int) -> float:
+        """Resolve per-plane calculated power in milliwatts."""
+        return self._parse_plane_nonnegative_float(plane, "calculated_power_mw", group_index, plane_index)
+
+    def _get_intended_depth(self, plane: dict, group_index: int, plane_index: int) -> float:
+        """Resolve the operator-entered intended plane depth in micrometers."""
+        return self._parse_plane_nonnegative_float(plane, "intended_depth", group_index, plane_index)
 
     def _build_plane(
         self, group: dict, plane: dict, group_index: int, plane_index: int, global_index: int
@@ -298,16 +306,14 @@ class MesoscopeMapper(MapperJob):
         )
 
     def _build_stream_notes(
-        self, plane_index: int, scanimage_roi_index: Any, magnification: Optional[str]
-    ) -> Optional[str]:
+        self, plane_index: int, intended_depth: float, scanimage_roi_index: Any, magnification: Optional[str]
+    ) -> str:
         """Build stream notes for plane metadata without dedicated schema fields."""
-        extras = []
+        extras = [f"intended_depth_um={intended_depth:g}"]
         if magnification not in (None, ""):
             extras.append(f"magnification={magnification}")
         if scanimage_roi_index is not None:
             extras.append(f"scanimage_roi_index={scanimage_roi_index}")
-        if not extras:
-            return None
         return f"FOV {plane_index}: " + ", ".join(extras)
 
     def _build_imaging_config(
@@ -316,7 +322,7 @@ class MesoscopeMapper(MapperJob):
         platform: dict,
         job_settings: dict,
         imaging_device_name: str,
-    ) -> tuple[ImagingConfig, Optional[str]]:
+    ) -> tuple[ImagingConfig, str]:
         """Build ImagingConfig and any stream notes."""
         dimensions = self._get_image_dimensions(tiff_header)
         translation = Translation(translation=self._get_fov_translation_mm(job_settings))
@@ -348,9 +354,14 @@ class MesoscopeMapper(MapperJob):
                         dimensions_unit=SizeUnit.PX,
                     )
                 )
-                note = self._build_stream_notes(global_plane_index, plane.get("scanimage_roi_index"), magnification)
-                if note is not None:
-                    notes.append(note)
+                notes.append(
+                    self._build_stream_notes(
+                        global_plane_index,
+                        self._get_intended_depth(plane, group_index, plane_index),
+                        plane.get("scanimage_roi_index"),
+                        magnification,
+                    )
+                )
                 global_plane_index += 1
 
         imaging_config = ImagingConfig(
@@ -364,7 +375,7 @@ class MesoscopeMapper(MapperJob):
                 )
             ),
         )
-        return imaging_config, "; ".join(notes) if notes else None
+        return imaging_config, "; ".join(notes)
 
     def _build_performance_metrics(self, epoch: dict) -> Optional[PerformanceMetrics]:
         """Build performance metrics when present."""
