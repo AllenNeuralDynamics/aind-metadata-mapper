@@ -21,8 +21,10 @@ explicit `job_settings.instrument_id` value for `Acquisition.instrument_id` and
 preserves the platform or session alias such as `MESO.2` for
 `ImagingConfig.device_name`, matching current production upgrade outputs.
 
-Plane power preserves the legacy percent values. Calculated milliwatt values
-are not mapped.
+Every plane requires `calculated_power_mw`, mapped to `Plane.power` or
+`CoupledPlane.power` in milliwatts. Missing, null, empty, malformed, nonfinite,
+negative, or boolean values fail mapping; zero is valid. Legacy percent-power
+fields are ignored.
 
 Naive timestamps are interpreted in `America/Los_Angeles`, while aware timestamps
 are preserved. Acquisition bounds span the recorded stream and stimulus epochs
@@ -47,6 +49,7 @@ overwriting any values that are already supplied by extraction.
 The nested `Unknown Detector`, `Laser`, and `Ophys Channel` values are
 deliberate scientific compatibility defaults inherited from the legacy mapper
 and upgrader outputs. Detector and channel-index inference are not included.
+Calibration-table delivery and provenance are deferred.
 
 ## Sources
 
