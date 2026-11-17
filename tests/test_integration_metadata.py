@@ -717,10 +717,14 @@ class TestIntegrationMetadata(unittest.TestCase):
                 )
             )
 
-        with patch.object(test_job, "_write_json_file") as mock_write:
+        with (
+            patch.object(test_job, "_write_json_file") as mock_write,
+            patch.object(test_job, "_backup_generated_file") as mock_backup,
+        ):
             test_job.get_instrument_from_service()
 
         mock_get_instrument.assert_called_once()
+        mock_backup.assert_called_once_with("instrument_fib.json")
         mock_write.assert_called_once()
         call_kwargs = mock_write.call_args[1]
         self.assertEqual(call_kwargs["filename"], "instrument_fib.json")

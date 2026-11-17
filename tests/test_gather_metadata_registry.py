@@ -67,9 +67,11 @@ class TestGatherMetadataJob(unittest.TestCase):
             data_description_settings=data_desc_settings,
         )
         job = GatherMetadataJob(settings=settings)
-        job._run_mappers_for_acquisition()
-        # Check that run_job was called for the registry key
+        with mock.patch.object(job, "_backup_generated_file") as mock_backup:
+            job._run_mappers_for_acquisition()
+        # Check that run_job was called for the registry key and its output was backed up
         mock_run_job.assert_called_once()
+        mock_backup.assert_called_once_with(f"acquisition_{self.mapper_name}.json")
         args, kwargs = mock_run_job.call_args
         # The job_settings argument should have correct input/output paths
         self.assertEqual(str(args[1].input_filepath), str(self.input_path))
