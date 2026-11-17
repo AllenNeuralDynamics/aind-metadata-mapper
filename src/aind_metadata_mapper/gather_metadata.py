@@ -24,12 +24,14 @@ from aind_data_schema_models.data_name_patterns import DataLevel
 from pydantic import ValidationError
 
 from aind_metadata_mapper.base import MapperJobSettings
+from aind_metadata_mapper.constants import DATAVERSE_TABLES_ENDPOINT
 from aind_metadata_mapper.mapper_registry import registry
 from aind_metadata_mapper.models import JobSettings
 from aind_metadata_mapper.populate_acquisition import populate_acquisition
 from aind_metadata_mapper.utils import (
     get_instrument,
     get_procedures,
+    get_project_name,
     get_subject,
     metadata_service_helper,
     normalize_utc_timezone,
@@ -188,6 +190,47 @@ class GatherMetadataJob:
         unique_investigators.sort(key=lambda x: x.get("name", ""))
         return unique_investigators
 
+    def resolve_project_name(self, subject_id: str) -> str:
+        """Return the project name for the data description, checked against Dataverse.
+
+        If the settings do not include a project_name, it is looked up by subject in the Dataverse
+        mice table. If they do, it must match the Dataverse project when one is assigned. This catches
+        a mouse that was moved to a new project before the request was updated.
+
+        Parameters
+        ----------
+        subject_id : str
+            The subject to look up.
+
+        Returns
+        -------
+        str
+            The project name to use.
+
+        Raises
+        ------
+        ValueError
+            If no project_name was provided and none could be found in Dataverse, or if the provided
+            project_name does not match the one in Dataverse.
+        """
+        provided = self.settings.data_description_settings.project_name
+        base_url = urljoin(self.settings.metadata_service_url, DATAVERSE_TABLES_ENDPOINT)
+        from_dataverse = get_project_name(subject_id, base_url=base_url)
+        if provided is None:
+            if from_dataverse is None:
+                raise ValueError(
+                    f"project_name was not provided and could not be found for subject {subject_id} in the "
+                    "Dataverse mice table (no project assigned, subject not in the table, or the lookup failed)."
+                )
+            logging.info(f"Using project_name '{from_dataverse}' from Dataverse for subject {subject_id}.")
+            return from_dataverse
+        if from_dataverse is not None and from_dataverse != provided:
+            raise ValueError(
+                f"project_name '{provided}' does not match the project assigned to subject {subject_id} in "
+                f"Dataverse ('{from_dataverse}')."
+            )
+        return provided
+
     def build_data_description(self, acquisition_start_time: str, subject_id: str) -> dict:
         """Build data description metadata"""
         logging.info("Gathering data description metadata.")
@@ -201,6 +244,10 @@ class GatherMetadataJob:
         acquisition_start_time = normalize_utc_timezone(acquisition_start_time)  # remove when we're past Python 3.11
         creation_time = datetime.fromisoformat(acquisition_start_time)
         logging.info(f"Using acquisition start time: {creation_time}")
+
+        # Fill in or check the project name against Dataverse. get_funding and get_investigators read
+        # it from the settings, so write the resolved value back there.
+        self.settings.data_description_settings.project_name = self.resolve_project_name(subject_id)
 
         # Get funding information
         funding_source = self.get_funding()
