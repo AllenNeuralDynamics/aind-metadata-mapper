@@ -344,6 +344,7 @@ class GatherMetadataJob:
                     mapper = mapper_cls()
                     mapper.run_job(job_settings)
                     logging.info(f"Ran mapper '{mapper_name}' for {input_filename} -> {output_filename}")
+                    self._backup_generated_file(output_filename)
                 except Exception as e:
                     logging.error(f"Error running mapper '{mapper_name}': {e}")
                     if self.settings.raise_if_mapper_errors:
@@ -475,11 +476,13 @@ class GatherMetadataJob:
             if instrument:
                 modality_abbreviations = [mod.abbreviation for mod in instrument.modalities]
                 instrument_suffix = "_".join(modality_abbreviations)
+                instrument_filename = f"instrument_{instrument_suffix}.json"
                 self._write_json_file(
-                    filename=f"instrument_{instrument_suffix}.json",
+                    filename=instrument_filename,
                     contents=instrument.model_dump(mode="json"),
                     output_dir=False,
                 )
+                self._backup_generated_file(instrument_filename)
 
     def get_instrument(self) -> Optional[dict]:
         """Get instrument metadata"""
@@ -579,6 +582,8 @@ class GatherMetadataJob:
             "quality_control",
             "model",
         ]
+        # Mapper inputs (e.g. fip.json) are consumed by _run_mappers_for_acquisition, so back them up too
+        core_patterns += [f"{mapper_name}.json" for mapper_name in registry.keys()]
 
         # Create backup directory
         backup_dir = os.path.join(self.settings.output_dir, "original_metadata", "uploaded_json")
@@ -605,6 +610,21 @@ class GatherMetadataJob:
             logging.info(f"Backed up {len(copied_files)} original metadata files to {backup_dir}")
         else:
             logging.debug("No original metadata files found to backup.")
+
+    def _backup_generated_file(self, filename: str) -> None:
+        """
+        Copy a file this job wrote into metadata_dir (a mapper's acquisition_<mapper>.json or a service-fetched
+        instrument_*.json) to original_metadata/generated_json so the inputs to the later merge are preserved.
+        """
+        # Generated files are written next to the uploaded ones, see _write_json_file(output_dir=False)
+        source_dir = self.settings.metadata_dir or self.settings.output_dir
+        backup_dir = os.path.join(self.settings.output_dir, "original_metadata", "generated_json")
+        try:
+            os.makedirs(backup_dir, exist_ok=True)
+            shutil.copy2(os.path.join(source_dir, filename), os.path.join(backup_dir, filename))
+            logging.info(f"Backed up generated metadata file: {filename}")
+        except Exception as e:
+            logging.warning(f"Failed to back up generated metadata file {filename}: {e}")
 
     def _construct_metadata(self, core_metadata: Dict[str, Any]) -> Metadata:
         """
@@ -814,8 +834,9 @@ class GatherMetadataJob:
     def run_job(self) -> None:
         """Run job"""
         # Phases, in order:
-        #   1. Back up the original metadata files.
-        #   2. Get acquisition (exact match, or run mappers and merge).
+        #   1. Back up the uploaded metadata files (core files and mapper inputs).
+        #   2. Get acquisition (exact match, or run mappers and merge). Files the job generates along
+        #      the way (mapper outputs, service-fetched instruments) are backed up as they are written.
         #   3. Derive and validate acquisition_start_time and subject_id.
         #   4. Build data_description.
         #   5. Add core metadata: subject, procedures, instrument, processing, quality_control, model.

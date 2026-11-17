@@ -1263,6 +1263,47 @@ class TestGatherMetadataJob(unittest.TestCase):
             self.job.copy_original_metadata_files()
             mock_warning.assert_called_once_with("Failed to copy subject.json: Permission denied")
 
+    @patch("os.listdir")
+    @patch("os.path.exists")
+    @patch("os.makedirs")
+    @patch("shutil.copy2")
+    def test_copy_original_metadata_files_includes_mapper_inputs(
+        self, mock_copy, mock_makedirs, mock_exists, mock_listdir
+    ):
+        """Test copy_original_metadata_files backs up mapper inputs (<mapper>.json) with the uploaded files"""
+        mock_exists.return_value = True
+        mock_listdir.return_value = ["acquisition_vrforaging.json", "fip.json", "other_file.json"]
+
+        with patch("logging.info"):
+            self.job.copy_original_metadata_files()
+
+        copied = [os.path.basename(call[0][0]) for call in mock_copy.call_args_list]
+        self.assertEqual(sorted(copied), ["acquisition_vrforaging.json", "fip.json"])
+
+    @patch("os.makedirs")
+    @patch("shutil.copy2")
+    def test_backup_generated_file(self, mock_copy, mock_makedirs):
+        """Test _backup_generated_file copies from metadata_dir into original_metadata/generated_json"""
+        with patch("logging.info"):
+            self.job._backup_generated_file("acquisition_fip.json")
+
+        backup_dir = os.path.join("/test/output", "original_metadata", "generated_json")
+        mock_makedirs.assert_called_once_with(backup_dir, exist_ok=True)
+        mock_copy.assert_called_once_with(
+            os.path.join("/test/metadata", "acquisition_fip.json"), os.path.join(backup_dir, "acquisition_fip.json")
+        )
+
+    @patch("os.makedirs")
+    @patch("shutil.copy2")
+    def test_backup_generated_file_copy_error(self, mock_copy, mock_makedirs):
+        """Test _backup_generated_file logs a warning instead of raising when the copy fails"""
+        mock_copy.side_effect = FileNotFoundError("missing")
+
+        with patch("logging.warning") as mock_warning:
+            self.job._backup_generated_file("acquisition_fip.json")
+
+        mock_warning.assert_called_once_with("Failed to back up generated metadata file acquisition_fip.json: missing")
+
     # Tests for procedures merging
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
     @patch("aind_metadata_mapper.gather_metadata.get_procedures")
