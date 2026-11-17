@@ -4,7 +4,9 @@ Each JobClass must inherit from MapperJob in base.py and accept a JobSettings su
 """
 
 from aind_metadata_mapper.fip.mapper import FIPMapper
+from aind_metadata_mapper.mesoscope.mapper import MesoscopeMapper
 
 registry = {
     "fip": FIPMapper,
+    "mesoscope": MesoscopeMapper,
 }
