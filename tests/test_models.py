@@ -30,6 +30,11 @@ class TestJobSettings(unittest.TestCase):
         expected_modalities = [Modality.ECEPHYS, Modality.BEHAVIOR]
         self.assertEqual(expected_modalities, job_settings.data_description_settings.modalities)
 
+    def test_project_name_is_optional(self):
+        """Tests that project_name may be omitted, to be looked up in Dataverse by the gather job."""
+        data_desc_settings = DataDescriptionSettings(modalities=[Modality.ECEPHYS])
+        self.assertIsNone(data_desc_settings.project_name)
+
     def test_output_path_defaults_to_input_path(self):
         """Tests that output_dir defaults to metadata_dir when not provided."""
         data_desc_settings = DataDescriptionSettings(

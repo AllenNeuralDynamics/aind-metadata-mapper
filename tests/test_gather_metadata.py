@@ -493,12 +493,13 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_file_exists.assert_called_once_with(file_name="data_description.json")
         mock_get_file.assert_called_once_with(file_name="data_description.json")
 
+    @patch("aind_metadata_mapper.gather_metadata.get_project_name", return_value=None)
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
     @patch.object(GatherMetadataJob, "get_funding")
     @patch.object(GatherMetadataJob, "get_investigators")
     @patch("aind_metadata_mapper.gather_metadata.datetime")
     def test_build_data_description_new_file(
-        self, mock_datetime, mock_get_investigators, mock_get_funding, mock_file_exists
+        self, mock_datetime, mock_get_investigators, mock_get_funding, mock_file_exists, mock_get_project_name
     ):
         """Test build_data_description when creating new file"""
         mock_file_exists.return_value = False
@@ -527,6 +528,43 @@ class TestGatherMetadataJob(unittest.TestCase):
         self.assertIn("creation_time", result)
         self.assertEqual(result["project_name"], "Test Project")
         self.assertEqual(len(result["modalities"]), 2)
+
+    # Tests for resolve_project_name method
+
+    @patch("aind_metadata_mapper.gather_metadata.get_project_name")
+    def test_resolve_project_name_from_dataverse(self, mock_get_project_name):
+        """A missing project_name is filled in from Dataverse."""
+        self.job.settings.data_description_settings.project_name = None
+        mock_get_project_name.return_value = "Dataverse Project"
+        self.assertEqual(self.job.resolve_project_name("123456"), "Dataverse Project")
+        mock_get_project_name.assert_called_once_with(
+            "123456", base_url="http://test-service.com/api/v2/dataverse/tables"
+        )
+
+    @patch("aind_metadata_mapper.gather_metadata.get_project_name")
+    def test_resolve_project_name_missing(self, mock_get_project_name):
+        """A missing project_name fails when Dataverse has no project for the subject."""
+        self.job.settings.data_description_settings.project_name = None
+        mock_get_project_name.return_value = None
+        with self.assertRaises(ValueError) as err:
+            self.job.resolve_project_name("123456")
+        self.assertIn("project_name was not provided", str(err.exception))
+
+    @patch("aind_metadata_mapper.gather_metadata.get_project_name")
+    def test_resolve_project_name_matches_dataverse(self, mock_get_project_name):
+        """A provided project_name is accepted when it matches Dataverse, or Dataverse has none."""
+        mock_get_project_name.return_value = "Test Project"
+        self.assertEqual(self.job.resolve_project_name("123456"), "Test Project")
+        mock_get_project_name.return_value = None
+        self.assertEqual(self.job.resolve_project_name("123456"), "Test Project")
+
+    @patch("aind_metadata_mapper.gather_metadata.get_project_name")
+    def test_resolve_project_name_conflicts_with_dataverse(self, mock_get_project_name):
+        """A provided project_name fails when Dataverse has a different project for the subject."""
+        mock_get_project_name.return_value = "Other Project"
+        with self.assertRaises(ValueError) as err:
+            self.job.resolve_project_name("123456")
+        self.assertIn("does not match the project assigned to subject 123456", str(err.exception))
 
     # Tests for get_subject method
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
@@ -1262,6 +1300,47 @@ class TestGatherMetadataJob(unittest.TestCase):
         with patch("logging.warning") as mock_warning:
             self.job.copy_original_metadata_files()
             mock_warning.assert_called_once_with("Failed to copy subject.json: Permission denied")
+
+    @patch("os.listdir")
+    @patch("os.path.exists")
+    @patch("os.makedirs")
+    @patch("shutil.copy2")
+    def test_copy_original_metadata_files_includes_mapper_inputs(
+        self, mock_copy, mock_makedirs, mock_exists, mock_listdir
+    ):
+        """Test copy_original_metadata_files backs up mapper inputs (<mapper>.json) with the uploaded files"""
+        mock_exists.return_value = True
+        mock_listdir.return_value = ["acquisition_vrforaging.json", "fip.json", "other_file.json"]
+
+        with patch("logging.info"):
+            self.job.copy_original_metadata_files()
+
+        copied = [os.path.basename(call[0][0]) for call in mock_copy.call_args_list]
+        self.assertEqual(sorted(copied), ["acquisition_vrforaging.json", "fip.json"])
+
+    @patch("os.makedirs")
+    @patch("shutil.copy2")
+    def test_backup_generated_file(self, mock_copy, mock_makedirs):
+        """Test _backup_generated_file copies from metadata_dir into original_metadata/generated_json"""
+        with patch("logging.info"):
+            self.job._backup_generated_file("acquisition_fip.json")
+
+        backup_dir = os.path.join("/test/output", "original_metadata", "generated_json")
+        mock_makedirs.assert_called_once_with(backup_dir, exist_ok=True)
+        mock_copy.assert_called_once_with(
+            os.path.join("/test/metadata", "acquisition_fip.json"), os.path.join(backup_dir, "acquisition_fip.json")
+        )
+
+    @patch("os.makedirs")
+    @patch("shutil.copy2")
+    def test_backup_generated_file_copy_error(self, mock_copy, mock_makedirs):
+        """Test _backup_generated_file logs a warning instead of raising when the copy fails"""
+        mock_copy.side_effect = FileNotFoundError("missing")
+
+        with patch("logging.warning") as mock_warning:
+            self.job._backup_generated_file("acquisition_fip.json")
+
+        mock_warning.assert_called_once_with("Failed to back up generated metadata file acquisition_fip.json: missing")
 
     # Tests for procedures merging
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
