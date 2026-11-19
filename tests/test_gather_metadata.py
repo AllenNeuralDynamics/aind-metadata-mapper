@@ -560,11 +560,11 @@ class TestGatherMetadataJob(unittest.TestCase):
 
     @patch("aind_metadata_mapper.gather_metadata.get_project_name")
     def test_resolve_project_name_conflicts_with_dataverse(self, mock_get_project_name):
-        """A provided project_name fails when Dataverse has a different project for the subject."""
+        """A provided project_name wins, with a warning, when Dataverse has a different project."""
         mock_get_project_name.return_value = "Other Project"
-        with self.assertRaises(ValueError) as err:
-            self.job.resolve_project_name("123456")
-        self.assertIn("does not match the project assigned to subject 123456", str(err.exception))
+        with self.assertLogs(level="WARNING") as logs:
+            self.assertEqual(self.job.resolve_project_name("123456"), "Test Project")
+        self.assertIn("does not match the project assigned to subject 123456", logs.output[0])
 
     # Tests for get_subject method
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")

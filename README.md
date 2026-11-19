@@ -20,7 +20,7 @@ The following are the minimum **required** settings:
 - **`output_dir`** (str): Location where metadata files will be saved. If a `metadata_dir` is not provided, this will also be the location that the job searches for metadata files.
 - **`data_description_settings`**:
   - **`modalities`** (List[Modality]): List of data modalities for this dataset.
-  - **`project_name`** (str, optional): Project name used to fetch funding and investigator information. If not provided, it is looked up by `subject_id` in the Dataverse mice table, and the job fails if no project is assigned there. If provided, it must match the Dataverse project when one is assigned.
+  - **`project_name`** (str, optional): Project name used to fetch funding and investigator information. If not provided, it is looked up by `subject_id` in the Dataverse mice table, and the job fails if no project is assigned there. If provided, it is used as given, and a warning is logged if Dataverse has a different project assigned.
 
 ```python
 from aind_data_schema_models.modalities import Modality
