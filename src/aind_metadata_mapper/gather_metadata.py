@@ -225,8 +225,9 @@ class GatherMetadataJob:
             return from_dataverse
         if from_dataverse is not None and from_dataverse != provided:
             logging.warning(
-                f"project_name '{provided}' does not match the project assigned to subject {subject_id} in "
-                f"Dataverse ('{from_dataverse}'). Using '{provided}'."
+                f"The project_name provided at upload ('{provided}') does not match the project assigned to "
+                f"subject {subject_id} in Dataverse ('{from_dataverse}'). Using the provided value, "
+                f"'{provided}'. In a future release this mismatch will raise an error instead of a warning."
             )
         return provided
 

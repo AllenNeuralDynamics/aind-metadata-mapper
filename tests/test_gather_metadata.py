@@ -564,7 +564,12 @@ class TestGatherMetadataJob(unittest.TestCase):
         mock_get_project_name.return_value = "Other Project"
         with self.assertLogs(level="WARNING") as logs:
             self.assertEqual(self.job.resolve_project_name("123456"), "Test Project")
-        self.assertIn("does not match the project assigned to subject 123456", logs.output[0])
+        self.assertIn(
+            "The project_name provided at upload ('Test Project') does not match the project assigned to "
+            "subject 123456 in Dataverse ('Other Project'). Using the provided value, 'Test Project'. "
+            "In a future release this mismatch will raise an error instead of a warning.",
+            logs.output[0],
+        )
 
     # Tests for get_subject method
     @patch.object(GatherMetadataJob, "_does_file_exist_in_user_defined_dir")
