@@ -194,8 +194,8 @@ class GatherMetadataJob:
         """Return the project name for the data description, checked against Dataverse.
 
         If the settings do not include a project_name, it is looked up by subject in the Dataverse
-        mice table. If they do, it must match the Dataverse project when one is assigned. This catches
-        a mouse that was moved to a new project before the request was updated.
+        mice table. If they do, the provided name is used, and a warning is logged when Dataverse has
+        a different project assigned to the subject.
 
         Parameters
         ----------
@@ -210,8 +210,7 @@ class GatherMetadataJob:
         Raises
         ------
         ValueError
-            If no project_name was provided and none could be found in Dataverse, or if the provided
-            project_name does not match the one in Dataverse.
+            If no project_name was provided and none could be found in Dataverse.
         """
         provided = self.settings.data_description_settings.project_name
         base_url = urljoin(self.settings.metadata_service_url, DATAVERSE_TABLES_ENDPOINT)
@@ -225,9 +224,10 @@ class GatherMetadataJob:
             logging.info(f"Using project_name '{from_dataverse}' from Dataverse for subject {subject_id}.")
             return from_dataverse
         if from_dataverse is not None and from_dataverse != provided:
-            raise ValueError(
-                f"project_name '{provided}' does not match the project assigned to subject {subject_id} in "
-                f"Dataverse ('{from_dataverse}')."
+            logging.warning(
+                f"The project_name provided at upload ('{provided}') does not match the project assigned to "
+                f"subject {subject_id} in Dataverse ('{from_dataverse}'). Using the provided value, "
+                f"'{provided}'. In a future release this mismatch will raise an error instead of a warning."
             )
         return provided
 
