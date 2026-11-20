@@ -325,10 +325,13 @@ class MesoscopeMapper(MapperJob):
             value = reticle.get(key)
             if value is None:
                 continue
-            parsed = self._parse_float(value, f"platform.registration.reticle_image.{key}")
+            field_name = f"platform.registration.reticle_image.{key}"
+            if isinstance(value, bool):
+                raise ValueError(f"{field_name} must be a finite number.")
+            parsed = self._parse_float(value, field_name)
             if not isfinite(parsed):
-                raise ValueError(f"platform.registration.reticle_image.{key} must be finite.")
-            values.append(f"{key}={parsed:g}")
+                raise ValueError(f"{field_name} must be finite.")
+            values.append(f"{key}={int(parsed) if parsed.is_integer() else repr(parsed)}")
         if not values:
             return None
         return "Reticle registration: " + ", ".join(values)

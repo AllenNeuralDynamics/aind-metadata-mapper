@@ -590,6 +590,14 @@ class TestMesoscopeMapper(unittest.TestCase):
             )
         )
 
+    def test_reticle_registration_preserves_float_precision(self) -> None:
+        """Reticle values should keep full precision in the note."""
+        platform = {"registration": {"reticle_image": {"stage_y": 107147.25, "rotation": 28.20412345}}}
+        self.assertEqual(
+            self.mapper._build_reticle_registration_note(platform),
+            "Reticle registration: stage_y=107147.25, rotation=28.20412345",
+        )
+
     def test_reticle_registration_skips_null_values(self) -> None:
         """Null reticle fields should be omitted and an all-null block emits no note."""
         metadata = copy.deepcopy(self.fixture)
@@ -603,7 +611,7 @@ class TestMesoscopeMapper(unittest.TestCase):
 
     def test_reticle_registration_rejects_invalid_values(self) -> None:
         """Nonnumeric or nonfinite reticle values should fail mapping."""
-        for value in ("abc", "nan"):
+        for value in ("abc", "nan", True, False):
             platform = {"registration": {"reticle_image": {"stage_x": value}}}
             with self.subTest(value=value), self.assertRaises(ValueError):
                 self.mapper._build_reticle_registration_note(platform)
