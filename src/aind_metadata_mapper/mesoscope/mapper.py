@@ -56,6 +56,7 @@ LEGACY_TARGETED_STRUCTURE_LOOKUP = {
     533: CCFv3.VISPM,
     312782574: CCFv3.VISLI,
 }
+RETICLE_REGISTRATION_KEYS = ("stage_x", "stage_y", "stage_z", "rotation", "stage_image_rotation")
 
 
 class MesoscopeMapper(MapperJob):
@@ -316,6 +317,25 @@ class MesoscopeMapper(MapperJob):
             extras.append(f"scanimage_roi_index={scanimage_roi_index}")
         return f"FOV {plane_index}: " + ", ".join(extras)
 
+    def _build_reticle_registration_note(self, platform: dict) -> Optional[str]:
+        """Build a stream note from the platform reticle-image registration."""
+        reticle = (platform.get("registration") or {}).get("reticle_image") or {}
+        values = []
+        for key in RETICLE_REGISTRATION_KEYS:
+            value = reticle.get(key)
+            if value is None:
+                continue
+            field_name = f"platform.registration.reticle_image.{key}"
+            if isinstance(value, bool):
+                raise ValueError(f"{field_name} must be a finite number.")
+            parsed = self._parse_float(value, field_name)
+            if not isfinite(parsed):
+                raise ValueError(f"{field_name} must be finite.")
+            values.append(f"{key}={int(parsed) if parsed.is_integer() else repr(parsed)}")
+        if not values:
+            return None
+        return "Reticle registration: " + ", ".join(values)
+
     def _build_imaging_config(
         self,
         tiff_header: list,
@@ -328,7 +348,8 @@ class MesoscopeMapper(MapperJob):
         translation = Translation(translation=self._get_fov_translation_mm(job_settings))
         channel = self._build_imaging_channel()
         images = []
-        notes = []
+        reticle_note = self._build_reticle_registration_note(platform)
+        notes = [reticle_note] if reticle_note else []
         global_plane_index = 0
         magnification = job_settings.get("magnification")
 

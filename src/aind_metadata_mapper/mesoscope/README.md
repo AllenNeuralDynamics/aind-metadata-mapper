@@ -33,6 +33,11 @@ for it, so it is recorded in the data stream notes as
 measured `targeted_depth`. Missing, null, empty, malformed, nonfinite,
 negative, or boolean values fail mapping; zero is valid.
 
+When `platform.registration.reticle_image` is present, its `stage_x`,
+`stage_y`, `stage_z`, `rotation`, and `stage_image_rotation` values lead the
+data stream notes as `Reticle registration: <key>=<value>, ...`. Null values
+are omitted; nonnumeric or nonfinite values fail mapping.
+
 Naive timestamps are interpreted in `America/Los_Angeles`, while aware timestamps
 are preserved. Acquisition bounds span the recorded stream and stimulus epochs
 without altering their individual timestamps.
