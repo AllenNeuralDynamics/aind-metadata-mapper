@@ -10,6 +10,7 @@ from aind_data_schema.core.processing import (
     Processing,
     ProcessStage,
 )
+from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.process_names import ProcessName
 
 from aind_metadata_mapper.append_processing_job import (
@@ -67,12 +68,14 @@ class TestAppendProcessingJob(unittest.TestCase):
         )
         job_settings_with_location = JobSettings(
             processing=new_processing_example,
+            modalities=[Modality.BEHAVIOR_VIDEOS],
             s3_location="s3://example/asset",
             docdb_host="http://example.com",
             docdb_version="v2",
         )
         job_settings_with_asset_id = JobSettings(
             processing=new_processing_example,
+            modalities=[Modality.BEHAVIOR_VIDEOS],
             data_asset_id="abc-def",
             docdb_host="http://example.com",
             docdb_version="v2",
@@ -93,59 +96,66 @@ class TestAppendProcessingJob(unittest.TestCase):
             "_id": "123456",
             "location": "s3://example/asset",
             "processing": old_processing_example.model_dump(mode="json"),
+            "data_description": {
+                "modalities": [
+                    {"abbreviation": "behavior", "name": "Behavior"},
+                    {"abbreviation": "fib", "name": "Fiber photometry"},
+                ]
+            },
         }
         cls.job_with_location = AppendProcessingJob(settings=job_settings_with_location)
         cls.job_with_id = AppendProcessingJob(settings=job_settings_with_asset_id)
         cls.docdb_record = docdb_example_record
 
     @patch("aind_data_access_api.document_db.MetadataDbClient")
-    def test_fetch_processing_record_by_location(self, mock_docdb_client: MagicMock):
-        """Tests _fetch_processing_record when s3_location is set in job settings."""
+    def test_fetch_docdb_record_info_by_location(self, mock_docdb_client: MagicMock):
+        """Tests _fetch_docdb_record_info when s3_location is set in job settings."""
         mock_docdb_client.retrieve_docdb_records.return_value = [self.docdb_record]
-        response = self.job_with_location._fetch_processing_record(docdb_client=mock_docdb_client)
+        response = self.job_with_location._fetch_docdb_record_info(docdb_client=mock_docdb_client)
         self.assertIsNotNone(response)
 
     @patch("aind_data_access_api.document_db.MetadataDbClient")
-    def test_fetch_processing_record_by_id(self, mock_docdb_client: MagicMock):
-        """Tests _fetch_processing_record when data_asset_id is set in job settings."""
+    def test_fetch_docdb_record_info_by_id(self, mock_docdb_client: MagicMock):
+        """Tests _fetch_docdb_record_info when data_asset_id is set in job settings."""
         mock_docdb_client.retrieve_docdb_records.return_value = [self.docdb_record]
-        response = self.job_with_id._fetch_processing_record(docdb_client=mock_docdb_client)
+        response = self.job_with_id._fetch_docdb_record_info(docdb_client=mock_docdb_client)
         self.assertIsNotNone(response)
 
     @patch("aind_data_access_api.document_db.MetadataDbClient")
-    def test_fetch_processing_too_many_records_error(self, mock_docdb_client: MagicMock):
-        """Tests _fetch_processing_record raises an error when more than one docdb record matches."""
+    def test_fetch_docdb_record_info_too_many_records_error(self, mock_docdb_client: MagicMock):
+        """Tests _fetch_docdb_record_info raises an error when more than one docdb record matches."""
         mock_docdb_client.retrieve_docdb_records.return_value = [self.docdb_record, self.docdb_record]
         with self.assertRaises(AssertionError):
-            self.job_with_id._fetch_processing_record(docdb_client=mock_docdb_client)
+            self.job_with_id._fetch_docdb_record_info(docdb_client=mock_docdb_client)
 
     @patch("aind_data_access_api.document_db.MetadataDbClient")
-    def test_fetch_processing_no_records_error(self, mock_docdb_client: MagicMock):
-        """Tests _fetch_processing_record raises an error when no docdb record matches."""
+    def test_fetch_docdb_record_info_no_records_error(self, mock_docdb_client: MagicMock):
+        """Tests _fetch_docdb_record_info raises an error when no docdb record matches."""
         mock_docdb_client.retrieve_docdb_records.return_value = []
         with self.assertRaises(AssertionError):
-            self.job_with_id._fetch_processing_record(docdb_client=mock_docdb_client)
+            self.job_with_id._fetch_docdb_record_info(docdb_client=mock_docdb_client)
 
-    def test_merge_processing_record(self):
-        """Tests _merge_processing_record method."""
+    def test_update_record(self):
+        """Tests _update_record method."""
         old_docdb_record = self.docdb_record
-        updated_processing = self.job_with_location._merge_processing_record(docdb_record=old_docdb_record)
+        updated_processing = self.job_with_location._update_record(docdb_record=old_docdb_record)
         self.assertEqual(2, len(updated_processing["processing"]["data_processes"]))
+        self.assertEqual(3, len(updated_processing["data_description"]["modalities"]))
 
     @patch("aind_data_access_api.document_db.MetadataDbClient")
-    def test_update_processing_record(self, mock_docdb_client: MagicMock):
-        """Tests _update_processing_record method."""
+    def test_save_updated_record(self, mock_docdb_client: MagicMock):
+        """Tests _save_updated_record method."""
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_docdb_client.upsert_one_record.return_value = mock_response
-        self.job_with_location._update_processing_record(
+        self.job_with_location._save_updated_record(
             docdb_client=mock_docdb_client, updated_processing_record={"_id": "123"}
         )
         mock_docdb_client.upsert_one_docdb_record.assert_called_once()
 
-    @patch("aind_metadata_mapper.append_processing_job.AppendProcessingJob._fetch_processing_record")
-    @patch("aind_metadata_mapper.append_processing_job.AppendProcessingJob._merge_processing_record")
-    @patch("aind_metadata_mapper.append_processing_job.AppendProcessingJob._update_processing_record")
+    @patch("aind_metadata_mapper.append_processing_job.AppendProcessingJob._fetch_docdb_record_info")
+    @patch("aind_metadata_mapper.append_processing_job.AppendProcessingJob._update_record")
+    @patch("aind_metadata_mapper.append_processing_job.AppendProcessingJob._save_updated_record")
     def test_run_job(
         self, mock_update_record: MagicMock, mock_merge_record: MagicMock, mock_fetch_processing_record: MagicMock
     ):
