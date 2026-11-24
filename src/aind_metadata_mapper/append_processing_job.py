@@ -27,11 +27,11 @@ class JobSettings(
 
     model_config = SettingsConfigDict(env_prefix="PROCESSING_")
     data_asset_id: Optional[str] = Field(
-        default=None, description="ID of data asset to update. Either this or s3_location needs to " "be set."
+        default=None, description="ID of data asset to update. Either this or s3_location needs to be set."
     )
     s3_location: Optional[str] = Field(
         default=None,
-        description="S3 Location of data asset to update. Either this or data_asset_id " "needs to be set.",
+        description="S3 Location of data asset to update. Either this or data_asset_id needs to be set.",
     )
     docdb_host: str = Field(..., description="URL of DocDB host.")
     docdb_version: Optional[str] = Field(default=None, description="Metadata schema major version used.")
